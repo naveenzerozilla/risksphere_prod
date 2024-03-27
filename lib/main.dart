@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:green/constants/enums.dart';
+import 'package:green/design_system/components/custom_button.dart';
+import 'package:green/design_system/components/custom_checkbox.dart';
+import 'package:green/design_system/components/custom_chip.dart';
+import 'package:green/design_system/primitives/utilities/custom_dialogs.dart';
+import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
+import 'design_system/components/custombottom_sheet.dart';
+import 'design_system/primitives/utilities/custom_fab.dart';
+import 'design_system/repo/constants.dart';
+import 'design_system/repo/home.dart';
 import 'providers/theme_provider.dart';
 
 void main() {
@@ -21,57 +31,104 @@ class MyApp extends StatelessWidget {
           title: 'Flutter Demo',
           debugShowCheckedModeBanner: false,
           theme: themeProvider.getTheme,
-          home: const MyHomePage(title: 'Flutter Demo Home Page'),
+          home: const App(),
         );
       },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class App extends StatefulWidget {
+  const App({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<App> createState() => _AppState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _AppState extends State<App> {
+  bool useMaterial3 = true;
+  ThemeMode themeMode = ThemeMode.system;
+  ColorSeed colorSelected = ColorSeed.baseColor;
+  ColorImageProvider imageSelected = ColorImageProvider.leaves;
+  ColorScheme? imageColorScheme = const ColorScheme.light();
+  ColorSelectionMethod colorSelectionMethod = ColorSelectionMethod.colorSeed;
 
-  void _incrementCounter() {
+  bool get useLightMode {
+    switch (themeMode) {
+      case ThemeMode.system:
+        return View.of(context).platformDispatcher.platformBrightness ==
+            Brightness.light;
+      case ThemeMode.light:
+        return true;
+      case ThemeMode.dark:
+        return false;
+    }
+  }
+
+  void handleBrightnessChange(bool useLightMode) {
     setState(() {
-      _counter++;
+      themeMode = useLightMode ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
+
+  void handleMaterialVersionChange() {
+    setState(() {
+      useMaterial3 = !useMaterial3;
+    });
+  }
+
+  void handleColorSelect(int value) {
+    setState(() {
+      colorSelectionMethod = ColorSelectionMethod.colorSeed;
+      colorSelected = ColorSeed.values[value];
+    });
+  }
+
+  void handleImageSelect(int value) {
+    final String url = ColorImageProvider.values[value].url;
+    ColorScheme.fromImageProvider(provider: NetworkImage(url))
+        .then((newScheme) {
+      setState(() {
+        colorSelectionMethod = ColorSelectionMethod.image;
+        imageSelected = ColorImageProvider.values[value];
+        imageColorScheme = newScheme;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Material 3',
+      themeMode: themeMode,
+      theme: ThemeData(
+        colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
+            ? colorSelected.color
+            : null,
+        colorScheme: colorSelectionMethod == ColorSelectionMethod.image
+            ? imageColorScheme
+            : null,
+        useMaterial3: useMaterial3,
+        brightness: Brightness.light,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-
-          ],
-        ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
+            ? colorSelected.color
+            : imageColorScheme!.primary,
+        useMaterial3: useMaterial3,
+        brightness: Brightness.dark,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      home: Home(
+        useLightMode: useLightMode,
+        useMaterial3: useMaterial3,
+        colorSelected: colorSelected,
+        imageSelected: imageSelected,
+        handleBrightnessChange: handleBrightnessChange,
+        handleMaterialVersionChange: handleMaterialVersionChange,
+        handleColorSelect: handleColorSelect,
+        handleImageSelect: handleImageSelect,
+        colorSelectionMethod: colorSelectionMethod,
       ),
     );
   }

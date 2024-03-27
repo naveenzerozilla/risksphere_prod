@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum ButtonType {
   elevated,
   outlined,
@@ -5,3 +7,4 @@ enum ButtonType {
   filled,
   tonal,
 }
+
