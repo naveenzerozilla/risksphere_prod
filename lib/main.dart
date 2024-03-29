@@ -1,25 +1,30 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:green/constants/enums.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/components/custom_checkbox.dart';
-import 'package:green/design_system/components/custom_chip.dart';
-import 'package:green/design_system/primitives/utilities/custom_dialogs.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:green/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
-import 'design_system/components/custombottom_sheet.dart';
-import 'design_system/primitives/utilities/custom_fab.dart';
 import 'design_system/repo/constants.dart';
-import 'design_system/repo/home.dart';
+import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
+import 'screens/onboarding/splash_screen.dart';
 
-void main() {
-  runApp(ChangeNotifierProvider(
-    create: (_) => ThemeProvider(AppThemes.lightTheme),
-    child: const MyApp(),
-  ),);
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthNotifier()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -100,7 +105,7 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Material 3',
+      title: 'Risk Sphere',
       themeMode: themeMode,
       theme: ThemeData(
         colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
@@ -109,27 +114,17 @@ class _AppState extends State<App> {
         colorScheme: colorSelectionMethod == ColorSelectionMethod.image
             ? imageColorScheme
             : null,
-        useMaterial3: useMaterial3,
+        useMaterial3: true,
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
         colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
             ? colorSelected.color
             : imageColorScheme!.primary,
-        useMaterial3: useMaterial3,
+        useMaterial3: true,
         brightness: Brightness.dark,
       ),
-      home: Home(
-        useLightMode: useLightMode,
-        useMaterial3: useMaterial3,
-        colorSelected: colorSelected,
-        imageSelected: imageSelected,
-        handleBrightnessChange: handleBrightnessChange,
-        handleMaterialVersionChange: handleMaterialVersionChange,
-        handleColorSelect: handleColorSelect,
-        handleImageSelect: handleImageSelect,
-        colorSelectionMethod: colorSelectionMethod,
-      ),
+      home: SplashScreen(),
     );
   }
 }

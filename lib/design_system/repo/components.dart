@@ -5,6 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:green/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import '../../screens/onboarding/login_screen.dart';
 import 'constants.dart';
 
 const rowDivider = SizedBox(width: 20);
@@ -29,6 +32,18 @@ class FirstComponentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Widget> children = [
+      Consumer<AuthNotifier>(
+        builder: (context, authNotifier, child) {
+          return ElevatedButton(
+            onPressed: () async {
+              await authNotifier.signOut();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+            },
+            child: const Text('Logout User'),
+          );
+        }
+      ),
+
       const Actions(),
       colDivider,
       const Communication(),

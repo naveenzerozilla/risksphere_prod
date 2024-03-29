@@ -1,6 +1,73 @@
 import 'package:flutter/material.dart';
 
 class CustomTypography {
+  static const double buttonLargeFontSize = 16.0;
+
+  static const TextStyle ButtonLarge = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w500,
+    fontSize: buttonLargeFontSize,
+    height: 26.0 / buttonLargeFontSize, // Calculate the height based on line-height and font size
+    letterSpacing: 0.46000000834465027,
+  );
+
+  static const TextStyle Body1 = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 16.0,
+    height: 1.0, // Since line-height is a variable, set height to 1.0
+    letterSpacing: 0.15000000596046448,
+  );
+
+  static const TextStyle InputValue = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 16.0,
+    height: 1.0, // Since line-height is a variable, set height to 1.0
+    letterSpacing: 0.15000000596046448,
+  );
+
+  static const TextStyle InputLabel = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 12.0,
+    height: 1.0, // Since line-height is given as 12px, set height to 1.0
+    letterSpacing: 0.15000000596046448,
+  );
+
+  static const TextStyle H4 = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 34.0,
+    height: 1.23558823529, // Calculate this value based on the provided line-height
+    letterSpacing: 0.25,
+  );
+
+  static const TextStyle Subtitle1 = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 16.0,
+    height: 1.75,
+    letterSpacing: 0.15000000596046448,
+  );
+
+  static const TextStyle BottomNavigationActiveLabel = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 14.0,
+    height: 1.59142857143,
+    letterSpacing: 0.4000000059604645,
+  );
+
+
+  static const TextStyle H5_Regular = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 24.0,
+    height: 1.1265625, // Calculate this value based on the provided line-height.. height = fontSize * (lineHeight / fontSize);...height = 24.0 * (32.02 / 24.0) ≈ 1.1265625
+  );
+
+
   // XS sizes
   static const TextStyle XS_Light = TextStyle(
     fontFamily: 'Inter',
