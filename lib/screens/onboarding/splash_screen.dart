@@ -23,6 +23,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    _getInitData();
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: 4),
@@ -102,5 +103,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void handleImageSelect(int value) {
+  }
+
+  void _getInitData() {
+    Provider.of<AuthNotifier>(context, listen: false).initialOptions();
   }
 }

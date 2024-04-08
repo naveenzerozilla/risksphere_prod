@@ -4,6 +4,7 @@ import 'package:green/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
+import 'design_system/primitives/app_colors.dart';
 import 'design_system/repo/constants.dart';
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
@@ -108,9 +109,7 @@ class _AppState extends State<App> {
       title: 'Risk Sphere',
       themeMode: themeMode,
       theme: ThemeData(
-        colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
-            ? colorSelected.color
-            : null,
+        colorSchemeSeed: AppColors.primaryMain,
         colorScheme: colorSelectionMethod == ColorSelectionMethod.image
             ? imageColorScheme
             : null,
@@ -118,9 +117,7 @@ class _AppState extends State<App> {
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
-        colorSchemeSeed: colorSelectionMethod == ColorSelectionMethod.colorSeed
-            ? colorSelected.color
-            : imageColorScheme!.primary,
+        colorSchemeSeed: AppColors.primaryMain,
         useMaterial3: true,
         brightness: Brightness.dark,
       ),

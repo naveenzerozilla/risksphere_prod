@@ -40,6 +40,9 @@ dependencies:
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.8
   google_sign_in: ^6.2.1
+  flutter_autocomplete_label: ^1.0.0
+  country_list_picker: ^1.0.2
+  cloud_functions: ^4.6.8
 
 dev_dependencies:
   flutter_test:

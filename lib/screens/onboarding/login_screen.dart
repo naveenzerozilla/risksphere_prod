@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
@@ -11,6 +13,7 @@ import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/utils.dart';
 import 'create_account_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,13 +40,20 @@ class _LoginScreenState extends State<LoginScreen> {
             key: _formKey,
             child: Column(
               children: [
-                Row(
+                Stack(
                   children: [
-                    Expanded(
-                      child: Image.asset(
-                        'assets/images/loginImage.png',
-                        fit: BoxFit.fitWidth,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Image.asset(
+                            'assets/images/loginImage.png',
+                            fit: BoxFit.fitWidth,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Positioned.fill(
+                      child: Center(child: Text("Manage your Risk Profile", style: CustomTypography.H5_Regular,)),
                     ),
                   ],
                 ),
@@ -69,41 +79,37 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           SizedBox(height: CustomSpacing.eight),
           // Social Media Buttons
-        Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-              return SocialMediaButton(
-                onPressed: () async {
-                  // Add your onPressed function here
-                  await authNotifier.signInWithGoogle();
-                  // Check if the user is authenticated after login attempt
-                  if (authNotifier.user != null) {
-                    // Navigate to the home screen or any other screen after login
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => Home(
-                          useLightMode: false,
-                          useMaterial3: true,
-                          colorSelected: ColorSeed.baseColor,
-                          imageSelected:
-                          ColorImageProvider.leaves,
-                          handleBrightnessChange:
-                          handleBrightnessChange,
-                          handleMaterialVersionChange:
-                          handleMaterialVersionChange,
-                          handleColorSelect: handleColorSelect,
-                          handleImageSelect: handleImageSelect,
-                          colorSelectionMethod:
-                          ColorSelectionMethod.colorSeed,
-                        ),
+          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+            return SocialMediaButton(
+              onPressed: () async {
+                // Add your onPressed function here
+                await authNotifier.signInWithGoogle(context: context);
+                // Check if the user is authenticated after login attempt
+                if (authNotifier.user != null&&!authNotifier.isNewUser) {
+                  // Navigate to the home screen or any other screen after login
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Home(
+                        useLightMode: false,
+                        useMaterial3: true,
+                        colorSelected: ColorSeed.baseColor,
+                        imageSelected: ColorImageProvider.leaves,
+                        handleBrightnessChange: handleBrightnessChange,
+                        handleMaterialVersionChange:
+                            handleMaterialVersionChange,
+                        handleColorSelect: handleColorSelect,
+                        handleImageSelect: handleImageSelect,
+                        colorSelectionMethod: ColorSelectionMethod.colorSeed,
                       ),
-                    );
-                  }
-                },
-                buttonText: 'Continue with Google',
-                iconPath: 'assets/images/googleLogo.svg',
-              );
-            }
-          ),
+                    ),
+                  );
+                }
+              },
+              buttonText: 'Continue with Google',
+              iconPath: 'assets/images/googleLogo.svg',
+            );
+          }),
 
           SizedBox(
             height: CustomSpacing.one,
@@ -143,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
           SizedBox(height: CustomSpacing.eight),
+          // Email
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Email',
@@ -159,6 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: emailController,
           ),
           SizedBox(height: CustomSpacing.two),
+          // Password
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Password',
@@ -176,30 +184,36 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: passwordController,
           ),
           SizedBox(height: CustomSpacing.two),
-        Consumer<AuthNotifier>(builder: (context, authNotifier, child)
-            {
-              return authNotifier.isResettingPassword?Center(child: CircularProgressIndicator(color: AppColors.primaryMain,),):GestureDetector(
-                  onTap: () async {
-                    if(validateEmail(emailController.text)) {
-                      await authNotifier.resetPassword(emailController.text);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Email sent to reset password. Please check your email.'),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Email is not valid. Please enter a valid email address.'),
-                        ),
-                      );
-                    }
-                  },
-                  child: Text('Forgot Password?',
-                      style: CustomTypography.Subtitle1.copyWith(
-                          color: AppColors.primaryMain)));
-            }
-          ),
+          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+            return authNotifier.isResettingPassword
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryMain,
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () async {
+                      if (validateEmail(emailController.text)) {
+                        await authNotifier.resetPassword(emailController.text);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Email sent to reset password. Please check your email.'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Email is not valid. Please enter a valid email address.'),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text('Forgot Password?',
+                        style: CustomTypography.Subtitle1.copyWith(
+                            color: AppColors.primaryMain)));
+          }),
           SizedBox(height: CustomSpacing.four),
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
             return Row(
@@ -233,8 +247,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     email, password);
 
                                 // Check if the user is authenticated after login attempt
-                                if (authNotifier.user != null) {
+                                final user = authNotifier.user;
+                                if (user != null) {
                                   // Navigate to the home screen or any other screen after login
+                                  var token = await user.getIdToken();
+                                  print("Claims: " + parseJwt(token!).toString());
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
@@ -273,9 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
           GestureDetector(
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CreateAccountScreen()
-                ),
+                MaterialPageRoute(builder: (context) => CreateAccountScreen()),
               );
             },
             child: Row(
@@ -299,11 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  regextest(String value) {
-    String pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
-    RegExp regExp = new RegExp(pattern);
-    return regExp.hasMatch(value);
-  }
+
 
   void handleBrightnessChange(bool useLightMode) {}
 
@@ -316,4 +327,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool validateEmail(String text) {
     return regextest(text);
   }
+
+  Map<String, dynamic>? parseJwt(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      return null;
+    }
+
+    final payload = parts[1];
+    final String normalized = base64Url.normalize(payload);
+    final String decoded = utf8.decode(base64Url.decode(normalized));
+    return json.decode(decoded);
+  }
+
 }
