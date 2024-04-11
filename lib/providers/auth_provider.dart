@@ -5,10 +5,15 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:green/main.dart';
 
+import '../design_system/primitives/custom_typography.dart';
+import '../design_system/primitives/utilities/custom_spacing.dart';
 import '../models/initial_data_model.dart';
 import '../screens/onboarding/create_account_screen.dart';
+import '../screens/onboarding/splash_screen.dart';
 
 class AuthNotifier extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -34,33 +39,41 @@ class AuthNotifier extends ChangeNotifier {
 
 // Private variables to hold role list, company list, and company type list
   List<Role>? _roleList;
-  List<Comapnies>? _companyList;
+  List<Companies>? _companyList;
   List<CompanyType>? _companyTypeList;
 
 // Getters for role list, company list, and company type list
   List<Role>? get roleList => _roleList;
-  List<Comapnies>? get companyList => _companyList;
+  List<Companies>? get companyList => _companyList;
   List<CompanyType>? get companyTypeList => _companyTypeList;
 
   // Setters for role list, company list, and company type list
   set roleList(List<Role>? roleList) {
     _roleList = roleList;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
   }
-  set companyList(List<Comapnies>? companyList) {
+  set companyList(List<Companies>? companyList) {
     _companyList = companyList;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
   }
   set companyTypeList(List<CompanyType>? companyTypeList) {
     _companyTypeList = companyTypeList;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
   }
 
   InitialDataModel? _initialData;
   InitialDataModel? get initialData => _initialData;
   set initialData(InitialDataModel? initialData) {
     _initialData = initialData;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
   }
 
 
@@ -71,7 +84,9 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> _initAuthState() async {
     _user = _auth.currentUser;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
   }
   /// Splash Screen
 
@@ -79,29 +94,12 @@ class AuthNotifier extends ChangeNotifier {
 
   /// Login
 
-  Future<void> signInWithEmailAndPassword(String email, String password) async {
+  Future<void> signInWithEmailAndPassword(String email, String password, BuildContext context) async {
     try {
       _isSigningIn = true;
-      notifyListeners();
-      // Create the reCAPTCHA verifier
-      RecaptchaVerifier recaptchaVerifier = RecaptchaVerifier(
-        size: RecaptchaVerifierSize.normal,
-        onSuccess: () {
-          // Handle reCAPTCHA success
-          print('reCAPTCHA verified successfully');
-        },
-        onError: (FirebaseAuthException exception) {
-          // Handle reCAPTCHA errors
-          print('reCAPTCHA verification failed: $exception');
-        },
-        onExpired: () {
-          // Handle reCAPTCHA expiration
-          print('reCAPTCHA verification expired');
-        }, auth: FirebaseAuthPlatform.instance,
-      );
-
-      // Verify the reCAPTCHA token
-      await recaptchaVerifier.verify();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -109,10 +107,19 @@ class AuthNotifier extends ChangeNotifier {
       );
       _user = userCredential.user;
       _isSigningIn = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
     } catch (e) {
       _isSigningIn = false;
-      notifyListeners();
+      ScaffoldMessenger.of(context!).showSnackBar(
+        SnackBar(
+          content: Text('Invalid email or password'),
+        ),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       // Handle error
       print("Error signing in: $e");
     }
@@ -121,7 +128,9 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
       _isSigningIn = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
@@ -152,54 +161,82 @@ class AuthNotifier extends ChangeNotifier {
         }
       }
       _isSigningIn = false;
-      notifyListeners();
-    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } on FirebaseAuthException catch (e) {
       _isSigningIn = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       // Handle error
       print("Error signing in with Google: $e");
+      ScaffoldMessenger.of(context!).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
     }
   }
 
   Future<void> signOut() async {
     try {
       _isSigningOut = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       await _auth.signOut();
       _user = null;
       _isSigningOut = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
     } catch (e) {
       _isSigningOut = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       // Handle error
       print("Error signing out: $e");
     }
   }
 
-  Future<void> resetPassword(String email) async {
+  Future<void> resetPassword(String email, BuildContext context) async {
     try {
       _isResettingPassword = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       await _auth.sendPasswordResetEmail(email: email);
       // Reset password email sent successfully
       _isResettingPassword = false;
-      notifyListeners();
-    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } on FirebaseAuthException catch (e) {
       _isResettingPassword = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       // Handle error
       print("Error sending password reset email: $e");
+      ScaffoldMessenger.of(context!).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
     }
   }
 
   /// Registration for Individual on Google Signup
-  Future<String> signUpIndividualWithGoogle(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles) async {
+  Future<String> signUpIndividualWithGoogle(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
     try {
       _isSigningUp = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       print('cred: $userCredential');
 
@@ -228,24 +265,36 @@ class AuthNotifier extends ChangeNotifier {
 
       _user = userCredential.user;
       _isSigningUp = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       return result.data;
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       _isSigningUp = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       // Handle error
       print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
 
       return '';
     }
   }
 
   /// Registration for Individual
-  Future<void> signUpIndividualWithEmailAndPassword(String mail, String password, String name, String displayName, String phone, String selectedCountryCode, List<Categories> selectedRoles) async {
+  Future<void> signUpIndividualWithEmailAndPassword(String mail, String password, String name, String displayName, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
     try {
       _isSigningUp = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
 
       // Create a new user with email and password
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -279,25 +328,62 @@ class AuthNotifier extends ChangeNotifier {
       if(result.data == 'role_assigned') {
         //Send email to verify
         await userCredential.user?.sendEmailVerification();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(selectedRoles.any(
+                      (role) => role.isApplicableForTrial)?'Enjoy your 7-day free trial!':'Check your inbox.', style: CustomTypography.H6.copyWith(color: Colors.white),),
+              content: Text(selectedRoles.any(
+                      (role) => role.isApplicableForTrial)?'Trial account created with full features. Upgrade for continued access or remain free after 7 days. Activate email by clicking link sent.':'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                  },
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_back),
+                      SizedBox(width: CustomSpacing.four),
+                      Text('Back to Login'),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
       }
 
       _user = userCredential.user;
       _isSigningUp = false;
-      notifyListeners();
-    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } on FirebaseAuthException catch  (e) {
+      print('Failed with error code: ${e.code}');
+      print(e.message);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
       _isSigningUp = false;
-      notifyListeners();
-
-      // Handle error
-      print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
     }
   }
 
   /// Registration for Corporate
-  Future<void> signUpCorporateWithEmailAndPassword(String companyLegalName, CompanyType companyType, String companyDisplayName, String adminEmail, String adminCountryCode, String adminPhone, String adminPassword, Roles? roles, [Comapnies? selectedCompany]) async {
+  Future<void> signUpCorporateWithEmailAndPassword(String companyLegalName, CompanyType companyType, String companyDisplayName, String adminName, String adminEmail, String adminCountryCode, String adminPhone, String adminPassword, Roles? roles, BuildContext context, [Companies? selectedCompany]) async {
     try {
       _isSigningUp = true;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       // Create a new user with email and password
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -309,8 +395,9 @@ class AuthNotifier extends ChangeNotifier {
 
       var body = {
         "company_name": companyLegalName,
-        "company_type": companyType.toJson(),
-        "displayName": companyDisplayName,
+        "company_type": companyType.type,
+        "company_display_name": companyDisplayName,
+        "displayName": adminName,
         'display_name': companyDisplayName,
         "email": adminEmail,
         "country_code": adminCountryCode,
@@ -322,11 +409,10 @@ class AuthNotifier extends ChangeNotifier {
         'isIndividual': false,
         'roles': roles?.toJson(),
         'uId': userCredential.user?.uid,
-        "accountType": "corporate",
         'company_detail': selectedCompany?.toJson(),
         'password': adminPassword,
         'confirm_password': adminPassword,
-        'name': null,
+        'name': adminName,
       };
       log("body: ${jsonEncode(body)}");
 
@@ -340,17 +426,80 @@ class AuthNotifier extends ChangeNotifier {
       if(result.data == 'role_assigned') {
         //Send email to verify
         await userCredential.user?.sendEmailVerification();
+        print("company verified by admin and selected company is null: ${initialData!.config[0].companyVerificationByAdmin} ${selectedCompany == null}");
+        print("selected company is not null: ${selectedCompany != null} ${selectedCompany?.corporateUserVerificationByAdmin} ${roles?.name.toLowerCase() != 'admin'}");
+        if(initialData!=null&&initialData!.config[0].companyVerificationByAdmin && selectedCompany == null) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Check your inbox', style: CustomTypography.H6.copyWith(color: Colors.white),),
+                content: Text('We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_back),
+                        SizedBox(width: CustomSpacing.four),
+                        Text('Back to Login'),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        } else if(selectedCompany!=null&& selectedCompany.corporateUserVerificationByAdmin && roles?.name.toLowerCase() != 'admin') {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Registration request submitted', style: CustomTypography.H6.copyWith(color: Colors.white),),
+                content: Text('Great news! Your registration request has been successfully submitted to your Corporate Admin, Amit at ${obscureEmail(adminEmail)}. Just a friendly reminder that your registration is currently pending approval. You should have received an email to verify your email address. Thank you for your cooperation!', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_back),
+                        SizedBox(width: CustomSpacing.four),
+                        Text('Back to Login'),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+
       }
 
       _user = userCredential.user;
       _isSigningUp = false;
-      notifyListeners();
-    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } on FirebaseAuthException catch (e) {
       _isSigningUp = false;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       // Handle error
       print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
     }
   }
 
@@ -374,7 +523,7 @@ class AuthNotifier extends ChangeNotifier {
       InitialDataModel initialDataModel = InitialDataModel.fromJson(data);
       initialData = initialDataModel;
       roleList = initialDataModel.role;
-      companyList = initialDataModel.comapnies;
+      companyList = initialDataModel.companies;
       companyTypeList = initialDataModel.companyType;
 
 
@@ -400,6 +549,18 @@ class AuthNotifier extends ChangeNotifier {
       print('Error getting initial options: $e');
       print(stack);
     }
+  }
+  String obscureEmail(String email) {
+    List<String> parts = email.split('@');
+
+    String obscure(String part, int visibleStart, int visibleEnd) {
+      return part.replaceRange(visibleStart, visibleEnd, '*' * (visibleEnd - visibleStart));
+    }
+
+    String localPart = obscure(parts[0], 1, parts[0].length - 1);
+    String domainPart = obscure(parts[1], 1, parts[1].length - 2);
+
+    return '$localPart@$domainPart';
   }
 
 
@@ -460,4 +621,6 @@ extension UserCredentialExtension on UserCredential {
           : null,
     };
   }
+
+
 }

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_recaptcha/flutter_firebase_recaptcha.dart';
+import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
@@ -31,16 +31,9 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool rememberMe = false;
-  static const firebaseConfig = {
-    'apiKey': "AIzaSyCFaF851Ld9FsxQojE2jm3aOVPAr3PFFJQ",
-    'authDomain': "project-green-f4d78.firebaseapp.com",
-    'projectId': "project-green-f4d78",
-    'storageBucket': "project-green-f4d78.appspot.com",
-    'messagingSenderId': "37861143894",
-    'appId': "1:37861143894:web:6067118899abd7dabd12f7",
-    'measurementId': "G-JLBS9BWZT7"
-  };
-  bool expand = false;
+  String verifyResult = "";
+  bool isCaptchaVerified = false;
+  RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
 
   @override
   void initState() {
@@ -49,6 +42,14 @@ class _LoginScreenState extends State<LoginScreen> {
     authNotifier.signOut();
 
     super.initState();
+  }
+
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    recaptchaV2Controller.dispose();
   }
 
   @override
@@ -221,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 : GestureDetector(
                     onTap: () async {
                       if (validateEmail(emailController.text)) {
-                        await authNotifier.resetPassword(emailController.text);
+                        await authNotifier.resetPassword(emailController.text, context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -241,7 +242,34 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: CustomTypography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
+          /*SizedBox(height: CustomSpacing.four),
 
+          Center(
+            child: RecaptchaV2(
+              apiKey: "6LfXp1UpAAAAAEku9BSeBt6JJxXrlvtYjh--X4D7",
+              apiSecret: "6LfXp1UpAAAAAIFVynIPkooVWZi5qN8u16SYJTVt",
+              controller: recaptchaV2Controller,
+              onVerifiedError: (err) {
+                print(err);
+                isCaptchaVerified = false;
+              },
+              onVerifiedSuccessfully: (success) {
+                setState(() {
+                  if (success) {
+                    verifyResult = "You've been verified successfully.";
+                    isCaptchaVerified = true;
+                    Future.delayed(Duration(minutes: 1), () {
+                      isCaptchaVerified = false;
+                    });
+                  } else {
+                    verifyResult = "Failed to verify.";
+                    isCaptchaVerified = false;
+                  }
+                  print(verifyResult);
+                });
+              },
+            ),
+          ),*/
           SizedBox(height: CustomSpacing.four),
 
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
@@ -268,12 +296,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
+
                                 final String email =
                                     emailController.text.trim();
                                 final String password =
                                     passwordController.text.trim();
+
+                               /* if(isCaptchaVerified == false) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Please verify that you are not a robot.'),
+                                    ),
+                                  );
+                                  return;
+                                }*/
                                 await authNotifier.signInWithEmailAndPassword(
-                                    email, password);
+                                    email, password, context);
 
                                 // Check if the user is authenticated after login attempt
                                 final user = authNotifier.user;
@@ -340,37 +379,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-          SizedBox(height: CustomSpacing.four),
 
-          SizedBox(
-            height: expand ? 500 : 100,
-            child: FirebaseRecaptchaVerifierModal(
-              firebaseConfig: firebaseConfig,
-              onVerify: (token) {
-                setState(() {
-                  expand = false;
-                });
-                print('token: ' + token);
-              },
-              onLoad: () => print('onLoad'),
-              onError: () => print('onError'),
-              onFullChallenge: () => print('onFullChallenge'),
-              attemptInvisibleVerification: true,
-            ),
-          ),
-          // Add a text to expand the above container
-          !expand
-              ? TextButton(
-                  child: Text('Expand',
-                      style: CustomTypography.Subtitle1.copyWith(
-                          color: AppColors.primaryMain)),
-                  onPressed: () {
-                    setState(() {
-                      expand = true;
-                    });
-                  },
-                )
-              : SizedBox(),
+          SizedBox(height: CustomSpacing.eight),
         ],
       ),
     );

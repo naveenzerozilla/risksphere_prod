@@ -3,11 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_autocomplete_label/autocomplete_label.dart';
+import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/initial_data_model.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/roles_bottom_sheet.dart';
@@ -46,10 +48,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   List<Categories> _selectedRoles = [];
 
+
+  String verifyResult = "";
+  bool isCaptchaVerified = false;
+
+  RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
+
   /// Corporate account UI
   TextEditingController companyLegalNameController = TextEditingController();
   TextEditingController companyTypeController = TextEditingController();
   TextEditingController companyDisplayNameController = TextEditingController();
+  TextEditingController adminNameController = TextEditingController();
   TextEditingController adminEmailController = TextEditingController();
   TextEditingController adminMobileController = TextEditingController();
   TextEditingController adminPasswordController = TextEditingController();
@@ -61,7 +70,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _showCompanyType = true;
   bool _enableCompanyTypeDropdown = true;
   bool _customRoles = false;
-  Comapnies? selectedCompany;
+  Companies? selectedCompany;
   String companyName = '';
 
   String _selectedAdminCountryCode = '+1';
@@ -81,7 +90,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   void dispose() {
-    super.dispose();
     nameController.dispose();
     displayNameController.dispose();
     emailController.dispose();
@@ -96,9 +104,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     adminEmailController.dispose();
     adminMobileController.dispose();
     adminPasswordController.dispose();
+    adminNameController.dispose();
     adminConfirmPasswordController.dispose();
+    recaptchaV2Controller.dispose();
     Provider.of<AuthNotifier>(context, listen: false).isNewUser = false;
     Provider.of<AuthNotifier>(context, listen: false).signOut();
+    super.dispose();
   }
 
 
@@ -140,6 +151,42 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     // Create Account Form
                     :_createAccountForm(),
                     // Create Account Button
+                    //SizedBox(height: CustomSpacing.four),
+
+                    /*Container(
+                      margin: EdgeInsets.fromLTRB(16, 0, 16, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: RecaptchaV2(
+                              apiKey: "6LfXp1UpAAAAAEku9BSeBt6JJxXrlvtYjh--X4D7",
+                              apiSecret: "6LfXp1UpAAAAAIFVynIPkooVWZi5qN8u16SYJTVt",
+                              controller: recaptchaV2Controller,
+                              onVerifiedError: (err) {
+                                print(err);
+                                isCaptchaVerified = false;
+                              },
+                              onVerifiedSuccessfully: (success) {
+                                setState(() {
+                                  if (success) {
+                                    verifyResult = "You've been verified successfully.";
+                                    isCaptchaVerified = true;
+                                    Future.delayed(Duration(minutes: 1), () {
+                                      isCaptchaVerified = false;
+                                    });
+                                  } else {
+                                    verifyResult = "Failed to verify.";
+                                    isCaptchaVerified = false;
+                                  }
+                                  print(verifyResult);
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),*/
                     SizedBox(height: CustomSpacing.eight),
                     Row(
                         children: [
@@ -162,6 +209,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       ),
                                       onPressed: () async {
                                         if (_formKey.currentState!.validate()) {
+                                         /* if(isCaptchaVerified == false) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    'Please verify that you are not a robot.'),
+                                              ),
+                                            );
+                                            return;
+                                          }*/
                                           if(authNotifier.isNewUser) {
                                             print('Individual Account');
                                             String result = await authNotifier
@@ -170,9 +226,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               mobileController.text,
                                               _selectedCountryCode,
                                               _selectedRoles,
+                                              context,
                                             );
                                             if(result == 'role_assigned') {
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => /*Home(
+                                              /*Navigator.push(context, MaterialPageRoute(builder: (context) => *//*Home(
                                                 useLightMode: false,
                                                 useMaterial3: true,
                                                 colorSelected: ColorSeed.baseColor,
@@ -182,7 +239,31 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 handleColorSelect: handleColorSelect,
                                                 handleImageSelect: handleImageSelect,
                                                 colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                                              )*/HomeScreen()));
+                                              )*//*HomeScreen()));*/
+                                              FirebaseAuth.instance.signOut();
+
+                                              showDialog(
+                                                context: context,
+                                                builder: (BuildContext context) {
+                                                  return AlertDialog(
+                                                    title: Text('Your account has been successfully activated.', style: CustomTypography.ButtonLarge,),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SplashScreen()));
+                                                        },
+                                                        child: Row(
+                                                          children: [
+                                                            Icon(Icons.arrow_back),
+                                                            SizedBox(width: CustomSpacing.four),
+                                                            Text('Back to Login'),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
                                             }
                                           }
                                           else if (_selectedOption ==
@@ -205,6 +286,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               mobileController.text,
                                               _selectedCountryCode,
                                               _selectedRoles,
+                                              context,
                                             );
                                           }
                                           else {
@@ -225,11 +307,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               companyName,
                                               selectedCompanyType!,
                                               companyDisplayNameController.text,
+                                              adminNameController.text,
                                               adminEmailController.text,
                                               _selectedAdminCountryCode,
+
                                               adminMobileController.text,
                                               adminPasswordController.text,
                                               !_enableCompanyTypeDropdown?selectedCompanyRole:null,
+                                              context,
                                               selectedCompany,
                                             );
 
@@ -872,12 +957,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           builder: (context, authNotifier, child) {
             return LayoutBuilder(
               builder: (context, constraints) {
-                return Autocomplete<Comapnies>(
+                return Autocomplete<Companies>(
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     if (textEditingValue.text.isEmpty || authNotifier.companyList == null) {
-                      return const Iterable<Comapnies>.empty();
+                      return const Iterable<Companies>.empty();
                     }
-                    return authNotifier.companyList!.where((Comapnies option) {
+                    return authNotifier.companyList!.where((Companies option) {
                       return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
                     });
                   },
@@ -909,7 +994,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
                     ),
                   ),
-                  onSelected: (Comapnies selection) {
+                  onSelected: (Companies selection) {
                     setState(() {
                       selectedCompany = selection;
                       companyName = selection.name;
@@ -920,7 +1005,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     });
 
                   },
-                  displayStringForOption: (Comapnies option) => option.name,
+                  displayStringForOption: (Companies option) => option.name,
                   fieldViewBuilder: (BuildContext context,
                       TextEditingController textEditingController,
                       FocusNode focusNode,
@@ -1093,7 +1178,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             );
           },
         ):SizedBox(),
-
+        SizedBox(height: CustomSpacing.two),
+        // Admin Email
+        TextFormField(
+          decoration: InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter user name',
+            border: const OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null ||
+                value.isEmpty ||
+                value.contains(RegExp(r'[0-9]'))) {
+              return 'Name is required and should not be empty or contain numbers';
+            }
+            // You can add more specific email validation here if needed
+            return null;
+          },
+          controller: adminNameController,
+        ),
         SizedBox(height: CustomSpacing.two),
         // Admin Email
         TextFormField(

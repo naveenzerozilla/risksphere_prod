@@ -2,18 +2,18 @@ class InitialDataModel {
   InitialDataModel({
     required this.companyType,
     required this.role,
-    required this.comapnies,
+    required this.companies,
     required this.config,
   });
   late final List<CompanyType> companyType;
   late final List<Role> role;
-  late final List<Comapnies> comapnies;
+  late final List<Companies> companies;
   late final List<Config> config;
 
   InitialDataModel.fromJson(Map<String, dynamic> json){
     companyType = List.from(json['company_type']).map((e)=>CompanyType.fromJson(e)).toList();
     role = List.from(json['role']).map((e)=>Role.fromJson(e)).toList();
-    comapnies = List.from(json['comapnies']).map((e)=>Comapnies.fromJson(e)).toList();
+    companies = List.from(json['companies']).map((e)=>Companies.fromJson(e)).toList();
     config = List.from(json['config']).map((e)=>Config.fromJson(e)).toList();
   }
 
@@ -21,7 +21,7 @@ class InitialDataModel {
     final _data = <String, dynamic>{};
     _data['company_type'] = companyType.map((e)=>e.toJson()).toList();
     _data['role'] = role.map((e)=>e.toJson()).toList();
-    _data['comapnies'] = comapnies.map((e)=>e.toJson()).toList();
+    _data['companies'] = companies.map((e)=>e.toJson()).toList();
     _data['config'] = config.map((e)=>e.toJson()).toList();
     return _data;
   }
@@ -187,8 +187,8 @@ class Categories {
   }
 }
 
-class Comapnies {
-  Comapnies({
+class Companies {
+  Companies({
     required this.isActive,
     required this.isAuthorized,
     required this.userIds,
@@ -223,7 +223,7 @@ class Comapnies {
   late final List<Admins> admins;
   late final List<Roles> roles;
 
-  Comapnies.fromJson(Map<String, dynamic> json){
+  Companies.fromJson(Map<String, dynamic> json){
     isActive = json['is_active'];
     isAuthorized = json['is_authorized'];
     /*if(json['user_ids']!=null) {

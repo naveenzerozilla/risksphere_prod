@@ -11,6 +11,14 @@ class CustomTypography {
     letterSpacing: 0.46000000834465027,
   );
 
+  static const TextStyle H6 = TextStyle(
+    color: Colors.white,
+    fontSize: 20,
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w500,
+    height: 0.08,
+    letterSpacing: 0.15,);
+
   static const TextStyle Body1 = TextStyle(
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
