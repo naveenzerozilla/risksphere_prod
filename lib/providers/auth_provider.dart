@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -82,6 +83,25 @@ class AuthNotifier extends ChangeNotifier {
     try {
       _isSigningIn = true;
       notifyListeners();
+      // Create the reCAPTCHA verifier
+      RecaptchaVerifier recaptchaVerifier = RecaptchaVerifier(
+        size: RecaptchaVerifierSize.normal,
+        onSuccess: () {
+          // Handle reCAPTCHA success
+          print('reCAPTCHA verified successfully');
+        },
+        onError: (FirebaseAuthException exception) {
+          // Handle reCAPTCHA errors
+          print('reCAPTCHA verification failed: $exception');
+        },
+        onExpired: () {
+          // Handle reCAPTCHA expiration
+          print('reCAPTCHA verification expired');
+        }, auth: FirebaseAuthPlatform.instance,
+      );
+
+      // Verify the reCAPTCHA token
+      await recaptchaVerifier.verify();
 
       final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -114,8 +134,11 @@ class AuthNotifier extends ChangeNotifier {
         _user = userCredential.user;
         log('user: $userCredential');
         print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
+        IdTokenResult token = await userCredential.user!.getIdTokenResult();
+        Map<String, dynamic>? claims = token.claims?? {};
+        print("Claims: $claims");
 
-        if(userCredential.additionalUserInfo?.isNewUser ?? false) {
+        if(claims['isIndividual']==null&&claims['admin']==null) {
           isNewUser = true;
           // Navigate to create account screen and pass the user data
           Navigator.push(

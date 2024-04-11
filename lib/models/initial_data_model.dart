@@ -112,6 +112,8 @@ class Roles {
     isMultipleRoleEnabled = json['is_multiple_role_enabled']??false;
     if(json['id']!=null) {
       id = json['id']??'';
+    } else {
+      id = "";
     }
   }
 

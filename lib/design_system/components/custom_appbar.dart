@@ -1,0 +1,134 @@
+import 'package:country_pickers/country.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:green/providers/auth_provider.dart';
+import 'package:green/screens/onboarding/splash_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../primitives/custom_typography.dart';
+import '../primitives/utilities/custom_spacing.dart';
+
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final bool isExpanded;
+  final bool showNotificationDot;
+  final Function(bool) onExpandPressed;
+  final Function() onSearchPressed;
+
+  const CustomAppBar({
+    Key? key,
+    required this.isExpanded,
+    required this.showNotificationDot,
+    required this.onExpandPressed,
+    required this.onSearchPressed,
+  }) : super(key: key);
+
+  @override
+  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      titleSpacing: 0,
+      title: isExpanded
+          ? Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search...',
+              hintStyle: CustomTypography.Subtitle1,
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      )
+          : GestureDetector(
+        onTap: () {
+          onExpandPressed(!isExpanded);
+        },
+        child: Container(
+          padding: EdgeInsets.all(8),
+          child: SvgPicture.asset(
+            'assets/images/logoHalf.svg',
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        GestureDetector(
+          child: Icon(Icons.search, size: 28, color: Colors.grey),
+          onTap: onSearchPressed,
+        ),
+        SizedBox(
+          width: CustomSpacing.two,
+        ),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            SvgPicture.asset(
+              'assets/images/notificationIcon.svg',
+              height: 26,
+            ),
+            if (showNotificationDot)
+              Positioned(
+                top: -5,
+                right: -3,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(
+          width: CustomSpacing.four,
+        ),
+        CountryPickerDropdown(
+          initialValue: 'US',
+          itemBuilder: (Country country) {
+            return CircleAvatar(
+              backgroundImage: AssetImage(
+                CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
+                package: 'country_pickers',
+              ),
+            );
+          },
+          icon: SizedBox(),
+          onValuePicked: (Country country) {
+            print(country.name);
+            // Do something with the selected country
+          },
+        ),
+        VerticalDivider(
+          thickness: 1,
+          width: 20,
+          indent: 12,
+          endIndent: 10,
+        ),
+        Consumer<AuthNotifier>(
+          builder: (context, authNotifier, child) {
+            return InkWell(
+              onTap: () {
+                authNotifier.signOut();
+                Navigator.pushAndRemoveUntil(
+                    context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+              },
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZ0OTAqC4xVoXNE8eLYie4DDjlLgZZrwj2cB64su1Z9f5YuarNKHYM8WoOrdFxTqoYjVE&usqp=CAU"),
+                radius: 20,
+
+              ),
+            );
+          }
+        ),
+        SizedBox(width: 8),
+      ],
+    );
+  }
+}

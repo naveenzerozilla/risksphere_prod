@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:green/providers/auth_provider.dart';
+import 'package:green/providers/company_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
@@ -20,6 +21,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthNotifier()),
         ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
+        ChangeNotifierProvider(create: (_) => CompanyProvider()),
       ],
       child: const MyApp(),
     ),

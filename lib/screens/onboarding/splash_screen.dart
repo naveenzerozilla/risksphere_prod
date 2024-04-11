@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/repo/constants.dart';
 import 'package:green/providers/auth_provider.dart';
+import 'package:green/screens/home/home_screen.dart';
 import 'package:green/screens/onboarding/create_account_screen.dart';
 import 'package:green/screens/onboarding/login_screen.dart';
 import 'package:provider/provider.dart';
@@ -35,29 +36,41 @@ class _SplashScreenState extends State<SplashScreen>
     // Call function to move to the next screen after 2 seconds of animation completion
     Future.delayed(Duration(seconds: 2) + Duration(seconds: 4), () {
       bool isUserLoggedIn = authNotifier.user!=null;
+
       if(isUserLoggedIn) {
-        // redirect to dashboard
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => Home(
-          useLightMode: false,
-          useMaterial3: true,
-          colorSelected: ColorSeed.baseColor,
-          imageSelected: ColorImageProvider.leaves,
-          handleBrightnessChange: handleBrightnessChange,
-          handleMaterialVersionChange: handleMaterialVersionChange,
-          handleColorSelect: handleColorSelect,
-          handleImageSelect: handleImageSelect,
-          colorSelectionMethod: ColorSelectionMethod.colorSeed,
-        ),),);
+        navigationMethod(isUserLoggedIn, authNotifier.user!);
 
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen( )),
+          MaterialPageRoute(builder: (context) => const LoginScreen(),),
         );
       }
     });
+  }
+
+  Future<void> navigationMethod(bool isUserLoggedIn, User user) async {
+    IdTokenResult token = await user.getIdTokenResult();
+    Map<String, dynamic>? claims = token.claims?? {};
+    print("Claims: $claims");
+    String? tokenString = await user.getIdToken();
+    print("Token: $tokenString");
+
+    if(claims['isIndividual']==null&&claims['admin']==null) {
+      isUserLoggedIn = false;
+    }
+    if(isUserLoggedIn) {
+      // redirect to dashboard
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen(),),);
+
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen( )),
+      );
+    }
   }
 
   @override

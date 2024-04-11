@@ -7,8 +7,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/initial_data_model.dart';
 import 'package:green/providers/auth_provider.dart';
+import 'package:green/screens/home/home_screen.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
@@ -64,18 +66,42 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   String _selectedAdminCountryCode = '+1';
 
-  bool isNewUser = false;
+  //bool isNewUser = false;
 
   @override
   void initState() {
     super.initState();
     _selectedOption = SignUpOptions.individual;
-    if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
+   /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
         isNewUser = true;
       });
-    }
+    }*/
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    nameController.dispose();
+    displayNameController.dispose();
+    emailController.dispose();
+    mobileController.dispose();
+    countryCodeController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    _textEditingController.dispose();
+    companyLegalNameController.dispose();
+    companyTypeController.dispose();
+    companyDisplayNameController.dispose();
+    adminEmailController.dispose();
+    adminMobileController.dispose();
+    adminPasswordController.dispose();
+    adminConfirmPasswordController.dispose();
+    Provider.of<AuthNotifier>(context, listen: false).isNewUser = false;
+    Provider.of<AuthNotifier>(context, listen: false).signOut();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,148 +111,149 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
-            child: Column(
-              children: [
-                Stack(
+            child: Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+              return Column(
                   children: [
-                    Row(
+                    Stack(
                       children: [
-                        Expanded(
-                          child: Image.asset(
-                            'assets/images/loginImage.png',
-                            fit: BoxFit.fitWidth,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Image.asset(
+                                'assets/images/loginImage.png',
+                                fit: BoxFit.fitWidth,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Positioned.fill(
+                          child: Center(
+                              child: Text(
+                            "Manage your Risk Profile",
+                            style: CustomTypography.H5_Regular,
+                          )),
                         ),
                       ],
                     ),
-                    Positioned.fill(
-                      child: Center(
-                          child: Text(
-                        "Manage your Risk Profile",
-                        style: CustomTypography.H5_Regular,
-                      )),
-                    ),
-                  ],
-                ),
-                isNewUser
-                    ? _almostThereForm()
-                // Create Account Form
-                :_createAccountForm(),
-                // Create Account Button
-                SizedBox(height: CustomSpacing.eight),
-                Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 60,
-                          margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                          child: authNotifier.isSigningUp
-                              ? Center(child: CircularProgressIndicator())
-                              : ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryMain,
-                                    foregroundColor:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 22, vertical: 8),
-                                  ),
-                                  onPressed: () async {
-                                    if (_formKey.currentState!.validate()) {
-                                      if(isNewUser) {
-                                        print('Individual Account');
-                                        String result = await authNotifier
-                                            .signUpIndividualWithGoogle(
-                                          widget.userCredential!,
-                                          mobileController.text,
-                                          _selectedCountryCode,
-                                          _selectedRoles,
-                                        );
-                                        if(result == 'role_assigned') {
-                                          Navigator.push(context, MaterialPageRoute(builder: (context) => Home(
-                                            useLightMode: false,
-                                            useMaterial3: true,
-                                            colorSelected: ColorSeed.baseColor,
-                                            imageSelected: ColorImageProvider.leaves,
-                                            handleBrightnessChange: handleBrightnessChange,
-                                            handleMaterialVersionChange: handleMaterialVersionChange,
-                                            handleColorSelect: handleColorSelect,
-                                            handleImageSelect: handleImageSelect,
-                                            colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                                          )));
-                                        }
-                                      }
-                                      else if (_selectedOption ==
-                                          SignUpOptions.individual) {
-                                        print('Individual Account');
-                                        print('Name: ${nameController.text}');
-                                        print(
-                                            'Display Name: ${displayNameController.text}');
-                                        print('Email: ${emailController.text}');
-                                        print(
-                                            'Mobile: $_selectedCountryCode ${mobileController.text}');
-                                        print('Roles: $_selectedRoles');
-                                        print('Account Type: $_selectedOption');
-                                        authNotifier
-                                            .signUpIndividualWithEmailAndPassword(
-                                          emailController.text,
-                                          passwordController.text,
-                                          nameController.text,
-                                          displayNameController.text,
-                                          mobileController.text,
-                                          _selectedCountryCode,
-                                          _selectedRoles,
-                                        );
-                                      }
-                                      else {
-                                        print('Corporate Account');
-                                        print(
-                                            'Company Legal Name: ${companyName}');
-                                        print(
-                                            'Company Type: $selectedCompanyType');
-                                        print(
-                                            'Company Display Name: ${companyDisplayNameController.text}');
-                                        print('Admin Email: ${adminEmailController.text}');
-                                        print(
-                                            'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
-                                        print('Roles: $_selectedRoles');
-                                        print('Account Type: $_selectedOption');
-                                        authNotifier
-                                            .signUpCorporateWithEmailAndPassword(
-                                          companyName,
-                                          selectedCompanyType!,
-                                          companyDisplayNameController.text,
-                                          adminEmailController.text,
-                                          _selectedAdminCountryCode,
-                                          adminMobileController.text,
-                                          adminPasswordController.text,
-                                          !_enableCompanyTypeDropdown?selectedCompanyRole:null,
-                                          selectedCompany,
-                                        );
+                    authNotifier.isNewUser
+                        ? _almostThereForm()
+                    // Create Account Form
+                    :_createAccountForm(),
+                    // Create Account Button
+                    SizedBox(height: CustomSpacing.eight),
+                    Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 60,
+                              margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                              child: authNotifier.isSigningUp
+                                  ? Center(child: CircularProgressIndicator())
+                                  : ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primaryMain,
+                                        foregroundColor:
+                                            Theme.of(context).colorScheme.onSurface,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 22, vertical: 8),
+                                      ),
+                                      onPressed: () async {
+                                        if (_formKey.currentState!.validate()) {
+                                          if(authNotifier.isNewUser) {
+                                            print('Individual Account');
+                                            String result = await authNotifier
+                                                .signUpIndividualWithGoogle(
+                                              widget.userCredential!,
+                                              mobileController.text,
+                                              _selectedCountryCode,
+                                              _selectedRoles,
+                                            );
+                                            if(result == 'role_assigned') {
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => /*Home(
+                                                useLightMode: false,
+                                                useMaterial3: true,
+                                                colorSelected: ColorSeed.baseColor,
+                                                imageSelected: ColorImageProvider.leaves,
+                                                handleBrightnessChange: handleBrightnessChange,
+                                                handleMaterialVersionChange: handleMaterialVersionChange,
+                                                handleColorSelect: handleColorSelect,
+                                                handleImageSelect: handleImageSelect,
+                                                colorSelectionMethod: ColorSelectionMethod.colorSeed,
+                                              )*/HomeScreen()));
+                                            }
+                                          }
+                                          else if (_selectedOption ==
+                                              SignUpOptions.individual) {
+                                            print('Individual Account');
+                                            print('Name: ${nameController.text}');
+                                            print(
+                                                'Display Name: ${displayNameController.text}');
+                                            print('Email: ${emailController.text}');
+                                            print(
+                                                'Mobile: $_selectedCountryCode ${mobileController.text}');
+                                            print('Roles: $_selectedRoles');
+                                            print('Account Type: $_selectedOption');
+                                            authNotifier
+                                                .signUpIndividualWithEmailAndPassword(
+                                              emailController.text,
+                                              passwordController.text,
+                                              nameController.text,
+                                              displayNameController.text,
+                                              mobileController.text,
+                                              _selectedCountryCode,
+                                              _selectedRoles,
+                                            );
+                                          }
+                                          else {
+                                            print('Corporate Account');
+                                            print(
+                                                'Company Legal Name: ${companyName}');
+                                            print(
+                                                'Company Type: $selectedCompanyType');
+                                            print(
+                                                'Company Display Name: ${companyDisplayNameController.text}');
+                                            print('Admin Email: ${adminEmailController.text}');
+                                            print(
+                                                'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
+                                            print('Roles: $_selectedRoles');
+                                            print('Account Type: $_selectedOption');
+                                            authNotifier
+                                                .signUpCorporateWithEmailAndPassword(
+                                              companyName,
+                                              selectedCompanyType!,
+                                              companyDisplayNameController.text,
+                                              adminEmailController.text,
+                                              _selectedAdminCountryCode,
+                                              adminMobileController.text,
+                                              adminPasswordController.text,
+                                              !_enableCompanyTypeDropdown?selectedCompanyRole:null,
+                                              selectedCompany,
+                                            );
 
-                                      }
-                                    }
-                                  },
-                                  child: Text(
-                                    // If selected roles contains a role with trial period, show 'Start Trial' else 'Create Account'
-                                    _selectedRoles.any(
-                                            (role) => role.isApplicableForTrial)
-                                        ? 'Start your 7-day free trial'
-                                        : 'Create Account',
-                                    style:
-                                        CustomTypography.ButtonLarge.copyWith(
-                                            color: Colors.black),
-                                  ),
-                                ),
-                        ),
+                                          }
+                                        }
+                                      },
+                                      child: Text(
+                                        // If selected roles contains a role with trial period, show 'Start Trial' else 'Create Account'
+                                        _selectedRoles.any(
+                                                (role) => role.isApplicableForTrial)
+                                            ? 'Start your 7-day free trial'
+                                            : 'Create Account',
+                                        style:
+                                            CustomTypography.ButtonLarge.copyWith(
+                                                color: Colors.black),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                }),
-              ],
+                  ],
+                );
+              }
             ),
           ),
         ),
@@ -435,51 +462,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // mobile (optional)
         Row(
           children: [
-            // Country Code Dropdown
-            /* DropdownMenu<IconLabel>(
-                initialSelection: IconLabel.smile,
-                controller: iconController,
-                leadingIcon: const Icon(Icons.search),
-                label: const Text('Icon'),
-                dropdownMenuEntries: iconEntries,
-                onSelected: (icon) {
-                  setState(() {
-                    selectedIcon = icon;
-                  });
-                },
-              ),*/
             Expanded(
               flex: 4,
-              child: /*Autocomplete<String>(
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  // Filter the countryCodes based on the input text
-                  return countryCodes.where((String option) {
-                    return option
-                        .toLowerCase()
-                        .contains(textEditingValue.text.toLowerCase());
-                  });
-                },
-                onSelected: (String value) {
-                  setState(() {
-                    _selectedCountryCode = value;
-                  });
-                },
-                fieldViewBuilder: (BuildContext context,
-                    TextEditingController textEditingController,
-                    FocusNode focusNode,
-                    VoidCallback onFieldSubmitted) {
-                  return TextFormField(
-                    controller: textEditingController,
-                    decoration: InputDecoration(
-                      labelText: 'Code',
-                      hintText: '+ 1',
-                      border: const OutlineInputBorder(),
-                    ),
-                  );
-                },
-
-              ),*/
-                  Container(
+              child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white.withOpacity(0.5)),
                   borderRadius: BorderRadius.circular(4),
@@ -606,7 +591,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   useSafeArea: true,
                   isScrollControlled: true,
                   builder: (BuildContext context) {
-                    return OptionsBottomSheet(
+                    return RolesBottomSheet(
                       showCorporateSwitch: true,
                       options: roles,
                       selectedRoles: _selectedRoles,
@@ -640,7 +625,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       useSafeArea: true,
                       isScrollControlled: true,
                       builder: (BuildContext context) {
-                        return OptionsBottomSheet(
+                        return RolesBottomSheet(
                           showCorporateSwitch: true,
                           options: roles,
                           selectedRoles: _selectedRoles,
@@ -792,7 +777,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   useSafeArea: true,
                   isScrollControlled: true,
                   builder: (BuildContext context) {
-                    return OptionsBottomSheet(
+                    return RolesBottomSheet(
                       showCorporateSwitch: false,
                       options: roles,
                       selectedRoles: _selectedRoles,
@@ -826,7 +811,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       useSafeArea: true,
                       isScrollControlled: true,
                       builder: (BuildContext context) {
-                        return OptionsBottomSheet(
+                        return RolesBottomSheet(
                           showCorporateSwitch: false,
                           options: roles,
                           selectedRoles: _selectedRoles,
@@ -1275,270 +1260,4 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 }
 
-class OptionsBottomSheet extends StatefulWidget {
-  final List<String> options;
-  final List<Categories> selectedRoles;
-  final Function(Categories) addChip;
-  final Function(Categories) removeChip;
-  final Function() removeAllChips;
-  final SignUpOptions selectedOption;
-  final Function(SignUpOptions) onOptionChanged;
-  final bool showCorporateSwitch;
 
-  const OptionsBottomSheet({super.key,
-    required this.options,
-    required this.selectedRoles,
-    required this.addChip,
-    required this.removeChip,
-    required this.selectedOption,
-    required this.onOptionChanged,
-    required this.removeAllChips,
-    required this.showCorporateSwitch,
-  });
-
-  @override
-  OptionsBottomSheetState createState() => OptionsBottomSheetState();
-}
-
-class OptionsBottomSheetState extends State<OptionsBottomSheet> {
-  Set<String> _selectedOptions = Set<String>();
-
-  late final List<Map<String, dynamic>> filteredOptionsIndividual;
-  late final List<Map<String, dynamic>> filteredOptionsCorporate;
-
-  @override
-  void initState() {
-    super.initState();
-    // Extract individual and corporate options from JSON data
-    // Accessing AuthNotifier using Provider.of
-    // Accessing AuthNotifier using Provider.of
-    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-
-    // Filtering role list for individual and corporate options
-    filteredOptionsIndividual = (authNotifier.roleList ?? [])
-        .where((role) => role.accountType == 'individual')
-        .expand((role) =>
-            (role.categories ?? []).map((category) => category.toJson()))
-        .toList();
-
-    filteredOptionsCorporate = (authNotifier.roleList ?? [])
-        .where((role) => role.accountType == 'corporate')
-        .expand((role) =>
-            (role.categories ?? []).map((category) => category.toJson()))
-        .toList();
-
-    _updateSelectedOptions();
-  }
-
-  void _updateSelectedOptions() {
-    setState(() {
-      _selectedOptions.clear();
-      final selectedOptionsList =
-          widget.selectedOption == SignUpOptions.individual
-              ? filteredOptionsIndividual
-              : filteredOptionsCorporate;
-      print("Selected options: $selectedOptionsList");
-      _selectedOptions.addAll(
-        widget.selectedRoles.map((role) {
-          print(role);
-          final option = selectedOptionsList.firstWhere(
-            (option) => option['name'] == role.name,
-            orElse: () => {'name': role.name, 'id': null},
-          );
-          return option?['role'];
-        }).whereType<String>(),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Map<String, dynamic>> allOptions =
-        widget.selectedOption == SignUpOptions.individual
-            ? filteredOptionsIndividual
-            : filteredOptionsCorporate;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(left: 24, top: 24),
-              child: Text('Select Account Roles',
-                  style: CustomTypography.Subtitle1.copyWith(
-                    color: Theme.of(context).colorScheme.onBackground,
-                    fontWeight: FontWeight.bold,
-                  )),
-            ),
-            Container(
-              margin: const EdgeInsets.only(right: 24, top: 24),
-              child: IconButton(
-                icon: Icon(Icons.close),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          ],
-        ),
-        Expanded(
-          child: ListView(
-            children: [
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: allOptions.length,
-                itemBuilder: (context, index) {
-                  final option = allOptions[index];
-                  final accountType = option['name'];
-                  final id = option['role'];
-                  final bool isSelected = _selectedOptions.contains(id);
-
-                  return ListTile(
-                    title: Text(accountType),
-                    leading: widget.selectedOption == SignUpOptions.individual
-                        ? Checkbox(
-                            value: isSelected,
-                            onChanged: (bool? selected) {
-                              setState(() {
-                                if (selected!) {
-                                  _selectedOptions.add(id);
-                                  widget.addChip(Categories.fromJson(option));
-                                } else {
-                                  _selectedOptions.remove(id);
-                                  widget
-                                      .removeChip(Categories.fromJson(option));
-                                }
-                              });
-                            },
-                          )
-                        : Radio<String>(
-                            value: id,
-                            groupValue: _selectedOptions.isNotEmpty
-                                ? _selectedOptions.first
-                                : null,
-                            onChanged: (value) {
-                              setState(() {
-                                if (_selectedOptions.isNotEmpty) {
-                                  final previousSelection =
-                                      _selectedOptions.first;
-                                  final previousRole = allOptions.firstWhere(
-                                      (option) =>
-                                          option['id'] ==
-                                          previousSelection)['role'];
-                                  widget.removeChip(
-                                      Categories.fromJson(previousRole));
-                                }
-                                _selectedOptions.clear();
-                                if (value != null) {
-                                  _selectedOptions.add(value);
-                                  widget.addChip(Categories.fromJson(option));
-                                }
-                              });
-                            },
-                          ),
-                  );
-                },
-              ),
-              widget.showCorporateSwitch?const Divider():SizedBox(),
-              widget.showCorporateSwitch?Container(
-                margin: EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        widget.onOptionChanged(
-                            widget.selectedOption == SignUpOptions.individual
-                                ? SignUpOptions.corporate
-                                : SignUpOptions.individual);
-                        widget.removeAllChips(); // Clear all chips
-                        Navigator.pop(context);
-                        /*showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (BuildContext context) {
-                            return OptionsBottomSheet(
-                              options: roles,
-                              selectedRoles: [], // Pass an empty list to reset the chips
-                              addChip: widget.addChip,
-                              removeChip: widget.removeChip,
-                              removeAllChips: widget.removeAllChips,
-                              selectedOption: widget.selectedOption == SignUpOptions.individual
-                                  ? SignUpOptions.corporate
-                                  : SignUpOptions.individual,
-                              onOptionChanged: widget.onOptionChanged,
-                            );
-                          },
-                        );*/
-                      },
-                      child: Text(
-                        widget.selectedOption == SignUpOptions.individual
-                            ? 'SWITCH TO CORPORATE'
-                            : 'SWITCH TO INDIVIDUAL',
-                        style: CustomTypography
-                            .Subtitle1, // Adjust text color if needed
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${widget.selectedOption != SignUpOptions.individual ? 'Individual' : 'Corporate'} account roles",
-                          style: CustomTypography.Subtitle1,
-                        ),
-                        SvgPicture.asset(
-                          'assets/images/down_icon.svg',
-                        )
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                  ],
-                ),
-              ):SizedBox(),
-              widget.showCorporateSwitch?const Divider():SizedBox(),
-              widget.showCorporateSwitch? ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: widget.selectedOption == SignUpOptions.individual
-                    ? filteredOptionsCorporate.length
-                    : filteredOptionsIndividual.length,
-                itemBuilder: (context, index) {
-                  final option =
-                      widget.selectedOption == SignUpOptions.individual
-                          ? filteredOptionsCorporate[index]
-                          : filteredOptionsIndividual[index];
-                  final accountType = option['name'];
-                  final id = option['role'];
-
-                  return ListTile(
-                    title: Text(accountType),
-                    leading: widget.selectedOption == SignUpOptions.individual
-                        ? Radio<String>(
-                            value: id,
-                            groupValue: null,
-                            onChanged: null,
-                          )
-                        : Checkbox(
-                            value: false,
-                            onChanged: null,
-                          ),
-                  );
-                },
-              ):SizedBox(),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('SUBMIT', style: CustomTypography.Subtitle1),
-        ),
-      ],
-    );
-  }
-}

@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_recaptcha/flutter_firebase_recaptcha.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
+import 'package:green/screens/home/home_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/custom_checkbox.dart';
@@ -29,6 +31,25 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool rememberMe = false;
+  static const firebaseConfig = {
+    'apiKey': "AIzaSyCFaF851Ld9FsxQojE2jm3aOVPAr3PFFJQ",
+    'authDomain': "project-green-f4d78.firebaseapp.com",
+    'projectId': "project-green-f4d78",
+    'storageBucket': "project-green-f4d78.appspot.com",
+    'messagingSenderId': "37861143894",
+    'appId': "1:37861143894:web:6067118899abd7dabd12f7",
+    'measurementId': "G-JLBS9BWZT7"
+  };
+  bool expand = false;
+
+  @override
+  void initState() {
+    AuthNotifier authNotifier =
+        Provider.of<AuthNotifier>(context, listen: false);
+    authNotifier.signOut();
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +74,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     Positioned.fill(
-                      child: Center(child: Text("Manage your Risk Profile", style: CustomTypography.H5_Regular,)),
+                      child: Center(
+                          child: Text(
+                        "Manage your Risk Profile",
+                        style: CustomTypography.H5_Regular,
+                      )),
                     ),
                   ],
                 ),
@@ -85,12 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Add your onPressed function here
                 await authNotifier.signInWithGoogle(context: context);
                 // Check if the user is authenticated after login attempt
-                if (authNotifier.user != null&&!authNotifier.isNewUser) {
+                if (authNotifier.user != null && !authNotifier.isNewUser) {
                   // Navigate to the home screen or any other screen after login
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => Home(
+                      builder:
+                          (context) => /*Home(
                         useLightMode: false,
                         useMaterial3: true,
                         colorSelected: ColorSeed.baseColor,
@@ -101,7 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         handleColorSelect: handleColorSelect,
                         handleImageSelect: handleImageSelect,
                         colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                      ),
+                      ),*/
+                              HomeScreen(),
                     ),
                   );
                 }
@@ -214,7 +241,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: CustomTypography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
+
           SizedBox(height: CustomSpacing.four),
+
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
             return Row(
               children: [
@@ -251,11 +280,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
-                                  print("Claims: " + parseJwt(token!).toString());
+                                  print(
+                                      "Claims: " + parseJwt(token!).toString());
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => Home(
+                                        builder: (context) =>
+                                            HomeScreen() /*Home(
                                         useLightMode: false,
                                         useMaterial3: true,
                                         colorSelected: ColorSeed.baseColor,
@@ -269,8 +300,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         handleImageSelect: handleImageSelect,
                                         colorSelectionMethod:
                                             ColorSelectionMethod.colorSeed,
-                                      ),
-                                    ),
+                                      ),*/
+                                        ),
                                   );
                                 }
                               }
@@ -309,12 +340,41 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
+          SizedBox(height: CustomSpacing.four),
+
+          SizedBox(
+            height: expand ? 500 : 100,
+            child: FirebaseRecaptchaVerifierModal(
+              firebaseConfig: firebaseConfig,
+              onVerify: (token) {
+                setState(() {
+                  expand = false;
+                });
+                print('token: ' + token);
+              },
+              onLoad: () => print('onLoad'),
+              onError: () => print('onError'),
+              onFullChallenge: () => print('onFullChallenge'),
+              attemptInvisibleVerification: true,
+            ),
+          ),
+          // Add a text to expand the above container
+          !expand
+              ? TextButton(
+                  child: Text('Expand',
+                      style: CustomTypography.Subtitle1.copyWith(
+                          color: AppColors.primaryMain)),
+                  onPressed: () {
+                    setState(() {
+                      expand = true;
+                    });
+                  },
+                )
+              : SizedBox(),
         ],
       ),
     );
   }
-
-
 
   void handleBrightnessChange(bool useLightMode) {}
 
@@ -339,5 +399,4 @@ class _LoginScreenState extends State<LoginScreen> {
     final String decoded = utf8.decode(base64Url.decode(normalized));
     return json.decode(decoded);
   }
-
 }

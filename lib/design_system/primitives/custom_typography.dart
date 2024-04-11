@@ -19,6 +19,14 @@ class CustomTypography {
     letterSpacing: 0.15000000596046448,
   );
 
+  static const TextStyle Body2 = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 14.0,
+    height: 1.0, // Since line-height is a variable, set height to 1.0
+    letterSpacing: 0.15000000596046448,
+  );
+
   static const TextStyle InputValue = TextStyle(
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,

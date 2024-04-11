@@ -43,6 +43,8 @@ dependencies:
   flutter_autocomplete_label: ^1.0.0
   country_list_picker: ^1.0.2
   cloud_functions: ^4.6.8
+  country_pickers: ^2.0.0
+  flutter_firebase_recaptcha: ^1.0.2
 
 dev_dependencies:
   flutter_test:
