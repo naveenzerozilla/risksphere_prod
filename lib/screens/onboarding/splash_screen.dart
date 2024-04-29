@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -36,6 +38,12 @@ class _SplashScreenState extends State<SplashScreen>
     // Call function to move to the next screen after 2 seconds of animation completion
     Future.delayed(Duration(seconds: 2) + Duration(seconds: 4), () {
       bool isUserLoggedIn = authNotifier.user!=null;
+      if(FirebaseAuth.instance.currentUser==null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen(),),
+        );
+      } else
 
       if(isUserLoggedIn) {
         navigationMethod(isUserLoggedIn, authNotifier.user!);
@@ -50,13 +58,19 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> navigationMethod(bool isUserLoggedIn, User user) async {
+
+    try {
+      await user.reload();
+    } catch (e) {
+      print("Error: $e");
+    }
     IdTokenResult token = await user.getIdTokenResult();
     Map<String, dynamic>? claims = token.claims?? {};
     print("Claims: $claims");
     String? tokenString = await user.getIdToken();
-    print("Token: $tokenString");
+    log("Token: ${token.token}");
 
-    if(claims['isIndividual']==null&&claims['admin']==null) {
+    if(claims['is_individual']==null&&claims['is_admin']==null) {
       isUserLoggedIn = false;
     }
     if(isUserLoggedIn) {

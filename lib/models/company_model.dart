@@ -1,99 +1,145 @@
 class CompanyModel {
-  /*
-  {
-  "companies": [
-    {
-      "id": "dhcjghcjqghdsdcdsjkk",
-      "company_name": "ABC",
-      "company_type":"risk_managers",
-      "company_type_name": "Risk Managers",
-      "admin": {
-        "id": "sdhjhfhhsjkdahfjk",
-        "name": "admin_name",
-        "email": "admin_email@gmail.com",
-      "image_url": "https://placeholder.com"
-      },
-      "status": true
-    },
-    {
-      "id": "dehjkchdeojckejoeocj",
-      "company_name": "ABC_2",
-      "company_type": "Risk Managers",
-      "admin": {
-        "name": "admin_name_2",
-        "email": "admin_email_2@gmail.com"
-      },
-      "status": true,
-      "image_url": "https://placeholder.com"
+  String? data;
+  List<Companies>? companies;
+
+  CompanyModel({this.data, this.companies});
+
+  CompanyModel.fromJson(Map<String, dynamic> json) {
+    data = json['data'];
+    if (json['companies'] != null) {
+      companies = <Companies>[];
+      json['companies'].forEach((v) {
+        companies!.add(new Companies.fromJson(v));
+      });
     }
-  ]
-}
-  */
-  final String name;
-  final String displayName;
-  final String id;
-  final String imageUrl;
-  final String type;
-  final bool status;
-  final Admin admin;
-
-  CompanyModel({
-    required this.name,
-    required this.displayName,
-    required this.id,
-    required this.imageUrl,
-    required this.type,
-    required this.status,
-    required this.admin,
-  });
-
-  factory CompanyModel.fromJson(Map<String, dynamic> json) {
-    return CompanyModel(
-      name: json['company_name'],
-      displayName: json['company_type_name'],
-      id: json['id'],
-      imageUrl: json['image_url'],
-      type: json['company_type'],
-      status: json['status'],
-      admin: Admin.fromJson(json['admin']),
-    );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'company_name': name,
-      'company_type_name': displayName,
-      'id': id,
-      'image_url': imageUrl,
-      'company_type': type,
-      'status': status,
-      'admin': admin.toJson(),
-    };
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['data'] = this.data;
+    if (this.companies != null) {
+      data['companies'] = this.companies!.map((v) => v.toJson()).toList();
+    }
+    return data;
   }
-
 }
 
-class Admin {
-  final String name;
-  final String email;
+class Companies {
+  String? companyType;
+  String? companyTypeName;
+  List<String>? domainList;
+  String? displayName;
+  String? companyImageUrl;
+  bool? isEnabled;
+  UpdatedAt? updatedAt;
+  String? name;
+  Admins? admins;
+  bool? status;
+  String? id;
+  bool? isSelected = false;
+  bool? enableDomainCheck;
 
-  Admin({
-    required this.name,
-    required this.email,
-  });
+  Companies(
+      {this.companyType,
+        this.companyTypeName,
+        this.domainList,
+        this.displayName,
+        this.companyImageUrl,
+        this.isEnabled,
+        this.updatedAt,
+        this.name,
+        this.admins,
+        this.status,
+        this.id, this.isSelected,
+        this.enableDomainCheck});
 
-  factory Admin.fromJson(Map<String, dynamic> json) {
-    return Admin(
-      name: json['name'],
-      email: json['email'],
-    );
+  Companies.fromJson(Map<String, dynamic> json) {
+    companyType = json['company_type'];
+    companyTypeName = json['company_type_name'];
+    domainList = List<String>.from(json['domain_list'] ?? []);
+    displayName = json['company_display_name'];
+    companyImageUrl = json['company_image_url'];
+    isEnabled = json['is_enabled'];
+    updatedAt = json['updated_at'] != null
+        ? UpdatedAt.fromJson(json['updated_at'])
+        : null;
+    name = json['company_name'];
+    admins =
+    json['admins'] != null ? Admins.fromJson(json['admins']) : null;
+    status = json['status'];
+    id = json['id'];
+    enableDomainCheck = json['enable_domain_check'];
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'email': email,
-    };
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['company_type'] = companyType;
+    data['company_type_name'] = companyTypeName;
+    data['domain_list'] = domainList;
+    data['company_display_name'] = displayName;
+    data['company_image_url'] = companyImageUrl;
+    data['is_enabled'] = isEnabled;
+    if (updatedAt != null) {
+      data['updated_at'] = updatedAt!.toJson();
+    }
+    data['company_name'] = name;
+    if (admins != null) {
+      data['admins'] = admins!.toJson();
+    }
+    data['status'] = status;
+    data['enable_domain_check'] = enableDomainCheck;
+    data['id'] = id;
+    return data;
+  }
+}
+
+class UpdatedAt {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  UpdatedAt({this.iSeconds, this.iNanoseconds});
+
+  UpdatedAt.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
   }
 
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = iSeconds;
+    data['_nanoseconds'] = iNanoseconds;
+    return data;
+  }
+}
+
+class Admins {
+  String? name;
+  String? displayName;
+  String? email;
+  String? userId;
+  String? mobile;
+  String? countryCode;
+
+  Admins({this.name, this.displayName, this.email, this.userId, this.mobile, this.countryCode});
+
+  Admins.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+
+    displayName = json['displayName']??"";
+    email = json['email'];
+    userId = json['user_id'];
+    mobile = json['phone']??"";
+    countryCode = json['country_code']??"";
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['name'] = name;
+    data['displayName'] = displayName;
+    data['email'] = email;
+    data['user_id'] = userId;
+    data['phone'] = mobile;
+    data['country_code'] = countryCode;
+    return data;
+  }
 }

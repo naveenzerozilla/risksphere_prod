@@ -11,9 +11,26 @@ class CustomTypography {
     letterSpacing: 0.46000000834465027,
   );
 
+  static const TextStyle Caption = TextStyle(
+    color: Color.fromRGBO(255, 255, 255, 0.70), // Using rgba(255, 255, 255, 0.70)
+    fontFamily: 'General Sans',
+    fontSize: 12.0,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+    height: 1.66, // Corresponds to line-height: 166%
+    letterSpacing: 0.4,
+  );
+
   static const TextStyle H6 = TextStyle(
     color: Colors.white,
     fontSize: 20,
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w500,
+    height: 0.08,
+    letterSpacing: 0.15,);
+
+  static const TextStyle H7 = TextStyle(
+    fontSize: 18,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w500,
     height: 0.08,
@@ -23,6 +40,14 @@ class CustomTypography {
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 16.0,
+    height: 1.0, // Since line-height is a variable, set height to 1.0
+    letterSpacing: 0.15000000596046448,
+  );
+
+  static const TextStyle Body1_5 = TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w400,
+    fontSize: 15.0,
     height: 1.0, // Since line-height is a variable, set height to 1.0
     letterSpacing: 0.15000000596046448,
   );

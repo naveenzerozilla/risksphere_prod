@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
+import 'package:green/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
 
 import '../primitives/custom_typography.dart';
@@ -30,6 +31,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      backgroundColor: Colors.transparent,
       titleSpacing: 0,
       title: isExpanded
           ? Expanded(
@@ -63,27 +65,38 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         SizedBox(
           width: CustomSpacing.two,
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            SvgPicture.asset(
-              'assets/images/notificationIcon.svg',
-              height: 26,
-            ),
-            if (showNotificationDot)
-              Positioned(
-                top: -5,
-                right: -3,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red,
+        Consumer<AuthNotifier>(
+            builder: (context, authNotifier, child) {
+            return InkWell(
+              onTap: () {
+                authNotifier.signOut();
+                Navigator.pushAndRemoveUntil(
+                    context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+              },
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/notificationIcon.svg',
+                    height: 26,
                   ),
-                ),
+                  if (showNotificationDot)
+                    Positioned(
+                      top: -5,
+                      right: -3,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-          ],
+            );
+          }
         ),
         SizedBox(
           width: CustomSpacing.four,
@@ -114,9 +127,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           builder: (context, authNotifier, child) {
             return InkWell(
               onTap: () {
-                authNotifier.signOut();
-                Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => ProfileScreen()),);
               },
               child: CircleAvatar(
                 backgroundImage: NetworkImage(

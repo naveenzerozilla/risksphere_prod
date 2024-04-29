@@ -147,7 +147,7 @@ class AuthNotifier extends ChangeNotifier {
         Map<String, dynamic>? claims = token.claims?? {};
         print("Claims: $claims");
 
-        if(claims['isIndividual']==null&&claims['admin']==null) {
+        if(claims['is_individual']==null&&claims['is_admin']==null) {
           isNewUser = true;
           // Navigate to create account screen and pass the user data
           Navigator.push(
@@ -340,7 +340,7 @@ class AuthNotifier extends ChangeNotifier {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
                   },
                   child: Row(
                     children: [
@@ -439,7 +439,7 @@ class AuthNotifier extends ChangeNotifier {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
                     },
                     child: Row(
                       children: [
@@ -464,7 +464,7 @@ class AuthNotifier extends ChangeNotifier {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
                     },
                     child: Row(
                       children: [
@@ -477,6 +477,31 @@ class AuthNotifier extends ChangeNotifier {
                 ],
               );
             },
+          );
+        } else {
+          showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Check your inbox', style: CustomTypography.H6.copyWith(color: Colors.white),),
+                  content: Text('We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.arrow_back),
+                          SizedBox(width: CustomSpacing.four),
+                          Text('Back to Login'),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
           );
         }
 

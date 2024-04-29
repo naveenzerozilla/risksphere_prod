@@ -2,12 +2,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/providers/company_provider.dart';
+import 'package:green/providers/email_provider.dart';
+import 'package:green/providers/employee_provider.dart';
+import 'package:green/providers/feature_provider.dart';
+import 'package:green/providers/verification_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
 import 'design_system/primitives/app_colors.dart';
 import 'design_system/repo/constants.dart';
 import 'firebase_options.dart';
+import 'providers/role_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
@@ -22,6 +27,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthNotifier()),
         ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
         ChangeNotifierProvider(create: (_) => CompanyProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureProvider()),
+        ChangeNotifierProvider(create: (_) => RoleProvider()),
+        ChangeNotifierProvider(create: (_) => EmailProvider()),
+        ChangeNotifierProvider(create: (_) => EmployeeProvider()),
+        ChangeNotifierProvider(create: (_) => VerificationProvider()),
       ],
       child: const MyApp(),
     ),

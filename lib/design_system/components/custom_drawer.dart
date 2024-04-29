@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/settings/settings.dart';
 import 'package:green/screens/userManagement/user_management.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/theme_provider.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({
@@ -44,6 +49,23 @@ class CustomDrawer extends StatelessWidget {
                   physics: ClampingScrollPhysics(),
                   padding: EdgeInsets.only(top: 0), // Removed top padding
                   children: <Widget>[
+                    ListTile(
+                      leading: Container(
+                        height: 20,
+                        width: 20,
+                        child: SvgPicture.asset(
+                          'assets/images/homeIcon.svg',
+                          semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
+                        ),
+
+                      ),
+                      title: const Text('Dashboard'),
+                      onTap: () {
+                        //Navigator.pop(context);
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => HomeScreen()));
+                      },
+                    ),
                     ExpansionTile(
                       leading: Container(
                         height: 20,
@@ -51,6 +73,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/listingsIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -77,6 +100,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/portfolioIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -103,6 +127,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/locationIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -135,6 +160,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/newsfeedIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -185,6 +211,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/insightsIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -235,6 +262,7 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/connectionsIcon.svg',
                           semanticsLabel: 'Dashboard',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
@@ -266,6 +294,7 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/trainingDataIcon.svg',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                           semanticsLabel: 'Dashboard',
                         ),
                       ),
@@ -287,6 +316,7 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/trainingDataIcon.svg',
+                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                           semanticsLabel: 'Dashboard',
                         ),
                       ),
@@ -317,11 +347,15 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icon(Icons.settings),
                     onPressed: () {
                       // Navigate to Settings Screen
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsScreen()));
                     },
                   ),
                   IconButton(
                     icon: Icon(Icons.brightness_7_rounded),
-                    onPressed: () {},
+                    onPressed: () {
+                      // Change Theme
+                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+                    },
                   ),
                   IconButton(
                     icon: Icon(Icons.person),

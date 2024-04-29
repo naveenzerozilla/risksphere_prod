@@ -4,7 +4,7 @@ import 'package:green/design_system/primitives/app_colors.dart';
 class AppThemes {
   static ThemeData get lightTheme {
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryMain, primary: AppColors.primaryMain),
+      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryMain, primary: AppColors.primaryMain, background: AppColors.white,),
       useMaterial3: true,
     );
   }
@@ -13,7 +13,7 @@ class AppThemes {
     return ThemeData.dark(
       useMaterial3: true,
     ).copyWith(
-      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryMain, primary: AppColors.primaryMain),
+      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryMain, primary: AppColors.primaryMain, background: AppColors.black),
     );
   }
 }

@@ -100,7 +100,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
             Container(
               margin: const EdgeInsets.only(left: 24, top: 24),
               child: Text('Select Account Roles',
-                  style: CustomTypography.Subtitle1.copyWith(
+                  style: CustomTypography.H7.copyWith(
                     color: Theme.of(context).colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   )),

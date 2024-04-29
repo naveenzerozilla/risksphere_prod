@@ -13,10 +13,12 @@ import 'dart:developer'; // Import for logging
 
 import '../design_system/components/custom_toast.dart';
 import '../models/company_model.dart';
+import '../models/employee_list_model.dart';
+import '../models/view_employee_model.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';
 
-class CompanyProvider with ChangeNotifier {
+class EmployeeProvider with ChangeNotifier {
 
 
   bool _isLoading = false;
@@ -64,23 +66,33 @@ class CompanyProvider with ChangeNotifier {
     });
   }
 
+  bool _isEditViewEmployeeLoading = false;
+  bool get isEditViewEmployeeLoading => _isEditViewEmployeeLoading;
+  set isEditViewEmployeeLoading(bool value) {
+    _isEditViewEmployeeLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
-  List<Companies> _companies = [];
-  List<Companies> get companies => _companies;
 
-  List<CorporateType> _corporateType = [];
-  List<CorporateType> get corporateType => _corporateType;
+  List<Employees>? _employeesList = [];
+  List<Employees>? get employeeList => _employeesList;
 
-  Companies _company = Companies();
-  Companies get company => _company;
 
-  /// Fetches all companies from the API based on search text and filter criteria.
-  Future<List<Companies>> getAllCompanies(BuildContext context,String searchText, String filter) async {
+  Employee _employees = Employee();
+  Employee get employees => _employees;
+
+  List<Roles>? _roles = [];
+  List<Roles>? get roles => _roles;
+
+  /// Fetches all employees from the API based on search text and filter criteria.
+  Future<List<Employees>> getAllEmployees(BuildContext context,String searchText, String filter) async {
     try {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
+      ApiService apiService = ApiService(AppConstant.GET_EMPLOYEES);
       Map<String, dynamic> body = {
         'searchText': searchText,
         'filter': filter,
@@ -88,20 +100,22 @@ class CompanyProvider with ChangeNotifier {
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get();
 
-      // Parse the response into a list of companies
-      List<Companies> companies = [];
-      if (response.containsKey('companies')) {
-        companies = (response['companies'] as List)
-            .map((company) => Companies.fromJson(company))
+      // Parse the response into a list of employees
+      List<Employees> employees = [];
+      print("Contains Key employees? ${response.containsKey('employees')}");
+      if (response.containsKey('users') && response['users'].containsKey('employees')) {
+        employees = (response['users']['employees'] as List)
+            .map((employee) => Employees.fromJson(employee))
             .toList();
       }
-        // Update the list of companies and notify listeners
-        _companies = companies;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
-        isLoading = false;
-        return companies;
+      print("Employees: $employees");
+      // Update the list of companies and notify listeners
+      _employeesList = employees;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      isLoading = false;
+      return employees;
 
     } catch (e, stackTrace) {
       // Catch any errors that occur during the process
@@ -117,8 +131,8 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-  /// Changes status of a company based on the company ID and new status.
-  Future<bool> changeCompanyStatus(BuildContext context, String companyId, bool newStatus) async {
+  /// Changes status of an employee based on the employee ID and new status.
+  Future<bool> changeEmployeeStatus(BuildContext context, String employeeId, bool newStatus) async {
     try {
       // Set loading state to true
       isStatusLoading = true;
@@ -126,7 +140,7 @@ class CompanyProvider with ChangeNotifier {
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
       Map<String, dynamic> body = {
         'data': {
-          'company_id': companyId,
+          'company_id': employeeId,
           'status': newStatus,
         },
       };
@@ -155,12 +169,12 @@ class CompanyProvider with ChangeNotifier {
   }
 
   /// Deletes a company based on the company ID.
-/// {
+  /// {
 //     "data":{
 //         "company_id":["VfIz7kXeFMK2ezIbKKCu","YqpcooTwU3MisGMj0ANH"]
 //         }
 // }
-  Future<bool> deleteCompany(BuildContext context, List<String> companyIds) async {
+  Future<bool> deleteCompany(BuildContext context, List<String> employeeIds) async {
     try {
       // Set loading state to true
       isDeleteLoading = true;
@@ -168,7 +182,7 @@ class CompanyProvider with ChangeNotifier {
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
       Map<String, dynamic> body = {
         'data': {
-          'company_id': companyIds,
+          'company_id': employeeIds,
         },
       };
       // Send a DELETE request to the API
@@ -193,8 +207,8 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-  /// Delete Multiple Companies based on the company ID.
-  Future<bool> deleteMultipleCompanies(BuildContext context, List<String> companyIds) async {
+  /// Delete Multiple Employees based on the employee ID.
+  Future<bool> deleteMultipleEmployees(BuildContext context, List<String> employeeIds) async {
     try {
       // Set loading state to true
       isLoading = true;
@@ -202,7 +216,7 @@ class CompanyProvider with ChangeNotifier {
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
       Map<String, dynamic> body = {
         'data': {
-          'company_id': companyIds,
+          'company_id': employeeIds,
         },
       };
       // Send a DELETE request to the API
@@ -227,16 +241,15 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-  /// Create a new company based on the company data.
-
-  Future<bool> createCompany(BuildContext context, Map<String, dynamic> companyData) async {
+  /// Create a new employee based on the employee data.
+  Future<bool> createEmployee(BuildContext context, Map<String, dynamic> employeeData) async {
     try {
       // Set loading state to true
       isLoading = true;
       // Use API Service to update company status
-      ApiService apiService = ApiService(AppConstant.CREATE_CORPORATE_URL);
+      ApiService apiService = ApiService(AppConstant.CREATE_EMPLOYEES);
       Map<String, dynamic> body = {
-        'data': companyData,
+        'data': employeeData,
       };
       print("Body: $body");
       // Send a POST request to the API
@@ -244,9 +257,11 @@ class CompanyProvider with ChangeNotifier {
       isLoading = false;
       if(context.mounted) {
         CustomToast.success(context, response['message']);
+        getAllEmployees(context, '', '');
       } else {
         Future.delayed(Duration(seconds: 1), () {
           if(context.mounted) CustomToast.success(context, response['message']);
+          getAllEmployees(context, '', '');
         });
       }
       return true;
@@ -261,15 +276,15 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-  /// Update a company based on the company ID and new company data.
-  Future<bool> updateCompany(BuildContext context, Map<String, dynamic> companyData) async {
+  /// Update a employee based on the employee ID and new employee data.
+  Future<bool> updateEmployee(BuildContext context, Map<String, dynamic> employeeData) async {
     try {
       // Set loading state to true
       isLoading = true;
       // Use API Service to update company status
-      ApiService apiService = ApiService(AppConstant.UPDATE_CORPORATE_URL);
+      ApiService apiService = ApiService(AppConstant.UPDATE_EMPLOYEES);
       Map<String, dynamic> body = {
-        'data': companyData,
+        'data': employeeData,
       };
       // Send a PATCH request to the API
       Map<String, dynamic> response = await apiService.patch(body);
@@ -281,6 +296,7 @@ class CompanyProvider with ChangeNotifier {
           if (context.mounted) CustomToast.success(
               context, response['message']);
         });
+        getAllEmployees(context, '', '');
       }
       return true;
     } catch (e, stackTrace) {
@@ -294,44 +310,55 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-  /// View a company based on the company ID.
-
-  Future<Companies> viewCompany(BuildContext context, String companyId) async {
+  /// View an employee based on the employee ID.
+  Future<Employee> viewEmployee(BuildContext context, String employeeId) async {
     try {
       // Set loading state to true
-      isLoading = true;
-      // Use API Service to update company status
-      ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
-      // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get("?company_id=$companyId");
-      isLoading = false;
-      if (response.containsKey('company')) {
-        List<dynamic> companiesJson = response['company'];
-        List<Companies> companies = companiesJson.map((json) => Companies.fromJson(json)).toList();
-        _company = companies[0];
+      isEditViewEmployeeLoading = true;
+
+      // Use API Service to fetch employee data
+      ApiService apiService = ApiService(AppConstant.VIEW_EMPLOYEES);
+      Map<String, dynamic> response = await apiService.get("?user_id=$employeeId");
+
+      // Check if response contains employee data
+      if (response.containsKey('user')) {
+        dynamic employeeJson = response['user'];
+        Employee employee = Employee.fromJson(employeeJson);
+
+        // Update employee data in provider
+        _employees = employee;
+
+        // Notify listeners of changes
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-        return companies[0];
+        isEditViewEmployeeLoading = false;
+
+        return employee;
       } else {
-        return Companies();
+        // If no employee data found, return an empty Employee object
+        isEditViewEmployeeLoading = false;
+        return Employee();
       }
     } catch (e, stackTrace) {
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: $e'); // Log the error
-      // Show a generic error message to the user
+      // Handle errors
+      print('Stack Trace: $stackTrace');
+      log('Error: $e');
       if (context.mounted) CustomToast.error(context, e.toString());
-      isLoading = false;
-      return Companies(); // Return empty list in case of error
+
+      // Set loading state to false
+      isEditViewEmployeeLoading = false;
+
+      // Return empty Employee object in case of error
+      return Employee();
     }
   }
 
 
-  /// Upload image and get image URL
 
+  /// Upload image and get image URL
   Future<String> uploadImage(BuildContext context, File image) async {
-try {
+    try {
       // Set loading state to true
       isImageUploadLoading = true;
       // Use API Service to update company status
@@ -356,31 +383,51 @@ try {
   }
 
   /// Fetch Roles from the API
-  Future<List<CorporateType>> getCorporateType(BuildContext context) async {
+/// https://companies-nzc3rkheha-uc.a.run.app?role=internal
+/// {
+//     "data": "Authenticated request success",
+//     "roles": [
+//         {
+//             "name": "Support",
+//             "role": "support",
+//             "is_applicable_for_internal": true,
+//             "status": true
+//         },
+//         {
+//             "name": "Admin",
+//             "role": "admin",
+//             "is_applicable_for_internal": true,
+//             "status": true
+//         }
+//     ]
+// }
+  /// Fetch Roles from the API
+  Future<List<Roles>> getRoles(BuildContext context) async {
     try {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET_CORPORATE_ROLES);
+      ApiService apiService = ApiService(AppConstant.GET_ROLES_FOR_EMPLOYEES);
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get();
       // Parse the response into a list of corporateType
-      List<CorporateType> corporateType = [];
-      print("Contains Key? ${response.containsKey('corporate_type')}");
-      if (response.containsKey('corporate_type')) {
+      List<Roles> rolesList = [];
+      print("Contains Key? ${response.containsKey('roles')}");
+      if (response.containsKey('roles')) {
         // Parse corporateType from the response
-        corporateType = (response['corporate_type'] as List)
-            .map((corporateType) => CorporateType.fromJson(corporateType))
+        rolesList = (response['roles'] as List)
+            .map((roles) => Roles.fromJson(roles))
             .toList();
+        print("Roles: $rolesList");
 
-        _corporateType = corporateType;
+        _roles = rolesList;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
 
       }
       isLoading = false;
-      return corporateType;
+      return rolesList;
     } catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging

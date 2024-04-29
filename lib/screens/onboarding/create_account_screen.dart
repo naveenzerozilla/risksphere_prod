@@ -6,6 +6,7 @@ import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
+import 'package:green/main.dart';
 import 'package:green/models/initial_data_model.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/home/home_screen.dart';
@@ -250,7 +251,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                     actions: [
                                                       TextButton(
                                                         onPressed: () {
-                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SplashScreen()));
+                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => App()));
                                                         },
                                                         child: Row(
                                                           children: [
@@ -590,7 +591,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               flex: 7,
               child: TextFormField(
                 keyboardType: TextInputType.number,
-                maxLength: 10,
+                maxLength: 15,
                 // Numeric keyboard
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly // Only allows digits
@@ -601,12 +602,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                validator: (value) {
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                    return 'Mobile number can only contain digits';
-                  }
-                  return null;
-                },
+                validator: validatePhoneNumber,
                 controller: mobileController,
               ),
             ),
@@ -812,7 +808,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               flex: 7,
               child: TextFormField(
                 keyboardType: TextInputType.number,
-                maxLength: 10,
+                maxLength: 15,
                 // Numeric keyboard
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly // Only allows digits
@@ -823,12 +819,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                validator: (value) {
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                    return 'Mobile number can only contain digits';
-                  }
-                  return null;
-                },
+                validator: validatePhoneNumber,
                 controller: mobileController,
               ),
             ),
@@ -1273,15 +1264,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                maxLength: 10,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your mobile number';
-                  } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                    return 'Mobile number can only contain digits';
-                  }
-                  return null;
-                },
+                maxLength: 15,
+                validator: validatePhoneNumber,
                 controller: adminMobileController,
               ),
             ),
@@ -1361,6 +1345,62 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   void handleImageSelect(int value) {
   }
+
+  // Define a function to validate the phone number based on the selected country
+  String? validatePhoneNumber(String? value) {
+    if (value != null && value.isNotEmpty) {
+      // Get the dialing code for the selected country
+      String dialingCode = _selectedCountryCode ?? '';
+
+      // Construct a regular expression pattern based on the country's dialing code
+      String pattern = '';
+print("dialingCode: $dialingCode");
+      // Adjust the pattern based on the country dialing code format
+      switch (dialingCode) {
+        case '+1': // United States
+          pattern = r'^[0-9]{10}$'; // 10 digits for the US
+          break;
+        case '+91': // India
+          pattern = r'^[0-9]{10}$'; // 10 digits for India
+          break;
+        case '+44': // United Kingdom
+          pattern = r'^(?:(?:\+?44)?(0)?)?(\d{10})$'; // UK phone number format
+          break;
+        case '+61': // Australia
+          pattern = r'^[0-9]{9}$'; // 9 digits for Australia
+          break;
+        case '+86': // China
+          pattern = r'^1[0-9]{10}$'; // 11 digits for China, starts with 1
+          break;
+        case '+81': // Japan
+          pattern = r'^[0-9]{10,11}$'; // 10 or 11 digits for Japan
+          break;
+        case '+82': // South Korea
+          pattern = r'^01(?:0|1|[6-9])-(?:\d{3}|\d{4})-\d{4}$'; // South Korea phone number format
+          break;
+        case '+966': // Saudi Arabia
+          pattern = r'^[0-9]{9}$'; // 9 digits for Saudi Arabia
+          break;
+        case '+971': // United Arab Emirates
+          pattern = r'^[0-9]{9}$'; // 9 digits for UAE
+          break;
+        case '+20': // Egypt
+          pattern = r'^01[0-9]{9}$'; // 11 digits for Egypt, starts with 01
+          break;
+         // Add more cases for other countries as needed
+        default:
+          pattern = r'^[0-9]+$'; // Default pattern: any number of digits
+          break;
+      }
+
+      // Validate the phone number using the constructed pattern
+      if (!RegExp(pattern).hasMatch(value)) {
+        return 'Invalid phone number format';
+      }
+    }
+    return null; // Return null if validation passes
+  }
+
 }
 
 
