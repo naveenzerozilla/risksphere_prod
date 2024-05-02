@@ -138,8 +138,10 @@ class Role {
   late final List<Categories> categories;
 
   Role.fromJson(Map<String, dynamic> json){
-    accountType = json['accountType'];
-    categories = List.from(json['categories']).map((e)=>Categories.fromJson(e)).toList();
+    accountType = json['accountType']??"";
+    if(json['categories']!=null) {
+      categories = List.from(json['categories']).map((e)=>Categories.fromJson(e)).toList();
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -224,7 +226,7 @@ class Companies {
   late final List<Roles> roles;
 
   Companies.fromJson(Map<String, dynamic> json){
-    isActive = json['is_active'];
+    isActive = json['is_active']??false;
     isAuthorized = json['is_authorized'];
     /*if(json['user_ids']!=null) {
       userIds =

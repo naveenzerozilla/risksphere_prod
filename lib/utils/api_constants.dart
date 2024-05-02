@@ -22,4 +22,8 @@ class AppConstant {
   static const String CHANGE_CORPORATE_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
   static const String CHANGE_USER_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
   static const String CHANGE_USER_ROLE = "https://companies-nzc3rkheha-uc.a.run.app";
+  static  const String GET_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static const String UPDATE_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static const String GET_AVATARS = "https://us-central1-project-green-f4d78.cloudfunctions.net/get_avatar";
+  static const String GET_DASHBOARD = "https://dashboard-data-nzc3rkheha-uc.a.run.app";
 }

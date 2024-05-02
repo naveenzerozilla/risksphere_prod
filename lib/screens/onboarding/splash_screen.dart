@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/repo/constants.dart';
 import 'package:green/providers/auth_provider.dart';
-import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/onboarding/create_account_screen.dart';
 import 'package:green/screens/onboarding/login_screen.dart';
 import 'package:provider/provider.dart';
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
       // redirect to dashboard
       Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen(),),);
+          MaterialPageRoute(builder: (context) => DashboardScreen(),),);
 
     } else {
       Navigator.pushReplacement(

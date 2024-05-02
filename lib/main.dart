@@ -2,9 +2,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/providers/company_provider.dart';
+import 'package:green/providers/dashboard_provider.dart';
 import 'package:green/providers/email_provider.dart';
 import 'package:green/providers/employee_provider.dart';
 import 'package:green/providers/feature_provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/providers/verification_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +34,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => EmailProvider()),
         ChangeNotifierProvider(create: (_) => EmployeeProvider()),
         ChangeNotifierProvider(create: (_) => VerificationProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
       ],
       child: const MyApp(),
     ),

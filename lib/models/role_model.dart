@@ -30,9 +30,10 @@ class Roles {
   bool? isApplicableForInternal;
   bool? status;
   String? id;
-  bool? addRole;
   int? updatedAt;
   int? createdAt;
+  String? description;
+  bool? isSelectable;
 
   Roles(
       {this.isForIndividual,
@@ -43,9 +44,8 @@ class Roles {
         this.isApplicableForInternal,
         this.status,
         this.id,
-        this.addRole,
         this.updatedAt,
-        this.createdAt});
+        this.createdAt, this.description, this.isSelectable});
 
   Roles.fromJson(Map<String, dynamic> json) {
     isForIndividual = json['is_for_individual'];
@@ -56,9 +56,10 @@ class Roles {
     isApplicableForInternal = json['is_applicable_for_internal'];
     status = json['status'];
     id = json['id'];
-    addRole = json['add_role'];
     updatedAt = json['updated_at'];
     createdAt = json['created_at'];
+    description = json['description']??"";
+    isSelectable = json['is_selectable']??false;
   }
 
   Map<String, dynamic> toJson() {
@@ -71,9 +72,10 @@ class Roles {
     data['is_applicable_for_internal'] = this.isApplicableForInternal;
     data['status'] = this.status;
     data['id'] = this.id;
-    data['add_role'] = this.addRole;
     data['updated_at'] = this.updatedAt;
     data['created_at'] = this.createdAt;
+    data['description'] = this.description;
+    data['is_selectable'] = this.isSelectable;
     return data;
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/settings/settings.dart';
 import 'package:green/screens/userManagement/user_management.dart';
 import 'package:provider/provider.dart';
@@ -63,7 +63,7 @@ class CustomDrawer extends StatelessWidget {
                       title: const Text('Dashboard'),
                       onTap: () {
                         //Navigator.pop(context);
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => HomeScreen()));
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen()));
                       },
                     ),
                     ExpansionTile(

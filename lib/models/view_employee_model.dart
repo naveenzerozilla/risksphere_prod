@@ -1,3 +1,7 @@
+
+
+import 'package:green/models/role_model.dart';
+
 class ViewEmployeeModel {
   String? data;
   Employee? user;
@@ -32,7 +36,7 @@ class Employee {
   String? name;
   bool? status;
   String? countryCode;
-  List<Role>? role;
+  List<Roles>? role;
   String? displayImageUrl;
 
   Employee(
@@ -66,9 +70,9 @@ class Employee {
     status = json['status'];
     countryCode = json['country_code'];
     if (json['role'] != null) {
-      role = <Role>[];
+      role = <Roles>[];
       json['role'].forEach((v) {
-        role!.add(new Role.fromJson(v));
+        role!.add(new Roles.fromJson(v));
       });
     }
     displayImageUrl = json['display_image_url'];
@@ -97,35 +101,3 @@ class Employee {
   }
 }
 
-class Role {
-  String? role;
-  String? name;
-  bool? isApplicableForInternal;
-  bool? fromEdit;
-  bool? status;
-
-  Role(
-      {this.role,
-        this.name,
-        this.isApplicableForInternal,
-        this.fromEdit,
-        this.status});
-
-  Role.fromJson(Map<String, dynamic> json) {
-    role = json['role'];
-    name = json['name'];
-    isApplicableForInternal = json['is_applicable_for_internal'];
-    fromEdit = json['fromEdit'];
-    status = json['status'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['role'] = this.role;
-    data['name'] = this.name;
-    data['is_applicable_for_internal'] = this.isApplicableForInternal;
-    data['fromEdit'] = this.fromEdit;
-    data['status'] = this.status;
-    return data;
-  }
-}

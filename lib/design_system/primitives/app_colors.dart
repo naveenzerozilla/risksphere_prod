@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  static const Color avatarBackground = Color(0xFFCE93D8);
   static const Color paperElavation25 = Color(0xAD000000);
   static const Color primaryMain = Color(0xFF90CAF9);
   static const Color warning = Color(0xFFFFA726);

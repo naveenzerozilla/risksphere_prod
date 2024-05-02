@@ -5,25 +5,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
+import '../../design_system/components/custom_month_year_picker.dart';
 import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
+import '../../providers/dashboard_provider.dart';
+import '../userManagement/user_management.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _DashboardScreenState extends State<DashboardScreen> {
   // App Bar
   bool _isExpanded = false;
   bool _showNotificationDot = true;
@@ -35,189 +40,230 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDateUser;
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return Scaffold(
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
-            appBar: CustomAppBar(
-              isExpanded: _isExpanded,
-              showNotificationDot: _showNotificationDot,
-              onExpandPressed: (isExpanded) {
-                setState(() {
-                  _isExpanded = isExpanded;
-                });
-              },
-              onSearchPressed: () {
-                setState(() {
-                  _isExpanded = !_isExpanded;
-                });
-              },
-            ),
-            drawer: CustomDrawer(),
-            body: Stack(
-              children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/mesh.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
+  void initState() {
+    _getData();
+    super.initState();
+  }
 
-                _homeScreenBody(),
-              ],
+  _getData() {
+    Provider.of<DashboardProvider>(context, listen: false)
+        .getDashboardData(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+      return Scaffold(
+        backgroundColor: themeProvider.getTheme.colorScheme.background,
+        appBar: CustomAppBar(
+          isExpanded: _isExpanded,
+          showNotificationDot: _showNotificationDot,
+          onExpandPressed: (isExpanded) {
+            setState(() {
+              _isExpanded = isExpanded;
+            });
+          },
+          onSearchPressed: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+        ),
+        drawer: CustomDrawer(),
+        body: Stack(
+          children: [
+            // Background image
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/mesh.png',
+                fit: BoxFit.cover,
+              ),
             ),
-          );
-        }
-    );
+
+            _homeScreenBody(),
+          ],
+        ),
+      );
+    });
   }
 
   _homeScreenBody() {
-    return SingleChildScrollView(
-      child: Container(
-        margin: EdgeInsets.only(top: CustomSpacing.four,
-            left: CustomSpacing.four,
-            right: CustomSpacing.four),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-          Text(
-          'Overview',
-          style: CustomTypography.H5_Regular,
-        ),
-        SizedBox(height: CustomSpacing.six),
-        _overviewCardHorizontal(
-          title: 'Total Corporates',
-          amount: '860',
-          icon: 'assets/images/total_corporates_list_check.svg',
-          bottomWidget: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.trending_up, color: Colors.green),
-              SizedBox(width: CustomSpacing.two),
-              Flexible(
-                child: Text(
-                  '15% increase vs last month',
-                  style: CustomTypography.Subtitle1,
-                  maxLines: 2,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(width: CustomSpacing.four),
-        _overviewCardHorizontal(
-          title: 'Sign Ups',
-          amount: '10,240',
-          icon: 'assets/images/sign_ups_users.svg',
-          bottomWidget: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.trending_up, color: Colors.green),
-              SizedBox(width: CustomSpacing.two),
-              Flexible(
-                child: Text(
-                  '130% increase vs last month',
-                  style: CustomTypography.Subtitle1,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _overviewCardHorizontal(
-          title: 'Verification Requests',
-          amount: '07',
-          icon: 'assets/images/verification_req_checks.svg',
-          bottomWidget: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: CustomButton(
-                  type: ButtonType.outlined,
-                  onPressed: () {},
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'See List',
-                        style: CustomTypography.Body1,
-                      ),
-                      SizedBox(width: CustomSpacing.two),
-                      Icon(Icons.arrow_forward_ios, size: 14,),
-                    ],
+    return Consumer<DashboardProvider>(
+        builder: (context, dashboardProvider, child) {
+      return dashboardProvider.isLoading
+          ? Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(width: CustomSpacing.four),
-        _overviewCardHorizontal(
-          title: 'Connection Requests',
-          amount: '11',
-          icon: 'assets/images/connection_request_people.svg',
-          bottomWidget: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              //reduce border radius
-              Expanded(
-                child: CustomButton(
-                  type: ButtonType.outlined,
-                  onPressed: () {},
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'See List',
-                        style: CustomTypography.Body1,
+              ],
+            )
+          : SingleChildScrollView(
+              child: Container(
+                margin: EdgeInsets.only(
+                    top: CustomSpacing.four,
+                    left: CustomSpacing.four,
+                    right: CustomSpacing.four),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Overview',
+                      style: CustomTypography.H5_Regular,
+                    ),
+                    SizedBox(height: CustomSpacing.six),
+                    _overviewCardHorizontal(
+                      title: 'Total Corporates',
+                      amount: dashboardProvider
+                          .dashboard!.signups!.current!.csignup
+                          .toString(),
+                      icon: 'assets/images/total_corporates_list_check.svg',
+                      bottomWidget: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          (dashboardProvider.dashboardModel?.signups?.current?.csignup??0)>(dashboardProvider.dashboardModel?.signups?.past?.csignup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              _getTotalCorporatePercentage(
+                                  dashboardProvider),
+                              style: CustomTypography.Subtitle1,
+                              maxLines: 2,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: CustomSpacing.two),
-                      Icon(Icons.arrow_forward_ios, size: 14,),
-                    ],
-                  ),
+                    ),
+                    SizedBox(width: CustomSpacing.four),
+                    _overviewCardHorizontal(
+                      title: 'Sign Ups',
+                      amount: dashboardProvider.dashboardModel?.signups?.current?.signup.toString()??'0',
+                      icon: 'assets/images/sign_ups_users.svg',
+                      bottomWidget: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          (dashboardProvider.dashboardModel?.signups?.current?.signup??0)>(dashboardProvider.dashboardModel?.signups?.past?.signup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              _getSignupsPercentage(dashboardProvider),
+                              style: CustomTypography.Subtitle1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _overviewCardHorizontal(
+                      title: 'Verification Requests',
+                      amount: dashboardProvider.dashboardModel?.verificationCount.toString()??'0',
+                      icon: 'assets/images/verification_req_checks.svg',
+                      bottomWidget: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () {
+                              //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => UserManagementScreen(
+                                    initialIndex: 0,
+                                    subIndex: 1,
+                                    initialScreen: Screens.verificationList,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'See List',
+                                  style: CustomTypography.Body1,
+                                ),
+                                SizedBox(width: CustomSpacing.two),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: CustomSpacing.four),
+                    _overviewCardHorizontal(
+                      title: 'Connection Requests',
+                      amount: dashboardProvider.dashboardModel?.requests?.toString()??'0',
+                      icon: 'assets/images/connection_request_people.svg',
+                      bottomWidget: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          //reduce border radius
+                          CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () {},
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'See List',
+                                  style: CustomTypography.Body1,
+                                ),
+                                SizedBox(width: CustomSpacing.two),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: CustomSpacing.one),
+                    dashboardProvider.isCompanyLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
+                      isExpanded: isCompanyOnboardingStatsExpanded,
+                      collapsedChild: _collapsedCompanyCardWidget(
+                        title: Text(
+                          'Company onboarding stats',
+                          style: CustomTypography.Body1,
+                        ),
+                      ),
+                      expandedChild: _expandedCompanyOnboardingStatsWidget(dashboardProvider),
+                    ),
+                    SizedBox(height: CustomSpacing.one),
+                    dashboardProvider.isRoleLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
+                      isExpanded: isUserOnboardingStatsExpanded,
+                      collapsedChild: _collapsedUserCardWidget(
+                        title: Text(
+                          'User onboarding stats',
+                          style: CustomTypography.Body1,
+                        ),
+                      ),
+                      expandedChild: _expandedUserOnboardingStatsWidget(dashboardProvider),
+                    ),
+                    SizedBox(height: CustomSpacing.eight),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-        SizedBox(height: CustomSpacing.one),
-        ExpandableCardContainer(
-          isExpanded: isCompanyOnboardingStatsExpanded,
-          collapsedChild: _collapsedCompanyCardWidget(
-            title: Text(
-              'Company onboarding stats',
-              style: CustomTypography.Body1,
-            ),
-          ),
-          expandedChild: _expandedCompanyOnboardingStatsWidget(),
-        ),
-            SizedBox(height: CustomSpacing.one),
-            ExpandableCardContainer(
-              isExpanded: isUserOnboardingStatsExpanded,
-              collapsedChild: _collapsedUserCardWidget(
-                title: Text(
-                  'User onboarding stats',
-                  style: CustomTypography.Body1,
-                ),
-              ),
-              expandedChild: _expandedUserOnboardingStatsWidget(),
-            ),
-            SizedBox(height: CustomSpacing.eight),
-
-      ],
-    ),)
-    ,
-    );
+            );
+    });
   }
 
   _overviewCard(
-      {required String title, required String amount, required String icon, required Row bottomWidget}) {
+      {required String title,
+      required String amount,
+      required String icon,
+      required Row bottomWidget}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -262,8 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            Spacer(
-            ),
+            Spacer(),
             Divider(),
             SizedBox(height: CustomSpacing.one),
             bottomWidget,
@@ -274,7 +319,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   _overviewCardHorizontal(
-      {required String title, required String amount, required String icon, required Row bottomWidget}) {
+      {required String title,
+      required String amount,
+      required String icon,
+      required Row bottomWidget}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -285,7 +333,8 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.only(top: CustomSpacing.two,
+            padding: EdgeInsets.only(
+                top: CustomSpacing.two,
                 left: CustomSpacing.four,
                 right: CustomSpacing.four),
             child: Row(
@@ -303,16 +352,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon,
                           width: 24,
                           height: 24,
-
-                          colorFilter: ColorFilter.mode(Theme
-                              .of(context)
-                              .colorScheme
-                              .onBackground, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(
+                              Theme.of(context).colorScheme.onBackground,
+                              BlendMode.srcIn),
                         ),
                       ),
                     ),
                     SizedBox(width: CustomSpacing.two),
-
                     SizedBox(height: CustomSpacing.two),
                     Text(
                       title,
@@ -326,7 +372,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-
                     Text(
                       amount,
                       style: CustomTypography.H4,
@@ -336,10 +381,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Divider(color: AppColors.black, thickness: 2,),
+          Divider(
+            color: AppColors.black,
+            thickness: 2,
+          ),
           SizedBox(height: CustomSpacing.one),
           Container(
-              padding: EdgeInsets.only(bottom: CustomSpacing.two,
+              padding: EdgeInsets.only(
+                  bottom: CustomSpacing.two,
                   left: CustomSpacing.four,
                   right: CustomSpacing.four),
               child: Center(child: bottomWidget)),
@@ -367,11 +416,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     //Circular Icon button
                     IconButton(
-                      icon: Icon(Icons.keyboard_arrow_down_outlined, size: 24,),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_outlined,
+                        size: 24,
+                      ),
                       onPressed: () {
                         setState(() {
                           isCompanyOnboardingStatsExpanded =
-                          !isCompanyOnboardingStatsExpanded;
+                              !isCompanyOnboardingStatsExpanded;
                         });
                       },
                     ),
@@ -391,7 +443,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: TextEditingController(
                             text: _selectedDateCompany == null
                                 ? ''
-                                : DateFormat('MMMM yyyy').format(_selectedDateCompany!)),
+                                : DateFormat('MMMM yyyy')
+                                    .format(_selectedDateCompany!)),
                         decoration: InputDecoration(
                           labelText: 'Select Period',
                           hintText: 'MM/YYYY',
@@ -400,17 +453,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         onTap: () async {
-                          final DateTime? pickedDate = await showDatePicker(
+                          final DateTime? pickedDate = await showMonthPicker(
                             context: context,
                             initialDate: _selectedDateCompany ?? DateTime.now(),
                             firstDate: DateTime(DateTime.now().year - 10),
                             lastDate: DateTime.now(),
                           );
 
-                          if (pickedDate != null && pickedDate != _selectedDateCompany) {
+                          if (pickedDate != null &&
+                              pickedDate != _selectedDateCompany) {
                             setState(() {
                               _selectedDateCompany = pickedDate;
                             });
+                            Provider.of<DashboardProvider>(context, listen: false)
+                                .getDashboardDataForCompanies(context, pickedDate);
+
                           }
                         },
                       ),
@@ -425,7 +482,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  _expandedCompanyOnboardingStatsWidget() {
+  _expandedCompanyOnboardingStatsWidget(DashboardProvider dashboardProvider) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -441,11 +498,14 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 //Circular Icon button
                 IconButton(
-                  icon: Icon(Icons.keyboard_arrow_up_outlined, size: 24,),
+                  icon: Icon(
+                    Icons.keyboard_arrow_up_outlined,
+                    size: 24,
+                  ),
                   onPressed: () {
                     setState(() {
                       isCompanyOnboardingStatsExpanded =
-                      !isCompanyOnboardingStatsExpanded;
+                          !isCompanyOnboardingStatsExpanded;
                     });
                   },
                 ),
@@ -467,7 +527,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     controller: TextEditingController(
                         text: _selectedDateCompany == null
                             ? ''
-                            : DateFormat('MMMM yyyy').format(_selectedDateCompany!)),
+                            : DateFormat('MMMM yyyy')
+                                .format(_selectedDateCompany!)),
                     decoration: InputDecoration(
                       labelText: 'Select Period',
                       hintText: 'MM/YYYY',
@@ -476,38 +537,39 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     onTap: () async {
-                      final DateTime? pickedDate = await showDatePicker(
+                      final DateTime? pickedDate = await showMonthPicker(
                         context: context,
                         initialDate: _selectedDateCompany ?? DateTime.now(),
                         firstDate: DateTime(DateTime.now().year - 10),
                         lastDate: DateTime.now(),
                       );
 
-                      if (pickedDate != null && pickedDate != _selectedDateCompany) {
+                      if (pickedDate != null &&
+                          pickedDate != _selectedDateCompany) {
                         setState(() {
                           _selectedDateCompany = pickedDate;
                         });
+                        Provider.of<DashboardProvider>(context, listen: false)
+                            .getDashboardDataForCompanies(context, pickedDate);
+
                       }
                     },
                   ),
                 ),
               ],
             ),
-            SizedBox(height: CustomSpacing.four),
+            SizedBox(height: CustomSpacing.six),
             Container(
-              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-              child: Wrap(
+              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.two),
+              child: ListView(
+                shrinkWrap: true,
+                physics: ClampingScrollPhysics(),
                 children: [
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                  companyOnboardingStatsProgressCards(),
-                ],
-              ),
-            ),
+                  ]
+                    ..addAll(dashboardProvider.dashboardModel?.companyType?.map((corporate) {
+                      return companyOnboardingStatsProgressCards(corporate, dashboardProvider);
+                    })??[]),
+            ),),
             SizedBox(height: CustomSpacing.four),
             Container(
               margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
@@ -515,14 +577,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '15%',
+                    _getPercentConversions(dashboardProvider.dashboardModel?.companyPercent??"0"),
                     style: CustomTypography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    'Increase in conversions compared to last year',
+                    ' in conversions compared to last year',
                     style: CustomTypography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
@@ -539,15 +601,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               TextSpan(
-                                text: 'is forecasted to increase in your conversion by 0.5% the end of the current year.',
+                                text:
+                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
                                 style: CustomTypography.Body1,
                               ),
                             ],
                           ),
                         ),
                       ),
-
-
                     ],
                   ),
                 ],
@@ -559,32 +620,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget companyOnboardingStatsProgressCards() {
+  Widget companyOnboardingStatsProgressCards(CompanyType corporate, DashboardProvider dashboardProvider) {
     return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Vendor',
-                    style: CustomTypography.Body1,
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: LinearProgressIndicator(
-                          value: 0.7,
-                        ),
-                      ),
-                      SizedBox(width: CustomSpacing.two),
-                      Text(
-                        '860',
-                        style: CustomTypography.Subtitle1,
-                      ),
-                    ],
-                  ),
-                ],
-              );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          corporate.name ?? '',
+          style: CustomTypography.Body1,
+        ),
+        SizedBox(height: CustomSpacing.two),
+        Row(
+          children: [
+            Expanded(
+              child: LinearProgressIndicator(
+                value: corporate.count == null
+                    ? 0
+                    : corporate.count! / (dashboardProvider.dashboardModel?.max??1),
+              ),
+            ),
+            SizedBox(width: CustomSpacing.two),
+            Text(
+              corporate.count.toString(),
+              style: CustomTypography.Subtitle1,
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   _collapsedUserCardWidget({required Text title}) {
@@ -606,11 +669,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     //Circular Icon button
                     IconButton(
-                      icon: Icon(Icons.keyboard_arrow_down_outlined, size: 24,),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_outlined,
+                        size: 24,
+                      ),
                       onPressed: () {
                         setState(() {
                           isUserOnboardingStatsExpanded =
-                          !isUserOnboardingStatsExpanded;
+                              !isUserOnboardingStatsExpanded;
                         });
                       },
                     ),
@@ -630,7 +696,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: TextEditingController(
                             text: _selectedDateUser == null
                                 ? ''
-                                : DateFormat('MMMM yyyy').format(_selectedDateUser!)),
+                                : DateFormat('MMMM yyyy')
+                                    .format(_selectedDateUser!)),
                         decoration: InputDecoration(
                           labelText: 'Select Period',
                           hintText: 'MM/YYYY',
@@ -639,17 +706,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         onTap: () async {
-                          final DateTime? pickedDate = await showDatePicker(
+                          final DateTime? pickedDate = await showMonthPicker(
                             context: context,
                             initialDate: _selectedDateUser ?? DateTime.now(),
                             firstDate: DateTime(DateTime.now().year - 10),
                             lastDate: DateTime.now(),
                           );
 
-                          if (pickedDate != null && pickedDate != _selectedDateUser) {
+                          if (pickedDate != null &&
+                              pickedDate != _selectedDateUser) {
                             setState(() {
                               _selectedDateUser = pickedDate;
                             });
+                            Provider.of<DashboardProvider>(context, listen: false)
+                                .getDashboardDataForRoles(context, pickedDate);
                           }
                         },
                       ),
@@ -664,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  _expandedUserOnboardingStatsWidget() {
+  _expandedUserOnboardingStatsWidget(DashboardProvider dashboardProvider) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -680,11 +750,14 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 //Circular Icon button
                 IconButton(
-                  icon: Icon(Icons.keyboard_arrow_up_outlined, size: 24,),
+                  icon: Icon(
+                    Icons.keyboard_arrow_up_outlined,
+                    size: 24,
+                  ),
                   onPressed: () {
                     setState(() {
                       isUserOnboardingStatsExpanded =
-                      !isUserOnboardingStatsExpanded;
+                          !isUserOnboardingStatsExpanded;
                     });
                   },
                 ),
@@ -706,7 +779,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     controller: TextEditingController(
                         text: _selectedDateUser == null
                             ? ''
-                            : DateFormat('MMMM yyyy').format(_selectedDateUser!)),
+                            : DateFormat('MMMM yyyy')
+                                .format(_selectedDateUser!)),
                     decoration: InputDecoration(
                       labelText: 'Select Period',
                       hintText: 'MM/YYYY',
@@ -715,17 +789,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     onTap: () async {
-                      final DateTime? pickedDate = await showDatePicker(
+                      final DateTime? pickedDate = await showMonthPicker(
                         context: context,
                         initialDate: _selectedDateUser ?? DateTime.now(),
                         firstDate: DateTime(DateTime.now().year - 10),
                         lastDate: DateTime.now(),
                       );
 
-                      if (pickedDate != null && pickedDate != _selectedDateUser) {
+                      if (pickedDate != null &&
+                          pickedDate != _selectedDateUser) {
                         setState(() {
                           _selectedDateUser = pickedDate;
                         });
+                        Provider.of<DashboardProvider>(context, listen: false)
+                            .getDashboardDataForRoles(context, pickedDate);
                       }
                     },
                   ),
@@ -735,18 +812,14 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: CustomSpacing.four),
             Container(
               margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-              child: Wrap(
+              child: ListView(
+                shrinkWrap: true,
+                physics: ClampingScrollPhysics(),
                 children: [
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                  userOnboardingStatsProgressCards(),
-                ],
-              ),
+                  ]
+                    ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
+                      return userOnboardingStatsProgressCards(role, dashboardProvider);
+                    })??[]),),
             ),
             SizedBox(height: CustomSpacing.four),
             Container(
@@ -755,14 +828,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '130%',
+                    _getPercentConversions(dashboardProvider.dashboardModel?.rolePercent??"0"),
                     style: CustomTypography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    'Increase in conversions compared to last year',
+                    ' in conversions compared to last year',
                     style: CustomTypography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
@@ -779,15 +852,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               TextSpan(
-                                text: 'is forecasted to increase in your conversion by 0.5% the end of the current year.',
+                                text:
+                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
                                 style: CustomTypography.Body1,
                               ),
                             ],
                           ),
                         ),
                       ),
-
-
                     ],
                   ),
                 ],
@@ -799,13 +871,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget userOnboardingStatsProgressCards() {
+  Widget userOnboardingStatsProgressCards(DashboardRoles role, DashboardProvider dashboardProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Admin',
+          role.name ?? '',
           style: CustomTypography.Body1,
         ),
         SizedBox(height: CustomSpacing.two),
@@ -813,12 +885,14 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: LinearProgressIndicator(
-                value: 0.5,
+                value: role.count == null
+                    ? 0
+                    : role.count! / (dashboardProvider.dashboardModel?.max??1),
               ),
             ),
             SizedBox(width: CustomSpacing.two),
             Text(
-              '860',
+              role.count.toString(),
               style: CustomTypography.Subtitle1,
             ),
           ],
@@ -826,8 +900,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-
 
   List<String> generateOptions() {
     List<String> options = [];
@@ -841,6 +913,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return options;
   }
+
+  String _getTotalCorporatePercentage(DashboardProvider dashboardProvider) {
+
+    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.csignup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.csignup ?? 0);
+
+    print('changePercentage: $changePercentage');
+
+    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+
+    String output = changeText + ' vs last month';
+
+    return output;
+  }
+
+  String _getSignupsPercentage(DashboardProvider dashboardProvider) {
+    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.signup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.signup ?? 0);
+
+    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+
+    String output = changeText + ' vs last month';
+
+    return output;
+  }
+
+  double getChangePercentage(int current, int past) {
+    print('current: $current');
+    print('past: $past');
+    double changePercentage = ((current - past) * 100) / (past == 0 ? 1 : past);
+    return changePercentage;
+  }
+
+  String _getPercentConversions(String percent ){
+    //double.parse(dashboardProvider.dashboardModel?.rolePercent??"0")>=0?"${dashboardProvider.dashboardModel?.rolePercent??0}% Increase":"${dashboardProvider.dashboardModel?.rolePercent??0}% Decrease",
+    String rolePercentText = percent ?? "0";
+// Remove '%' sign and any other non-digit characters
+    String rolePercentCleaned = rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
+    double rolePercent = double.parse(rolePercentCleaned);
+
+    String changeText;
+    if (rolePercent < 0) {
+      rolePercent = -rolePercent; // Make it positive
+      changeText = "${rolePercent.toStringAsFixed(0)}% Decrease";
+    } else {
+      changeText = "${rolePercent.toStringAsFixed(0)}% Increase";
+    }
+
+    print(changeText);
+    return changeText;
+
+  }
 }
-
-
