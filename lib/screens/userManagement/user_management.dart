@@ -32,7 +32,15 @@ import '../../utils/utils.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
 class UserManagementScreen extends StatefulWidget {
-  const UserManagementScreen({super.key});
+  final Screens? initialScreen;
+  final int initialIndex;
+  final int subIndex;
+
+  const UserManagementScreen(
+      {super.key,
+      this.initialScreen,
+      this.initialIndex = 0,
+      this.subIndex = 0});
 
   @override
   State<UserManagementScreen> createState() => _UserManagementScreenState();
@@ -119,6 +127,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     _tabVerificationController = TabController(length: 2, vsync: this);
 
     _getData();
+
+    if (widget.initialIndex == 0) {
+      _tabController?.animateTo(0);
+      if (widget.initialScreen == Screens.verificationList) {
+        _selectedScreen = Screens.verificationList;
+        //Future.delayed(Duration(seconds: 1), () {
+          if (widget.subIndex == 0) {
+            _tabVerificationController?.animateTo(0);
+          } else if (widget.subIndex == 1) {
+            _tabVerificationController?.animateTo(1);
+          }
+       // });
+      }
+    } else if (widget.initialIndex == 1) {
+      _tabController?.animateTo(1);
+    } else if (widget.initialIndex == 2) {
+      _tabController?.animateTo(2);
+    }
     super.initState();
   }
 
@@ -133,7 +159,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         .getAllCorporateRequests(context);
     Provider.of<VerificationProvider>(context, listen: false)
         .getAllUserRequests(context);
-    allRoles = await Provider.of<RoleProvider>(context, listen: false).getAllRoles(context);
+    allRoles = await Provider.of<RoleProvider>(context, listen: false)
+        .getAllRoles(context);
     selectedEmployeeRoles =
         await Provider.of<EmployeeProvider>(context, listen: false)
             .getRoles(context);
@@ -4609,32 +4636,36 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Expanded(
                         child: Consumer<VerificationProvider>(
                             builder: (context, verificationProvider, child) {
-                              print(verificationProvider.corporateRequests.length);
+                          print(verificationProvider.corporateRequests.length);
                           return verificationProvider.isCorporateLoading
                               ? Center(
-                                child: Container(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
+                                  child: Container(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
                               : verificationProvider.corporateRequests.isEmpty
                                   ? SingleChildScrollView(
-                                    child: Column(
-                                                                mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          height: MediaQuery.of(context).size.height * 0.6,
-                                          child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.6,
+                                            child: Center(
                                               child: Text(
                                                 "No Requests",
                                                 style: CustomTypography.Body1,
                                               ),
                                             ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
+                                          ),
+                                        ],
+                                      ),
+                                    )
                                   : ListView.builder(
                                       itemCount: verificationProvider
                                           .corporateRequests.length,
@@ -4664,37 +4695,41 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             builder: (context, verificationProvider, child) {
                           return verificationProvider.isUserLoading
                               ? Center(
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                              : verificationProvider.userRequests.isEmpty
-                              ? SingleChildScrollView(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  height: MediaQuery.of(context).size.height * 0.6,
-                                  child: Center(
-                                    child: Text(
-                                      "No Requests",
-                                      style: CustomTypography.Body1,
-                                    ),
+                                  child: Container(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                              : ListView.builder(
-                            itemCount:
-                                verificationProvider.userRequests.length,
-                            itemBuilder: (context, index) {
-                              return _verificationUserRequestsListItem(
-                                  index, verificationProvider);
-                            },
-                          );
+                                )
+                              : verificationProvider.userRequests.isEmpty
+                                  ? SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.6,
+                                            child: Center(
+                                              child: Text(
+                                                "No Requests",
+                                                style: CustomTypography.Body1,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: verificationProvider
+                                          .userRequests.length,
+                                      itemBuilder: (context, index) {
+                                        return _verificationUserRequestsListItem(
+                                            index, verificationProvider);
+                                      },
+                                    );
                         }),
                       ),
                     ],
@@ -4920,18 +4955,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       children: [
                         TextSpan(
                           text:
-                          '“${verificationProvider.userRequests[index].name ?? ""}”',
+                              '“${verificationProvider.userRequests[index].name ?? ""}”',
                           style: CustomTypography.Body1_5.copyWith(
                             color:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         TextSpan(
                           text:
-                          ' has requested to create new corporate account.',
+                              ' has requested to create new corporate account.',
                           style: CustomTypography.Body1_5,
                         ),
                       ],
@@ -4947,108 +4982,109 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       children: [
                         CustomChip(
                             label: Text(
-                                verificationProvider.userRequests[index]
-                                    .email ??
+                                verificationProvider
+                                        .userRequests[index].email ??
                                     "",
                                 style: CustomTypography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                             label: Text(
-                                verificationProvider.userRequests[index]
-                                    .phone??
+                                verificationProvider
+                                        .userRequests[index].phone ??
                                     "",
                                 style: CustomTypography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
-                          onPressed: () {
-                            //Show a dialog with outlined dropdown with allRoles, user can save or cancel (as column)
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text('Select Role',
-                                      style: CustomTypography.H6),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        height: CustomSpacing.two,
-                                      ),
-                                      DropdownButtonFormField(
-                                        items: allRoles
-                                            .where((role) => role.isApplicableForInternal == true) // Filter out roles where isApplicableForTrial is not true
-                                            .map((role) {
-                                          return DropdownMenuItem(
-                                            child: Text(role.name ?? ""),
-                                            value: role,
-                                          );
-                                        }).toList(),
-                                        onChanged: (value) {
-                                          // Handle dropdown value change
-                                          selectedRole = value as roleModel.Roles;
-                                        },
-                                        value: selectedRole,
-                                        decoration: InputDecoration(
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                            onPressed: () {
+                              //Show a dialog with outlined dropdown with allRoles, user can save or cancel (as column)
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: Text('Select Role',
+                                        style: CustomTypography.H6),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          height: CustomSpacing.two,
+                                        ),
+                                        DropdownButtonFormField(
+                                          items: allRoles
+                                              .where((role) =>
+                                                  role.isApplicableForInternal ==
+                                                  true) // Filter out roles where isApplicableForTrial is not true
+                                              .map((role) {
+                                            return DropdownMenuItem(
+                                              child: Text(role.name ?? ""),
+                                              value: role,
+                                            );
+                                          }).toList(),
+                                          onChanged: (value) {
+                                            // Handle dropdown value change
+                                            selectedRole =
+                                                value as roleModel.Roles;
+                                          },
+                                          value: selectedRole,
+                                          decoration: InputDecoration(
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ),
-                                      ),
-
-                                      SizedBox(
-                                        height: CustomSpacing.two,
-                                      ),
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: CustomButton(
-
-                                                  type: ButtonType.filled,
-                                                  onPressed: () {
-                                                    // Handle save role
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Text('Save',
-                                                      style: CustomTypography
-                                                          .BottomNavigationActiveLabel),
+                                        SizedBox(
+                                          height: CustomSpacing.two,
+                                        ),
+                                        Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: CustomButton(
+                                                    type: ButtonType.filled,
+                                                    onPressed: () {
+                                                      // Handle save role
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text('Save',
+                                                        style: CustomTypography
+                                                            .BottomNavigationActiveLabel),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: CustomButton(
-                                                  type: ButtonType.text,
-                                                  onPressed: () {
-                                                    // Handle cancel
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Text('Cancel',
-                                                      style: CustomTypography
-                                                          .BottomNavigationActiveLabel
-                                                          .copyWith(
-                                                              color: AppColors
-                                                                  .primaryMain)),
+                                              ],
+                                            ),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: CustomButton(
+                                                    type: ButtonType.text,
+                                                    onPressed: () {
+                                                      // Handle cancel
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text('Cancel',
+                                                        style: CustomTypography
+                                                                .BottomNavigationActiveLabel
+                                                            .copyWith(
+                                                                color: AppColors
+                                                                    .primaryMain)),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                             label: Text(
-                                verificationProvider.userRequests[index]
-                                    .role ??
+                                verificationProvider.userRequests[index].role ??
                                     "",
                                 style: CustomTypography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
@@ -5071,78 +5107,76 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               child: Row(
                 children: [
                   verificationProvider.isCorporateAcceptLoading &&
-                      selectedUserVerificationAcceptListIndex == index
+                          selectedUserVerificationAcceptListIndex == index
                       ? Center(
-                    child: Container(
-                      margin: EdgeInsets.only(left: 24),
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
+                          child: Container(
+                            margin: EdgeInsets.only(left: 24),
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
                       : CustomButton(
-                    type: ButtonType.outlined,
-                    onPressed: () {
-                      // Handle accept
-                      selectedUserVerificationAcceptListIndex =
-                          index;
-                      verificationProvider
-                          .changeUserVerificationStatus(
-                          context,
-                          verificationProvider
-                              .userRequests[index].id ??
-                              "",
-                          true)
-                          .then((value) {
-                        if (value) {
-                          if (value) {
+                          type: ButtonType.outlined,
+                          onPressed: () {
+                            // Handle accept
+                            selectedUserVerificationAcceptListIndex = index;
                             verificationProvider
-                                .getAllUserRequests(context);
-                          }
-                        }
-                      });
-                    },
-                    child: Text('Accept',
-                        style:
-                        CustomTypography.BottomNavigationActiveLabel
-                            .copyWith(color: AppColors.primaryMain)),
-                  ),
+                                .changeUserVerificationStatus(
+                                    context,
+                                    verificationProvider
+                                            .userRequests[index].id ??
+                                        "",
+                                    true)
+                                .then((value) {
+                              if (value) {
+                                if (value) {
+                                  verificationProvider
+                                      .getAllUserRequests(context);
+                                }
+                              }
+                            });
+                          },
+                          child: Text('Accept',
+                              style:
+                                  CustomTypography.BottomNavigationActiveLabel
+                                      .copyWith(color: AppColors.primaryMain)),
+                        ),
                   SizedBox(width: CustomSpacing.two),
                   verificationProvider.isUserRejectLoading &&
-                      selectedUserVerificationRejectListIndex == index
+                          selectedUserVerificationRejectListIndex == index
                       ? Center(
-                    child: Container(
-                      margin: EdgeInsets.only(left: 16),
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
+                          child: Container(
+                            margin: EdgeInsets.only(left: 16),
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
                       : CustomButton(
-                    type: ButtonType.text,
-                    onPressed: () {
-                      // Handle reject
-                      selectedUserVerificationRejectListIndex =
-                          index;
-                      verificationProvider
-                          .changeUserVerificationStatus(
-                          context,
-                          verificationProvider
-                              .userRequests[index].id ??
-                              "",
-                          false)
-                          .then((value) {
-                        if (value) {
+                          type: ButtonType.text,
+                          onPressed: () {
+                            // Handle reject
+                            selectedUserVerificationRejectListIndex = index;
                             verificationProvider
-                                .getAllUserRequests(context);
-                          }
-                      });
-                    },
-                    child: Text('Reject',
-                        style:
-                        CustomTypography.BottomNavigationActiveLabel
-                            .copyWith(color: AppColors.primaryMain)),
-                  ),
+                                .changeUserVerificationStatus(
+                                    context,
+                                    verificationProvider
+                                            .userRequests[index].id ??
+                                        "",
+                                    false)
+                                .then((value) {
+                              if (value) {
+                                verificationProvider
+                                    .getAllUserRequests(context);
+                              }
+                            });
+                          },
+                          child: Text('Reject',
+                              style:
+                                  CustomTypography.BottomNavigationActiveLabel
+                                      .copyWith(color: AppColors.primaryMain)),
+                        ),
                   Spacer(),
                   //date
                   Row(
@@ -5162,4 +5196,3 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 }
-

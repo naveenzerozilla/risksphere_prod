@@ -9,7 +9,7 @@ import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/main.dart';
 import 'package:green/models/initial_data_model.dart';
 import 'package:green/providers/auth_provider.dart';
-import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:provider/provider.dart';
 

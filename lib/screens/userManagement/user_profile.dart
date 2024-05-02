@@ -1050,20 +1050,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                     SizedBox(height: CustomSpacing.four),
                     // Email
                     TextFormField(
-                      enabled: isEdit,
+                      enabled: false,
                       controller: _emailGeneralInfoController,
 
                       decoration: InputDecoration(
-                        labelText: !isEdit
-                            ? 'corp-admin13@berkshirehathaway.com'
+                        labelText: isEdit
+                            ? 'Email'
                             : emailLabelText,
                         labelStyle: isEdit
-                            ? CustomTypography.Body1
+                            ? CustomTypography.Body1.copyWith(
+                            color: Theme.of(context)
+                                .textTheme
+                                .labelMedium
+                                ?.color)
                             : CustomTypography.Body1.copyWith(
                                 color: Theme.of(context)
                                     .textTheme
                                     .labelMedium
                                     ?.color),
+
                         disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
@@ -1198,7 +1203,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             "rating": userProfileProvider
                                                     .userData.rating ??
                                                 0,
-                                            "email": _emailGeneralInfoController.text,
+                                            "email": userProfileProvider.userData.email ?? "",
                                             "request_sent": [],
                                             "is_external": true,
                                             "display_image_url": userImageUrl,

@@ -5,7 +5,7 @@ import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/screens/home/home_screen.dart';
+import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/custom_checkbox.dart';
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         handleImageSelect: handleImageSelect,
                         colorSelectionMethod: ColorSelectionMethod.colorSeed,
                       ),*/
-                              HomeScreen(),
+                              DashboardScreen(),
                     ),
                   );
                 }
@@ -325,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) =>
-                                            HomeScreen() /*Home(
+                                            DashboardScreen() /*Home(
                                         useLightMode: false,
                                         useMaterial3: true,
                                         colorSelected: ColorSeed.baseColor,

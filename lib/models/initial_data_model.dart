@@ -226,7 +226,7 @@ class Companies {
   late final List<Roles> roles;
 
   Companies.fromJson(Map<String, dynamic> json){
-    isActive = json['is_active'];
+    isActive = json['is_active']??false;
     isAuthorized = json['is_authorized'];
     /*if(json['user_ids']!=null) {
       userIds =
