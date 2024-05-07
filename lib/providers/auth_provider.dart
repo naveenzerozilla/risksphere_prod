@@ -145,7 +145,7 @@ class AuthNotifier extends ChangeNotifier {
         print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
         IdTokenResult token = await userCredential.user!.getIdTokenResult();
         Map<String, dynamic>? claims = token.claims?? {};
-        print("Claims: $claims");
+        log("Claims: $claims");
 
         if(claims['is_individual']==null&&claims['is_admin']==null) {
           isNewUser = true;

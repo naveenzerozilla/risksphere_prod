@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
@@ -319,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
-                                  print(
+                                  log(
                                       "Claims: " + parseJwt(token!).toString());
                                   Navigator.pushReplacement(
                                     context,

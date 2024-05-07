@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
     IdTokenResult token = await user.getIdTokenResult();
     Map<String, dynamic>? claims = token.claims?? {};
-    print("Claims: $claims");
+    log("Claims: $claims");
     String? tokenString = await user.getIdToken();
     log("Token: ${token.token}");
 

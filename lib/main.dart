@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/providers/company_provider.dart';
+import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/dashboard_provider.dart';
 import 'package:green/providers/email_provider.dart';
 import 'package:green/providers/employee_provider.dart';
@@ -36,6 +37,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VerificationProvider()),
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
       ],
       child: const MyApp(),
     ),

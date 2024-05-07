@@ -3935,7 +3935,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               // Handle view employees
                               Navigator.pop(context);
                               Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) => ConnectionsScreen()));
+                                  builder: (context) => ConnectionsScreen(
+                                    userId: 'userId',
+                                    userName: 'userName',
+                                  )));
                             },
                           ),
                         ),
@@ -4443,9 +4446,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     TextButton.icon(
                       onPressed: () {
                         // Handle view employees
-                        setState(() {
-                          _selectedScreen = Screens.corporateEmployeeList;
-                        });
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => ConnectionsScreen(
+                              userId: employeeProvider.employeeList?[index].id??"",
+                              userName: employeeProvider.employeeList?[index].name??"",
+                            )));
                       },
                       icon: Icon(Icons.people),
                       label: Text('View Connections',
