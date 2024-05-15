@@ -35,7 +35,24 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  hexcolor: ^3.0.1
+  provider: ^6.1.2
+  flutter_svg: ^2.0.10+1
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  google_sign_in: ^6.2.1
+  flutter_autocomplete_label: ^1.0.0
+  country_list_picker: ^1.0.2
+  cloud_functions: ^4.6.8
+  country_pickers: ^2.0.0
+  flutter_recaptcha_v2_compat: ^1.0.2+2
+  flutter_gcaptcha_v3: ^2.0.4
+  webview_flutter: ^4.5.0
+  shared_preferences: ^2.2.3
+  intl: ^0.18.1
+  fluttertoast: ^8.2.5
+  image_picker: ^1.0.8
+  mat_month_picker_dialog: ^1.1.1
+  easy_localization: ^3.0.6
 
 dev_dependencies:
   flutter_test:
@@ -60,8 +77,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/images/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -89,3 +106,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+
+  fonts:
+    - family: 'General Sans'
+      fonts:
+        - asset: assets/fonts/GeneralSans-Regular.otf
+        - asset: assets/fonts/GeneralSans-Italic.otf
+        - asset: assets/fonts/GeneralSans-Bold.otf
+        - asset: assets/fonts/GeneralSans-Medium.otf
+        - asset: assets/fonts/GeneralSans-Semibold.otf

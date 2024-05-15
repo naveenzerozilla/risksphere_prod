@@ -1,0 +1,37 @@
+class CustomWidth {
+  static const double _0 = 0;
+  static const double _1 = 4;
+  static const double _2 = 8;
+  static const double _3 = 12;
+  static const double _4 = 16;
+  static const double _5 = 20;
+  static const double _6 = 24;
+  static const double _7 = 28;
+  static const double _8 = 32;
+  static const double _9 = 36;
+  static const double _10 = 40;
+  static const double _11 = 44;
+  static const double _12 = 48;
+  static const double _14 = 56;
+  static const double _16 = 64;
+  static const double _20 = 80;
+  static const double _24 = 96;
+  static const double _28 = 112;
+  static const double _32 = 128;
+  static const double _36 = 144;
+  static const double _40 = 160;
+  static const double _44 = 176;
+  static const double _48 = 192;
+  static const double _52 = 208;
+  static const double _56 = 224;
+  static const double _60 = 240;
+  static const double _64 = 256;
+  static const double _72 = 288;
+  static const double _80 = 320;
+  static const double _96 = 384;
+  static const double _3_5 = 14;
+  static const double _2_5 = 10;
+  static const double _1_5 = 6;
+  static const double _0_5 = 2;
+  static const double px = 1;
+}
