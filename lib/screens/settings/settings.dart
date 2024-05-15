@@ -903,7 +903,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   _addFeaturesUI() {
     return SingleChildScrollView(
       child: Container(
-        color: AppColors.paperElavation25,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.paperElavation25
+            : AppColors.paperElavation25Light,
         child: Consumer<FeatureProvider>(builder: (_, featureProvider, child) {
           return RefreshIndicator(
             onRefresh: () async {
@@ -1350,7 +1352,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _roleCardUI(int index) {
     return Consumer<role.RoleProvider>(builder: (context, roleProvider, child) {
       return Container(
-        color: AppColors.paperElavation25,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.paperElavation25
+            : AppColors.paperElavation25Light,
         padding: EdgeInsets.all(8),
         child: Card(
           child: Padding(

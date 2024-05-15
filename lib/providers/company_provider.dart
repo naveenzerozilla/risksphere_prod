@@ -17,10 +17,11 @@ import '../service/api_service.dart';
 import '../utils/api_constants.dart';
 
 class CompanyProvider with ChangeNotifier {
-
-
+  /// Loading state variables
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -28,8 +29,19 @@ class CompanyProvider with ChangeNotifier {
     });
   }
 
+  bool _isCompanyListLoading = false;
+  bool get isCompanyListLoading => _isCompanyListLoading;
+  set isCompanyListLoading(bool value) {
+    _isCompanyListLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isStatusLoading = false;
+
   bool get isStatusLoading => _isStatusLoading;
+
   set isStatusLoading(bool value) {
     _isStatusLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -38,7 +50,9 @@ class CompanyProvider with ChangeNotifier {
   }
 
   bool _isDeleteLoading = false;
+
   bool get isDeleteLoading => _isDeleteLoading;
+
   set isDeleteLoading(bool value) {
     _isDeleteLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,7 +61,9 @@ class CompanyProvider with ChangeNotifier {
   }
 
   bool _isRolesLoading = false;
+
   bool get isRolesLoading => _isRolesLoading;
+
   set isRolesLoading(bool value) {
     _isRolesLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,7 +72,9 @@ class CompanyProvider with ChangeNotifier {
   }
 
   bool _isImageUploadLoading = false;
+
   bool get isImageUploadLoading => _isImageUploadLoading;
+
   set isImageUploadLoading(bool value) {
     _isImageUploadLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,45 +82,119 @@ class CompanyProvider with ChangeNotifier {
     });
   }
 
+  ///Pagination variables
+  String? companyListPageToken;
+  String? companyListDirection;
+  bool companyListNextPageExists = true;
 
+  /// Data variables
   List<Companies> _companies = [];
+
   List<Companies> get companies => _companies;
 
   List<CorporateType> _corporateType = [];
+
   List<CorporateType> get corporateType => _corporateType;
 
   Companies _company = Companies();
+
   Companies get company => _company;
 
   /// Fetches all companies from the API based on search text and filter criteria.
-  Future<List<Companies>> getAllCompanies(BuildContext context,String searchText, String filter) async {
+  Future<List<Companies>> getAllCompanies(BuildContext context,
+      String searchText, String companyTypeFilter, String role, [bool isSearch = false]) async {
     try {
+      // Clear normal pagination is isSearch is true
+      if (isSearch) {
+        companyListPageToken = null;
+        companyListNextPageExists = true;
+      }
+      // Check if api is already working
+      if (isLoading||isCompanyListLoading) return _companies;
+      // dont call api is next page does not exist
+      if (!companyListNextPageExists) return _companies;
       // Set loading state to true
-      isLoading = true;
+      if(companyListPageToken == null && companyListNextPageExists) {
+        _companies = [];
+        isLoading = true;
+      } else {
+        isCompanyListLoading = true;
+      }
       // Use API Service to fetch companies
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
-      Map<String, dynamic> body = {
-        'searchText': searchText,
-        'filter': filter,
-      };
+      String additionalParams = "";
+      if (searchText.isNotEmpty) {
+        additionalParams += "&search=$searchText";
+      }
+      if (companyTypeFilter.isNotEmpty) {
+        additionalParams += "&company_filter=$companyTypeFilter";
+      }
+      if (role.isNotEmpty) {
+        additionalParams += "&role_filter=$role";
+      }
+      if (companyListPageToken != null) {
+        additionalParams += "&pagetoken=$companyListPageToken&direction=forward";
+      }
+
+      additionalParams += "&pageSize=2";
+
+      // Construct the URL with correct formatting
+      String url = AppConstant.CORPORATE_MANAGEMENT_URL;
+      if (additionalParams.isNotEmpty) {
+        // Check if the base URL already contains a "?"
+        final bool hasQueryParams = url.contains("?");
+
+        // If the base URL already contains a "?", use "&" to append additionalParams
+        // Otherwise, use "?"
+        final String separator = hasQueryParams ? "&" : "?";
+
+        // If additionalParams starts with "&" or "?", remove the first character
+        final String formattedParams =
+        additionalParams.startsWith("&") || additionalParams.startsWith("?")
+            ? additionalParams.substring(1)
+            : additionalParams;
+
+        // Construct the final URL with additional parameters
+        print("Formatted Params: $formattedParams");
+        print("URL: $url");
+        print("Separator: $separator");
+        url = "$separator$formattedParams";
+      } else {
+        url = "";
+      }
+
+
       // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get();
+      Map<String, dynamic> response = await apiService.get(url);
 
       // Parse the response into a list of companies
-      List<Companies> companies = [];
+      List<Companies> companiesLocal = [];
       if (response.containsKey('companies')) {
-        companies = (response['companies'] as List)
+        companiesLocal = (response['companies'] as List)
             .map((company) => Companies.fromJson(company))
             .toList();
       }
-        // Update the list of companies and notify listeners
-        _companies = companies;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-        });
-        isLoading = false;
-        return companies;
+      if (response.containsKey('pageToken')) {
+        companyListPageToken = response['pageToken'];
+      } else {
+        companyListPageToken = null;
+      }
+      if (response.containsKey('nextPageExists')) {
+        companyListNextPageExists = response['nextPageExists'];
+        if (!companyListNextPageExists) {
+          companyListPageToken = null;
+        }
+      } else {
+        companyListNextPageExists = false;
+      }
+      // Update the list of companies and notify listeners
+      _companies.addAll(companiesLocal);
 
+      isLoading = false;
+      isCompanyListLoading = false;
+        notifyListeners();
+
+      return _companies;
     } catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
@@ -111,14 +203,17 @@ class CompanyProvider with ChangeNotifier {
       // TODO: Display a generic error message to the user
 
       isLoading = false;
-      if (!context.mounted) return[];
-      CustomToast.error(context, 'Error fetching companies. Please try again later.');
+      isCompanyListLoading = false;
+      if (!context.mounted) return [];
+      CustomToast.error(
+          context, 'Error fetching companies. Please try again later.');
       return []; // Return an empty list in case of error
     }
   }
 
   /// Changes status of a company based on the company ID and new status.
-  Future<bool> changeCompanyStatus(BuildContext context, String companyId, bool newStatus) async {
+  Future<bool> changeCompanyStatus(
+      BuildContext context, String companyId, bool newStatus) async {
     try {
       // Set loading state to true
       isStatusLoading = true;
@@ -133,14 +228,14 @@ class CompanyProvider with ChangeNotifier {
       // Send a PATCH request to the API
       Map<String, dynamic> response = await apiService.patch(body);
       isStatusLoading = false;
-      if(context.mounted) {
+      if (context.mounted) {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if(context.mounted) CustomToast.success(context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
       }
-
 
       return newStatus;
     } catch (e, stackTrace) {
@@ -148,19 +243,15 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user for type BackendException text
-      if(context.mounted) CustomToast.error(context, e.toString());
+      if (context.mounted) CustomToast.error(context, e.toString());
       isStatusLoading = false;
       return false; // Return false in case of error
     }
   }
 
   /// Deletes a company based on the company ID.
-/// {
-//     "data":{
-//         "company_id":["VfIz7kXeFMK2ezIbKKCu","YqpcooTwU3MisGMj0ANH"]
-//         }
-// }
-  Future<bool> deleteCompany(BuildContext context, List<String> companyIds) async {
+  Future<bool> deleteCompany(
+      BuildContext context, List<String> companyIds) async {
     try {
       // Set loading state to true
       isDeleteLoading = true;
@@ -174,11 +265,12 @@ class CompanyProvider with ChangeNotifier {
       // Send a DELETE request to the API
       Map<String, dynamic> response = await apiService.delete(body);
       isDeleteLoading = false;
-      if(context.mounted) {
+      if (context.mounted) {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if(context.mounted) CustomToast.success(context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
       }
       return true;
@@ -187,14 +279,15 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if(context.mounted) CustomToast.error(context, e.toString());
+      if (context.mounted) CustomToast.error(context, e.toString());
       isDeleteLoading = false;
       return false; // Return false in case of error
     }
   }
 
   /// Delete Multiple Companies based on the company ID.
-  Future<bool> deleteMultipleCompanies(BuildContext context, List<String> companyIds) async {
+  Future<bool> deleteMultipleCompanies(
+      BuildContext context, List<String> companyIds) async {
     try {
       // Set loading state to true
       isLoading = true;
@@ -208,11 +301,12 @@ class CompanyProvider with ChangeNotifier {
       // Send a DELETE request to the API
       Map<String, dynamic> response = await apiService.delete(body);
       isLoading = false;
-      if(context.mounted) {
+      if (context.mounted) {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if(context.mounted) CustomToast.success(context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
       }
       return true;
@@ -221,15 +315,15 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if(context.mounted) CustomToast.error(context, e.toString());
+      if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
   }
 
   /// Create a new company based on the company data.
-
-  Future<bool> createCompany(BuildContext context, Map<String, dynamic> companyData) async {
+  Future<bool> createCompany(
+      BuildContext context, Map<String, dynamic> companyData) async {
     try {
       // Set loading state to true
       isLoading = true;
@@ -242,11 +336,12 @@ class CompanyProvider with ChangeNotifier {
       // Send a POST request to the API
       Map<String, dynamic> response = await apiService.post(body);
       isLoading = false;
-      if(context.mounted) {
+      if (context.mounted) {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if(context.mounted) CustomToast.success(context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
       }
       return true;
@@ -255,14 +350,15 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if(context.mounted) CustomToast.error(context, e.toString());
+      if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
   }
 
   /// Update a company based on the company ID and new company data.
-  Future<bool> updateCompany(BuildContext context, Map<String, dynamic> companyData) async {
+  Future<bool> updateCompany(
+      BuildContext context, Map<String, dynamic> companyData) async {
     try {
       // Set loading state to true
       isLoading = true;
@@ -278,8 +374,8 @@ class CompanyProvider with ChangeNotifier {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if (context.mounted) CustomToast.success(
-              context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
       }
       return true;
@@ -295,7 +391,6 @@ class CompanyProvider with ChangeNotifier {
   }
 
   /// View a company based on the company ID.
-
   Future<Companies> viewCompany(BuildContext context, String companyId) async {
     try {
       // Set loading state to true
@@ -303,11 +398,13 @@ class CompanyProvider with ChangeNotifier {
       // Use API Service to update company status
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
       // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get("?company_id=$companyId");
+      Map<String, dynamic> response =
+          await apiService.get("?company_id=$companyId");
       isLoading = false;
       if (response.containsKey('company')) {
         List<dynamic> companiesJson = response['company'];
-        List<Companies> companies = companiesJson.map((json) => Companies.fromJson(json)).toList();
+        List<Companies> companies =
+            companiesJson.map((json) => Companies.fromJson(json)).toList();
         _company = companies[0];
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
@@ -327,17 +424,16 @@ class CompanyProvider with ChangeNotifier {
     }
   }
 
-
   /// Upload image and get image URL
-
   Future<String> uploadImage(BuildContext context, File image) async {
-try {
+    try {
       // Set loading state to true
       isImageUploadLoading = true;
       // Use API Service to update company status
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
       // Send a POST request to the API
-      Map<String, dynamic> response = await apiService.postMultiPart(image.absolute.path);
+      Map<String, dynamic> response =
+          await apiService.postMultiPart(image.absolute.path);
       isImageUploadLoading = false;
       if (response.containsKey('url')) {
         return response['url'];
@@ -377,7 +473,6 @@ try {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-
       }
       isLoading = false;
       return corporateType;

@@ -198,7 +198,6 @@ class Companies {
     required this.createdAt,
     required this.displayName,
     required this.adminSelfRegistration,
-    this.roleIds,
     required this.updatedAt,
     required this.companyTypeId,
     required this.name,
@@ -215,7 +214,6 @@ class Companies {
   late final CreatedAt createdAt;
   late final String displayName;
   late final bool adminSelfRegistration;
-  late final Null roleIds;
   late final UpdatedAt updatedAt;
   late final String companyTypeId;
   late final String name;
@@ -235,12 +233,19 @@ class Companies {
     userIds= [];
     activeDate = ActiveDate.fromJson(json['active_date']);
     createdAt = CreatedAt.fromJson(json['created_at']);
-    displayName = json['display_name'];
+    if(json['display_name']!=null) {
+      displayName = json['display_name'];
+    } else {
+      displayName = "";
+    }
     adminSelfRegistration = json['admin_self_registration'];
-    roleIds = null;
     updatedAt = UpdatedAt.fromJson(json['updated_at']);
     companyTypeId = json['company_type_id']??"";
-    name = json['name'];
+    if(json['name']!=null) {
+      name = json['name'];
+    } else {
+      name = "";
+    }
     corporateUserSelfRegistration = json['corporate_user_self_registration'];
     corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
     noOfUsers = json['no_of_users'];
@@ -257,7 +262,6 @@ class Companies {
     _data['created_at'] = createdAt.toJson();
     _data['display_name'] = displayName;
     _data['admin_self_registration'] = adminSelfRegistration;
-    _data['role_ids'] = roleIds;
     _data['updated_at'] = updatedAt.toJson();
     _data['company_type_id'] = companyTypeId;
     _data['name'] = name;

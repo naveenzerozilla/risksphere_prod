@@ -30,6 +30,10 @@ enum Screens {
   roleList,
   roleAdd,
   verificationList,
+  //////////
+  corporateConnectionList,
+  nonCorporateConnectionList, corporateEmployeeEdit, nonCorporateEdit,
+  corporateProfile,
 }
 
 enum EmailOptions {

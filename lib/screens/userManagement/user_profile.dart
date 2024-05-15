@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:country_list_picker/country_list_picker.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/expandable_card_container.dart';
+import 'package:green/models/networking_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -60,6 +62,24 @@ class _ProfileScreenState extends State<ProfileScreen>
   String phoneLabelText = "";
   String selectedAvatar = "";
 
+  // My Team
+  TextEditingController _searchManagerController = TextEditingController();
+  TextEditingController _searchDeligateController = TextEditingController();
+  TextEditingController _searchReporteeController = TextEditingController();
+  Timer? deBouncer;
+  List<NetworkingUsers> _managerList = [];
+  NetworkingUsers? _selectedManager;
+
+  void debounce(
+      VoidCallback callback, {
+        Duration duration = const Duration(seconds: 1),
+      }) {
+    if (deBouncer != null) {
+      deBouncer!.cancel();
+    }
+    deBouncer = Timer(duration, callback);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -111,7 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
     Provider.of<UserProfileProvider>(context, listen: false)
         .getAvatarUrls(context);
+    Provider.of<UserProfileProvider>(context, listen: false)
+        .getUserTeamMembers(context);
   }
+
+  Future<List<NetworkingUsers>> searchNetworks(String query) async => Provider.of<UserProfileProvider>(context, listen: false)
+        .getUserSuggestions(context, query);
 
   @override
   Widget build(BuildContext context1) {
@@ -549,7 +574,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       return !userProfileProvider.isLoading
           ? SingleChildScrollView(
               child: Card(
-                color: AppColors.paperElavation25,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.paperElavation25
+                    : AppColors.paperElavation25Light,
                 child: Column(
                   children: [
                     // Profile Pic
@@ -564,7 +591,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Expanded(
                                 child: Container(
                                   padding: EdgeInsets.all(8),
-                                  color: AppColors.paperElavation25,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? AppColors.paperElavation25
+                                      : AppColors.paperElavation25Light,
                                   child: Column(
                                     children: [
                                       // If company image is not uploaded, show default image
@@ -697,8 +726,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                     padding:
                                                                         EdgeInsets.all(
                                                                             16),
-                                                                    color: AppColors
-                                                                        .paperElavation25,
+                                                                    color: Theme.of(context).brightness == Brightness.dark
+                                                                        ? AppColors.paperElavation25
+                                                                        : AppColors.paperElavation25Light,
                                                                     child: Column(
                                                                       children: [
                                                                         SizedBox(
@@ -1316,27 +1346,41 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   _getMyTeamUI() {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          SizedBox(height: CustomSpacing.two),
-          Container(
-            child: _managerCardUI(),
-          ),
-          SizedBox(height: CustomSpacing.two),
-          Container(
-            child: _delegateCardUI(),
-          ),
-          SizedBox(height: CustomSpacing.two),
-          Container(
-            child: _reporteesCardUI(),
-          ),
-          SizedBox(height: CustomSpacing.two),
-        ],
+      child: Consumer<UserProfileProvider>(
+        builder: (context, userProfileProvider, child) {
+          return userProfileProvider.isUserTeamLoading? Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Center(
+                  child: Container(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(),
+                  )),
+            ],
+          )  : Column(
+            children: [
+              SizedBox(height: CustomSpacing.two),
+              Container(
+                child: _managerCardUI(userProfileProvider),
+              ),
+              SizedBox(height: CustomSpacing.two),
+              Container(
+                child: _delegateCardUI(userProfileProvider),
+              ),
+              SizedBox(height: CustomSpacing.two),
+              Container(
+                child: _reporteesCardUI(userProfileProvider),
+              ),
+              SizedBox(height: CustomSpacing.two),
+            ],
+          );
+        }
       ),
     );
   }
 
-  _managerCardUI() {
+  _managerCardUI(UserProfileProvider userProfileProvider) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1361,13 +1405,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    IconButton(
+                    userProfileProvider.myManager.isNotEmpty&&userProfileProvider.myManager[0] != null?SizedBox(height: 48,): IconButton(
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (context) {
+                          builder: (localContext) {
                             return AlertDialog(
-                              content: _addDialogUI(),
+                              content: _addMemberDialogUI(localContext, "add_manager"),
                             );
                           },
                         );
@@ -1382,7 +1426,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          Container(
+          userProfileProvider.myManager.isEmpty||userProfileProvider.myManager[0] == null?SizedBox(): Container(
             color: Theme.of(context).colorScheme.background,
             child: Column(
               children: [
@@ -1395,33 +1439,100 @@ class _ProfileScreenState extends State<ProfileScreen>
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
                         radius: 24,
-                        backgroundImage:
-                            AssetImage('assets/images/loginImage.png'),
+                        child: userProfileProvider.myManager[0]?.
+                            displayImageUrl !=
+                            null &&
+                            userProfileProvider.myManager[0]?.
+                            displayImageUrl !=
+                                ''
+                            ? ClipOval(
+                          child: Image.network(
+                            userProfileProvider.myManager[0]!.displayImageUrl!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                            : Text(
+                          userProfileProvider.myManager[0]?.name
+                              ?.substring(0, 1)
+                              .toUpperCase() ??
+                              "",
+                        ),
                       ),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Vinay Angadi', style: CustomTypography.Body1),
-                        Text('vinay@devias.io', style: CustomTypography.Body2),
+                        Text(userProfileProvider.myManager[0]?.name??"", style: CustomTypography.Body1),
+                        Text(userProfileProvider.myManager[0]?.email??"", style: CustomTypography.Body2),
                       ],
                     ),
 
                     Spacer(),
                     // Actions
-                    PopupMenuButton(
+                    PopupMenuButton<PopupMenuItem<dynamic>>(
                       itemBuilder: (BuildContext context) {
-                        return [
-                          PopupMenuItem(
-                            child: Row(
-                              children: [
-                                Icon(Icons.search),
-                                SizedBox(width: CustomSpacing.two),
-                                Text('Search'),
-                              ],
+                        List<PopupMenuEntry<PopupMenuItem<dynamic>>> items = [];
+
+                        if (userProfileProvider.myManager.isEmpty || userProfileProvider.myManager[0] == null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: () {
+                                // Handle search
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => _addMemberDialogUI(context, "add_manager"),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.search),
+                                  SizedBox(width: CustomSpacing.two),
+                                  Text('Search'),
+                                ],
+                              ),
                             ),
-                          ),
+                          );
+                        }
+
+                        items.add(
                           PopupMenuItem(
+                            onTap: () {
+                              // Show delete dialog and pop off the menu also on ok
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('Are you sure you want to delete this manager?'),
+                                        SizedBox(height: CustomSpacing.two),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text('Cancel'),
+                                            ),
+                                            SizedBox(width: CustomSpacing.two),
+                                            TextButton(
+                                              onPressed: () {
+                                                // Handle delete
+                                                userProfileProvider.deleteTeamMember(context, userProfileProvider.myManager[0]!.id??"", "add_manager");
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    )
+                                  );
+                                },
+                              );
+                            },
                             child: Row(
                               children: [
                                 Icon(Icons.delete),
@@ -1430,20 +1541,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ],
                             ),
                           ),
-                        ];
+                        );
+
+                        return items;
                       },
                     ),
                   ],
                 )),
                 // Role Chip
-                Row(
+                userProfileProvider.myManager[0]?.role == null?SizedBox(): Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: Chip(
-                        label: Text('Under Writer'),
+                        label: Text(userProfileProvider.myManager[0]?.role??""
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -1456,7 +1570,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  _delegateCardUI() {
+  _delegateCardUI(UserProfileProvider userProfileProvider) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1481,9 +1595,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    IconButton(
+                    userProfileProvider.myDeligate.isNotEmpty&&userProfileProvider.myDeligate[0] != null?SizedBox(height: 48,): IconButton(
                       onPressed: () {
                         // Handle submit button
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return _addMemberDialogUI(context, "add_deligate");
+                          },
+                        );
                       },
                       icon: Icon(
                         Icons.add,
@@ -1495,7 +1615,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          Container(
+          userProfileProvider.myDeligate.isEmpty||userProfileProvider.myDeligate[0] == null?SizedBox(): Container(
             color: Theme.of(context).colorScheme.background,
             child: Column(
               children: [
@@ -1508,34 +1628,102 @@ class _ProfileScreenState extends State<ProfileScreen>
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
                         radius: 24,
-                        backgroundImage:
-                            AssetImage('assets/images/loginImage.png'),
+                        child: userProfileProvider.myDeligate[0]?.
+                        displayImageUrl !=
+                            null &&
+                            userProfileProvider.myDeligate[0]?.
+                            displayImageUrl !=
+                                ''
+                            ? ClipOval(
+                          child: Image.network(
+                            userProfileProvider.myDeligate[0]!.displayImageUrl!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                            : Text(
+                          userProfileProvider.myDeligate[0]?.name
+                              ?.substring(0, 1)
+                              .toUpperCase() ??
+                              "",
+                        ),
                       ),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Vinay Angadi', style: CustomTypography.Body1),
-                        Text('vinay@devias.io', style: CustomTypography.Body2),
+                        Text(userProfileProvider.myDeligate[0]?.name??"", style: CustomTypography.Body1),
+                        Text(userProfileProvider.myDeligate[0]?.email??"", style: CustomTypography.Body2),
                       ],
                     ),
 
                     Spacer(),
                     // Actions
-                    PopupMenuButton(
+                    PopupMenuButton<PopupMenuEntry<dynamic>>(
                       itemBuilder: (BuildContext context) {
-                        return [
-                          PopupMenuItem(
-                            child: Row(
-                              children: [
-                                Icon(Icons.search),
-                                SizedBox(width: CustomSpacing.two),
-                                Text('Search'),
-                              ],
+                        List<PopupMenuEntry<PopupMenuEntry<dynamic>>> items = [];
+
+                        if (userProfileProvider.myDeligate.isNotEmpty && userProfileProvider.myDeligate[0] != null) {
+                          items.add(
+                            PopupMenuItem(
+                              onTap: () {
+                                // Handle search
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => _addMemberDialogUI(context, "add_deligate"),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.search),
+                                  SizedBox(width: CustomSpacing.two),
+                                  Text('Search'),
+                                ],
+                              ),
                             ),
-                          ),
+                          );
+                        }
+
+                        items.add(
                           PopupMenuItem(
+                            onTap: () {
+                              // Show delete dialog and pop off the menu also on ok
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('Are you sure you want to delete this delegate?'),
+                                        SizedBox(height: CustomSpacing.two),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text('Cancel'),
+                                            ),
+                                            SizedBox(width: CustomSpacing.two),
+                                            TextButton(
+                                              onPressed: () {
+                                                // Handle delete
+                                                userProfileProvider.deleteTeamMember(context, userProfileProvider.myDeligate[0]!.id??"", "add_deligate");
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    )
+                                  );
+                                },
+                              );
+                            },
                             child: Row(
+
                               children: [
                                 Icon(Icons.delete),
                                 SizedBox(width: CustomSpacing.two),
@@ -1543,19 +1731,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ],
                             ),
                           ),
-                        ];
+                        );
+
+                        return items;
                       },
                     ),
+
+
+
+
                   ],
                 )),
                 // Role Chip
-                Row(
+                userProfileProvider.myDeligate[0]?.role == null?SizedBox(): Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: Chip(
-                        label: Text('Under Writer'),
+                        label: Text(userProfileProvider.myDeligate[0]?.role??""),
                       ),
                     ),
                   ],
@@ -1569,7 +1763,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  _reporteesCardUI() {
+  _reporteesCardUI(UserProfileProvider userProfileProvider) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1597,6 +1791,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                     IconButton(
                       onPressed: () {
                         // Handle submit button
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return _addMemberDialogUI(context, "add_reportee");
+                          },
+                        );
                       },
                       icon: Icon(
                         Icons.add,
@@ -1608,13 +1808,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          SizedBox(
+          userProfileProvider.myReportee.isEmpty||userProfileProvider.myReportee[0] == null?SizedBox():SizedBox(
             height: MediaQuery.of(context).size.height * 0.5,
             child: ListView.builder(
                 shrinkWrap: true,
-                itemCount: 3,
+                physics: ClampingScrollPhysics(),
+                itemCount: userProfileProvider.myReportee.length,
                 itemBuilder: (context, index) {
-                  return _reporteesListCardUI();
+                  return _reporteesListCardUI(userProfileProvider, index);
                 }),
           ),
         ],
@@ -1622,7 +1823,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  _reporteesListCardUI() {
+  _reporteesListCardUI(UserProfileProvider userProfileProvider, int index) {
     return Container(
       color: Theme.of(context).colorScheme.background,
       child: Column(
@@ -1635,14 +1836,31 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(8.0),
                 child: CircleAvatar(
                   radius: 24,
-                  backgroundImage: AssetImage('assets/images/loginImage.png'),
+                  child: userProfileProvider.myReportee[index]?.
+                  displayImageUrl !=
+                      null &&
+                      userProfileProvider.myReportee[index]?.
+                      displayImageUrl !=
+                          ''
+                      ? ClipOval(
+                    child: Image.network(
+                      userProfileProvider.myReportee[index]!.displayImageUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : Text(
+                    userProfileProvider.myReportee[index]?.name
+                        ?.substring(0, 1)
+                        .toUpperCase() ??
+                        "",
+                  ),
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Vinay Angadi', style: CustomTypography.Body1),
-                  Text('vinay@devias.io', style: CustomTypography.Body2),
+                  Text( userProfileProvider.myReportee[index]?.name??"" , style: CustomTypography.Body1),
+                  Text(userProfileProvider.myReportee[index]?.email??"" , style: CustomTypography.Body2),
                 ],
               ),
 
@@ -1652,6 +1870,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                 itemBuilder: (BuildContext context) {
                   return [
                     PopupMenuItem(
+                      onTap: () {
+                        // Handle search
+                        showDialog(
+                          context: context,
+                          builder: (context) => _addMemberDialogUI(context, "add_reportee"),
+                        );
+                      },
                       child: Row(
                         children: [
                           Icon(Icons.search),
@@ -1661,6 +1886,43 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     PopupMenuItem(
+                      onTap: () {
+                        // Show delete dialog and pop off the menu also on ok
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('Are you sure you want to delete this reportee?'),
+                                  SizedBox(height: CustomSpacing.two),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: Text('Cancel'),
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                      TextButton(
+                                        onPressed: () {
+                                          // Handle delete
+                                          userProfileProvider.deleteTeamMember(context, userProfileProvider.myReportee[index]!.id??"", "add_reportee");
+                                          Navigator.pop(context);
+                                        },
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              )
+                            );
+                          },
+                        );
+                      },
                       child: Row(
                         children: [
                           Icon(Icons.delete),
@@ -1675,13 +1937,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           // Role Chip
-          Row(
+          userProfileProvider.myReportee[index]?.role == null?SizedBox(): Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: Chip(
-                  label: Text('Under Writer'),
+                  label: Text(userProfileProvider.myReportee[index]?.role??"" ),
                 ),
               ),
             ],
@@ -1692,7 +1954,240 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  _addDialogUI() {
+  _addMemberDialogUI(BuildContext localContext, String type) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: CustomSpacing.two),
+          Text(type == "add_manager" ? 'Add Manager' : type == 'add_delegate' ? 'Add Delegate' : 'Add Reportee',
+              style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
+          SizedBox(height: CustomSpacing.two),
+          // Search Box with Autocomplete
+          Autocomplete<NetworkingUsers>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text == '') {
+                return const Iterable<NetworkingUsers>.empty();
+              } else {
+                return Future.delayed(Duration.zero, () async {
+                  _managerList = await searchNetworks(textEditingValue.text);
+                  return _managerList;
+                });
+              }
+            },
+            onSelected: (NetworkingUsers selection) {
+              setState(() {
+                _selectedManager = selection;
+              });
+            },
+            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search by name or email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    onPressed: onFieldSubmitted,
+                    icon: Icon(Icons.search),
+                  ),
+                ),
+              );
+            },
+            displayStringForOption: (NetworkingUsers option) {
+              // Assuming _searchResults is a list of User objects
+              NetworkingUsers user = _managerList.firstWhere((user) => user.id == option.id);
+              return '${user.name} (${user.email})';
+            },
+            optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<NetworkingUsers> onSelected, Iterable<NetworkingUsers> options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  child: ListView.builder(
+                    padding: EdgeInsets.all(10),
+                    itemCount: options.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      NetworkingUsers option = options.elementAt(index);
+                      NetworkingUsers user = _managerList.firstWhere((user) => user.id == option.id);
+                      return GestureDetector(
+                        onTap: () {
+                          onSelected(option);
+                        },
+                        child: ListTile(
+                          leading:CircleAvatar(
+                            child: user.
+                            displayImageUrl !=
+                                null &&
+                                user.
+                                displayImageUrl !=
+                                    ''
+                                ? ClipOval(
+                              child: Image.network(
+                                user.displayImageUrl!,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                                : Text(
+                              user.name
+                                  ?.substring(0, 1)
+                                  .toUpperCase() ??
+                                  "",
+                            ),
+                          ),
+                          title: Text(user.name??"", style: CustomTypography.Body1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
+                          subtitle: Text(user.email??"", style: CustomTypography.Subtitle1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(height: CustomSpacing.two),
+          // Cancel and Submit Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(localContext).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: CustomTypography.ButtonLarge,
+                  ),
+                ),
+              ),
+              SizedBox(width: CustomSpacing.two),
+              Expanded(
+                child: CustomButton(
+                  onPressed: () {
+                    // Handle submit button
+                    switch (type) {
+                      case 'add_manager':
+                        Provider.of<UserProfileProvider>(localContext, listen: false).addTeamMember(context, _selectedManager?.id??"", "add_manager").then((value) {
+                          Navigator.pop(localContext);
+                          if (value) {
+                            Future.delayed(Duration(seconds: 1), () {
+                              Provider.of<UserProfileProvider>(context, listen: false).getUserTeamMembers(context);
+                            });
+                          }
+                        });
+                        break;
+                      case 'add_delegate':
+                        Provider.of<UserProfileProvider>(localContext, listen: false).addTeamMember(context, _selectedManager?.id??"", "add_delegate").then((value) {
+                          Navigator.pop(localContext);
+                          if (value) {
+                            Future.delayed(Duration(seconds: 1), () {
+                              Provider.of<UserProfileProvider>(context, listen: false).getUserTeamMembers(context);
+                            });
+                          }
+                        });
+                        break;
+                        case 'add_reportee':
+                        Provider.of<UserProfileProvider>(localContext, listen: false).addTeamMember(context, _selectedManager?.id??"", "add_reportee").then((value) {
+                          Navigator.pop(localContext);
+                          if (value) {
+                            Future.delayed(Duration(seconds: 1), () {
+                              Provider.of<UserProfileProvider>(context, listen: false).getUserTeamMembers(context);
+                            });
+                          }
+                        });
+                    }
+                  },
+                  type: ButtonType.filled,
+                  child: Text(
+                    'Submit',
+                    style: CustomTypography.ButtonLarge,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  _addDelegateDialogUI() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        // add manager text, below it search box with search icon and submit button
+        children: [
+          SizedBox(height: CustomSpacing.two),
+          Text('Add Manager',
+              style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
+          SizedBox(height: CustomSpacing.two),
+          // Search Box
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Search by name or email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              suffixIcon: IconButton(
+                onPressed: () {
+                  // Handle submit button
+                },
+                icon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          SizedBox(height: CustomSpacing.two),
+          // Cancel and Submit Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Handle submit button
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: CustomTypography.ButtonLarge,
+                  ),
+                ),
+              ),
+              SizedBox(width: CustomSpacing.two),
+              Expanded(
+                child: CustomButton(
+                  onPressed: () {
+                    // Handle submit button
+                  },
+                  type: ButtonType.filled,
+                  child: Text(
+                    'Submit',
+                    style: CustomTypography.ButtonLarge,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  _addReporteeDialogUI() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
