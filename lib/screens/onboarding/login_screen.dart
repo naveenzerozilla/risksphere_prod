@@ -35,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String verifyResult = "";
   bool isCaptchaVerified = false;
   RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
+  bool _showPassword = false;
 
   @override
   void initState() {
@@ -198,11 +199,21 @@ class _LoginScreenState extends State<LoginScreen> {
           // Password
           TextFormField(
             decoration: InputDecoration(
+              suffixIcon: IconButton(
+                icon: _showPassword
+                    ? Icon(Icons.visibility)
+                    : Icon(Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _showPassword = !_showPassword;
+                  });
+                },
+              ),
               labelText: 'Password',
               hintText: 'Enter your password',
               border: const OutlineInputBorder(),
             ),
-            obscureText: true,
+            obscureText: !_showPassword,
             validator: (value) {
               if (value == null || value.isEmpty || value.length < 8) {
                 return 'Password must be at least 8 characters';

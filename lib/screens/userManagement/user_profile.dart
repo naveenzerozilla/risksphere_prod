@@ -574,7 +574,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       return !userProfileProvider.isLoading
           ? SingleChildScrollView(
               child: Card(
-                color: AppColors.paperElavation25,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.paperElavation25
+                    : AppColors.paperElavation25Light,
                 child: Column(
                   children: [
                     // Profile Pic
@@ -589,7 +591,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Expanded(
                                 child: Container(
                                   padding: EdgeInsets.all(8),
-                                  color: AppColors.paperElavation25,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? AppColors.paperElavation25
+                                      : AppColors.paperElavation25Light,
                                   child: Column(
                                     children: [
                                       // If company image is not uploaded, show default image
@@ -722,8 +726,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                     padding:
                                                                         EdgeInsets.all(
                                                                             16),
-                                                                    color: AppColors
-                                                                        .paperElavation25,
+                                                                    color: Theme.of(context).brightness == Brightness.dark
+                                                                        ? AppColors.paperElavation25
+                                                                        : AppColors.paperElavation25Light,
                                                                     child: Column(
                                                                       children: [
                                                                         SizedBox(

@@ -147,7 +147,8 @@ class AuthNotifier extends ChangeNotifier {
         Map<String, dynamic>? claims = token.claims?? {};
         log("Claims: $claims");
 
-        if(claims['is_individual']==null&&claims['is_admin']==null) {
+        print('Is Individual? ${claims['isIndividual']}');
+        if(claims['isIndividual']==null) {
           isNewUser = true;
           // Navigate to create account screen and pass the user data
           Navigator.push(
@@ -158,6 +159,9 @@ class AuthNotifier extends ChangeNotifier {
               ),
             ),
           );
+        } else {
+          isNewUser = false;
+          Navigator.pushAndRemoveUntil(context!, MaterialPageRoute(builder: (context) => App()), (route) => false);
         }
       }
       _isSigningIn = false;

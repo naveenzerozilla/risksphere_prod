@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../../design_system/repo/home.dart';
 import '../../providers/theme_provider.dart';
+import '../../service/shared_preference_service.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -67,10 +68,12 @@ class _SplashScreenState extends State<SplashScreen>
     IdTokenResult token = await user.getIdTokenResult();
     Map<String, dynamic>? claims = token.claims?? {};
     log("Claims: $claims");
+    await SharedPreferenceService.setClaims(claims);
+    await SharedPreferenceService.getAllClaims();
     String? tokenString = await user.getIdToken();
     log("Token: ${token.token}");
 
-    if(claims['is_individual']==null&&claims['is_admin']==null) {
+    if(claims['isIndividual']==null) {
       isUserLoggedIn = false;
     }
     if(isUserLoggedIn) {

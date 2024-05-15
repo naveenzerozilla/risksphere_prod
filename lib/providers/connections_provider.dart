@@ -68,6 +68,21 @@ class ConnectionsProvider with ChangeNotifier {
       notifyListeners();
     });
   }
+  /// Pagination
+  bool _isNextPageLoading = false;
+
+  bool get isNextPageLoading => _isNextPageLoading;
+
+  set isNextPageLoading(bool value) {
+    _isNextPageLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  String? nextPageToken;
+  bool nextPageExists = true;
+
 
   List<CorporateConnection> _corporateConnections = [];
   List<CorporateConnection> get corporateConnections => _corporateConnections;
@@ -85,66 +100,115 @@ class ConnectionsProvider with ChangeNotifier {
   String requestReceivedCount = '0';
 
   /// Fetches all connections Corporate and Non Corporate from the API.
-  Future<List<NetworkingUsers>> getAllConnections(BuildContext context, String userId) async {
+  Future<List<NetworkingUsers>> getAllConnections(BuildContext context, String userId, {String searchText = "", String companyType = "", String roleFilter = "", bool isSearch = false}) async {
     try {
-      // Set loading state to true
-      isLoading = true;
-      // Use API Service to fetch companies
+      // Clear normal pagination if isSearch is true
+      if (isSearch) {
+        nextPageToken = null;
+        nextPageExists = true;
+        _corporateConnections.clear();
+        _nonCorporateConnections.clear();
+      }
+
+      // Check loading state and pagination
+      if (isLoading || isNextPageLoading) return [];
+      if (!nextPageExists) return [];
+
+      // Set loading state
+      if (nextPageToken == null && nextPageExists) {
+        _corporateConnections.clear();
+        _nonCorporateConnections.clear();
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
+      }
+
+      // Construct API URL with filters and pagination
+      String additionalParams = "&user_id=$userId";
+      if (searchText.isNotEmpty) {
+        additionalParams += "&search=$searchText";
+      }
+      if (companyType.isNotEmpty) {
+        additionalParams += "&company_type=$companyType";
+      }
+      if (roleFilter.isNotEmpty) {
+        additionalParams += "&role_filter=$roleFilter";
+      }
+      if (nextPageToken != null) {
+        additionalParams += "&page_token=$nextPageToken&direction=forward";
+      }
+      additionalParams += "&pageSize=10"; // Adjust page size as needed
+
+      // Construct the URL with correct formatting
+      String url = AppConstant.GET_CONNECTIONS;
+      if (additionalParams.isNotEmpty) {
+        // Check if the base URL already contains a "?"
+        final bool hasQueryParams = url.contains("?");
+
+        // If the base URL already contains a "?", use "&" to append additionalParams
+        // Otherwise, use "?"
+        final String separator = hasQueryParams ? "&" : "?";
+
+        // If additionalParams starts with "&" or "?", remove the first character
+        final String formattedParams =
+        additionalParams.startsWith("&") || additionalParams.startsWith("?")
+            ? additionalParams.substring(1)
+            : additionalParams;
+
+        // Construct the final URL with additional parameters
+        url = "$separator$formattedParams";
+      }
+
       ApiService apiService = ApiService(AppConstant.GET_CONNECTIONS);
-      // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get('&user_id=$userId');
 
-      // Parse the response into a list of employees
-      List<CorporateConnection> corporateConnections = [];
-      List<NonCorporateConnection> nonCorporateConnections = [];
+      // Fetch data from API
+      Map<String, dynamic> response = await apiService.get(url);
 
-      print("Response: $response");
-      print("Contains Key user? ${response.containsKey('users')}");
+      // Parse response
+
       if (response.containsKey('users')) {
-        print("Users: ${response['users']}");
-        print("Contains Key corporate? ${response['users'].containsKey('corporate')}");
         if (response['users'].containsKey('corporate')) {
-          corporateConnections = (response['users']['corporate'] as List)
+          List<CorporateConnection> corporateConnections = (response['users']['corporate'] as List)
               .map((corporate) => CorporateConnection.fromJson(corporate))
               .toList();
+          _corporateConnections.addAll(corporateConnections);
         }
-        print("Contains Key non-corporate? ${response['users'].containsKey('non-corporate')}");
         if (response['users'].containsKey('non-corporate')) {
-          nonCorporateConnections = (response['users']['non-corporate'] as List)
+          List<NonCorporateConnection> nonCorporateConnections = (response['users']['non-corporate'] as List)
               .map((nonCorporate) => NonCorporateConnection.fromJson(nonCorporate))
               .toList();
+          _nonCorporateConnections.addAll(nonCorporateConnections);
         }
       }
-      print("Corporate Connections: $corporateConnections");
-      print("Non Corporate Connections: $nonCorporateConnections");
-      if (response.containsKey('total_connections')) {
-        totalConnections = response['total_connections'];
-      }
-      if (response.containsKey('request_received_count')) {
-        requestReceivedCount = response['request_received_count'];
-      }
-      // Update the list of companies and notify listeners
-      _corporateConnections = corporateConnections;
-      _nonCorporateConnections = nonCorporateConnections;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+
+      notifyListeners();
+
+      // Update pagination variables
+      nextPageToken =
+      response.containsKey('pageToken') ? response['pageToken'] : null;
+      nextPageExists = response.containsKey('nextPageExists')
+          ? response['nextPageExists']
+          : false;
+
+      // Reset loading state
       isLoading = false;
+      isNextPageLoading = false;
+
       return [];
-
     } catch (e, stackTrace) {
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: $e'); // Log the error
-      // Show a generic error message to the user
-      // TODO: Display a generic error message to the user
+      print('Stack Trace: $stackTrace');
+      log('Error: $e');
 
+      // Handle error and reset loading state
       isLoading = false;
-      if (!context.mounted) return[];
-      CustomToast.error(context, 'Error fetching connections. Please try again later.');
-      return []; // Return an empty list in case of error
+      isNextPageLoading = false;
+      if (!context.mounted) return [];
+      CustomToast.error(
+          context, 'Error fetching connections. Please try again later.');
+      return [];
     }
   }
+
 
   /// Fetches all requests from the API.
   Future<List<RequestUser>> getAllRequests(BuildContext context, String userId) async {

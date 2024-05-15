@@ -19,7 +19,9 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
+import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
+import 'package:green/models/role_model.dart' as roleModel;
 
 class ConnectionsScreen extends StatefulWidget {
   final String userId;
@@ -51,6 +53,21 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   int requestActionIndex = 0;
 
+  List<roleModel.Roles> filterRoleList = [];
+  TextEditingController _filterNameController = TextEditingController();
+  TextEditingController _filterEmailController = TextEditingController();
+  TextEditingController _filterPhoneController = TextEditingController();
+  TextEditingController _filterCompanyController = TextEditingController();
+
+  List<roleModel.Roles> filterRoles = [];
+  List<String> filterNames = [];
+  List<String> filterEmails = [];
+  List<String> filterPhones = [];
+  List<String> filterCompanies = [];
+  List<String> filterStatus = [];
+  roleModel.Roles? selectedRoleForFilter;
+  String selectedStatus = '';
+
   Timer? deBouncer;
 
   void debounce(
@@ -62,6 +79,95 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     }
     deBouncer = Timer(duration, callback);
   }
+
+  void connectionsSearchClient(String query) async {
+    debounce(() async {
+      if (!mounted) return;
+      if (!mounted) return;
+      // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
+      // company name as company type filter and role as role filter
+      List<String> searchItems = [];
+
+      // Add filter names, emails, and phones to the search items
+      searchItems.addAll(filterNames);
+      searchItems.addAll(filterEmails);
+      searchItems.addAll(filterPhones);
+
+      // Combine all search items with the query
+      if (query.isNotEmpty) {
+        searchItems.add(query);
+      }
+
+      String searchText = searchItems.join(",");
+
+      // Combine company type filters
+      String companyTypeFilter = filterCompanies.join(",");
+
+      // Combine role filters
+      String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+
+      print(
+          'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+      // If no filters and search is empty call api with isSearch false
+      /*bool isSearch = searchText.isNotEmpty ||
+            filterCompanies.isNotEmpty ||
+            filterRoles.isNotEmpty;*/
+
+      bool isSearch = true;
+      await Provider.of<ConnectionsProvider>(context, listen: false)
+          .getAllConnections(context, widget.userId, searchText: searchText, companyType: companyTypeFilter, roleFilter: roleFilter, isSearch: isSearch);
+    });
+  }
+
+  addFilter(String filter, String type) {
+    removeAllFilters();
+    setState(() {
+      if (type == 'role') {
+        filterRoles.add(roleModel.Roles(name: filter));
+      } else if (type == 'name') {
+        filterNames.add(filter);
+      } else if (type == 'email') {
+        filterEmails.add(filter);
+      } else if (type == 'phone') {
+        filterPhones.add(filter);
+      } else if (type == 'company') {
+        filterCompanies.add(filter);
+      } else if (type == 'status') {
+        filterStatus.add(filter);
+      }
+    });
+  }
+
+  removeFilter(String filter, String type) {
+    setState(() {
+      if (type == 'role') {
+        filterRoles.removeWhere((element) => element.name == filter);
+      } else if (type == 'name') {
+        filterNames.remove(filter);
+      } else if (type == 'email') {
+        filterEmails.remove(filter);
+      } else if (type == 'phone') {
+        filterPhones.remove(filter);
+      } else if (type == 'company') {
+        filterCompanies.remove(filter);
+      } else if (type == 'status') {
+        filterStatus.remove(filter);
+      }
+    });
+  }
+
+  removeAllFilters() {
+    setState(() {
+      filterRoles.clear();
+      filterNames.clear();
+      filterEmails.clear();
+      filterPhones.clear();
+      filterCompanies.clear();
+      filterStatus.clear();
+    });
+  }
+
 
   @override
   void initState() {
@@ -100,12 +206,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     _getData();
   }
 
-  _getData() {
+  _getData() async {
     // Fetch data from API
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllConnections(context, widget.userId);
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllRequests(context, widget.userId);
+    filterRoleList  =
+        await Provider.of<RoleProvider>(context, listen: false)
+        .getAllRoles(context);
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -139,28 +248,33 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         floatingActionButton: _selectedScreen == Screens.connectionList ||
                 _selectedScreen == Screens.corporateConnectionList ||
                 _selectedScreen == Screens.nonCorporateConnectionList
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FloatingActionButton(
-                    onPressed: () {
-                      // Open bottom sheet of filters
-                      _showFiltersBottomSheet(_scaffoldKey.currentContext!);
-                    },
-                    child: Icon(Icons.filter_alt_outlined),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  FloatingActionButton(
-                    onPressed: () {
-                      _tabController?.animateTo(3);
-                      _selectedScreen = Screens.networkList;
-                    },
-                    child: Icon(Icons.add),
-                  ),
-                ],
-              )
+            ? Builder(
+              builder: (contextLocal) {
+                return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton(
+                        onPressed: () {
+                          // Open bottom sheet of filters
+                          print('Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
+                          _showFiltersBottomSheet(contextLocal);
+                        },
+                        child: Icon(Icons.filter_alt_outlined),
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      FloatingActionButton(
+                        onPressed: () {
+                          _tabController?.animateTo(3);
+                          _selectedScreen = Screens.networkList;
+                        },
+                        child: Icon(Icons.add),
+                      ),
+                    ],
+                  );
+              }
+            )
             : SizedBox(),
         body: PopScope(
           canPop: _selectedScreen == Screens.connectionList ||
@@ -224,50 +338,45 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                           MainAxisAlignment.center,
                                       children: [
                                         // make tab dropdown with title connections but user can select from corporate and non corporate
+
                                         Tab(
                                           child: DropdownButton(
-                                            alignment: Alignment.center,
-                                            underline: Container(),
-                                            isDense: true,
-                                            hint: Text('Connections',
-                                                style: CustomTypography.Body1
-                                                    .copyWith(
-                                                        color: Theme.of(context)
-                                                                    .brightness ==
-                                                                Brightness.dark
-                                                            ? AppColors.white
-                                                            : AppColors.black)),
+                                            underline: SizedBox(),
+                                            value: 'Connections',
                                             items: [
                                               DropdownMenuItem(
-                                                child: Text('Corporate',
-                                                    style: CustomTypography.Body1
-                                                        .copyWith(
-                                                            color: Theme.of(context)
-                                                                        .brightness ==
-                                                                    Brightness
-                                                                        .dark
-                                                                ? AppColors
-                                                                    .white
-                                                                : AppColors
-                                                                    .black)),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.apartment),
+                                                    SizedBox(width: CustomSpacing.two),
+                                                    Text(
+                                                      'Connections',
+                                                      style: CustomTypography
+                                                          .BottomNavigationActiveLabel,
+                                                    ),
+                                                  ],
+                                                ),
+                                                value: 'Connections',
+                                              ),
+                                              DropdownMenuItem(
+                                                child: Text(
+                                                  'Corporate',
+                                                  style: CustomTypography
+                                                      .BottomNavigationActiveLabel,
+                                                ),
                                                 value: 'Corporate',
                                               ),
                                               DropdownMenuItem(
-                                                child: Text('Non Corporate',
-                                                    style: CustomTypography.Body1
-                                                        .copyWith(
-                                                            color: Theme.of(context)
-                                                                        .brightness ==
-                                                                    Brightness
-                                                                        .dark
-                                                                ? AppColors
-                                                                    .white
-                                                                : AppColors
-                                                                    .black)),
+                                                child: Text(
+                                                  'Non Corporate',
+                                                  style: CustomTypography
+                                                      .BottomNavigationActiveLabel,
+                                                ),
                                                 value: 'Non Corporate',
                                               ),
                                             ],
-                                            onChanged: (String? value) {
+                                            onChanged: (value) {
+                                              // Handle dropdown item selection
                                               setState(() {
                                                 if (value == 'Corporate') {
                                                   _selectedScreen = Screens
@@ -276,8 +385,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                     'Non Corporate') {
                                                   _selectedScreen = Screens
                                                       .nonCorporateConnectionList;
+                                                } else if (value == 'AnotherOption') {
+                                                  // Handle another option
                                                 }
+                                                _tabController?.animateTo(0);
                                               });
+
                                             },
                                           ),
                                         ),
@@ -426,297 +539,354 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
             ],
           ),
         ),
-        endDrawer: Material(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        endDrawer: Drawer(
+          child: SafeArea(
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
                   SizedBox(height: CustomSpacing.two),
                   // Circular elevated icon for filter
                   Center(
                       child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Icon(
-                        Icons.filter_alt_outlined,
-                        size: 32,
-                      ),
-                    ),
-                  )),
-                  SizedBox(height: CustomSpacing.six),
-                  // name, phone, email, company, role dropdown, status,
-                  Form(
-                      child: Column(children: [
-                    // Name
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: CustomSpacing.two,
-                    ),
-                    // Email
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: CustomSpacing.two,
-                    ),
-                    // Phone
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.5)),
-                              borderRadius: BorderRadius.circular(4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(
-                              child: CountryListPicker(
-                                initialCountry: Countries.United_States,
-                                border: InputBorder.none,
-                                flagSize: Size(35, 30),
-                                onChanged: (code) {
-                                  setState(() {
-                                    _selectedCountryCode = code;
-                                  });
-                                },
-                                diallingCodeStyle: CustomTypography.Body1,
-                                isShowInputField: false,
-                                dialogTheme: DialogThemeData(
-                                  style: CustomTypography.Body1,
-                                  isShowFloatButton: false,
-                                ),
-                                countryNameStyle: CustomTypography.Body1,
-                                isShowCountryName: false,
-                                onCountryChanged: (country) {
-                                  print('This is the country code: $country');
-                                  setState(() {
-                                    _selectedCountryCode = country.dialing_code;
-                                  });
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Icon(
+                            Icons.filter_alt_outlined,
+                            size: 32,
+                          ),
+                        ),
+                      )),
+                  SizedBox(height: CustomSpacing.four),
+                  // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                    child: Column(
+                      children: [
+                        // Filter Chips
+                        Wrap(
+                          direction: Axis.horizontal,
+                          alignment: WrapAlignment.start,
+                          runAlignment: WrapAlignment.start,
+                          crossAxisAlignment: WrapCrossAlignment.start,
+                          verticalDirection: VerticalDirection.down,
+                          spacing: 4,
+                          children: [
+                            // Dynamic chips for all filters such that we can do add remove and remove all operations
+                            for (var role in filterRoles)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(role.name ?? ""),
+                                onDeleted: () {
+                                  removeFilter(role.name ?? "", 'role');
                                 },
                               ),
-                            ),
-                          ),
+                            for (var name in filterNames)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(name),
+                                onDeleted: () {
+                                  removeFilter(name, 'name');
+                                },
+                              ),
+                            for (var email in filterEmails)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(email),
+                                onDeleted: () {
+                                  removeFilter(email, 'email');
+                                },
+                              ),
+                            for (var phone in filterPhones)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(phone),
+                                onDeleted: () {
+                                  removeFilter(phone, 'phone');
+                                },
+                              ),
+                            for (var company in filterCompanies)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(company),
+                                onDeleted: () {
+                                  removeFilter(company, 'company');
+                                },
+                              ),
+                            for (var status in filterStatus)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(status),
+                                onDeleted: () {
+                                  removeFilter(status, 'status');
+                                },
+                              ),
+                          ],
                         ),
-                        SizedBox(width: CustomSpacing.two),
-
-                        // Mobile Number TextFormField
-                        Expanded(
-                          flex: 7,
-                          child: TextFormField(
-                            keyboardType: TextInputType.number,
-                            maxLength: 10,
-                            // Numeric keyboard
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                              // Only allows digits
-                            ],
-                            decoration: InputDecoration(
-                              labelText: 'Mobile Number',
-                              hintText: 'Enter your mobile number',
-                              border: const OutlineInputBorder(),
-                              counterText: '',
-                            ),
-                            validator: (value) {
-                              if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                return 'Mobile number can only contain digits';
-                              }
-                              return null;
-                            },
-                            controller: mobileController,
-                          ),
-                        ),
-                        // Dropdown Icon Suffix
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Company
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Company Name',
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Role Dropdown
-                    Stack(
-                      children: [
-                        TextField(
-                          readOnly: true,
-                          onTap: () {
-                            showBottomSheet(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return RolesBottomSheet(
-                                  showCorporateSwitch: true,
-                                  options: roles,
-                                  selectedRoles: _selectedRoles,
-                                  addChip: _addChip,
-                                  removeChip: _removeChip,
-                                  removeAllChips: _removeAllChips,
-                                  selectedOption: SignUpOptions.corporate,
-                                  onOptionChanged: (SignUpOptions option) {
-                                    setState(() {
-                                      _selectedOption = option;
-                                    });
-                                  },
-                                );
-                              },
-                            );
+                        // Clear Filter Button
+                        (filterCompanies.isEmpty &&
+                            filterEmails.isEmpty &&
+                            filterNames.isEmpty &&
+                            filterPhones.isEmpty &&
+                            filterRoles.isEmpty &&
+                            filterStatus.isEmpty)
+                            ? SizedBox()
+                            : TextButton(
+                          onPressed: () {
+                            // Handle clear filter
+                            removeAllFilters();
                           },
-                          controller: _textEditingController,
-                          onChanged: (value) {
-                            // Handle input changes
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Role(s)',
-                            hintText:
-                                _selectedRoles.isEmpty ? 'Select Roles' : "",
-                            border: OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: Icon(Icons.arrow_drop_down),
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  useSafeArea: true,
-                                  isScrollControlled: true,
-                                  builder: (BuildContext context) {
-                                    return RolesBottomSheet(
-                                      showCorporateSwitch: false,
-                                      options: roles,
-                                      selectedRoles: _selectedRoles,
-                                      addChip: _addChip,
-                                      removeChip: _removeChip,
-                                      removeAllChips: _removeAllChips,
-                                      selectedOption: SignUpOptions.corporate,
-                                      onOptionChanged:
-                                          (SignUpOptions signUpOptions) {
-                                        setState(() {
-                                          _selectedOption = signUpOptions;
-                                        });
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
+                          child: Text('Clear Filter'),
                         ),
-                        Positioned(
-                          top: 10.0,
-                          left: 10.0,
-                          right: 10.0,
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 32.0),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: _selectedRoles
-                                    .map(
-                                      (value) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8.0),
-                                        child: Chip(
-                                          label: Text(value.name),
-                                          deleteIcon: Icon(Icons.cancel),
-                                          onDeleted: () => _removeChip(value),
+                        Divider(
+                          thickness: 1,
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                        ),
+                        SizedBox(
+                          height: CustomSpacing.two,
+                        ),
+                        Builder(builder: (context) {
+                          return Column(
+                            children: [
+                              // name, phone, email, company, role dropdown, status,
+                              Padding(
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: Form(
+                                    child: Column(children: [
+                                      // Name
+                                      TextFormField(
+                                        controller: _filterNameController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Name',
+                                          labelStyle: CustomTypography.Body1,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
                                         ),
                                       ),
-                                    )
-                                    .toList(),
-                              ),
-                            ),
-                          ),
-                        ),
+                                      SizedBox(
+                                        height: CustomSpacing.two,
+                                      ),
+                                      // Email
+                                      TextFormField(
+                                        controller: _filterEmailController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Email',
+                                          labelStyle: CustomTypography.Body1,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: CustomSpacing.two,
+                                      ),
+                                      // Phone
+                                      TextFormField(
+                                        controller: _filterPhoneController,
+                                        keyboardType: TextInputType.number,
+                                        maxLength: 10,
+                                        // Numeric keyboard
+                                        inputFormatters: <TextInputFormatter>[
+                                          FilteringTextInputFormatter.digitsOnly
+                                          // Only allows digits
+                                        ],
+                                        decoration: InputDecoration(
+                                          labelText: 'Mobile Number',
+                                          hintText: 'Enter your mobile number',
+                                          border: const OutlineInputBorder(),
+                                          counterText: '',
+                                        ),
+                                        validator: (value) {
+                                          if (!RegExp(r'^[0-9]+$')
+                                              .hasMatch(value!)) {
+                                            return 'Mobile number can only contain digits';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                      SizedBox(height: CustomSpacing.two),
+                                      // Company
+                                      TextFormField(
+                                        controller: _filterCompanyController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Company Name',
+                                          labelStyle: CustomTypography.Body1,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.two),
+                                      // Role Dropdown
+                                      (_selectedScreen == Screens.corporateList)
+                                          ? SizedBox()
+                                          : DropdownButtonFormField<
+                                          roleModel.Roles>(
+                                        decoration: InputDecoration(
+                                          labelText: 'Role',
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                            BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        items: filterRoleList
+                                            .map((roleModel.Roles value) {
+                                          return DropdownMenuItem<
+                                              roleModel.Roles>(
+                                            value: value,
+                                            child: Text(value.name ?? ''),
+                                          );
+                                        }).toList(),
+                                        onChanged: (roleModel.Roles? value) {
+                                          // Handle role change
+                                          setState(() {
+                                            selectedRoleForFilter = value;
+                                          });
+                                        },
+                                      ),
+
+                                      SizedBox(height: CustomSpacing.two),
+                                      // Status
+                                      DropdownButtonFormField<String>(
+                                        decoration: InputDecoration(
+                                          labelText: 'Status',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        items: ['Active', 'Inactive']
+                                            .map((String value) {
+                                          return DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? value) {
+                                          // Handle status change
+                                          setState(() {
+                                            selectedStatus = value!;
+                                          });
+                                        },
+                                      ),
+                                      SizedBox(height: CustomSpacing.two),
+                                      // Cancel and Submit Buttons
+                                      Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                        children: [
+                                          CustomButton(
+                                            onPressed: () {
+                                              // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
+                                              if (_filterNameController
+                                                  .text.isNotEmpty) {
+                                                addFilter(
+                                                    _filterNameController.text,
+                                                    'name');
+                                                _filterNameController.clear();
+                                              }
+                                              if (_filterEmailController
+                                                  .text.isNotEmpty) {
+                                                addFilter(
+                                                    _filterEmailController.text,
+                                                    'email');
+                                                _filterEmailController.clear();
+                                              }
+                                              if (_filterPhoneController
+                                                  .text.isNotEmpty) {
+                                                addFilter(
+                                                    _filterPhoneController.text,
+                                                    'phone');
+                                                _filterPhoneController.clear();
+                                              }
+                                              if (_filterCompanyController
+                                                  .text.isNotEmpty) {
+                                                addFilter(
+                                                    _filterCompanyController.text,
+                                                    'company');
+                                                _filterCompanyController.clear();
+                                              }
+                                              if (selectedRoleForFilter != null) {
+                                                addFilter(
+                                                    selectedRoleForFilter?.name ??
+                                                        '',
+                                                    'role');
+                                                selectedRoleForFilter = null;
+                                              }
+                                              if (selectedStatus.isNotEmpty) {
+                                                addFilter(selectedStatus, 'status');
+                                                selectedStatus = '';
+                                              }
+                                              // call api and close the drawer
+                                              if (_selectedScreen ==
+                                                  Screens.connectionList||_selectedScreen == Screens.corporateConnectionList|| _selectedScreen == Screens.nonCorporateConnectionList) {
+                                                connectionsSearchClient("");
+                                                Scaffold.of(context)
+                                                    .closeEndDrawer();
+                                              }
+                                            },
+                                            type: ButtonType.filled,
+                                            child: Text(
+                                              'Add Filter',
+                                              style: CustomTypography.ButtonLarge,
+                                            ),
+                                          ),
+                                          SizedBox(width: CustomSpacing.two),
+                                          OutlinedButton(
+                                            onPressed: () {
+                                              // Handle submit button
+                                              Navigator.pop(context);
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                BorderRadius.circular(8),
+                                              ),
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 22, vertical: 8),
+                                            ),
+                                            child: Text(
+                                              'Cancel',
+                                              style: CustomTypography.ButtonLarge,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ])),
+                              )
+                            ],
+                          );
+                        }),
                       ],
                     ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Status
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Status',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      items: ['Active', 'Inactive'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        // Handle status change
-                      },
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Cancel and Submit Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              // Handle submit button
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 22, vertical: 8),
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: CustomTypography.ButtonLarge,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: CustomSpacing.two),
-                        Expanded(
-                          child: CustomButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            type: ButtonType.filled,
-                            child: Text(
-                              'Add Filter',
-                              style: CustomTypography.ButtonLarge,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ]))
+                  ),
                 ],
               ),
             ),

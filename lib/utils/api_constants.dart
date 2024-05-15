@@ -12,7 +12,7 @@ class AppConstant {
   static const String GET_EMAILS = "https://support-nzc3rkheha-uc.a.run.app?emails=true";
   static const String ADD_EMAILS = "https://support-nzc3rkheha-uc.a.run.app";
   static const String CHANGE_STATUS = "https://support-nzc3rkheha-uc.a.run.app";
-  static const String GET_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app?employees_list=true&pageSize=20";
+  static const String GET_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app?employees_list=true";
   static const String GET_ROLES_FOR_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=internal";
   static const String CREATE_EMPLOYEES = "https://new-user-create-nzc3rkheha-uc.a.run.app";
   static const String UPDATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
@@ -34,4 +34,10 @@ class AppConstant {
   static const String GET_USER_TEAMS = "https://user-management-nzc3rkheha-uc.a.run.app?my_team=true";
   static const String DELETE_TEAM_MEMBER = "https://user-management-nzc3rkheha-uc.a.run.app";
   static const String ADD_TEAM_MEMBERS = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static  const String GET_CORPORATE_USER = "https://user-management-nzc3rkheha-uc.a.run.app";
+
+  static  const String UPDATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static  const String NON_CORPORATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static const String CREATE_CORPORATE_EMPLOYEES = "https://new-company-user-create-nzc3rkheha-uc.a.run.app";
+  static const String DELETE_CORPORATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
 }

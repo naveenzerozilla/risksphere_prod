@@ -1,17 +1,18 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:country_list_picker/country_list_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/corporate_type_roles_bottom_sheet.dart';
 import 'package:green/design_system/components/custom_chip.dart';
-import 'package:green/design_system/components/roles_bottom_sheet.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/company_type_model.dart';
+import 'package:green/models/role_model.dart' as roleModel;
 import 'package:green/providers/company_provider.dart';
 import 'package:green/providers/employee_provider.dart';
+import 'package:green/providers/non_corporate_user_Provider.dart';
 import 'package:green/providers/verification_provider.dart';
 import 'package:green/screens/userManagement/connections_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,12 +25,14 @@ import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/repo/constants.dart';
+import '../../models/company_type_model.dart' as companyType;
 import '../../models/initial_data_model.dart';
+import '../../models/user_corporate_model.dart';
+import '../../providers/corporate_user_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../models/company_type_model.dart' as companyType;
+import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
-import 'package:green/models/role_model.dart' as roleModel;
 
 class UserManagementScreen extends StatefulWidget {
   final Screens? initialScreen;
@@ -58,6 +61,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   Screens _selectedScreen = Screens.corporateList;
 
   bool showCheckbox = false;
+  String? corporateUserId = "";
+  String? nonCorporateUserId = "";
 
   // Create Company Form
   List<Categories> _selectedRoles = [];
@@ -66,6 +71,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   String _selectedCountryCode = '+1';
   TextEditingController mobileController = TextEditingController();
   int selectedCompanyListIndex = 0;
+  int selectedCompanyEmployeeListIndex = 0;
+  int selectedNonCorporateListIndex = 0;
   String? companyImageUrl;
   CorporateType? selectedCompanyType;
   bool _enableDomainCheck = false;
@@ -85,6 +92,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   // Employee
   int selectedEmployeeListIndex = 0;
+  int selectedCorporateListIndex = 0;
   String employeeImageUrl = '';
   TextEditingController _employeeNameController = TextEditingController();
   TextEditingController _employeeDisplayNameController =
@@ -102,68 +110,459 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   List<roleModel.Roles> allRoles = [];
   roleModel.Roles? selectedRole;
 
+  String selectedCorporateId = '';
+
+  // Claims local variables
+  bool showCorporateList = true;
+  bool showCorporateUserList = true;
+  bool showCreateCorporate = true;
+  bool showEditCorporate = true;
+  bool showViewCorporate = true;
+  bool showDeleteCorporate = true;
+  bool showEnableDisableCorporate = true;
+  bool showCorporateVerificationTab = true;
+
+  List<DropdownMenuItem<String>> corporateDropdownItems = [
+    DropdownMenuItem(
+      child: Row(
+        children: [
+          Icon(Icons.apartment),
+          SizedBox(width: CustomSpacing.two),
+          Text(
+            'Corporate Management',
+            style: CustomTypography.BottomNavigationActiveLabel,
+          ),
+        ],
+      ),
+      value: 'Corporate',
+    ),
+    DropdownMenuItem(
+      child: Text(
+        'Companies',
+        style: CustomTypography.BottomNavigationActiveLabel,
+      ),
+      value: 'Companies',
+    ),
+    DropdownMenuItem(
+      child: Text(
+        'Users',
+        style: CustomTypography.BottomNavigationActiveLabel,
+      ),
+      value: 'Users',
+    ),
+    DropdownMenuItem(
+      child: Text(
+        'Company Profiles',
+        style: CustomTypography.BottomNavigationActiveLabel,
+      ),
+      value: 'Company Profiles',
+    ),
+    DropdownMenuItem(
+      child: Text(
+        'Verification Requests',
+        style: CustomTypography.BottomNavigationActiveLabel,
+      ),
+      value: 'Verification Requests',
+    ),
+  ];
+
+  // Filters
+  List<roleModel.Roles> filterRoleList = [];
+  TextEditingController _filterNameController = TextEditingController();
+  TextEditingController _filterEmailController = TextEditingController();
+  TextEditingController _filterPhoneController = TextEditingController();
+  TextEditingController _filterCompanyController = TextEditingController();
+
+  List<roleModel.Roles> filterRoles = [];
+  List<String> filterNames = [];
+  List<String> filterEmails = [];
+  List<String> filterPhones = [];
+  List<String> filterCompanies = [];
+  List<String> filterStatus = [];
+  roleModel.Roles? selectedRoleForFilter;
+  String selectedStatus = '';
+
+  TextEditingController _corporateSearchController = TextEditingController();
+  TextEditingController _corporateEmployeeSearchController =
+      TextEditingController();
+  TextEditingController _nonCorporateSearchController = TextEditingController();
+  TextEditingController _employeeSearchController = TextEditingController();
+  Timer? companyDeBouncer;
+  Timer? corporateEmployeeDeBouncer;
+  Timer? nonCorporateDeBouncer;
+  Timer? employeeDeBouncer;
+
+  void companyDebounce(
+    VoidCallback callback, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
+    if (companyDeBouncer != null) {
+      companyDeBouncer!.cancel();
+    }
+    companyDeBouncer = Timer(duration, callback);
+  }
+
+  void companySearchClient(String query) async => companyDebounce(() async {
+        if (!mounted) return;
+        // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
+        // company name as company type filter and role as role filter
+        List<String> searchItems = [];
+
+        // Add filter names, emails, and phones to the search items
+        searchItems.addAll(filterNames);
+        searchItems.addAll(filterEmails);
+        searchItems.addAll(filterPhones);
+
+        // Combine all search items with the query
+        if (query.isNotEmpty) {
+          searchItems.add(query);
+        }
+
+        String searchText = searchItems.join(",");
+
+        // Combine company type filters
+        String companyTypeFilter = filterCompanies.join(",");
+
+        // Combine role filters
+        String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+
+        print(
+            'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+        // Call the common function to fetch data
+        await Provider.of<CompanyProvider>(context, listen: false)
+            .getAllCompanies(
+                context, searchText, companyTypeFilter, roleFilter, true);
+      });
+
+  void corporateEmployeeDebounce(
+    VoidCallback callback, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
+    if (corporateEmployeeDeBouncer != null) {
+      corporateEmployeeDeBouncer!.cancel();
+    }
+    corporateEmployeeDeBouncer = Timer(duration, callback);
+  }
+
+  void corporateEmployeeSearchClient(String query) async =>
+      corporateEmployeeDebounce(() async {
+        if (!mounted) return;
+        // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
+        // company name as company type filter and role as role filter
+        List<String> searchItems = [];
+
+        // Add filter names, emails, and phones to the search items
+        searchItems.addAll(filterNames);
+        searchItems.addAll(filterEmails);
+        searchItems.addAll(filterPhones);
+
+        // Combine all search items with the query
+        if (query.isNotEmpty) {
+          searchItems.add(query);
+        }
+
+        String searchText = searchItems.join(",");
+
+        // Combine company type filters
+        String companyTypeFilter = filterCompanies.join(",");
+
+        // Combine role filters
+        String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+
+        print(
+            'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+        // Call the common function to fetch data
+        await Provider.of<CorporateProvider>(context, listen: false)
+            .getCorporateUserList(context,
+                searchText: searchText, roleFilter: roleFilter, isSearch: true);
+      });
+
+  void nonCorporateDebounce(
+    VoidCallback callback, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
+    if (nonCorporateDeBouncer != null) {
+      nonCorporateDeBouncer!.cancel();
+    }
+    nonCorporateDeBouncer = Timer(duration, callback);
+  }
+
+  void nonCorporateSearchClient(String query) async =>
+      nonCorporateDebounce(() async {
+        if (!mounted) return;
+        // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
+        // company name as company type filter and role as role filter
+        List<String> searchItems = [];
+
+        // Add filter names, emails, and phones to the search items
+        searchItems.addAll(filterNames);
+        searchItems.addAll(filterEmails);
+        searchItems.addAll(filterPhones);
+
+        // Combine all search items with the query
+        if (query.isNotEmpty) {
+          searchItems.add(query);
+        }
+
+        String searchText = searchItems.join(",");
+
+        // Combine company type filters
+        String companyTypeFilter = filterCompanies.join(",");
+
+        // Combine role filters
+        String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+
+        print(
+            'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+        // If no filters and search is empty call api with isSearch false
+        bool isSearch = searchText.isNotEmpty ||
+            filterCompanies.isNotEmpty ||
+            filterRoles.isNotEmpty;
+
+        // Call the common function to fetch data
+        await Provider.of<NonCorporateProvider>(context, listen: false)
+            .getNonCorporateUserList(context,
+                searchText: searchText,
+                roleFilter: roleFilter,
+                isSearch: isSearch);
+      });
+
+  void employeeDebounce(
+    VoidCallback callback, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
+    if (employeeDeBouncer != null) {
+      employeeDeBouncer!.cancel();
+    }
+    employeeDeBouncer = Timer(duration, callback);
+  }
+
+  void employeeSearchClient(String query, {bool status = false}) async =>
+      employeeDebounce(() async {
+        if (!mounted) return;
+        // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
+        // company name as company type filter and role as role filter
+        List<String> searchItems = [];
+
+        // Add filter names, emails, and phones to the search items
+        searchItems.addAll(filterNames);
+        searchItems.addAll(filterEmails);
+        searchItems.addAll(filterPhones);
+
+        // Combine all search items with the query
+        if (query.isNotEmpty) {
+          searchItems.add(query);
+        }
+
+        String searchText = searchItems.join(",");
+
+        // Combine company type filters
+        String companyTypeFilter = filterCompanies.join(",");
+
+        // Combine role filters
+        String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+
+        print(
+            'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+        // If no filters and search is empty call api with isSearch false
+        /*bool isSearch = searchText.isNotEmpty ||
+            filterCompanies.isNotEmpty ||
+            filterRoles.isNotEmpty;*/
+
+        bool isSearch = true;
+        // Call the common function to fetch data
+        await Provider.of<EmployeeProvider>(context, listen: false)
+            .getAllEmployees(context,
+                searchText: searchText,
+                roleFilter: roleFilter,
+                isSearch: isSearch,
+                status: status);
+      });
+
+  addFilter(String filter, String type) {
+    removeAllFilters();
+    setState(() {
+      if (type == 'role') {
+        filterRoles.add(roleModel.Roles(name: filter));
+      } else if (type == 'name') {
+        filterNames.add(filter);
+      } else if (type == 'email') {
+        filterEmails.add(filter);
+      } else if (type == 'phone') {
+        filterPhones.add(filter);
+      } else if (type == 'company') {
+        filterCompanies.add(filter);
+      } else if (type == 'status') {
+        filterStatus.add(filter);
+      }
+    });
+  }
+
+  removeFilter(String filter, String type) {
+    setState(() {
+      if (type == 'role') {
+        filterRoles.removeWhere((element) => element.name == filter);
+      } else if (type == 'name') {
+        filterNames.remove(filter);
+      } else if (type == 'email') {
+        filterEmails.remove(filter);
+      } else if (type == 'phone') {
+        filterPhones.remove(filter);
+      } else if (type == 'company') {
+        filterCompanies.remove(filter);
+      } else if (type == 'status') {
+        filterStatus.remove(filter);
+      }
+    });
+  }
+
+  removeAllFilters() {
+    setState(() {
+      filterRoles.clear();
+      filterNames.clear();
+      filterEmails.clear();
+      filterPhones.clear();
+      filterCompanies.clear();
+      filterStatus.clear();
+    });
+  }
+
   @override
   void initState() {
+    // Set claims for access rights to corporate list
+    _setTabsForCAM();
     _tabController = TabController(length: 3, vsync: this);
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
         setState(() {
-          _selectedScreen = Screens.corporateList;
+          _selectedScreen = showCorporateList
+              ? Screens.corporateList
+              : showCorporateUserList
+                  ? Screens.corporateEmployeeList
+                  : showCorporateVerificationTab
+                      ? Screens.verificationList
+                      : Screens.corporateProfile;
+          clearFilters();
         });
       } else if (_tabController?.index == 1) {
         setState(() {
           _selectedScreen = Screens.nonCorporateList;
+          clearFilters();
         });
       } else if (_tabController?.index == 2) {
         setState(() {
           _selectedScreen = Screens.employeeList;
+          clearFilters();
         });
       }
       print(
           'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
     });
-    _tabNonCorporateController = TabController(length: 3, vsync: this);
-    _tabEmployeeController = TabController(length: 3, vsync: this);
-    _tabVerificationController = TabController(length: 2, vsync: this);
 
-    _getData();
-
+    ///
     if (widget.initialIndex == 0) {
       _tabController?.animateTo(0);
       if (widget.initialScreen == Screens.verificationList) {
         _selectedScreen = Screens.verificationList;
+        clearFilters();
         //Future.delayed(Duration(seconds: 1), () {
-          if (widget.subIndex == 0) {
-            _tabVerificationController?.animateTo(0);
-          } else if (widget.subIndex == 1) {
-            _tabVerificationController?.animateTo(1);
-          }
-       // });
+        if (widget.subIndex == 0) {
+          _tabVerificationController?.animateTo(0);
+        } else if (widget.subIndex == 1) {
+          _tabVerificationController?.animateTo(1);
+        }
+        // });
       }
     } else if (widget.initialIndex == 1) {
       _tabController?.animateTo(1);
     } else if (widget.initialIndex == 2) {
       _tabController?.animateTo(2);
     }
+    _tabNonCorporateController = TabController(length: 2, vsync: this);
+    _tabEmployeeController = TabController(length: 2, vsync: this);
+    _tabVerificationController = TabController(length: 2, vsync: this);
+
+    _getData();
+
+    _tabEmployeeController?.addListener(() {
+      if (_tabEmployeeController?.index == 0) {
+        employeeSearchClient(_employeeSearchController.text);
+      } else if (_tabEmployeeController?.index == 1) {
+        employeeSearchClient(_employeeSearchController.text, status: true);
+      }
+    });
     super.initState();
   }
 
+  _setTabsForCAM() async {
+    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCL) ??
+        false;
+    showCorporateUserList = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMUL) ??
+        false;
+    showCreateCorporate = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCC) ??
+        false;
+    showEditCorporate = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMEC) ??
+        false;
+    showViewCorporate = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMVC) ??
+        false;
+    showDeleteCorporate = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMDC) ??
+        false;
+    showEnableDisableCorporate =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMED) ??
+            false;
+    showCorporateVerificationTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMLL) ??
+            false;
+
+    if (!showCorporateList) {
+      corporateDropdownItems
+          .removeWhere((element) => element.value == 'Companies');
+    }
+    if (!showCorporateUserList) {
+      corporateDropdownItems.removeWhere((element) => element.value == 'Users');
+    }
+    if (!showCorporateVerificationTab) {
+      corporateDropdownItems
+          .removeWhere((element) => element.value == 'Verification Requests');
+    }
+  }
+
   Future<void> _getData() async {
+    /* Provider.of<CorporateProvider>(context, listen: false)
+        .getCorporateUserList(context);*/
+    Provider.of<NonCorporateProvider>(context, listen: false)
+        .getNonCorporateUserList(context);
     Provider.of<CompanyProvider>(context, listen: false)
-        .getAllCompanies(context, "searchText", "filter");
+        .getAllCompanies(context, "", "", "");
     Provider.of<CompanyProvider>(context, listen: false)
         .getCorporateType(context);
-    Provider.of<EmployeeProvider>(context, listen: false)
-        .getAllEmployees(context, "searchText", "filter");
     Provider.of<VerificationProvider>(context, listen: false)
         .getAllCorporateRequests(context);
     Provider.of<VerificationProvider>(context, listen: false)
         .getAllUserRequests(context);
-    allRoles = await Provider.of<RoleProvider>(context, listen: false)
-        .getAllRoles(context);
+    Provider.of<EmployeeProvider>(context, listen: false)
+        .getAllEmployees(context, searchText: "", roleFilter: "");
+    filterRoleList = allRoles =
+        await Provider.of<RoleProvider>(context, listen: false)
+            .getAllRoles(context);
     selectedEmployeeRoles =
         await Provider.of<EmployeeProvider>(context, listen: false)
             .getRoles(context);
+    filterRoleList = allRoles =
+        await Provider.of<RoleProvider>(context, listen: false)
+            .getAllRoles(context);
   }
 
   @override
@@ -191,20 +590,34 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 _selectedScreen != Screens.corporateEmployeeAdd &&
                 _selectedScreen != Screens.employeeAdd &&
                 _selectedScreen != Screens.nonCorporateList &&
-                _selectedScreen != Screens.verificationList
+                _selectedScreen != Screens.verificationList &&
+                _selectedScreen != Screens.corporateEmployeeEdit &&
+                _selectedScreen != Screens.nonCorporateEdit &&
+                (_selectedScreen == Screens.corporateList &&
+                    !showCreateCorporate)
             ? FloatingActionButton(
                 onPressed: () {
+                  print(_tabController?.index);
                   if (_selectedScreen == Screens.corporateList) {
+                    print("object");
                     setState(() {
                       _selectedScreen = Screens.corporateAdd;
+                      clearFilters();
+                    });
+                  } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
+                    setState(() {
+                      _selectedScreen = Screens.corporateEmployeeEdit;
+                      clearFilters();
                     });
                   } else if (_selectedScreen == Screens.corporateEmployeeList) {
                     setState(() {
                       _selectedScreen = Screens.corporateEmployeeAdd;
+                      clearFilters();
                     });
                   } else if (_selectedScreen == Screens.employeeList) {
                     setState(() {
                       _selectedScreen = Screens.employeeAdd;
+                      clearFilters();
                     });
                   }
                 },
@@ -224,30 +637,84 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             if (_selectedScreen == Screens.corporateAdd) {
               setState(() {
                 _selectedScreen = Screens.corporateList;
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.corporateEdit) {
               setState(() {
                 _selectedScreen = Screens.corporateList;
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.corporateEmployeeList) {
               setState(() {
-                _selectedScreen = Screens.corporateList;
+                if (showCorporateList) {
+                  _selectedScreen = Screens.corporateList;
+                } else {
+                  Navigator.pop(context);
+                }
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.corporateEmployeeAdd) {
               setState(() {
                 _selectedScreen = Screens.corporateEmployeeList;
+                clearFilters();
+              });
+            } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
+              setState(() {
+                _selectedScreen = Screens.corporateEmployeeList;
+                clearFilters();
+              });
+            } else if (_selectedScreen == Screens.nonCorporateList) {
+              setState(() {
+                if (showCorporateList) {
+                  _selectedScreen = Screens.corporateList;
+                } else {
+                  if (showCorporateUserList) {
+                    _selectedScreen = Screens.corporateEmployeeList;
+                  } else {
+                    _selectedScreen = Screens.verificationList;
+                  }
+                }
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.employeeAdd) {
               setState(() {
                 _selectedScreen = Screens.employeeList;
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.employeeEdit) {
               setState(() {
                 _selectedScreen = Screens.employeeList;
+                clearFilters();
               });
             } else if (_selectedScreen == Screens.verificationList) {
               setState(() {
-                _selectedScreen = Screens.corporateList;
+                if (_tabVerificationController?.index == 0) {
+                  if (showCorporateList) {
+                    _selectedScreen = Screens.corporateList;
+                  } else {
+                    if (showCorporateUserList) {
+                      _selectedScreen = Screens.corporateEmployeeList;
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  }
+                } else if (_tabVerificationController?.index == 1) {
+                  if (showCorporateList) {
+                    _selectedScreen = Screens.corporateList;
+                  } else {
+                    if (showCorporateUserList) {
+                      _selectedScreen = Screens.corporateEmployeeList;
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  }
+                }
+                clearFilters();
+              });
+            } else if (_selectedScreen == Screens.nonCorporateEdit) {
+              setState(() {
+                _selectedScreen = Screens.nonCorporateList;
+                clearFilters();
               });
             }
           },
@@ -291,68 +758,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 child: DropdownButton(
                                   underline: SizedBox(),
                                   value: 'Corporate',
-                                  items: [
-                                    DropdownMenuItem(
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.apartment),
-                                          SizedBox(width: CustomSpacing.two),
-                                          Text(
-                                            'Corporate Management',
-                                            style: CustomTypography
-                                                .BottomNavigationActiveLabel,
-                                          ),
-                                        ],
-                                      ),
-                                      value: 'Corporate',
-                                    ),
-                                    DropdownMenuItem(
-                                      child: Text(
-                                        'Companies',
-                                        style: CustomTypography
-                                            .BottomNavigationActiveLabel,
-                                      ),
-                                      value: 'Companies',
-                                    ),
-                                    DropdownMenuItem(
-                                      child: Text(
-                                        'Users',
-                                        style: CustomTypography
-                                            .BottomNavigationActiveLabel,
-                                      ),
-                                      value: 'Users',
-                                    ),
-                                    DropdownMenuItem(
-                                      child: Text(
-                                        'Company Profiles',
-                                        style: CustomTypography
-                                            .BottomNavigationActiveLabel,
-                                      ),
-                                      value: 'Company Profiles',
-                                    ),
-                                    DropdownMenuItem(
-                                      child: Text(
-                                        'Verification Requests',
-                                        style: CustomTypography
-                                            .BottomNavigationActiveLabel,
-                                      ),
-                                      value: 'Verification Requests',
-                                    ),
-                                  ],
+                                  items: corporateDropdownItems,
                                   onChanged: (value) {
                                     // Handle dropdown item selection
                                     if (value == 'Corporate') {
                                       setState(() {
                                         _selectedScreen = Screens.corporateList;
+                                        clearFilters();
                                       });
                                     } else if (value == 'Companies') {
                                       setState(() {
                                         _selectedScreen = Screens.corporateList;
+                                        clearFilters();
                                       });
                                     } else if (value == 'Users') {
                                       setState(() {
                                         _selectedScreen =
                                             Screens.corporateEmployeeList;
+                                        clearFilters();
                                       });
                                     } else if (value == 'Company Profiles') {
                                       // Handle company profiles option
@@ -362,6 +785,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       setState(() {
                                         _selectedScreen =
                                             Screens.verificationList;
+                                        clearFilters();
                                       });
                                     } else if (value == 'AnotherOption') {
                                       // Handle another option
@@ -430,19 +854,378 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           ),
         ),
         endDrawer: Drawer(
-          child: ListView(
-            children: [
-              ListTile(
-                title: Text('Settings'),
-                onTap: () {
-                  // Handle settings
-                },
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  SizedBox(height: CustomSpacing.two),
+                  // Circular elevated icon for filter
+                  Center(
+                      child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Icon(
+                        Icons.filter_alt_outlined,
+                        size: 32,
+                      ),
+                    ),
+                  )),
+                  SizedBox(height: CustomSpacing.four),
+                  // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                    child: Column(
+                      children: [
+                        // Filter Chips
+                        Wrap(
+                          direction: Axis.horizontal,
+                          alignment: WrapAlignment.start,
+                          runAlignment: WrapAlignment.start,
+                          crossAxisAlignment: WrapCrossAlignment.start,
+                          verticalDirection: VerticalDirection.down,
+                          spacing: 4,
+                          children: [
+                            // Dynamic chips for all filters such that we can do add remove and remove all operations
+                            for (var role in filterRoles)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(role.name ?? ""),
+                                onDeleted: () {
+                                  removeFilter(role.name ?? "", 'role');
+                                },
+                              ),
+                            for (var name in filterNames)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(name),
+                                onDeleted: () {
+                                  removeFilter(name, 'name');
+                                },
+                              ),
+                            for (var email in filterEmails)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(email),
+                                onDeleted: () {
+                                  removeFilter(email, 'email');
+                                },
+                              ),
+                            for (var phone in filterPhones)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(phone),
+                                onDeleted: () {
+                                  removeFilter(phone, 'phone');
+                                },
+                              ),
+                            for (var company in filterCompanies)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(company),
+                                onDeleted: () {
+                                  removeFilter(company, 'company');
+                                },
+                              ),
+                            for (var status in filterStatus)
+                              Chip(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: CustomSpacing.two),
+                                label: Text(status),
+                                onDeleted: () {
+                                  removeFilter(status, 'status');
+                                },
+                              ),
+                          ],
+                        ),
+                        // Clear Filter Button
+                        (filterCompanies.isEmpty &&
+                                filterEmails.isEmpty &&
+                                filterNames.isEmpty &&
+                                filterPhones.isEmpty &&
+                                filterRoles.isEmpty &&
+                                filterStatus.isEmpty)
+                            ? SizedBox()
+                            : TextButton(
+                                onPressed: () {
+                                  // Handle clear filter
+                                  removeAllFilters();
+                                },
+                                child: Text('Clear Filter'),
+                              ),
+                        Divider(
+                          thickness: 1,
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                        ),
+                        SizedBox(
+                          height: CustomSpacing.two,
+                        ),
+                        Builder(builder: (context) {
+                          return Column(
+                            children: [
+                              // name, phone, email, company, role dropdown, status,
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: Form(
+                                    child: Column(children: [
+                                  // Name
+                                  TextFormField(
+                                    controller: _filterNameController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Name',
+                                      labelStyle: CustomTypography.Body1,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: CustomSpacing.two,
+                                  ),
+                                  // Email
+                                  TextFormField(
+                                    controller: _filterEmailController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Email',
+                                      labelStyle: CustomTypography.Body1,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: CustomSpacing.two,
+                                  ),
+                                  // Phone
+                                  TextFormField(
+                                    controller: _filterPhoneController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 10,
+                                    // Numeric keyboard
+                                    inputFormatters: <TextInputFormatter>[
+                                      FilteringTextInputFormatter.digitsOnly
+                                      // Only allows digits
+                                    ],
+                                    decoration: InputDecoration(
+                                      labelText: 'Mobile Number',
+                                      hintText: 'Enter your mobile number',
+                                      border: const OutlineInputBorder(),
+                                      counterText: '',
+                                    ),
+                                    validator: (value) {
+                                      if (!RegExp(r'^[0-9]+$')
+                                          .hasMatch(value!)) {
+                                        return 'Mobile number can only contain digits';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: CustomSpacing.two),
+                                  // Company
+                                  TextFormField(
+                                    controller: _filterCompanyController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Company Name',
+                                      labelStyle: CustomTypography.Body1,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: CustomSpacing.two),
+                                  // Role Dropdown
+                                  (_selectedScreen == Screens.corporateList)
+                                      ? SizedBox()
+                                      : DropdownButtonFormField<
+                                          roleModel.Roles>(
+                                          decoration: InputDecoration(
+                                            labelText: 'Role',
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          items: filterRoleList
+                                              .map((roleModel.Roles value) {
+                                            return DropdownMenuItem<
+                                                roleModel.Roles>(
+                                              value: value,
+                                              child: Text(value.name ?? ''),
+                                            );
+                                          }).toList(),
+                                          onChanged: (roleModel.Roles? value) {
+                                            // Handle role change
+                                            setState(() {
+                                              selectedRoleForFilter = value;
+                                            });
+                                          },
+                                        ),
+
+                                  SizedBox(height: CustomSpacing.two),
+                                  // Status
+                                  DropdownButtonFormField<String>(
+                                    decoration: InputDecoration(
+                                      labelText: 'Status',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    items: ['Active', 'Inactive']
+                                        .map((String value) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(value),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? value) {
+                                      // Handle status change
+                                      setState(() {
+                                        selectedStatus = value!;
+                                      });
+                                    },
+                                  ),
+                                  SizedBox(height: CustomSpacing.two),
+                                  // Cancel and Submit Buttons
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      CustomButton(
+                                        onPressed: () {
+                                          // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
+                                          if (_filterNameController
+                                              .text.isNotEmpty) {
+                                            addFilter(
+                                                _filterNameController.text,
+                                                'name');
+                                            _filterNameController.clear();
+                                          }
+                                          if (_filterEmailController
+                                              .text.isNotEmpty) {
+                                            addFilter(
+                                                _filterEmailController.text,
+                                                'email');
+                                            _filterEmailController.clear();
+                                          }
+                                          if (_filterPhoneController
+                                              .text.isNotEmpty) {
+                                            addFilter(
+                                                _filterPhoneController.text,
+                                                'phone');
+                                            _filterPhoneController.clear();
+                                          }
+                                          if (_filterCompanyController
+                                              .text.isNotEmpty) {
+                                            addFilter(
+                                                _filterCompanyController.text,
+                                                'company');
+                                            _filterCompanyController.clear();
+                                          }
+                                          if (selectedRoleForFilter != null) {
+                                            addFilter(
+                                                selectedRoleForFilter?.name ??
+                                                    '',
+                                                'role');
+                                            selectedRoleForFilter = null;
+                                          }
+                                          if (selectedStatus.isNotEmpty) {
+                                            addFilter(selectedStatus, 'status');
+                                            selectedStatus = '';
+                                          }
+                                          // call api and close the drawer
+                                          if (_selectedScreen ==
+                                              Screens.corporateList) {
+                                            companySearchClient(
+                                                _corporateSearchController
+                                                    .text);
+                                            Scaffold.of(context)
+                                                .closeEndDrawer();
+                                          } else if (_selectedScreen ==
+                                              Screens.corporateEmployeeList) {
+                                            corporateEmployeeSearchClient(
+                                                _corporateEmployeeSearchController
+                                                    .text);
+                                            Scaffold.of(context)
+                                                .closeEndDrawer();
+                                          } else if (_selectedScreen ==
+                                              Screens.nonCorporateList) {
+                                            nonCorporateSearchClient(
+                                                _nonCorporateSearchController
+                                                    .text);
+                                            Scaffold.of(context)
+                                                .closeEndDrawer();
+                                          } else if (_selectedScreen ==
+                                              Screens.employeeList) {
+                                            employeeSearchClient(
+                                                _employeeSearchController.text);
+                                            Scaffold.of(context)
+                                                .closeEndDrawer();
+                                          }
+                                        },
+                                        type: ButtonType.filled,
+                                        child: Text(
+                                          'Add Filter',
+                                          style: CustomTypography.ButtonLarge,
+                                        ),
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          // Handle submit button
+                                          Navigator.pop(context);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 22, vertical: 8),
+                                        ),
+                                        child: Text(
+                                          'Cancel',
+                                          style: CustomTypography.ButtonLarge,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ])),
+                              )
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              ListTile(
-                title: Text('Logout'),
-                onTap: () {},
-              ),
-            ],
+            ),
           ),
         ),
       );
@@ -452,181 +1235,203 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _corporateManagement() {
     return RefreshIndicator(
       onRefresh: () async {
-        await Provider.of<CompanyProvider>(context, listen: false)
-            .getAllCompanies(context, "searchText", "filter");
+        companySearchClient(_corporateSearchController.text);
       },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: CustomSpacing.four,
-          ),
-          Text('Companies',
-              style: CustomTypography.H6.copyWith(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.white
-                      : AppColors.black)),
-          SizedBox(
-            height: CustomSpacing.four,
-          ),
-          Text('Manage companies from this place',
-              style: CustomTypography.Body2),
-          SizedBox(
-            height: CustomSpacing.four,
-          ),
-          // Add Search and filter dropdown in a row
-          Row(
-            children: [
-              Expanded(
-                flex: 7,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Name, email or mobile ...',
-                    label: Text('Search', style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+      child: Builder(builder: (context) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            Text('Companies',
+                style: CustomTypography.H6.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.white
+                        : AppColors.black)),
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            Text('Manage companies from this place',
+                style: CustomTypography.Body2),
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            // Add Search and filter dropdown in a row
+            Row(
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: TextField(
+                    controller: _corporateSearchController,
+                    onChanged: companySearchClient,
+                    decoration: InputDecoration(
+                      hintText: 'Name, email or mobile ...',
+                      label: Text('Search', style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                width: CustomSpacing.four,
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Open bottom sheet here
-                  /* showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Container(
-                          // Build your filter bottom sheet UI here
-                          );
-                    },
-                  );*/
-                  //Show end drawer
-                  Scaffold.of(context).openEndDrawer();
-                },
-                child: Icon(
-                  Icons.filter_list,
-                  size: 30,
+                SizedBox(
+                  width: CustomSpacing.four,
                 ),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: CustomSpacing.four,
-          ),
-          // select all checkbox
-          showCheckbox
-              ? Consumer<CompanyProvider>(builder: (_, companyProvider, child) {
-                  return Row(
-                    children: [
-                      Checkbox(
-                        value: companyProvider.companies
-                            .every((element) => element.isSelected!),
-                        onChanged: (value) {
-                          // Handle select all checkbox value change
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            companyProvider.companies.forEach((element) {
-                              setState(() {
-                                element.isSelected = value;
+                GestureDetector(
+                  onTap: () {
+                    // Open bottom sheet here
+                    /* showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Container(
+                              // Build your filter bottom sheet UI here
+                              );
+                        },
+                      );*/
+                    //Show end drawer
+                    Scaffold.of(context).openEndDrawer();
+                  },
+                  child: Icon(
+                    Icons.filter_list,
+                    size: 30,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            // select all checkbox
+            showCheckbox
+                ? Consumer<CompanyProvider>(
+                    builder: (_, companyProvider, child) {
+                    return Row(
+                      children: [
+                        Checkbox(
+                          value: companyProvider.companies
+                              .every((element) => element.isSelected!),
+                          onChanged: (value) {
+                            // Handle select all checkbox value change
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              companyProvider.companies.forEach((element) {
+                                setState(() {
+                                  element.isSelected = value;
+                                });
                               });
                             });
-                          });
-                        },
-                      ),
-                      Text('Select All', style: CustomTypography.Body1),
-                      Spacer(),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          // Handle delete selected companies
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text('Delete Companies',
-                                    style: CustomTypography.H7),
-                                content: Text(
-                                    'Are you sure you want to delete selected companies?',
-                                    style: CustomTypography.Body2),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      companyProvider
-                                          .deleteMultipleCompanies(
-                                              context,
-                                              companyProvider.companies
-                                                  .where((element) =>
-                                                      element.isSelected ==
-                                                      true)
-                                                  .map((e) => e.id ?? '')
-                                                  .toList())
-                                          .then((value) {
-                                        if (value) {
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
-                                            setState(() {
-                                              companyProvider.companies
-                                                  .removeWhere((element) =>
-                                                      element.isSelected ==
-                                                      true);
-                                            });
-                                          });
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
-                                            setState(() {
-                                              showCheckbox = false;
-                                            });
-                                          });
-                                        }
-                                      });
-                                    },
-                                    child: Text('Delete'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                })
-              : SizedBox(),
-
-          // Add Company List
-          Expanded(
-            child: Consumer<CompanyProvider>(
-                builder: (context, companyProvider, child) {
-              return companyProvider.isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : companyProvider.companies.isEmpty
-                      ? Center(
-                          child: Text('No companies',
-                              style: CustomTypography.Body1),
-                        )
-                      : ListView.builder(
-                          itemCount: companyProvider.companies.length,
-                          itemBuilder: (context, index) {
-                            return _companyListItem(index, companyProvider);
                           },
-                        );
-            }),
-          ),
-        ],
-      ),
+                        ),
+                        Text('Select All', style: CustomTypography.Body1),
+                        Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            // Handle delete selected companies
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text('Delete Companies',
+                                      style: CustomTypography.H7),
+                                  content: Text(
+                                      'Are you sure you want to delete selected companies?',
+                                      style: CustomTypography.Body2),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        companyProvider
+                                            .deleteMultipleCompanies(
+                                                context,
+                                                companyProvider.companies
+                                                    .where((element) =>
+                                                        element.isSelected ==
+                                                        true)
+                                                    .map((e) => e.id ?? '')
+                                                    .toList())
+                                            .then((value) {
+                                          if (value) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              setState(() {
+                                                companyProvider.companies
+                                                    .removeWhere((element) =>
+                                                        element.isSelected ==
+                                                        true);
+                                              });
+                                            });
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              setState(() {
+                                                showCheckbox = false;
+                                              });
+                                            });
+                                          }
+                                        });
+                                      },
+                                      child: Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  })
+                : SizedBox(),
+
+            // Add Company List
+            Expanded(
+              child: Consumer<CompanyProvider>(
+                builder: (context, companyProvider, child) {
+                  return companyProvider.isLoading
+                      ? Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : companyProvider.companies.isEmpty
+                          ? Center(
+                              child: Text('No companies',
+                                  style: CustomTypography.Body1),
+                            )
+                          : ListView.builder(
+                              itemCount: companyProvider.companies.length +
+                                  (companyProvider.companyListNextPageExists
+                                      ? 1
+                                      : 0),
+                              itemBuilder: (context, index) {
+                                if (index == companyProvider.companies.length) {
+                                  // Reached the end of the current list, load more data
+                                  companyProvider.getAllCompanies(context, "",
+                                      "", ""); // Adjust parameters as needed
+                                  return SizedBox(
+                                    height:
+                                        50, // Placeholder for loading indicator
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                } else {
+                                  return _companyListItem(
+                                      index, companyProvider);
+                                }
+                              },
+                            );
+                },
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -636,19 +1441,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onLongPress: () {
-          // Show checkbox
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              showCheckbox = !showCheckbox;
-            });
-          });
-          selectedCompanyListIndex = index;
-          setState(() {
-            companyProvider.companies[index].isSelected =
-                !companyProvider.companies[index].isSelected!;
-          });
-        },
+        onLongPress: !showDeleteCorporate
+            ? null
+            : () {
+                // Show checkbox
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  setState(() {
+                    showCheckbox = !showCheckbox;
+                  });
+                });
+                selectedCompanyListIndex = index;
+                setState(() {
+                  companyProvider.companies[index].isSelected =
+                      !companyProvider.companies[index].isSelected!;
+                });
+              },
         child: Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,20 +1468,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.four,
                   ),
-                  showCheckbox
-                      ? Checkbox(
-                          value: companyProvider.companies[index].isSelected!,
-                          onChanged: (value) {
-                            // Handle checkbox value change
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              setState(() {
-                                companyProvider.companies[index].isSelected =
-                                    value;
-                              });
-                            });
-                          },
-                        )
-                      : SizedBox(),
+                  !showDeleteCorporate
+                      ? SizedBox()
+                      : showCheckbox
+                          ? Checkbox(
+                              value:
+                                  companyProvider.companies[index].isSelected!,
+                              onChanged: (value) {
+                                // Handle checkbox value change
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  setState(() {
+                                    companyProvider
+                                        .companies[index].isSelected = value;
+                                  });
+                                });
+                              },
+                            )
+                          : SizedBox(),
                   CircleAvatar(
                     child: companyProvider.companies[index].companyImageUrl !=
                                 null &&
@@ -726,33 +1537,39 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
-                  companyProvider.isStatusLoading &&
-                          selectedCompanyListIndex == index
-                      ? Padding(
-                          padding: const EdgeInsets.only(top: 8.0, right: 8.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : Switch(
-                          value: companyProvider.companies[index].isEnabled ??
-                              false,
-                          onChanged: (value) {
-                            // Handle switch value change
-                            selectedCompanyListIndex = index;
-                            companyProvider
-                                .changeCompanyStatus(
-                                    context,
-                                    companyProvider.companies[index].id ?? '',
-                                    value)
-                                .then((value) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                setState(() {
-                                  companyProvider.companies[index].isEnabled =
-                                      value;
+                  !showEnableDisableCorporate
+                      ? SizedBox()
+                      : companyProvider.isStatusLoading &&
+                              selectedCompanyListIndex == index
+                          ? Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 8.0, right: 8.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          : Switch(
+                              value:
+                                  companyProvider.companies[index].isEnabled ??
+                                      false,
+                              onChanged: (value) {
+                                // Handle switch value change
+                                selectedCompanyListIndex = index;
+                                companyProvider
+                                    .changeCompanyStatus(
+                                        context,
+                                        companyProvider.companies[index].id ??
+                                            '',
+                                        value)
+                                    .then((value) {
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    setState(() {
+                                      companyProvider
+                                          .companies[index].isEnabled = value;
+                                    });
+                                  });
                                 });
-                              });
-                            });
-                          },
-                        ),
+                              },
+                            ),
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
@@ -808,8 +1625,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     TextButton.icon(
                       onPressed: () {
                         // Handle view employees
+                        Provider.of<CorporateProvider>(context, listen: false)
+                            .getCorporateUserList(context,
+                                companyId:
+                                    companyProvider.companies[index].id ?? '');
+                        selectedCorporateId =
+                            companyProvider.companies[index].id ?? '';
                         setState(() {
                           _selectedScreen = Screens.corporateEmployeeList;
+                          clearFilters();
                         });
                       },
                       icon: Icon(Icons.people),
@@ -821,120 +1645,133 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black)),
                     ),
                     Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      color: AppColors.primaryMain,
-                      onPressed: () async {
-                        /// Handle edit company
-                        await companyProvider.viewCompany(
-                            context, companyProvider.companies[index].id ?? '');
-                        log(companyProvider.company.toJson().toString());
-                        // Prefill values
-                        companyImageUrl =
-                            companyProvider.company.companyImageUrl;
-                        selectedCompanyType = CorporateType(
-                          name: companyProvider.company.companyTypeName,
-                          type: companyProvider.company.companyType,
-                        );
-                        _enableDomainCheck =
-                            companyProvider.company.enableDomainCheck ?? false;
-                        selectedCorporateTypeRole = [
-                          companyType.Roles(
-                            name: "Admin",
-                            role: "admin",
-                          )
-                        ];
-                        _domainListController.text =
-                            companyProvider.company.domainList?.join(",") ?? '';
-                        _companyLegalNameController.text =
-                            companyProvider.company.name ?? '';
-                        if (companyProvider.company.displayName != null) {
-                          _companyDisplayNameController.text = companyProvider
-                                      .company.displayName!
-                                      .substring(0, 1)
-                                      .toUpperCase() +
-                                  companyProvider.company.displayName!
-                                      .substring(1) ??
-                              '';
-                        }
-
-                        _adminNameController.text =
-                            companyProvider.company.admins?.name ?? "";
-                        _adminDisplayNameController.text =
-                            companyProvider.company.admins?.displayName ?? '';
-                        _adminEmailController.text =
-                            companyProvider.company.admins?.email ?? '';
-                        _selectedCountryCode = _adminMobileController.text =
-                            companyProvider.company.admins?.mobile ?? '';
-                        _enableDomainCheck =
-                            companyProvider.company.enableDomainCheck ?? false;
-                        // Set screen to edit
-
-                        setState(() {
-                          _selectedScreen = Screens.corporateEdit;
-                        });
-                      },
-                    ),
-                    companyProvider.isDeleteLoading &&
-                            selectedCompanyListIndex == index
-                        ? Center(
-                            child: Container(
-                                height: 20,
-                                width: 20,
-                                margin: EdgeInsets.only(right: 8),
-                                child: CircularProgressIndicator()),
-                          )
-                        : IconButton(
-                            icon: Icon(Icons.delete),
+                    showEditCorporate
+                        ? IconButton(
+                            icon: Icon(Icons.edit),
                             color: AppColors.primaryMain,
-                            onPressed: () {
-                              selectedCompanyListIndex = index;
-                              // Handle delete by showing dialog
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  // delete company name
-                                  return AlertDialog(
-                                    title: Text('Delete Company',
-                                        style: CustomTypography.H6),
-                                    content: Text(
-                                        'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
-                                        style: CustomTypography.Body1),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          companyProvider.deleteCompany(
-                                              context, [
-                                            companyProvider
-                                                    .companies[index].id ??
-                                                ''
-                                          ]).then((value) {
-                                            if (value) {
-                                              WidgetsBinding.instance
-                                                  .addPostFrameCallback((_) {
-                                                setState(() {
-                                                  companyProvider.companies
-                                                      .removeAt(index);
-                                                });
+                            onPressed: () async {
+                              /// Handle edit company
+                              await companyProvider.viewCompany(context,
+                                  companyProvider.companies[index].id ?? '');
+                              log(companyProvider.company.toJson().toString());
+                              // Prefill values
+                              companyImageUrl =
+                                  companyProvider.company.companyImageUrl;
+                              selectedCompanyType = CorporateType(
+                                name: companyProvider.company.companyTypeName,
+                                type: companyProvider.company.companyType,
+                              );
+                              _enableDomainCheck =
+                                  companyProvider.company.enableDomainCheck ??
+                                      false;
+                              selectedCorporateTypeRole = [
+                                companyType.Roles(
+                                  name: "Admin",
+                                  role: "admin",
+                                )
+                              ];
+                              _domainListController.text = companyProvider
+                                      .company.domainList
+                                      ?.join(",") ??
+                                  '';
+                              _companyLegalNameController.text =
+                                  companyProvider.company.name ?? '';
+                              if (companyProvider.company.displayName != null) {
+                                _companyDisplayNameController.text =
+                                    companyProvider
+                                                .company.displayName!
+                                                .substring(0, 1)
+                                                .toUpperCase() +
+                                            companyProvider.company.displayName!
+                                                .substring(1) ??
+                                        '';
+                              }
+
+                              _adminNameController.text =
+                                  companyProvider.company.admins?.name ?? "";
+                              _adminDisplayNameController.text =
+                                  companyProvider.company.admins?.displayName ??
+                                      '';
+                              _adminEmailController.text =
+                                  companyProvider.company.admins?.email ?? '';
+                              _selectedCountryCode = _adminMobileController
+                                      .text =
+                                  companyProvider.company.admins?.mobile ?? '';
+                              _enableDomainCheck =
+                                  companyProvider.company.enableDomainCheck ??
+                                      false;
+                              // Set screen to edit
+
+                              setState(() {
+                                _selectedScreen = Screens.corporateEdit;
+                                clearFilters();
+                              });
+                            },
+                          )
+                        : SizedBox(),
+                    !showDeleteCorporate
+                        ? SizedBox()
+                        : companyProvider.isDeleteLoading &&
+                                selectedCompanyListIndex == index
+                            ? Center(
+                                child: Container(
+                                    height: 20,
+                                    width: 20,
+                                    margin: EdgeInsets.only(right: 8),
+                                    child: CircularProgressIndicator()),
+                              )
+                            : IconButton(
+                                icon: Icon(Icons.delete),
+                                color: AppColors.primaryMain,
+                                onPressed: () {
+                                  selectedCompanyListIndex = index;
+                                  // Handle delete by showing dialog
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      // delete company name
+                                      return AlertDialog(
+                                        title: Text('Delete Company',
+                                            style: CustomTypography.H6),
+                                        content: Text(
+                                            'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
+                                            style: CustomTypography.Body1),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              companyProvider.deleteCompany(
+                                                  context, [
+                                                companyProvider
+                                                        .companies[index].id ??
+                                                    ''
+                                              ]).then((value) {
+                                                if (value) {
+                                                  WidgetsBinding.instance
+                                                      .addPostFrameCallback(
+                                                          (_) {
+                                                    setState(() {
+                                                      companyProvider.companies
+                                                          .removeAt(index);
+                                                    });
+                                                  });
+                                                }
                                               });
-                                            }
-                                          });
-                                        },
-                                        child: Text('Delete'),
-                                      ),
-                                    ],
+                                            },
+                                            child: Text('Delete'),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                          ),
+                              ),
                   ],
                 ),
               ),
@@ -946,67 +1783,188 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _corporateEmployeeManagement() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        // Add Search and filter dropdown in a row
-        Row(
+    return RefreshIndicator(
+      onRefresh: () async {
+        corporateEmployeeSearchClient(_corporateEmployeeSearchController.text);
+      },
+      child: Builder(builder: (context) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 7,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Name, email or mobile ...',
-                  label: Text('Search', style: CustomTypography.Body1),
-                  hintStyle: CustomTypography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            // Add Search and filter dropdown in a row
+            Row(
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: TextField(
+                    controller: _corporateEmployeeSearchController,
+                    onChanged: corporateEmployeeSearchClient,
+                    decoration: InputDecoration(
+                      hintText: 'Name, email or mobile ...',
+                      label: Text('Search', style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SizedBox(
-              width: CustomSpacing.four,
-            ),
-            GestureDetector(
-              onTap: () {
-                // Open bottom sheet here
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Container(
-                        // Build your filter bottom sheet UI here
-                        );
+                SizedBox(
+                  width: CustomSpacing.four,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    // Open bottom sheet here
+
+                    Scaffold.of(context).openEndDrawer();
                   },
-                );
-              },
-              child: Icon(
-                Icons.filter_list,
-                size: 30,
-              ),
+                  child: Icon(
+                    Icons.filter_list,
+                    size: 30,
+                  ),
+                ),
+              ],
+            ),
+            // select all checkbox
+            showCheckbox
+                ? Consumer<CorporateProvider>(
+                    builder: (_, corporateProvider, child) {
+                    return Row(
+                      children: [
+                        Checkbox(
+                          value: corporateProvider.employeeList
+                              ?.every((element) => element.isSelected!),
+                          onChanged: (value) {
+                            // Handle select all checkbox value change
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              corporateProvider.employeeList
+                                  ?.forEach((element) {
+                                setState(() {
+                                  element.isSelected = value;
+                                });
+                              });
+                            });
+                          },
+                        ),
+                        Text('Select All', style: CustomTypography.Body1),
+                        Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            // Handle delete selected companies
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text('Delete Employees',
+                                      style: CustomTypography.H7),
+                                  content: Text(
+                                      'Are you sure you want to delete selected employees?',
+                                      style: CustomTypography.Body2),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        corporateProvider
+                                            .deleteCompany(
+                                                context,
+                                                corporateProvider.employeeList!
+                                                    .where((element) =>
+                                                        element.isSelected ==
+                                                        true)
+                                                    .map((e) => e.userId ?? '')
+                                                    .toList())
+                                            .then((value) {
+                                          if (value) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              setState(() {
+                                                corporateProvider.employeeList
+                                                    ?.removeWhere((element) =>
+                                                        element.isSelected ==
+                                                        true);
+                                              });
+                                            });
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              setState(() {
+                                                showCheckbox = false;
+                                              });
+                                            });
+                                          }
+                                        });
+                                      },
+                                      child: Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  })
+                : SizedBox(),
+            // Add Company List
+            SizedBox(
+              height: CustomSpacing.four,
+            ),
+            Expanded(
+              child: Consumer<CorporateProvider>(
+                  builder: (context, corporateProvider, child) {
+                return corporateProvider.isLoading
+                    ? Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : (corporateProvider.employeeList ?? []).isEmpty
+                        ? Center(
+                            child: Text('No employees',
+                                style: CustomTypography.Body1),
+                          )
+                        : ListView.builder(
+                            itemCount:
+                                (corporateProvider.employeeList ?? []).length +
+                                    (corporateProvider.nextPageExists ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index ==
+                                  (corporateProvider.employeeList ?? [])
+                                      .length) {
+                                // Reached the end of the current list, load more data
+                                corporateProvider.getCorporateUserList(context,
+                                    companyId: selectedCorporateId);
+                                return SizedBox(
+                                  height:
+                                      50, // Placeholder for loading indicator
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              } else {
+                                return _corporateUserList(
+                                    index, corporateProvider);
+                              }
+                            },
+                          );
+              }),
             ),
           ],
-        ),
-        // Add Company List
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        Expanded(
-          child: Consumer<EmployeeProvider>(
-              builder: (context, employeeProvider, child) {
-            return ListView.builder(
-              itemCount: employeeProvider.employeeList?.length,
-              itemBuilder: (context, index) {
-                return _companyEmployeeListItem(index, employeeProvider);
-              },
-            );
-          }),
-        ),
-      ],
+        );
+      }),
     );
   }
 
@@ -1769,6 +2727,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           _selectedScreen =
                                                               Screens
                                                                   .corporateList;
+                                                          clearFilters();
                                                         });
                                                         //Clear all fields
                                                         _adminNameController
@@ -1797,6 +2756,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                             .getAllCompanies(
                                                                 context,
                                                                 "",
+                                                                "",
                                                                 "");
                                                       });
                                                     }
@@ -1820,6 +2780,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             setState(() {
                                               _selectedScreen =
                                                   Screens.corporateList;
+                                              clearFilters();
                                             });
                                           },
                                           style: ElevatedButton.styleFrom(
@@ -2494,6 +3455,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           _selectedScreen =
                                                               Screens
                                                                   .corporateList;
+                                                          clearFilters();
                                                         });
                                                         //Clear all fields
                                                         _adminNameController
@@ -2522,6 +3484,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                             .getAllCompanies(
                                                                 context,
                                                                 "",
+                                                                "",
                                                                 "");
                                                       });
                                                     }
@@ -2545,6 +3508,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             setState(() {
                                               _selectedScreen =
                                                   Screens.corporateList;
+                                              clearFilters();
                                             });
                                           },
                                           style: ElevatedButton.styleFrom(
@@ -2576,7 +3540,425 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
-  _companyEmployeeListItem(int index, EmployeeProvider employeeProvider) {
+  _viewCompany() {
+    // Add Company
+    return SingleChildScrollView(
+      child: Container(
+        margin: EdgeInsets.only(top: 8),
+        child: Card(
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: CustomSpacing.four,
+                      ),
+                      Text('View corporate account',
+                          style: CustomTypography.H7.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.white
+                                  : AppColors.black)),
+                      SizedBox(
+                        height: CustomSpacing.four,
+                      ),
+                      Row(
+                        children: [
+                          Text('Here are the necessary information.',
+                              style: CustomTypography.Body2),
+                        ],
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.three,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: CustomSpacing.one,
+                      ),
+                      // Add Company Form
+                      // Profile Pic
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // If company image is not uploaded, show default image
+                            companyImageUrl == null || companyImageUrl == ''
+                                ? CircleAvatar(
+                                    backgroundImage: AssetImage(
+                                        'assets/images/loginImage.png'),
+                                    radius: 40,
+                                  )
+                                : CircleAvatar(
+                                    backgroundImage:
+                                        NetworkImage(companyImageUrl!),
+                                    radius: 40,
+                                  ),
+                            SizedBox(
+                              width: CustomSpacing.four,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: CustomSpacing.four),
+                      Form(
+                          key: _createCompanyFormKey,
+                          child: Column(children: [
+                            // Company Type
+                            Consumer<CompanyProvider>(
+                              builder: (_, companyProvider, child) {
+                                // Get the theme's button large color
+                                final buttonLargeColor =
+                                    Theme.of(context).textTheme.button?.color;
+
+                                return Row(
+                                  children: [
+                                    Expanded(
+                                      child: DropdownButtonFormField(
+                                        value: selectedCompanyType?.type,
+                                        decoration: InputDecoration(
+                                          labelText: 'Company Type',
+                                          labelStyle:
+                                              CustomTypography.Body1.copyWith(
+                                                  color: buttonLargeColor),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        items: [
+                                          DropdownMenuItem(
+                                            child: Text(
+                                              selectedCompanyType?.name ?? "",
+                                              style: CustomTypography.Body1
+                                                  .copyWith(
+                                                      color: buttonLargeColor),
+                                            ),
+                                            value: selectedCompanyType?.type,
+                                          ),
+                                        ],
+                                        onChanged: null, // Disable the dropdown
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Switch for Enable/Disable Domain
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Domain Check',
+                                    style: CustomTypography.Body1,
+                                  ),
+                                  Icon(
+                                    _enableDomainCheck
+                                        ? Icons.check_box
+                                        : Icons.check_box_outline_blank,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Domain List
+                            _enableDomainCheck
+                                ? Text(
+                                    _domainListController.text,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                  )
+                                : SizedBox(),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Company Legal Name
+                            Text(
+                              _companyLegalNameController.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .button
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Company Display Name
+                            Text(
+                              _companyDisplayNameController.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// User & Role(s) divider
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'User & Role(s)',
+                                  style: CustomTypography.Subtitle1.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                SizedBox(width: CustomSpacing.three),
+                                Expanded(
+                                  child: Divider(
+                                    thickness: 1,
+                                    color: Colors.white
+                                        .withOpacity(0.11999999731779099),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Role Dropdown
+                            Consumer<CompanyProvider>(
+                              builder: (_, companyProvider, child) {
+                                return Wrap(
+                                  spacing: 8.0,
+                                  children: selectedCorporateTypeRole
+                                      .map(
+                                        (value) => Chip(
+                                          label: Text(
+                                            value.name ?? '',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelMedium
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                );
+                              },
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Name
+                            Text(
+                              _adminNameController.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Display Name
+                            Text(
+                              _adminDisplayNameController.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Phone
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 4,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Colors.white.withOpacity(0.5)),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16.0),
+                                    child: Center(
+                                      child: CountryListPicker(
+                                        initialCountry: Countries.United_States,
+                                        border: InputBorder.none,
+                                        flagSize: Size(35, 30),
+                                        isShowInputField: false,
+                                        dialogTheme: DialogThemeData(
+                                          style: CustomTypography.Body1,
+                                          isShowFloatButton: false,
+                                        ),
+                                        countryNameStyle:
+                                            CustomTypography.Body1,
+                                        isShowCountryName: false,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+
+                                // Mobile Number TextFormField
+                                Expanded(
+                                  flex: 7,
+                                  child: Text(
+                                    _adminMobileController.text,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Email
+                            Text(
+                              _adminEmailController.text,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+
+                            SizedBox(height: CustomSpacing.four),
+
+// Cancel and Submit Buttons
+                            Consumer<CompanyProvider>(
+                              builder: (_, companyProvider, child) {
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: companyProvider.isLoading
+                                              ? Center(
+                                                  child: SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ))
+                                              : SizedBox(),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: null,
+                                            style: ElevatedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 22, vertical: 8),
+                                            ),
+                                            child: Text(
+                                              'Cancel',
+                                              style:
+                                                  CustomTypography.ButtonLarge,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ]))
+                    ],
+                  ),
+                ),
+              ]),
+        ),
+      ),
+    );
+  }
+
+  void clearFilters() {
+    filterCompanies.clear();
+    filterStatus.clear();
+    filterRoles.clear();
+    filterPhones.clear();
+    filterEmails.clear();
+    filterNames.clear();
+  }
+
+  _corporateUserList(int index, CorporateProvider corporateProvider) {
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
@@ -2589,10 +3971,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               showCheckbox = !showCheckbox;
             });
           });
-          selectedCompanyListIndex = index;
+          selectedCompanyEmployeeListIndex = index;
           setState(() {
-            employeeProvider.employeeList?[index].isSelected =
-                !employeeProvider.employeeList![index].isSelected;
+            corporateProvider.employeeList?[index].isSelected =
+                corporateProvider.employeeList![index].isSelected;
           });
         },
         child: Card(
@@ -2609,13 +3991,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   ),
                   showCheckbox
                       ? Checkbox(
-                          value:
-                              employeeProvider.employeeList?[index].isSelected!,
+                          value: corporateProvider
+                              .employeeList?[index].isSelected!,
                           onChanged: (value) {
                             // Handle checkbox value change
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               setState(() {
-                                employeeProvider
+                                corporateProvider
                                     .employeeList?[index].isSelected = value!;
                               });
                             });
@@ -2623,25 +4005,25 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         )
                       : SizedBox(),
                   CircleAvatar(
-                    child:
-                        employeeProvider.employeeList?[index].displayImageUrl !=
-                                    null &&
-                                employeeProvider
-                                        .employeeList?[index].displayImageUrl !=
-                                    ''
-                            ? ClipOval(
-                                child: Image.network(
-                                  employeeProvider
-                                      .employeeList![index].displayImageUrl!,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Text(
-                                employeeProvider.employeeList?[index].name
-                                        ?.substring(0, 1)
-                                        .toUpperCase() ??
-                                    "",
-                              ),
+                    child: corporateProvider
+                                    .employeeList?[index].displayImageUrl !=
+                                null &&
+                            corporateProvider
+                                    .employeeList?[index].displayImageUrl !=
+                                ''
+                        ? ClipOval(
+                            child: Image.network(
+                              corporateProvider
+                                  .employeeList![index].displayImageUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Text(
+                            corporateProvider.employeeList?[index].name
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
+                                "",
+                          ),
                   ),
                   SizedBox(
                     width: CustomSpacing.two,
@@ -2651,11 +4033,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (employeeProvider.employeeList?[index].name
+                          (corporateProvider.employeeList?[index].name
                                       ?.substring(0, 1)
                                       .toUpperCase() ??
                                   "") +
-                              (employeeProvider.employeeList?[index].name
+                              (corporateProvider.employeeList?[index].name
                                       ?.substring(1) ??
                                   ""),
                           style: CustomTypography.Body2.copyWith(
@@ -2666,9 +4048,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(employeeProvider.employeeList?[index].email ?? "",
+                        Text(corporateProvider.employeeList?[index].email ?? "",
                             style: CustomTypography.Caption),
-                        Text(employeeProvider.employeeList?[index].phone ?? "",
+                        Text(
+                            corporateProvider.employeeList?[index].phone
+                                    ?.toString() ??
+                                "",
                             style: CustomTypography.Caption),
                       ],
                     ),
@@ -2676,29 +4061,33 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
-                  employeeProvider.isStatusLoading &&
-                          selectedEmployeeListIndex == index
+                  corporateProvider.isStatusLoading &&
+                          selectedCompanyEmployeeListIndex == index
                       ? Padding(
                           padding: const EdgeInsets.only(top: 8.0, right: 8.0),
                           child: Center(child: CircularProgressIndicator()),
                         )
                       : Switch(
-                          value: employeeProvider.employeeList?[index].status ??
-                              false,
+                          value:
+                              corporateProvider.employeeList?[index].status ??
+                                  false,
                           onChanged: (value) {
+                            print(
+                                corporateProvider.employeeList?[index].userId);
                             // Handle switch value change
-                            selectedCompanyListIndex = index;
-                            employeeProvider
-                                .changeEmployeeStatus(
+                            selectedCompanyEmployeeListIndex = index;
+                            corporateProvider
+                                .changeCorporateEmployeeStatus(
                                     context,
-                                    employeeProvider.employeeList?[index].id ??
+                                    corporateProvider
+                                            .employeeList?[index].userId ??
                                         '',
                                     value)
                                 .then((value) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 setState(() {
-                                  employeeProvider.employeeList?[index].status =
-                                      value;
+                                  corporateProvider
+                                      .employeeList?[index].status = value;
                                 });
                               });
                             });
@@ -2721,10 +4110,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       SizedBox(
                         height: CustomSpacing.two,
                       ),
-                      CustomChip(
-                          label: Text(
-                              employeeProvider.employeeList?[index].role ??
-                                  '')),
+                      SingleChildScrollView(
+                        child: Row(
+                          children: [
+                            CustomChip(
+                                label: Text(corporateProvider
+                                        .employeeList?[index].role?.name ??
+                                    '')),
+                          ],
+                        ),
+                      ),
                       SizedBox(
                         height: CustomSpacing.two,
                       ),
@@ -2747,9 +4142,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     TextButton.icon(
                       onPressed: () {
                         // Handle view employees
-                        setState(() {
-                          _selectedScreen = Screens.corporateEmployeeList;
-                        });
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => ConnectionsScreen(
+                                  userId: corporateProvider
+                                          .employeeList?[index].userId ??
+                                      '',
+                                  userName: corporateProvider
+                                          .employeeList?[index].name ??
+                                      '',
+                                )));
                       },
                       icon: Icon(Icons.people),
                       label: Text('View Connections',
@@ -2760,27 +4161,41 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black)),
                     ),
                     Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      color: AppColors.primaryMain,
-                      onPressed: () async {
-                        /// Handle edit company
-                        await employeeProvider.viewEmployee(context,
-                            employeeProvider.employeeList?[index].id ?? '');
-                        log(employeeProvider.employees.toJson().toString());
-                        // Prefill values
-                        companyImageUrl =
-                            employeeProvider.employees.displayImageUrl ?? '';
-
-                        // Set screen to edit
-
-                        setState(() {
-                          _selectedScreen = Screens.corporateEdit;
-                        });
-                      },
-                    ),
-                    employeeProvider.isDeleteLoading &&
-                            selectedCompanyListIndex == index
+                    corporateProvider.isEditViewEmployeeLoading &&
+                            selectedCompanyEmployeeListIndex == index
+                        ? Center(
+                            child: Container(
+                                height: 20,
+                                width: 20,
+                                margin: EdgeInsets.only(right: 8),
+                                child: CircularProgressIndicator()),
+                          )
+                        : IconButton(
+                            icon: Icon(Icons.edit),
+                            color: AppColors.primaryMain,
+                            onPressed: () async {
+                              selectedCompanyEmployeeListIndex = index;
+                              String userId = corporateProvider
+                                      .employeeList![index].userId ??
+                                  '';
+                              await corporateProvider.viewCorporateUserEmployee(
+                                  context, userId);
+                              log(corporateProvider.employees
+                                  .toJson()
+                                  .toString());
+                              companyImageUrl =
+                                  corporateProvider.employees.displayImageUrl ??
+                                      '';
+                              setState(() {
+                                corporateUserId = corporateProvider
+                                    .employeeList![index].userId;
+                                _selectedScreen = Screens.corporateEmployeeEdit;
+                                clearFilters();
+                              });
+                            },
+                          ),
+                    corporateProvider.isDeleteLoading &&
+                            selectedCompanyEmployeeListIndex == index
                         ? Center(
                             child: Container(
                                 height: 20,
@@ -2792,7 +4207,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             icon: Icon(Icons.delete),
                             color: AppColors.primaryMain,
                             onPressed: () {
-                              selectedEmployeeListIndex = index;
+                              selectedCompanyEmployeeListIndex = index;
                               // Handle delete by showing dialog
                               showDialog(
                                 context: context,
@@ -2802,7 +4217,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     title: Text('Delete Employee',
                                         style: CustomTypography.H6),
                                     content: Text(
-                                        'Are you sure you want to delete ${employeeProvider.employeeList?[index].name}?',
+                                        'Are you sure you want to delete '
+                                        '${corporateProvider.employeeList?[index].name}?',
                                         style: CustomTypography.Body1),
                                     actions: [
                                       TextButton(
@@ -2814,20 +4230,26 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       TextButton(
                                         onPressed: () {
                                           Navigator.pop(context);
-                                          employeeProvider.deleteCompany(
+                                          corporateProvider.deleteCompany(
                                               context, [
-                                            employeeProvider
-                                                    .employeeList?[index].id ??
+                                            corporateProvider
+                                                    .employeeList?[index]
+                                                    .userId ??
                                                 ''
                                           ]).then((value) {
                                             if (value) {
                                               WidgetsBinding.instance
                                                   .addPostFrameCallback((_) {
                                                 setState(() {
-                                                  employeeProvider.employeeList
+                                                  corporateProvider.employeeList
                                                       ?.removeAt(index);
                                                 });
                                               });
+                                              Provider.of<CorporateProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .getCorporateUserList(
+                                                      context);
                                             }
                                           });
                                         },
@@ -2849,93 +4271,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
-/*  _companyEmployeeListItem() {
-    // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
-    return Card(
-      child: ListTile(
-        leading: Checkbox(
-          value: false,
-          onChanged: (value) {
-            // Handle checkbox value change
-          },
-        ),
-        title: Text('Employee Name', style: CustomTypography.Body1),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Employee Email', style: CustomTypography.Body1),
-            Text('Employee Phone', style: CustomTypography.Body1),
-            Chip(
-              label: Text('Role Name'),
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PopupMenuButton(
-              icon: Icon(Icons.more_vert),
-              itemBuilder: (BuildContext context) =>
-              <PopupMenuEntry>[
-                PopupMenuItem(
-                  child: ListTile(
-                    leading: SvgPicture.asset(
-                      'assets/images/connectionIcon.svg',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: Text('View Connections'),
-                    onTap: () {
-                      // Handle view connections
-                      Navigator.pop(context);
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => ConnectionsScreen()));
-                    },
-                  ),
-                ),
-                PopupMenuItem(
-                  child: ListTile(
-                    leading: Icon(Icons.edit),
-                    title: Text('Edit Employee'),
-                    onTap: () {
-                      // Handle edit employee
-                      Navigator.pop(context);
-                      setState(() {
-                        _selectedScreen = Screens.corporateEmployeeAdd;
-                      });
-                    },
-                  ),
-                ),
-                PopupMenuItem(
-                  child: ListTile(
-                    leading: Icon(Icons.delete),
-                    title: Text('Delete Employee'),
-                    onTap: () {
-                      // Handle delete employee
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            Switch(
-              value: true,
-              onChanged: (value) {
-                // Handle switch value change
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }*/
-
   _createEmployee() {
     // Add Company
     return SingleChildScrollView(
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.paperElavation25,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.paperElavation25
+              : AppColors.paperElavation25Light,
         ),
         child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -3303,6 +4646,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             var body = {
                                               "action": "create_user",
                                               "userdata": {
+                                                "company_id":
+                                                    selectedCorporateId,
+                                                "is_pgsupport":
+                                                    selectedCorporateId == ""
+                                                        ? true
+                                                        : false,
                                                 "selectedCountryCode":
                                                     _selectedCountryCode,
                                                 "name": _employeeNameController
@@ -3346,6 +4695,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   setState(() {
                                                     _selectedScreen =
                                                         Screens.employeeList;
+                                                    clearFilters();
                                                   });
                                                   //Clear all fields
                                                   _employeeNameController
@@ -3424,6 +4774,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   setState(() {
                                                     _selectedScreen =
                                                         Screens.employeeList;
+                                                    clearFilters();
                                                   });
                                                   //Clear all fields
                                                   _employeeNameController
@@ -3484,75 +4835,1147 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
-  /*_employeeManagement() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: CustomSpacing.four,
+  _createCorporateUser() {
+    // Add Company
+    return SingleChildScrollView(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.paperElavation25
+              : AppColors.paperElavation25Light,
         ),
-        Text('Employee Management', style: CustomTypography.Body1),
-        SizedBox(
-          height: CustomSpacing.two,
-        ),
-        Text('Manage companies from this place', style: CustomTypography.Body2),
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        // Add Search and filter dropdown in a row
-        Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Name, email or mobile ...',
-                  label: Text('Search', style: CustomTypography.Body1),
-                  hintStyle: CustomTypography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
                   ),
                 ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: CustomSpacing.four,
+                    ),
+                    Text('Create new corporate user account',
+                        style: CustomTypography.Body1),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+                    Text(
+                        'Please provide the necessary information to establish a new employee account.',
+                        style: CustomTypography.Body2),
+                    SizedBox(
+                      height: CustomSpacing.three,
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.three,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(
-              width: CustomSpacing.four,
-            ),
-            GestureDetector(
-              onTap: () {
-                // Open bottom sheet here
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Container(
-                        // Build your filter bottom sheet UI here
-                        );
-                  },
-                );
-              },
-              child: Icon(
-                Icons.filter_list,
-                size: 30,
+              SizedBox(
+                height: CustomSpacing.two,
               ),
-            ),
-          ],
-        ),
-        // Add Company List
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return _companyListItem();
-            },
-          ),
-        ),
-      ],
+
+              // Add Company Form
+              // Profile Pic
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // If company image is not uploaded, show default image
+                    employeeImageUrl == null || employeeImageUrl == ''
+                        ? CircleAvatar(
+                            backgroundImage:
+                                AssetImage('assets/images/loginImage.png'),
+                            radius: 40,
+                          )
+                        : CircleAvatar(
+                            backgroundImage: NetworkImage(employeeImageUrl!),
+                            radius: 40,
+                          ),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Upload Image",
+                          style: CustomTypography.Body1.copyWith(
+                              color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(
+                          height: CustomSpacing.two,
+                        ),
+                        Text(
+                          "Min 400x400px\nPNG or JPEG",
+                          style: CustomTypography.BottomNavigationActiveLabel,
+                          textAlign: TextAlign.center,
+                        ),
+                        // Add button
+                        Consumer<EmployeeProvider>(
+                            builder: (_, employeeProvider, child) {
+                          return employeeProvider.isImageUploadLoading
+                              ? Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : CustomButton(
+                                  type: ButtonType.filled,
+                                  onPressed: () {
+                                    // Show image picker
+                                    ImagePicker()
+                                        .pickImage(source: ImageSource.gallery)
+                                        .then((value) {
+                                      if (value != null) {
+                                        // Handle image upload
+                                        File v = File(value.path);
+                                        Provider.of<EmployeeProvider>(context,
+                                                listen: false)
+                                            .uploadImage(context, v)
+                                            .then((value) {
+                                          if (value != '') {
+                                            // Handle image upload response
+                                            setState(() {
+                                              employeeImageUrl = value;
+                                            });
+                                          }
+                                        });
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    "Upload Image",
+                                    style: CustomTypography.ButtonLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: CustomSpacing.two,
+              ),
+              Form(
+                  key: _createEmployeeFormKey,
+                  child: Column(children: [
+                    // Name
+                    TextFormField(
+                      controller: _employeeNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        labelStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == "") {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.four,
+                    ),
+                    // Role Dropdown
+                    Consumer<EmployeeProvider>(
+                        builder: (_, employeeProvider, child) {
+                      print(
+                          'Selected Employee Type: $selectedCorporateTypeRole');
+                      return Stack(
+                        children: [
+                          TextField(
+                            readOnly: true,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                useSafeArea: true,
+                                isScrollControlled: true,
+                                builder: (BuildContext context) {
+                                  return CorporateTypeRolesBottomSheet(
+                                    selectedRoles: selectedCorporateTypeRole,
+                                    addChip: _addCorporateChip,
+                                    removeChip: _removeCorporateChip,
+                                    removeAllChips: _removeAllCorporateChips,
+                                    roles: employeeProvider.roles ?? [],
+                                    isEnabled: true,
+                                  );
+                                },
+                              );
+                            },
+                            controller: _textEditingController,
+                            onChanged: (value) {
+                              // Handle input changes
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Role(s)',
+                              hintText:
+                                  _selectedRoles.isEmpty ? 'Select Roles' : "",
+                              border: OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(Icons.arrow_drop_down),
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    useSafeArea: true,
+                                    isScrollControlled: true,
+                                    builder: (BuildContext context) {
+                                      return CorporateTypeRolesBottomSheet(
+                                        selectedRoles:
+                                            selectedCorporateTypeRole,
+                                        addChip: _addCorporateChip,
+                                        removeChip: _removeCorporateChip,
+                                        removeAllChips:
+                                            _removeAllCorporateChips,
+                                        roles: employeeProvider.roles ?? [],
+                                        isEnabled: true,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 10.0,
+                            left: 10.0,
+                            right: 10.0,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 32.0),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: selectedCorporateTypeRole
+                                      .map(
+                                        (value) => Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 8.0),
+                                          child: Chip(
+                                            label: Text(value.name ?? ''),
+                                            deleteIcon: Icon(Icons.cancel),
+                                            onDeleted: () =>
+                                                _removeCorporateChip(value),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                    SizedBox(
+                      height: CustomSpacing.four,
+                    ),
+                    // Email
+                    TextFormField(
+                      controller: _employeeEmailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            regextest(value) == false) {
+                          return 'Enter a valid email address';
+                        }
+                        // You can add more specific email validation here if needed
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.four,
+                    ),
+                    // Phone
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.5)),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            child: Center(
+                              child: CountryListPicker(
+                                initialCountry: Countries.United_States,
+                                border: InputBorder.none,
+                                flagSize: Size(35, 30),
+                                onChanged: (code) {
+                                  setState(() {
+                                    _selectedCountryCode = code;
+                                  });
+                                },
+                                diallingCodeStyle: CustomTypography.Body1,
+                                isShowInputField: false,
+                                dialogTheme: DialogThemeData(
+                                  style: CustomTypography.Body1,
+                                  isShowFloatButton: false,
+                                ),
+                                countryNameStyle: CustomTypography.Body1,
+                                isShowCountryName: false,
+                                onCountryChanged: (country) {
+                                  print('This is the country code: $country');
+                                  setState(() {
+                                    _selectedCountryCode = country.dialing_code;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: CustomSpacing.two),
+
+                        // Mobile Number TextFormField
+                        Expanded(
+                          flex: 7,
+                          child: TextFormField(
+                            controller: _employeeMobileController,
+                            keyboardType: TextInputType.number,
+                            maxLength: 10,
+                            // Numeric keyboard
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                              // Only allows digits
+                            ],
+                            decoration: InputDecoration(
+                              labelText: 'Mobile Number',
+                              hintText: 'Enter your mobile number',
+                              border: const OutlineInputBorder(),
+                              counterText: '',
+                            ),
+                            validator: (value) {
+                              if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
+                                return 'Mobile number can only contain digits';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: CustomSpacing.four),
+                    SizedBox(height: CustomSpacing.two),
+                    // Cancel and Submit Buttons
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Consumer<CorporateProvider>(
+                                builder: (context, employeeProvider, child) {
+                              return Expanded(
+                                child: employeeProvider.isLoading
+                                    ? Center(
+                                        child: Container(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : CustomButton(
+                                        type: ButtonType.filled,
+                                        onPressed: () {
+                                          // Handle submit button
+                                          if (!_createEmployeeFormKey
+                                              .currentState!
+                                              .validate()) {
+                                            return;
+                                          }
+                                          if (_selectedScreen ==
+                                              Screens.corporateAdd) {
+                                            print("ASDF");
+                                            var body = {
+                                              "user_id": employeeProvider
+                                                  .employees.userId,
+                                              "action": "create_user",
+                                              "userdata": {
+                                                "selectedCountryCode":
+                                                    _selectedCountryCode,
+                                                "name": _employeeNameController
+                                                    .text,
+                                                "email":
+                                                    _employeeEmailController
+                                                        .text,
+                                                // "user_id":
+                                                "roles":
+                                                    selectedCorporateTypeRole
+                                                        .map((role) => {
+                                                              "name": role.name,
+                                                              "role": role.role,
+                                                              "is_applicable_for_internal":
+                                                                  role.isApplicableForInternal,
+                                                              "status":
+                                                                  role.status
+                                                            })
+                                                        .toList(),
+                                                "phone":
+                                                    _employeeMobileController
+                                                        .text,
+                                                "country_code":
+                                                    _selectedCountryCode,
+                                                "display_image_url":
+                                                    employeeImageUrl,
+                                                "is_pgsupport": true,
+                                                "isIndividual": true,
+                                                "displayName": "",
+                                              }
+                                            };
+
+                                            Provider.of<CorporateProvider>(
+                                                    context,
+                                                    listen: false)
+                                                .createCorporateEmployee(
+                                                    context, body)
+                                                .then((value) {
+                                              if (value) {
+                                                // Handle success
+                                                WidgetsBinding.instance
+                                                    .addPostFrameCallback((_) {
+                                                  setState(() {
+                                                    _selectedScreen =
+                                                        Screens.employeeList;
+                                                    clearFilters();
+                                                  });
+                                                  //Clear all fields
+                                                  _employeeNameController
+                                                      .clear();
+                                                  _employeeEmailController
+                                                      .clear();
+                                                  _employeeMobileController
+                                                      .clear();
+                                                  _selectedRoles.clear();
+                                                  _textEditingController
+                                                      .clear();
+                                                  employeeImageUrl = '';
+                                                });
+                                              }
+                                            });
+                                          } else {
+                                            // use employeeProvider.employees to update
+                                            /*
+                                    * {
+
+        "userdata": {
+            "user_id": "i3xh2rb68VepWgycLmddoWiPulC2",
+            "display_image_url": null,
+            "name": "Projec green super",
+            "roles": [
+                {
+                    "role": "admin",
+                    "name": "Admin"
+                }
+            ],
+            "displayName": "pg super admin",
+            "phone": "8767767667",
+            // "email":"dam@tam.com",
+            "country_code": "+1",
+            "isIndividual": false
+        }
+}*/
+                                            var body = {
+                                              "userdata": {
+                                                // "user_id": employeeProvider
+                                                //     .employees.userId,
+                                                "display_image_url":
+                                                    employeeImageUrl,
+                                                "name": _employeeNameController
+                                                    .text,
+                                                "roles":
+                                                    selectedCorporateTypeRole
+                                                        .map((role) => {
+                                                              "role": role.role,
+                                                              "name": role.name,
+                                                              "is_applicable_for_internal":
+                                                                  role.isApplicableForInternal,
+                                                              "status":
+                                                                  role.status
+                                                            })
+                                                        .toList(),
+                                                "displayName": "",
+                                                "phone":
+                                                    _employeeMobileController
+                                                        .text,
+                                                "email":
+                                                    _employeeEmailController
+                                                        .text,
+                                                "country_code":
+                                                    _selectedCountryCode,
+                                                "isIndividual": false
+                                              }
+                                            };
+
+                                            Provider.of<CorporateProvider>(
+                                                    context,
+                                                    listen: false)
+                                                .createCorporateEmployee(
+                                                    context, body)
+                                                .then((value) {
+                                              if (value) {
+                                                Provider.of<CorporateProvider>(
+                                                        context,
+                                                        listen: false)
+                                                    .getCorporateUserList(
+                                                        context);
+                                                // Handle success
+                                                WidgetsBinding.instance
+                                                    .addPostFrameCallback((_) {
+                                                  setState(() {
+                                                    _selectedScreen =
+                                                        Screens.employeeList;
+                                                    clearFilters();
+                                                  });
+                                                  //Clear all fields
+                                                  _employeeNameController
+                                                      .clear();
+                                                  _employeeEmailController
+                                                      .clear();
+                                                  _employeeMobileController
+                                                      .clear();
+                                                  _selectedRoles.clear();
+                                                  _textEditingController
+                                                      .clear();
+                                                  employeeImageUrl = '';
+                                                });
+                                              }
+                                            });
+                                          }
+                                        },
+                                        child: Text(
+                                          'Submit',
+                                          style: CustomTypography.ButtonLarge,
+                                        ),
+                                      ),
+                              );
+                            }),
+                          ],
+                        ),
+                        SizedBox(height: CustomSpacing.one),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  // Handle cancel button
+                                  setState(() {
+                                    _selectedScreen = Screens.employeeList;
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 22, vertical: 8),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: CustomTypography.ButtonLarge,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ]))
+            ]),
+      ),
     );
-  }*/
+  }
+
+  Widget _editCorporateUser(BuildContext context, String employeeId) {
+    CorporateProvider corporateProvider =
+        Provider.of<CorporateProvider>(context, listen: false);
+    return FutureBuilder<UsersCorporate>(
+      future: corporateProvider.viewCorporateUserEmployee(context, employeeId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text("Error loading user data"));
+        } else if (snapshot.hasData) {
+          UsersCorporate currentUser = snapshot.data!;
+          TextEditingController _employeeNameController =
+              TextEditingController(text: currentUser.name);
+          TextEditingController _employeeEmailController =
+              TextEditingController(text: currentUser.email);
+          TextEditingController _employeeMobileController =
+              TextEditingController(text: currentUser.phone);
+          TextEditingController _employeeCountryCodeController =
+              TextEditingController(text: currentUser.countryCode);
+          String employeeImageUrl = currentUser.displayImageUrl ?? '';
+          print(currentUser.role?[0].name.toString());
+          print(currentUser.countryCode.toString());
+          if (currentUser.role != null && currentUser.role!.isNotEmpty) {
+            selectedCorporateTypeRole = [
+              companyType.Roles(
+                isForIndividual: currentUser.role![0].isForIndividual,
+                isMultipleRoleEnabled:
+                    currentUser.role![0].isMultipleRoleEnabled,
+                isApplicableForTrial: currentUser.role![0].isApplicableForTrial,
+                name: currentUser.role![0].name ?? "",
+                role: currentUser.role![0].role ?? "",
+                isApplicableForInternal:
+                    currentUser.role![0].isApplicableForInternal,
+                status: currentUser.role![0].status,
+              )
+            ];
+          }
+          String? values = currentUser.role?[0].name.toString();
+
+          return SingleChildScrollView(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.paperElavation25
+                    : AppColors.paperElavation25Light,
+              ),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          Text('Edit corporate user account',
+                              style: CustomTypography.Body1),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Text(
+                              'Please provide the necessary information to establish a new employee account.',
+                              style: CustomTypography.Body2),
+                          SizedBox(
+                            height: CustomSpacing.three,
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.three,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+
+                    // Add Company Form
+                    // Profile Pic
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // If company image is not uploaded, show default image
+                          employeeImageUrl == null || employeeImageUrl == ''
+                              ? CircleAvatar(
+                                  backgroundImage: AssetImage(
+                                      'assets/images/loginImage.png'),
+                                  radius: 40,
+                                )
+                              : CircleAvatar(
+                                  backgroundImage:
+                                      NetworkImage(employeeImageUrl!),
+                                  radius: 40,
+                                ),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Upload Image",
+                                style: CustomTypography.Body1.copyWith(
+                                    color: Colors.white),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(
+                                height: CustomSpacing.two,
+                              ),
+                              Text(
+                                "Min 400x400px\nPNG or JPEG",
+                                style: CustomTypography
+                                    .BottomNavigationActiveLabel,
+                                textAlign: TextAlign.center,
+                              ),
+                              // Add button
+                              Consumer<CorporateProvider>(
+                                  builder: (_, corporateProvider, child) {
+                                return corporateProvider
+                                        .isEditViewEmployeeLoading
+                                    ? Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                    : CustomButton(
+                                        type: ButtonType.filled,
+                                        onPressed: () {
+                                          // Show image picker
+                                          ImagePicker()
+                                              .pickImage(
+                                                  source: ImageSource.gallery)
+                                              .then((value) {
+                                            if (value != null) {
+                                              // Handle image upload
+                                              File v = File(value.path);
+                                              Provider.of<EmployeeProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .uploadImage(context, v)
+                                                  .then((value) {
+                                                if (value != '') {
+                                                  // Handle image upload response
+                                                  setState(() {
+                                                    employeeImageUrl = value;
+                                                  });
+                                                }
+                                              });
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          "Upload Image",
+                                          style: CustomTypography.ButtonLarge,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      );
+                              }),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+                    Form(
+                        key: _createEmployeeFormKey,
+                        child: Column(children: [
+                          // Name
+                          TextFormField(
+                            controller: _employeeNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Name',
+                              labelStyle: CustomTypography.Body1,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == "") {
+                                return 'Please enter a name';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          // Role Dropdown
+
+                          Consumer<CorporateProvider>(
+                              builder: (_, employeeProvider, child) {
+                            print(
+                                'Selected Employee Type: $selectedCorporateTypeRole');
+                            return Stack(
+                              children: [
+                                TextField(
+                                  readOnly: true,
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      useSafeArea: true,
+                                      isScrollControlled: true,
+                                      builder: (BuildContext context) {
+                                        return CorporateTypeRolesBottomSheet(
+                                          selectedRoles:
+                                              selectedCorporateTypeRole,
+                                          addChip: _addCorporateChip,
+                                          removeChip: _removeCorporateChip,
+                                          removeAllChips:
+                                              _removeAllCorporateChips,
+                                          roles:
+                                              selectedCompanyType?.roles ?? [],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  controller: _textEditingController,
+                                  onChanged: (value) {
+                                    // Handle input changes
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: 'Role(s)',
+                                    hintText: _selectedRoles.isEmpty
+                                        ? 'Select Roles'
+                                        : "",
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(Icons.arrow_drop_down),
+                                      onPressed: () {
+                                        showModalBottomSheet(
+                                          context: context,
+                                          useSafeArea: true,
+                                          isScrollControlled: true,
+                                          builder: (BuildContext context) {
+                                            return CorporateTypeRolesBottomSheet(
+                                              selectedRoles:
+                                                  selectedCorporateTypeRole,
+                                              addChip: _addCorporateChip,
+                                              removeChip: _removeCorporateChip,
+                                              removeAllChips:
+                                                  _removeAllCorporateChips,
+                                              roles:
+                                                  selectedCompanyType?.roles ??
+                                                      [],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 10.0,
+                                  left: 10.0,
+                                  right: 10.0,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 32.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: selectedCorporateTypeRole
+                                            .map(
+                                              (value) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 8.0),
+                                                child: Chip(
+                                                    label: Text(
+                                                        value.name ?? values!),
+                                                    deleteIcon:
+                                                        Icon(Icons.cancel),
+                                                    onDeleted: () {
+                                                      print(
+                                                          'Removing chip: ${value.name}');
+                                                      setState(() {
+                                                        selectedCorporateTypeRole
+                                                            ?.removeWhere(
+                                                                (element) =>
+                                                                    element
+                                                                        .name ==
+                                                                    value.name);
+                                                        values = "";
+                                                        selectedCorporateTypeRole ==
+                                                            "";
+                                                      });
+                                                      print(values);
+                                                    }),
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          // Email
+                          TextFormField(
+                            readOnly: true,
+                            controller: _employeeEmailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              labelStyle: CustomTypography.Body1,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null ||
+                                  value.isEmpty ||
+                                  regextest(value) == false) {
+                                return 'Enter a valid email address';
+                              }
+                              // You can add more specific email validation here if needed
+                              return null;
+                            },
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+
+                          // Phone
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.5)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  child: Center(
+                                    child: CountryListPicker(
+                                      initialCountry: Countries.Australia,
+                                      // Ensure this is correctly set or dynamically assigned
+                                      border: InputBorder.none,
+                                      flagSize: Size(35, 30),
+                                      onChanged: (code) {
+                                        // This is typically triggered when a new selection is made in the picker
+                                        setState(() {
+                                          _selectedCountryCode =
+                                              code; // Maintaining a state variable for other uses
+                                          _employeeCountryCodeController.text =
+                                              code; // Update the controller
+                                        });
+                                      },
+                                      diallingCodeStyle: CustomTypography.Body1,
+                                      isShowInputField: false,
+                                      dialogTheme: DialogThemeData(
+                                        style: CustomTypography.Body1,
+                                        isShowFloatButton: false,
+                                      ),
+                                      countryNameStyle: CustomTypography.Body1,
+                                      isShowCountryName: false,
+                                      onCountryChanged: (country) {
+                                        // This may be triggered based on specific implementations of CountryListPicker
+                                        print(
+                                            'This is the country code: $country');
+                                        setState(() {
+                                          _selectedCountryCode =
+                                              country.dialing_code;
+                                          _employeeCountryCodeController.text =
+                                              country.dialing_code;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: CustomSpacing.two),
+
+                              // Mobile Number TextFormField
+                              Expanded(
+                                flex: 7,
+                                child: TextFormField(
+                                  controller: _employeeMobileController,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 10,
+                                  // Numeric keyboard
+                                  inputFormatters: <TextInputFormatter>[
+                                    FilteringTextInputFormatter.digitsOnly
+                                    // Only allows digits
+                                  ],
+                                  decoration: InputDecoration(
+                                    labelText: 'Mobile Number',
+                                    hintText: 'Enter your mobile number',
+                                    border: const OutlineInputBorder(),
+                                    counterText: '',
+                                  ),
+                                  validator: (value) {
+                                    if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
+                                      return 'Mobile number can only contain digits';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          SizedBox(height: CustomSpacing.two),
+                          // Cancel and Submit Buttons
+                          Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Consumer<CorporateProvider>(builder:
+                                      (context, employeeProvider, child) {
+                                    return Expanded(
+                                      child: employeeProvider.isLoading
+                                          ? Center(
+                                              child: Container(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            )
+                                          : CustomButton(
+                                              type: ButtonType.filled,
+                                              onPressed: () {
+                                                if (!_createEmployeeFormKey
+                                                    .currentState!
+                                                    .validate()) {
+                                                  return;
+                                                }
+
+                                                var body = {
+                                                  "userdata": {
+                                                    "user_id": corporateUserId,
+                                                    "display_image_url":
+                                                        employeeImageUrl,
+                                                    "name":
+                                                        _employeeNameController
+                                                            .text,
+                                                    "email":
+                                                        _employeeEmailController
+                                                            .text,
+                                                    "phone":
+                                                        _employeeMobileController
+                                                            .text,
+                                                    "roles":
+                                                        selectedCorporateTypeRole
+                                                            .map((role) => {
+                                                                  "role":
+                                                                      role.role,
+                                                                  "name":
+                                                                      role.name,
+                                                                  "is_applicable_for_internal":
+                                                                      role.isApplicableForInternal,
+                                                                  "status": role
+                                                                      .status
+                                                                })
+                                                            .toList(),
+                                                    "displayName": "",
+                                                    "country_code":
+                                                        _selectedCountryCode,
+                                                    "isIndividual": false
+                                                  }
+                                                };
+
+                                                Provider.of<CorporateProvider>(
+                                                        context,
+                                                        listen: false)
+                                                    .updateCorporateEmployee(
+                                                        context, body)
+                                                    .then((value) {
+                                                  if (value) {
+                                                    Provider.of<CorporateProvider>(
+                                                            context,
+                                                            listen: false)
+                                                        .getCorporateUserList(
+                                                            context);
+                                                    // Handle success
+                                                    WidgetsBinding.instance
+                                                        .addPostFrameCallback(
+                                                            (_) {
+                                                      setState(() {
+                                                        _selectedScreen =
+                                                            Screens
+                                                                .employeeList;
+                                                        clearFilters();
+                                                      });
+                                                      //Clear all fields
+                                                      _employeeNameController
+                                                          .clear();
+                                                      _employeeEmailController
+                                                          .clear();
+                                                      _employeeMobileController
+                                                          .clear();
+                                                      _selectedRoles.clear();
+                                                      _textEditingController
+                                                          .clear();
+                                                      employeeImageUrl = '';
+                                                    });
+                                                  }
+                                                });
+                                              },
+                                              child: Text(
+                                                'Submit',
+                                                style: CustomTypography
+                                                    .ButtonLarge,
+                                              ),
+                                            ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                              SizedBox(height: CustomSpacing.one),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Handle cancel button
+                                        setState(() {
+                                          _selectedScreen =
+                                              Screens.employeeList;
+                                          clearFilters();
+                                        });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 22, vertical: 8),
+                                      ),
+                                      child: Text(
+                                        'Cancel',
+                                        style: CustomTypography.ButtonLarge,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ]))
+                  ]),
+            ),
+          );
+        } else {
+          return Center(child: Text("No user data available"));
+        }
+      },
+    );
+  }
 
   void _addCorporateChip(value) {
     setState(() {
@@ -3577,29 +6000,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     });
   }
 
-  void _addChip(value) {
-    setState(() {
-      _selectedRoles.add(value);
-      _textEditingController.clear();
-    });
-  }
-
-  void _removeChip(value) {
-    print('Removing chip: ${value.name}');
-    setState(() {
-      _selectedRoles.removeWhere((element) => element.name == value.name);
-    });
-    print(
-        'Selected roles: ${_selectedRoles.map((role) => role.name).toList()}');
-  }
-
-  void _removeAllChips() {
-    setState(() {
-      _selectedRoles.clear();
-    });
-  }
-
   _getCorporateManagementUI() {
+    print(Screens.corporateAdd);
     if (_selectedScreen == Screens.corporateList) {
       return _corporateManagement();
     } else if (_selectedScreen == Screens.corporateAdd) {
@@ -3609,400 +6011,1288 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     } else if (_selectedScreen == Screens.corporateEmployeeList) {
       return _corporateEmployeeManagement();
     } else if (_selectedScreen == Screens.corporateEmployeeAdd) {
-      return _createEmployee();
+      return _createCorporateUser();
+    } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
+      return _editCorporateUser(context, corporateUserId!);
     } else if (_selectedScreen == Screens.verificationList) {
       return _verificationRequestsUI();
+    } else if (_selectedScreen == Screens.corporateAdd) {
+      return _verificationRequestsUI();
+    } else if (_selectedScreen == Screens.corporateProfile) {
+      return _editCompany();
     } else {
       return _corporateManagement();
     }
   }
 
-  /// Corporate Management
+  /// Non Corporate Management
   _getNonCorporateManagementUI() {
     if (_selectedScreen == Screens.nonCorporateList) {
       return _nonCorporateManagement();
+    } else if (_selectedScreen == Screens.nonCorporateEdit) {
+      return _editNonCorporateUser(context, nonCorporateUserId!);
     } else {
       return _nonCorporateManagement();
     }
   }
 
   _nonCorporateManagement() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        // Add Search and filter dropdown in a row
-        Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Name, email or mobile ...',
-                  label: Text('Search', style: CustomTypography.Body1),
-                  hintStyle: CustomTypography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+    return Builder(builder: (context) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: CustomSpacing.four,
+          ),
+          // Add Search and filter dropdown in a row
+          Row(
+            children: [
+              Expanded(
+                flex: 7,
+                child: TextField(
+                  controller: _nonCorporateSearchController,
+                  onChanged: nonCorporateSearchClient,
+                  decoration: InputDecoration(
+                    hintText: 'Name, email or mobile ...',
+                    label: Text('Search', style: CustomTypography.Body1),
+                    hintStyle: CustomTypography.Body1,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(
-              width: CustomSpacing.four,
-            ),
-            GestureDetector(
-              onTap: () {
-                // Open bottom sheet here
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Container(
-                        // Build your filter bottom sheet UI here
-                        );
-                  },
-                );
-              },
-              child: Icon(
-                Icons.filter_list,
-                size: 30,
+              SizedBox(
+                width: CustomSpacing.four,
               ),
-            ),
-          ],
-        ),
-        // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        Row(
-          children: [
-            // Filter Chips
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Chip(
-                      label: Text('Filter 1'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    SizedBox(
-                      width: CustomSpacing.two,
-                    ),
-                    Chip(
-                      label: Text('Filter 2'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    SizedBox(
-                      width: CustomSpacing.two,
-                    ),
-                    Chip(
-                      label: Text('Filter 3'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    // Clear Filter Button
-                    TextButton(
-                      onPressed: () {
-                        // Handle clear filter
-                      },
-                      child: Text('Clear Filter'),
-                    ),
-                  ],
+              GestureDetector(
+                onTap: () {
+                  // Open bottom sheet here
+                  Scaffold.of(context).openEndDrawer();
+                },
+                child: Icon(
+                  Icons.filter_list,
+                  size: 30,
                 ),
               ),
-            ),
+            ],
+          ),
 
-            // Vertical Divider
-            VerticalDivider(
-              thickness: 1,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            // Deselect Text
-            Text('Deselect'),
-            // Delete Button
-            IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                // Handle delete filter
+          SizedBox(
+            height: CustomSpacing.four,
+          ),
+          TabBar(
+            controller: _tabNonCorporateController,
+            tabs: [
+              Tab(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: CustomSpacing.three,
+                  ),
+                  Text(
+                    'All',
+                    style: CustomTypography.BottomNavigationActiveLabel,
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  // rounded container to show number of all users
+                  Consumer<NonCorporateProvider>(
+                      builder: (context, noncorporateProvider, child) {
+                    return SizedBox(
+                      height: 25,
+                      width: 35,
+                      child: Chip(
+                        labelPadding: EdgeInsets.all(0),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        label: Text(
+                          noncorporateProvider.allCount,
+                          style: CustomTypography.BottomNavigationActiveLabel
+                              .copyWith(height: -0.6),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              )),
+              Tab(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  Text(
+                    'Active',
+                    style: CustomTypography.BottomNavigationActiveLabel,
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  // rounded container to show number of all users
+                  Consumer<NonCorporateProvider>(
+                      builder: (context, noncorporateProvider, child) {
+                    return SizedBox(
+                      height: 25,
+                      width: 35,
+                      child: Chip(
+                        labelPadding: EdgeInsets.all(0),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        label: Text(
+                          noncorporateProvider.activeCount,
+                          style: CustomTypography.BottomNavigationActiveLabel
+                              .copyWith(height: -0.6),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              )),
+
+              // Tab(
+              //     child: Row(
+              //   children: [
+              //     Text(
+              //       'Pending',
+              //       style: CustomTypography.BottomNavigationActiveLabel,
+              //     ),
+              //     SizedBox(
+              //       width: CustomSpacing.two,
+              //     ),
+              //     // rounded container to show number of all users
+              //     SizedBox(
+              //       height: 25,
+              //       width: 35,
+              //       child: Chip(
+              //         labelPadding: EdgeInsets.all(0),
+              //         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              //         label: Text(
+              //           '10',
+              //           style:
+              //               CustomTypography.BottomNavigationActiveLabel.copyWith(
+              //                   height: -0.6),
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // )),
+            ],
+          ),
+          showCheckbox
+              ? Consumer<NonCorporateProvider>(
+                  builder: (_, nonCorporateProvider, child) {
+                  return Row(
+                    children: [
+                      Checkbox(
+                        value: (nonCorporateProvider.employeeList ?? [])
+                            .every((element) => element.isSelected!),
+                        onChanged: (value) {
+                          // Handle select all checkbox value change
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            (nonCorporateProvider.employeeList ?? [])
+                                .forEach((element) {
+                              setState(() {
+                                element.isSelected = value;
+                              });
+                            });
+                          });
+                        },
+                      ),
+                      Text('Select All', style: CustomTypography.Body1),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          // Handle delete selected companies
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text('Delete Individuals',
+                                    style: CustomTypography.H7),
+                                content: Text(
+                                    'Are you sure you want to delete selected individuals?',
+                                    style: CustomTypography.Body2),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      nonCorporateProvider
+                                          .deleteNonCorporateUser(
+                                              context,
+                                              (nonCorporateProvider
+                                                          .employeeList ??
+                                                      [])
+                                                  .where((element) =>
+                                                      element.isSelected ==
+                                                      true)
+                                                  .map((e) => e.userId ?? '')
+                                                  .toList())
+                                          .then((value) {
+                                        if (value) {
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            setState(() {
+                                              (nonCorporateProvider
+                                                          .employeeList ??
+                                                      [])
+                                                  .removeWhere((element) =>
+                                                      element.isSelected ==
+                                                      true);
+                                            });
+                                          });
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            setState(() {
+                                              showCheckbox = false;
+                                            });
+                                          });
+                                        }
+                                      });
+                                    },
+                                    child: Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                })
+              : SizedBox(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                nonCorporateSearchClient(_nonCorporateSearchController.text);
               },
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: CustomSpacing.four,
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabNonCorporateController,
+                      children: [
+                        // All Tab
+                        Consumer<NonCorporateProvider>(
+                            builder: (context, noncorporateProvider, child) {
+                          return noncorporateProvider.isLoading
+                              ? Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : noncorporateProvider.employeeList!.isEmpty
+                                  ? Center(
+                                      child: Text('No individuals found',
+                                          style: CustomTypography.Body1),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: noncorporateProvider
+                                              .employeeList!.length +
+                                          (noncorporateProvider.nextPageExists
+                                              ? 1
+                                              : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index ==
+                                            noncorporateProvider
+                                                .employeeList!.length) {
+                                          // Reached the end of the current list, load more data
+                                          noncorporateProvider
+                                              .getNonCorporateUserList(
+                                            context,
+                                            searchText: "",
+                                            // Adjust parameters as needed
+                                            roleFilter: "",
+                                            isSearch: false,
+                                          );
+                                          return SizedBox(
+                                            height: 50,
+                                            // Placeholder for loading indicator
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        } else {
+                                          return _nonCorporateListItem(
+                                              index, noncorporateProvider);
+                                        }
+                                      },
+                                    );
+                        }),
+                        // Active Tab
+                        ListView.builder(
+                          itemCount: 5,
+                          itemBuilder: (context, index) {
+                            return _corporateEmployeeManagement();
+                          },
+                        ),
+                        // Pending Tab
+                        // ListView.builder(
+                        //   itemCount: 5,
+                        //   itemBuilder: (context, index) {
+                        //     return _corporateEmployeeManagement();
+                        //   },
+                        // ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        TabBar(
-          isScrollable: true,
-          controller: _tabNonCorporateController,
-          tabs: [
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'All',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'Active',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'Pending',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-          ],
-        ),
-        Expanded(
+          ),
+        ],
+      );
+    });
+  }
+
+  _nonCorporateListItem(int index, NonCorporateProvider nonCorporateProvider) {
+    // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
+    return Container(
+      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onLongPress: () {
+          // Show checkbox
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              showCheckbox = !showCheckbox;
+            });
+          });
+          selectedCompanyListIndex = index;
+          setState(() {
+            // companyProvider.companies[index].isSelected =
+            // !companyProvider.employeeList[index].isSelected!;
+          });
+        },
+        child: Card(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                height: CustomSpacing.four,
+                height: CustomSpacing.two,
               ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabNonCorporateController,
+              Row(
+                children: [
+                  SizedBox(
+                    width: CustomSpacing.four,
+                  ),
+                  showCheckbox
+                      ? Checkbox(
+                          value: nonCorporateProvider
+                              .employeeList![index].isSelected!,
+                          onChanged: (value) {
+                            // Handle checkbox value change
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              setState(() {
+                                nonCorporateProvider
+                                    .employeeList![index].isSelected = value;
+                              });
+                            });
+                          },
+                        )
+                      : SizedBox(),
+                  CircleAvatar(
+                    child: nonCorporateProvider
+                                    .employeeList![index].displayImageUrl !=
+                                null &&
+                            nonCorporateProvider
+                                    .employeeList![index].displayImageUrl !=
+                                ''
+                        ? ClipOval(
+                            child: Image.network(
+                              nonCorporateProvider!
+                                  .employeeList![index].displayImageUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Text(
+                            nonCorporateProvider
+                                    .employeeList![index].displayName
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
+                                "",
+                          ),
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (nonCorporateProvider.employeeList![index].displayName
+                                      ?.substring(0, 1)
+                                      .toUpperCase() ??
+                                  "") +
+                              (nonCorporateProvider
+                                      .employeeList![index].displayName
+                                      ?.substring(1) ??
+                                  ""),
+                          style: CustomTypography.Body2.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.white
+                                  : AppColors.black),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                            nonCorporateProvider
+                                    .employeeList![index].displayName ??
+                                "",
+                            style: CustomTypography.Caption),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  nonCorporateProvider.isStatusLoading &&
+                          selectedNonCorporateListIndex == index
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 8.0, right: 8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      : Switch(
+                          value: nonCorporateProvider
+                                  .employeeList![index]!.status ??
+                              false,
+                          onChanged: (value) {
+                            // Handle switch value change
+                            selectedNonCorporateListIndex = index;
+                            // nonCorporateProvider
+                            //     .changeCompanyStatus(
+                            //     context,
+                            //     nonCorporateProvider.employeeList![index].userId ?? '',
+                            //     value)
+                            //     .then((value) {
+                            //   WidgetsBinding.instance.addPostFrameCallback((_) {
+                            //     setState(() {
+                            //       companyProvider.employeeList![index]!.isEnabled =
+                            //           value;
+                            //     });
+                            //   });
+                            // });
+                            nonCorporateProvider
+                                .changeNonCorporateStatus(
+                                    context,
+                                    nonCorporateProvider
+                                            .employeeList![index].userId ??
+                                        '',
+                                    value)
+                                .then((value) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                setState(() {
+                                  nonCorporateProvider
+                                      .employeeList![index].status = value;
+                                });
+                              });
+                            });
+                          },
+                        ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: CustomSpacing.four,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      Text(
+                        nonCorporateProvider.employeeList![index].name
+                            .toString(),
+                        // (nonCorporateProvider.employeeList![index].admins?.name
+                        //     ?.substring(0, 1)
+                        //     .toUpperCase() ??
+                        //     "") +
+                        //     (nonCorporateProvider.employeeList![index].admins?.name
+                        //         ?.substring(1) ??
+                        //         ""),
+                        style: CustomTypography.Body2.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black),
+                      ),
+                      Text(
+                          nonCorporateProvider.employeeList![index].displayName
+                              .toString(),
+                          // .admins?.email ?? '',
+                          style: CustomTypography.Caption),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  // bottom left and right corners curved
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    // All Tab
-                    ListView.builder(
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        return _nonCorporateListItem();
+                    // Icon with text
+                    TextButton.icon(
+                      onPressed: () {
+                        // Handle view employees
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => ConnectionsScreen(
+                                  userId: nonCorporateProvider
+                                          .employeeList![index].userId ??
+                                      '',
+                                  userName: nonCorporateProvider
+                                          .employeeList![index].displayName ??
+                                      '',
+                                )));
                       },
+                      icon: Icon(Icons.people),
+                      label: Text('View Connections',
+                          style: CustomTypography.Caption.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.white
+                                  : AppColors.black)),
                     ),
-                    // Active Tab
-                    ListView.builder(
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        return _nonCorporateListItem();
-                      },
-                    ),
-                    // Pending Tab
-                    ListView.builder(
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        return _nonCorporateListItem();
-                      },
-                    ),
+                    Spacer(),
+                    nonCorporateProvider.isEditViewEmployeeLoading &&
+                            selectedNonCorporateListIndex == index
+                        ? Center(
+                            child: Container(
+                                height: 20,
+                                width: 20,
+                                margin: EdgeInsets.only(right: 8),
+                                child: CircularProgressIndicator()),
+                          )
+                        : IconButton(
+                            icon: Icon(Icons.edit),
+                            color: AppColors.primaryMain,
+                            onPressed: () async {
+                              /// Handle edit company
+                              //   await companyProvider.viewCompany(
+                              //       context, companyProvider.employeeList[index].userId ?? '');
+                              //   log(companyProvider.employeeList.toJson().toString());
+                              //   // Prefill values
+                              //   companyImageUrl =
+                              //       companyProvider.employeeList.companyImageUrl;
+                              //   selectedCompanyType = CorporateType(
+                              //     name: companyProvider.employeeList.companyTypeName,
+                              //     type: companyProvider.employeeList.companyType,
+                              //   );
+                              //   _enableDomainCheck =
+                              //       companyProvider.employeeList.enableDomainCheck ?? false;
+                              //   selectedCorporateTypeRole = [
+                              //     companyType.Roles(
+                              //       name: "Admin",
+                              //       role: "admin",
+                              //     )
+                              //   ];
+                              //   _domainListController.text =
+                              //       companyProvider.employeeList.domainList?.join(",") ?? '';
+                              //   _companyLegalNameController.text =
+                              //       companyProvider.employeeList.name ?? '';
+                              //   if (companyProvider.employeeList.displayName != null) {
+                              //     _companyDisplayNameController.text = companyProvider
+                              //         .employeeList!.displayName!
+                              //         .substring(0, 1)
+                              //         .toUpperCase() +
+                              //         companyProvider.employeeList!.displayName!
+                              //             .substring(1) ??
+                              //         '';
+                              //   }
+                              //
+                              //   _adminNameController.text =
+                              //       companyProvider.company.admins?.name ?? "";
+                              //   _adminDisplayNameController.text =
+                              //       companyProvider.company.admins?.displayName ?? '';
+                              //   _adminEmailController.text =
+                              //       companyProvider.company.admins?.email ?? '';
+                              //   _selectedCountryCode = _adminMobileController.text =
+                              //       companyProvider.company.admins?.mobile ?? '';
+                              //   _enableDomainCheck =
+                              //       companyProvider.company.enableDomainCheck ?? false;
+                              //   // Set screen to edit
+                              //
+                              //   setState(() {
+                              //     _selectedScreen = Screens.corporateEdit;
+                              //   });
+                              selectedNonCorporateListIndex = index;
+
+                              setState(() {
+                                nonCorporateUserId = nonCorporateProvider
+                                    .employeeList![index].userId;
+                                _selectedScreen = Screens.nonCorporateEdit;
+                              });
+                            },
+                          ),
+                    nonCorporateProvider.isDeleteLoading &&
+                            selectedCompanyListIndex == index
+                        ? Center(
+                            child: Container(
+                                height: 20,
+                                width: 20,
+                                margin: EdgeInsets.only(right: 8),
+                                child: CircularProgressIndicator()),
+                          )
+                        : IconButton(
+                            icon: Icon(Icons.delete),
+                            color: AppColors.primaryMain,
+                            onPressed: () {
+                              selectedCompanyListIndex = index;
+                              // Handle delete by showing dialog
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  // delete company name
+                                  return AlertDialog(
+                                    title: Text('Delete Company',
+                                        style: CustomTypography.H6),
+                                    content: Text(
+                                        'Are you sure you want to delete ${nonCorporateProvider.employeeList![index].displayName}?',
+                                        style: CustomTypography.Body1),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          nonCorporateProvider
+                                              .deleteNonCorporateUser(context, [
+                                            nonCorporateProvider
+                                                    .employeeList![index]
+                                                    .userId ??
+                                                ''
+                                          ]).then((value) {
+                                            if (value) {
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback((_) {
+                                                setState(() {
+                                                  nonCorporateProvider
+                                                      .employeeList!
+                                                      .removeAt(index);
+                                                });
+                                              });
+                                            }
+                                          });
+                                        },
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  _nonCorporateListItem() {
-    // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      elevation: 4.0,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 24.0,
-                  backgroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.black
-                          : AppColors.white,
-                  backgroundImage: AssetImage('assets/images/loginImage.png'),
-                ),
-                SizedBox(width: 16.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Name',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 4.0),
-                      Text(
-                        'Email',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      SizedBox(height: 4.0),
-                      Text(
-                        'Phone',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      SizedBox(height: 4.0),
-                      Text(
-                        'Type',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 16.0),
-                Column(
+  Widget _editNonCorporateUser(BuildContext context, String userId) {
+    NonCorporateProvider nonCorporateProvider =
+        Provider.of<NonCorporateProvider>(context, listen: false);
+    return FutureBuilder<UsersCorporate>(
+      future: nonCorporateProvider.viewNonCorporateUser(context, userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text("Error loading user data"));
+        } else if (snapshot.hasData) {
+          UsersCorporate currentUser = snapshot.data!;
+          TextEditingController _employeeNameController =
+              TextEditingController(text: currentUser.name);
+          TextEditingController _employeeEmailController =
+              TextEditingController(text: currentUser.email);
+          TextEditingController _employeeMobileController =
+              TextEditingController(text: currentUser.phone);
+          TextEditingController _employeeCountryCodeController =
+              TextEditingController(text: currentUser.countryCode);
+          String employeeImageUrl = currentUser.displayImageUrl ?? '';
+          print(currentUser.role?[0].name.toString());
+          print(currentUser.countryCode.toString());
+          if (currentUser.role != null && currentUser.role!.isNotEmpty) {
+            selectedCorporateTypeRole = [
+              companyType.Roles(
+                isForIndividual: currentUser.role![0].isForIndividual,
+                isMultipleRoleEnabled:
+                    currentUser.role![0].isMultipleRoleEnabled,
+                isApplicableForTrial: currentUser.role![0].isApplicableForTrial,
+                name: currentUser.role![0].name ?? "",
+                role: currentUser.role![0].role ?? "",
+                isApplicableForInternal:
+                    currentUser.role![0].isApplicableForInternal,
+                status: currentUser.role![0].status,
+              )
+            ];
+          }
+          String? values = currentUser.role?[0].name.toString();
+
+          return SingleChildScrollView(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.paperElavation25
+                    : AppColors.paperElavation25Light,
+              ),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    PopupMenuButton(
-                      icon: Icon(Icons.more_vert),
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry>[
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: SvgPicture.asset(
-                                'assets/images/connectIcon.svg'),
-                            title: Text('View Connections'),
-                            onTap: () {
-                              // Handle view employees
-                              Navigator.pop(context);
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) => ConnectionsScreen(
-                                    userId: 'userId',
-                                    userName: 'userName',
-                                  )));
-                            },
-                          ),
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
                         ),
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: Icon(Icons.edit),
-                            title: Text('Edit'),
-                            onTap: () {
-                              // Handle edit company
-                              Navigator.pop(context);
-                              setState(() {
-                                _selectedScreen = Screens.corporateAdd;
-                              });
-                            },
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.four,
                           ),
-                        ),
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: Icon(Icons.delete),
-                            title: Text('Delete'),
-                            onTap: () {
-                              // Handle edit company
-                              Navigator.pop(context);
-                              setState(() {
-                                _selectedScreen = Screens.corporateAdd;
-                              });
-                            },
+                          Text('Edit corporate user account',
+                              style: CustomTypography.Body1),
+                          SizedBox(
+                            height: CustomSpacing.two,
                           ),
-                        ),
-                        PopupMenuItem(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Text(
+                              'Please provide the necessary information to establish a new employee account.',
+                              style: CustomTypography.Body2),
+                          SizedBox(
+                            height: CustomSpacing.three,
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.three,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+
+                    // Add Company Form
+                    // Profile Pic
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // If company image is not uploaded, show default image
+                          employeeImageUrl == null || employeeImageUrl == ''
+                              ? CircleAvatar(
+                                  backgroundImage: AssetImage(
+                                      'assets/images/loginImage.png'),
+                                  radius: 40,
+                                )
+                              : CircleAvatar(
+                                  backgroundImage:
+                                      NetworkImage(employeeImageUrl!),
+                                  radius: 40,
+                                ),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              SizedBox(
-                                width: 16.0,
+                              Text(
+                                "Upload Image",
+                                style: CustomTypography.Body1.copyWith(
+                                    color: Colors.white),
+                                textAlign: TextAlign.center,
                               ),
-                              Text('Status',
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium),
-                              SizedBox(width: 16.0),
-                              Switch(
-                                value: true,
-                                onChanged: (value) {
-                                  // Handle switch value change
-                                },
+                              SizedBox(
+                                height: CustomSpacing.two,
+                              ),
+                              Text(
+                                "Min 400x400px\nPNG or JPEG",
+                                style: CustomTypography
+                                    .BottomNavigationActiveLabel,
+                                textAlign: TextAlign.center,
+                              ),
+                              // Add button
+                              Consumer<CorporateProvider>(
+                                  builder: (_, corporateProvider, child) {
+                                return corporateProvider
+                                        .isEditViewEmployeeLoading
+                                    ? Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                    : CustomButton(
+                                        type: ButtonType.filled,
+                                        onPressed: () {
+                                          // Show image picker
+                                          ImagePicker()
+                                              .pickImage(
+                                                  source: ImageSource.gallery)
+                                              .then((value) {
+                                            if (value != null) {
+                                              // Handle image upload
+                                              File v = File(value.path);
+                                              Provider.of<EmployeeProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .uploadImage(context, v)
+                                                  .then((value) {
+                                                if (value != '') {
+                                                  // Handle image upload response
+                                                  setState(() {
+                                                    employeeImageUrl = value;
+                                                  });
+                                                }
+                                              });
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          "Upload Image",
+                                          style: CustomTypography.ButtonLarge,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      );
+                              }),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+                    Form(
+                        key: _createEmployeeFormKey,
+                        child: Column(children: [
+                          // Name
+                          TextFormField(
+                            controller: _employeeNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Name',
+                              labelStyle: CustomTypography.Body1,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == "") {
+                                return 'Please enter a name';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          // Role Dropdown
+
+                          Consumer<CorporateProvider>(
+                              builder: (_, employeeProvider, child) {
+                            print(
+                                'Selected Employee Type: $selectedCorporateTypeRole');
+                            return Stack(
+                              children: [
+                                TextField(
+                                  readOnly: true,
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      useSafeArea: true,
+                                      isScrollControlled: true,
+                                      builder: (BuildContext context) {
+                                        return CorporateTypeRolesBottomSheet(
+                                          selectedRoles:
+                                              selectedCorporateTypeRole,
+                                          addChip: _addCorporateChip,
+                                          removeChip: _removeCorporateChip,
+                                          removeAllChips:
+                                              _removeAllCorporateChips,
+                                          roles:
+                                              selectedCompanyType?.roles ?? [],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  controller: _textEditingController,
+                                  onChanged: (value) {
+                                    // Handle input changes
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: 'Role(s)',
+                                    hintText: _selectedRoles.isEmpty
+                                        ? 'Select Roles'
+                                        : "",
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(Icons.arrow_drop_down),
+                                      onPressed: () {
+                                        showModalBottomSheet(
+                                          context: context,
+                                          useSafeArea: true,
+                                          isScrollControlled: true,
+                                          builder: (BuildContext context) {
+                                            return CorporateTypeRolesBottomSheet(
+                                              selectedRoles:
+                                                  selectedCorporateTypeRole,
+                                              addChip: _addCorporateChip,
+                                              removeChip: _removeCorporateChip,
+                                              removeAllChips:
+                                                  _removeAllCorporateChips,
+                                              roles:
+                                                  selectedCompanyType?.roles ??
+                                                      [],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 10.0,
+                                  left: 10.0,
+                                  right: 10.0,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 32.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: selectedCorporateTypeRole
+                                            .map(
+                                              (value) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 8.0),
+                                                child: Chip(
+                                                    label: Text(
+                                                        value.name ?? values!),
+                                                    deleteIcon:
+                                                        Icon(Icons.cancel),
+                                                    onDeleted: () {
+                                                      print(
+                                                          'Removing chip: ${value.name}');
+                                                      setState(() {
+                                                        selectedCorporateTypeRole
+                                                            ?.removeWhere(
+                                                                (element) =>
+                                                                    element
+                                                                        .name ==
+                                                                    value.name);
+                                                        values = "";
+                                                        selectedCorporateTypeRole ==
+                                                            "";
+                                                      });
+                                                      print(values);
+                                                    }),
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          // Email
+                          TextFormField(
+                            readOnly: true,
+                            controller: _employeeEmailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              labelStyle: CustomTypography.Body1,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null ||
+                                  value.isEmpty ||
+                                  regextest(value) == false) {
+                                return 'Enter a valid email address';
+                              }
+                              // You can add more specific email validation here if needed
+                              return null;
+                            },
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+
+                          // Phone
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.5)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  child: Center(
+                                    child: CountryListPicker(
+                                      initialCountry: Countries.Australia,
+                                      // Ensure this is correctly set or dynamically assigned
+                                      border: InputBorder.none,
+                                      flagSize: Size(35, 30),
+                                      onChanged: (code) {
+                                        // This is typically triggered when a new selection is made in the picker
+                                        setState(() {
+                                          _selectedCountryCode =
+                                              code; // Maintaining a state variable for other uses
+                                          _employeeCountryCodeController.text =
+                                              code; // Update the controller
+                                        });
+                                      },
+                                      diallingCodeStyle: CustomTypography.Body1,
+                                      isShowInputField: false,
+                                      dialogTheme: DialogThemeData(
+                                        style: CustomTypography.Body1,
+                                        isShowFloatButton: false,
+                                      ),
+                                      countryNameStyle: CustomTypography.Body1,
+                                      isShowCountryName: false,
+                                      onCountryChanged: (country) {
+                                        // This may be triggered based on specific implementations of CountryListPicker
+                                        print(
+                                            'This is the country code: $country');
+                                        setState(() {
+                                          _selectedCountryCode =
+                                              country.dialing_code;
+                                          _employeeCountryCodeController.text =
+                                              country.dialing_code;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: CustomSpacing.two),
+
+                              // Mobile Number TextFormField
+                              Expanded(
+                                flex: 7,
+                                child: TextFormField(
+                                  controller: _employeeMobileController,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 10,
+                                  // Numeric keyboard
+                                  inputFormatters: <TextInputFormatter>[
+                                    FilteringTextInputFormatter.digitsOnly
+                                    // Only allows digits
+                                  ],
+                                  decoration: InputDecoration(
+                                    labelText: 'Mobile Number',
+                                    hintText: 'Enter your mobile number',
+                                    border: const OutlineInputBorder(),
+                                    counterText: '',
+                                  ),
+                                  validator: (value) {
+                                    if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
+                                      return 'Mobile number can only contain digits';
+                                    }
+                                    return null;
+                                  },
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    Checkbox(
-                      value: false,
-                      onChanged: (value) {
-                        // Handle checkbox value change
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                          SizedBox(height: CustomSpacing.four),
+                          SizedBox(height: CustomSpacing.two),
+                          // Cancel and Submit Buttons
+                          Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Consumer<CorporateProvider>(builder:
+                                      (context, employeeProvider, child) {
+                                    return Expanded(
+                                      child: employeeProvider.isLoading
+                                          ? Center(
+                                              child: Container(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            )
+                                          : CustomButton(
+                                              type: ButtonType.filled,
+                                              onPressed: () {
+                                                if (!_createEmployeeFormKey
+                                                    .currentState!
+                                                    .validate()) {
+                                                  return;
+                                                }
+
+                                                var body = {
+                                                  "userdata": {
+                                                    "user_id":
+                                                        nonCorporateUserId,
+                                                    "display_image_url":
+                                                        employeeImageUrl,
+                                                    "name":
+                                                        _employeeNameController
+                                                            .text,
+                                                    "email":
+                                                        _employeeEmailController
+                                                            .text,
+                                                    "phone":
+                                                        _employeeMobileController
+                                                            .text,
+                                                    "roles":
+                                                        selectedCorporateTypeRole
+                                                            .map((role) => {
+                                                                  "role":
+                                                                      role.role,
+                                                                  "name":
+                                                                      role.name,
+                                                                  "is_applicable_for_internal":
+                                                                      role.isApplicableForInternal,
+                                                                  "status": role
+                                                                      .status
+                                                                })
+                                                            .toList(),
+                                                    "displayName": "",
+                                                    "country_code":
+                                                        _selectedCountryCode,
+                                                    "isIndividual": true
+                                                  }
+                                                };
+
+                                                Provider.of<CorporateProvider>(
+                                                        context,
+                                                        listen: false)
+                                                    .updateCorporateEmployee(
+                                                        context, body)
+                                                    .then((value) {
+                                                  if (value) {
+                                                    Provider.of<CorporateProvider>(
+                                                            context,
+                                                            listen: false)
+                                                        .getCorporateUserList(
+                                                            context);
+                                                    // Handle success
+                                                    WidgetsBinding.instance
+                                                        .addPostFrameCallback(
+                                                            (_) {
+                                                      setState(() {
+                                                        _selectedScreen =
+                                                            Screens
+                                                                .employeeList;
+                                                        clearFilters();
+                                                      });
+                                                      //Clear all fields
+                                                      _employeeNameController
+                                                          .clear();
+                                                      _employeeEmailController
+                                                          .clear();
+                                                      _employeeMobileController
+                                                          .clear();
+                                                      _selectedRoles.clear();
+                                                      _textEditingController
+                                                          .clear();
+                                                      employeeImageUrl = '';
+                                                    });
+                                                  }
+                                                });
+                                              },
+                                              child: Text(
+                                                'Submit',
+                                                style: CustomTypography
+                                                    .ButtonLarge,
+                                              ),
+                                            ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                              SizedBox(height: CustomSpacing.one),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Handle cancel button
+                                        setState(() {
+                                          _selectedScreen =
+                                              Screens.employeeList;
+                                          clearFilters();
+                                        });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 22, vertical: 8),
+                                      ),
+                                      child: Text(
+                                        'Cancel',
+                                        style: CustomTypography.ButtonLarge,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ]))
+                  ]),
             ),
-          ],
-        ),
-      ),
+          );
+        } else {
+          return Center(child: Text("No user data available"));
+        }
+      },
     );
   }
 
@@ -4021,258 +7311,335 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _employeeManagement() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        Text('Employee Management', style: CustomTypography.Body1),
-        SizedBox(
-          height: CustomSpacing.two,
-        ),
-        Text('Manage companies from this place', style: CustomTypography.Body2),
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        // Add Search and filter dropdown in a row
-        Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Name, email or mobile ...',
-                  label: Text('Search', style: CustomTypography.Body1),
-                  hintStyle: CustomTypography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: CustomSpacing.four,
-            ),
-            GestureDetector(
-              onTap: () {
-                // Open bottom sheet here
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Container(
-                        // Build your filter bottom sheet UI here
-                        );
-                  },
-                );
-              },
-              child: Icon(
-                Icons.filter_list,
-                size: 30,
-              ),
-            ),
-          ],
-        ),
-        // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        Row(
-          children: [
-            // Filter Chips
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Chip(
-                      label: Text('Filter 1'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    SizedBox(
-                      width: CustomSpacing.two,
-                    ),
-                    Chip(
-                      label: Text('Filter 2'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    SizedBox(
-                      width: CustomSpacing.two,
-                    ),
-                    Chip(
-                      label: Text('Filter 3'),
-                      onDeleted: () {
-                        // Handle delete filter
-                      },
-                    ),
-                    // Clear Filter Button
-                    TextButton(
-                      onPressed: () {
-                        // Handle clear filter
-                      },
-                      child: Text('Clear Filter'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Vertical Divider
-            VerticalDivider(
-              thickness: 1,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            // Deselect Text
-            Text('Deselect'),
-            // Delete Button
-            IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                // Handle delete filter
-              },
-            ),
-          ],
-        ),
-        SizedBox(
-          height: CustomSpacing.four,
-        ),
-        TabBar(
-          isScrollable: true,
-          controller: _tabEmployeeController,
-          tabs: [
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'All',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'Active',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-            Tab(
-                child: Row(
-              children: [
-                Text(
-                  'Pending',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-                SizedBox(
-                  width: CustomSpacing.two,
-                ),
-                // rounded container to show number of all users
-                SizedBox(
-                  height: 25,
-                  width: 35,
-                  child: Chip(
-                    labelPadding: EdgeInsets.all(0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    label: Text(
-                      '10',
-                      style:
-                          CustomTypography.BottomNavigationActiveLabel.copyWith(
-                              height: -0.6),
-                    ),
-                  ),
-                ),
-              ],
-            )),
-          ],
-        ),
-        Expanded(
-          child: Column(
+    return Builder(builder: (context) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: CustomSpacing.four,
+          ),
+          Text('Employee Management', style: CustomTypography.Body1),
+          SizedBox(
+            height: CustomSpacing.two,
+          ),
+          Text('Manage companies from this place',
+              style: CustomTypography.Body2),
+          SizedBox(
+            height: CustomSpacing.four,
+          ),
+          // Add Search and filter dropdown in a row
+          Row(
             children: [
-              SizedBox(
-                height: CustomSpacing.four,
+              Expanded(
+                flex: 7,
+                child: TextField(
+                  controller: _employeeSearchController,
+                  onChanged: employeeSearchClient,
+                  decoration: InputDecoration(
+                    hintText: 'Name, email or mobile ...',
+                    label: Text('Search', style: CustomTypography.Body1),
+                    hintStyle: CustomTypography.Body1,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ),
-              Consumer<EmployeeProvider>(
-                  builder: (context, employeeProvider, child) {
-                return Expanded(
-                  child: TabBarView(
-                    controller: _tabEmployeeController,
+              SizedBox(
+                width: CustomSpacing.four,
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Open bottom sheet here
+                  Scaffold.of(context).openEndDrawer();
+                },
+                child: Icon(
+                  Icons.filter_list,
+                  size: 30,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: CustomSpacing.four,
+          ),
+          TabBar(
+            controller: _tabEmployeeController,
+            tabs: [
+              Tab(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'All',
+                    style: CustomTypography.BottomNavigationActiveLabel,
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  // rounded container to show number of all users
+                  Consumer<EmployeeProvider>(
+                      builder: (context, employeeProvider, child) {
+                    return SizedBox(
+                      height: 25,
+                      width: 35,
+                      child: Chip(
+                        labelPadding: EdgeInsets.all(0),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        label: Text(
+                          employeeProvider.allCount.toString(),
+                          style: CustomTypography.BottomNavigationActiveLabel
+                              .copyWith(height: -0.6),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              )),
+              Tab(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Active',
+                    style: CustomTypography.BottomNavigationActiveLabel,
+                  ),
+                  SizedBox(
+                    width: CustomSpacing.two,
+                  ),
+                  // rounded container to show number of all users
+                  Consumer<EmployeeProvider>(
+                      builder: (context, employeeProvider, child) {
+                    return SizedBox(
+                      height: 25,
+                      width: 35,
+                      child: Chip(
+                        labelPadding: EdgeInsets.all(0),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        label: Text(
+                          employeeProvider.activeCount.toString(),
+                          style: CustomTypography.BottomNavigationActiveLabel
+                              .copyWith(height: -0.6),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              )),
+            ],
+          ),
+          showCheckbox
+              ? Consumer<EmployeeProvider>(
+                  builder: (_, employeeProvider, child) {
+                  return Row(
                     children: [
-                      // All Tab
-                      ListView.builder(
-                        itemCount: employeeProvider.employeeList?.length ?? 0,
-                        itemBuilder: (context, index) {
-                          return _employeeManagementListItem(
-                              index, employeeProvider);
+                      Checkbox(
+                        value: (employeeProvider.employeeList ?? [])
+                            .every((element) => element.isSelected!),
+                        onChanged: (value) {
+                          // Handle select all checkbox value change
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            (employeeProvider.employeeList ?? [])
+                                .forEach((element) {
+                              setState(() {
+                                element.isSelected = value ?? false;
+                              });
+                            });
+                          });
                         },
                       ),
-                      // Active Tab
-                      ListView.builder(
-                        itemCount: employeeProvider.employeeList?.length ?? 0,
-                        itemBuilder: (context, index) {
-                          return _employeeManagementListItem(
-                              index, employeeProvider);
-                        },
-                      ),
-                      // Pending Tab
-                      ListView.builder(
-                        itemCount: employeeProvider.employeeList?.length ?? 0,
-                        itemBuilder: (context, index) {
-                          return _employeeManagementListItem(
-                              index, employeeProvider);
+                      Text('Select All', style: CustomTypography.Body1),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          // Handle delete selected companies
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text('Delete Employees',
+                                    style: CustomTypography.H7),
+                                content: Text(
+                                    'Are you sure you want to delete selected employees?',
+                                    style: CustomTypography.Body2),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      employeeProvider
+                                          .deleteMultipleEmployees(
+                                              context,
+                                              (employeeProvider.employeeList ??
+                                                      [])
+                                                  .where((element) =>
+                                                      element.isSelected ==
+                                                      true)
+                                                  .map((e) => e.id ?? '')
+                                                  .toList())
+                                          .then((value) {
+                                        if (value) {
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            setState(() {
+                                              (employeeProvider.employeeList ??
+                                                      [])
+                                                  .removeWhere((element) =>
+                                                      element.isSelected ==
+                                                      true);
+                                            });
+                                          });
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            setState(() {
+                                              showCheckbox = false;
+                                            });
+                                          });
+                                        }
+                                      });
+                                    },
+                                    child: Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         },
                       ),
                     ],
+                  );
+                })
+              : SizedBox(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                Provider.of<EmployeeProvider>(context, listen: false)
+                    .getAllEmployees(context);
+              },
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: CustomSpacing.four,
                   ),
-                );
-              }),
-            ],
+                  Consumer<EmployeeProvider>(
+                      builder: (context, employeeProvider, child) {
+                    return Expanded(
+                      child: TabBarView(
+                        controller: _tabEmployeeController,
+                        children: [
+                          // All Tab
+                          employeeProvider.isLoading
+                              ? Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : employeeProvider.employeeList!.isEmpty
+                                  ? Center(
+                                      child: Text('No employees found',
+                                          style: CustomTypography.Body1),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: employeeProvider
+                                              .employeeList?.length ??
+                                          0 +
+                                              (employeeProvider.nextPageExists
+                                                  ? 1
+                                                  : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index ==
+                                            (employeeProvider
+                                                    .employeeList?.length ??
+                                                0)) {
+                                          // Reached the end of the current list, load more data
+                                          if (!employeeProvider.isLoading &&
+                                              employeeProvider.nextPageExists) {
+                                            employeeProvider.getAllEmployees(
+                                              context,
+                                              searchText: "",
+                                              // Adjust parameters as needed
+                                              roleFilter: "",
+                                              isSearch: false,
+                                            );
+                                          }
+                                          return SizedBox(
+                                            height: 50,
+                                            // Placeholder for loading indicator
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        } else {
+                                          return _employeeManagementListItem(
+                                              index, employeeProvider);
+                                        }
+                                      },
+                                    ),
+
+                          // Active Tab
+                          employeeProvider.isLoading
+                              ? Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : employeeProvider.employeeList!.isEmpty
+                                  ? Center(
+                                      child: Text('No employees found',
+                                          style: CustomTypography.Body1),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: employeeProvider
+                                              .employeeList?.length ??
+                                          0 +
+                                              (employeeProvider.nextPageExists
+                                                  ? 1
+                                                  : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index ==
+                                            (employeeProvider
+                                                    .employeeList?.length ??
+                                                0)) {
+                                          // Reached the end of the current list, load more data
+                                          if (!employeeProvider.isLoading &&
+                                              employeeProvider.nextPageExists) {
+                                            employeeProvider.getAllEmployees(
+                                              context,
+                                              searchText: "",
+                                              // Adjust parameters as needed
+                                              roleFilter: "",
+                                              isSearch: false,
+                                            );
+                                          }
+                                          return SizedBox(
+                                            height: 50,
+                                            // Placeholder for loading indicator
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        } else {
+                                          return _employeeManagementListItem(
+                                              index, employeeProvider);
+                                        }
+                                      },
+                                    ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   _employeeManagementListItem(int index, EmployeeProvider employeeProvider) {
@@ -4448,9 +7815,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         // Handle view employees
                         Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => ConnectionsScreen(
-                              userId: employeeProvider.employeeList?[index].id??"",
-                              userName: employeeProvider.employeeList?[index].name??"",
-                            )));
+                                  userId: employeeProvider
+                                          .employeeList?[index].id ??
+                                      "",
+                                  userName: employeeProvider
+                                          .employeeList?[index].name ??
+                                      "",
+                                )));
                       },
                       icon: Icon(Icons.people),
                       label: Text('View Connections',
@@ -4513,6 +7884,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               // Set screen to edit
                               setState(() {
                                 _selectedScreen = Screens.employeeEdit;
+                                clearFilters();
                               });
                             },
                           ),
@@ -4588,7 +7960,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _verificationRequestsUI() {
     return Container(
-      color: AppColors.paperElavation25,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.paperElavation25
+          : AppColors.paperElavation25Light,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5199,5 +8573,66 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         ),
       ),
     );
+  }
+
+  buildDropdownMenuItems() {
+    return [
+      DropdownMenuItem(
+        child: Row(
+          children: [
+            Icon(Icons.apartment),
+            SizedBox(width: CustomSpacing.two),
+            Text(
+              'Corporate Management',
+              style: CustomTypography.BottomNavigationActiveLabel,
+            ),
+          ],
+        ),
+        value: 'Corporate',
+      ),
+      showCorporateList
+          ? DropdownMenuItem(
+              child: Text(
+                'Companies',
+                style: CustomTypography.BottomNavigationActiveLabel,
+              ),
+              value: 'Companies',
+            )
+          : Container(
+              height: 0,
+              child: DropdownMenuItem(
+                child: Text(
+                  'Companies',
+                  style: CustomTypography.BottomNavigationActiveLabel,
+                ),
+                value: 'Companies',
+              ),
+            ),
+      showCorporateUserList
+          ? DropdownMenuItem(
+              child: Text(
+                'Users',
+                style: CustomTypography.BottomNavigationActiveLabel,
+              ),
+              value: 'Users',
+            )
+          : SizedBox(),
+      showViewCorporate
+          ? DropdownMenuItem(
+              child: Text(
+                'Company Profiles',
+                style: CustomTypography.BottomNavigationActiveLabel,
+              ),
+              value: 'Company Profiles',
+            )
+          : SizedBox(),
+      DropdownMenuItem(
+        child: Text(
+          'Verification Requests',
+          style: CustomTypography.BottomNavigationActiveLabel,
+        ),
+        value: 'Verification Requests',
+      ),
+    ];
   }
 }

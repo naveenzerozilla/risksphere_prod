@@ -11,8 +11,8 @@ class ThemeProvider with ChangeNotifier {
 
   ThemeData get getTheme => _themeData;
 
-  setTheme(ThemeData theme) {
-    _themeData = theme;
+  setTheme(ThemeMode themeMode) {
+    _themeData = themeMode == ThemeMode.light ? AppThemes.lightTheme : AppThemes.darkTheme;
     notifyListeners();
   }
 
@@ -27,8 +27,6 @@ class ThemeProvider with ChangeNotifier {
   }
 
   void toggleTheme() async {
-
-
     if (_themeData == ThemeMode.light) {
       setDarkTheme();
     } else {

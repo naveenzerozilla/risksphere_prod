@@ -2,6 +2,10 @@ class CompanyModel {
   String? data;
   List<Companies>? companies;
 
+  String? pageToken;
+  String? direction;
+  bool? nextPageExists;
+
   CompanyModel({this.data, this.companies});
 
   CompanyModel.fromJson(Map<String, dynamic> json) {
@@ -12,6 +16,15 @@ class CompanyModel {
         companies!.add(new Companies.fromJson(v));
       });
     }
+    if (json['pageToken'] != null) {
+      pageToken = json['pageToken'];
+    }
+    if (json['direction'] != null) {
+      direction = json['direction'];
+    }
+    if (json['nextPageExists'] != null) {
+      nextPageExists = json['nextPageExists'];
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -19,6 +32,15 @@ class CompanyModel {
     data['data'] = this.data;
     if (this.companies != null) {
       data['companies'] = this.companies!.map((v) => v.toJson()).toList();
+    }
+    if (this.pageToken != null) {
+      data['pageToken'] = this.pageToken;
+    }
+    if (this.direction != null) {
+      data['direction'] = this.direction;
+    }
+    if (this.nextPageExists != null) {
+      data['nextPageExists'] = this.nextPageExists;
     }
     return data;
   }
