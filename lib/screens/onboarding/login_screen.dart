@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:country_pickers/country.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -86,6 +90,58 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+                SizedBox(height: CustomSpacing.two),
+                CountryPickerDropdown(
+                  initialValue: 'US',
+                  itemBuilder: (Country country) {
+                    return SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(
+                              CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
+                              package: 'country_pickers',
+                            ),
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              country.name,
+                              style: CustomTypography.Body1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemFilter: (Country country) {
+                  // Only include countries with these ISO codes
+                  return ['US', 'ES', 'FR', 'JP', 'CN'].contains(country.isoCode);
+                },
+                  icon: SizedBox(),
+                  onValuePicked: (Country country) {
+                    switch (country.isoCode) {
+                      case 'US':
+                        context.setLocale(Locale('en'));
+                        break;
+                      case 'ES':
+                        context.setLocale(Locale('es'));
+                        break;
+                      case 'FR':
+                        context.setLocale(Locale('fr'));
+                        break;
+                      case 'JP':
+                        context.setLocale(Locale('ja'));
+                        break;
+                      case 'CN':
+                        context.setLocale(Locale('zh'));
+                        break;
+                    }
+
+                  },
+                ),
                 _loginForm(),
               ],
             ),
@@ -97,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _loginForm() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -391,10 +447,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: CustomTypography.Body1.copyWith(
                         color: Theme.of(context).colorScheme.onSurface)),
                 Text(
-                    LanguageService.getTranslated(context,'login_register_now'),
-
-                    style: CustomTypography.Subtitle1.copyWith(
-                        color: AppColors.primaryMain)),
+                  ' ',
+                  style: CustomTypography.Body1.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface),
+                ),
+                Flexible(
+                  child: Text(
+                      LanguageService.getTranslated(context,'login_register_now'),
+                      style: CustomTypography.Subtitle1.copyWith(
+                          color: AppColors.primaryMain)),
+                ),
               ],
             ),
           ),

@@ -23,34 +23,36 @@ import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthNotifier()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
-        ChangeNotifierProvider(create: (_) => CompanyProvider()),
-        ChangeNotifierProvider(create: (_) => FeatureProvider()),
-        ChangeNotifierProvider(create: (_) => RoleProvider()),
-        ChangeNotifierProvider(create: (_) => EmailProvider()),
-        ChangeNotifierProvider(create: (_) => EmployeeProvider()),
-        ChangeNotifierProvider(create: (_) => VerificationProvider()),
-        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
-        ChangeNotifierProvider(create: (_) => DashboardProvider()),
-        ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
-        ChangeNotifierProvider(create: (_) => CorporateProvider()),
-        ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
-      ],
-      child: EasyLocalization(
-          supportedLocales: [Locale('en', 'US'), Locale('es', 'ES'), Locale('fr', 'FR'), Locale('ja', 'JA'), Locale('zh', 'ZH')],
-          path: 'assets/translations', // <-- change the path of the translation files
-          fallbackLocale: Locale('en', 'US'),
-          child: const MyApp()),
+    EasyLocalization(
+      supportedLocales: [Locale('en'), Locale('es'), Locale('fr'), Locale('ja'), Locale('zh')],
+      path: 'assets/translations', // Path to translation files
+      fallbackLocale: Locale('en'),
+      saveLocale: true,
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthNotifier()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
+          ChangeNotifierProvider(create: (_) => CompanyProvider()),
+          ChangeNotifierProvider(create: (_) => FeatureProvider()),
+          ChangeNotifierProvider(create: (_) => RoleProvider()),
+          ChangeNotifierProvider(create: (_) => EmailProvider()),
+          ChangeNotifierProvider(create: (_) => EmployeeProvider()),
+          ChangeNotifierProvider(create: (_) => VerificationProvider()),
+          ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+          ChangeNotifierProvider(create: (_) => DashboardProvider()),
+          ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
+          ChangeNotifierProvider(create: (_) => CorporateProvider()),
+          ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -62,12 +64,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Flutter Demo',
-          debugShowCheckedModeBanner: false,
-          theme: themeProvider.getTheme,
-          home: const App(),
-        );
+        return
+          App();
       },
     );
   }
@@ -91,8 +89,7 @@ class _AppState extends State<App> {
   bool get useLightMode {
     switch (themeMode) {
       case ThemeMode.system:
-        return View.of(context).platformDispatcher.platformBrightness ==
-            Brightness.light;
+        return View.of(context).platformDispatcher.platformBrightness == Brightness.light;
       case ThemeMode.light:
         return true;
       case ThemeMode.dark:
@@ -121,8 +118,7 @@ class _AppState extends State<App> {
 
   void handleImageSelect(int value) {
     final String url = ColorImageProvider.values[value].url;
-    ColorScheme.fromImageProvider(provider: NetworkImage(url))
-        .then((newScheme) {
+    ColorScheme.fromImageProvider(provider: NetworkImage(url)).then((newScheme) {
       setState(() {
         colorSelectionMethod = ColorSelectionMethod.image;
         imageSelected = ColorImageProvider.values[value];
@@ -136,12 +132,13 @@ class _AppState extends State<App> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Risk Sphere',
+      locale: context.locale, // <-- Add this line
+      supportedLocales: context.supportedLocales, // <-- Add this line
+      localizationsDelegates: context.localizationDelegates, // <-- Add this line
       themeMode: themeMode,
       theme: ThemeData(
         colorSchemeSeed: AppColors.primaryMain,
-        colorScheme: colorSelectionMethod == ColorSelectionMethod.image
-            ? imageColorScheme
-            : null,
+        colorScheme: colorSelectionMethod == ColorSelectionMethod.image ? imageColorScheme : null,
         useMaterial3: true,
         brightness: Brightness.light,
       ),
