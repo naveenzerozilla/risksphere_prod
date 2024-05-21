@@ -80,11 +80,9 @@ class Companies {
     companyTypeName = json['company_type_name'];
     domainList = List<String>.from(json['domain_list'] ?? []);
     displayName = json['company_display_name'];
-    companyImageUrl = json['company_image_url'];
+    companyImageUrl = json['display_image_url'];
     isEnabled = json['is_enabled'];
-    updatedAt = json['updated_at'] != null
-        ? UpdatedAt.fromJson(json['updated_at'])
-        : null;
+
     name = json['company_name'];
     admins =
     json['admins'] != null ? Admins.fromJson(json['admins']) : null;
@@ -99,7 +97,7 @@ class Companies {
     data['company_type_name'] = companyTypeName;
     data['domain_list'] = domainList;
     data['company_display_name'] = displayName;
-    data['company_image_url'] = companyImageUrl;
+    data['display_image_url'] = companyImageUrl;
     data['is_enabled'] = isEnabled;
     if (updatedAt != null) {
       data['updated_at'] = updatedAt!.toJson();

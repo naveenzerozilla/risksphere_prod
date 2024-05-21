@@ -95,7 +95,7 @@ class NonCorporateProvider with ChangeNotifier {
   String allCount = "";
   // List<Roles>? _roles = [];
   // List<Roles>? get roles => _roles;
-  Future<List<IndividualUsers>> getNonCorporateUserList(BuildContext context, {String searchText = "", String roleFilter = "", bool isSearch = false}) async {
+  Future<List<IndividualUsers>> getNonCorporateUserList(BuildContext context, {String searchText = "", String roleFilter = "", bool isSearch = false, bool? status}) async {
     try {
       if (isSearch) {
         nextPageToken = null;
@@ -123,6 +123,9 @@ class NonCorporateProvider with ChangeNotifier {
         additionalParams += "&pageToken=$nextPageToken&direction=forward";
       }
       additionalParams += "&pageSize=5"; // You can adjust the page size as needed
+      if (status != null) {
+        additionalParams += "&active_users=$status";
+      }
 
       ApiService apiService = ApiService(AppConstant.NON_CORPORATE_USER_STATUS);
       String url = "?is_individual=true";
@@ -134,7 +137,7 @@ class NonCorporateProvider with ChangeNotifier {
       Map<String, dynamic> response = await apiService.get(url);
 
       List<IndividualUsers> usersList = [];
-      if ((!isSearch)&&response.containsKey('individual_users')) {
+      if (response.containsKey('individual_users')) {
         var model = Non_Corporate_User_Model.fromJson(response);
         if (model.individualUsers != null) {
           usersList = model.individualUsers!;
@@ -143,7 +146,7 @@ class NonCorporateProvider with ChangeNotifier {
           activeCount = model.counts!.active.toString();
           allCount = model.counts!.users.toString();
         }
-      } else
+      } /*else
       if (isSearch&&response.containsKey('users') && response['users']!= null &&response['users']['individual_users'] != null) {
         var model = Non_Corporate_User_Model.fromJson(response, isSearch: true); // Parse the entire model
         if (model.users != null && model.users!.individualUsers != null) {
@@ -158,7 +161,7 @@ class NonCorporateProvider with ChangeNotifier {
         }
       } else {
         print("Response does not contain 'data' key or it is null.");
-      }
+      }*/
 
       _employeesList?.addAll(usersList);
       notifyListeners();

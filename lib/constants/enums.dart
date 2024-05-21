@@ -9,6 +9,7 @@ enum ButtonType {
 }
 
 enum Screens {
+  defaultScreen,
   corporateList,
   corporateAdd,
   corporateEdit,

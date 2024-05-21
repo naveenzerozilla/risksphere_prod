@@ -26,9 +26,10 @@ import 'package:green/models/role_model.dart' as roleModel;
 class ConnectionsScreen extends StatefulWidget {
   final String userId;
   final String userName;
+  final int selectedTabIndex;
 
   const ConnectionsScreen(
-      {super.key, required this.userId, required this.userName});
+      {super.key, required this.userId, required this.userName, this.selectedTabIndex = 0});
 
   @override
   State<ConnectionsScreen> createState() => _ConnectionsScreenState();
@@ -197,7 +198,22 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       }
       print(
           'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
+
     });
+    if (widget.selectedTabIndex != 0) {
+      _tabController?.animateTo(widget.selectedTabIndex);
+      if (widget.selectedTabIndex == 0) {
+        _selectedScreen = Screens.connectionList;
+      } else if (widget.selectedTabIndex == 1) {
+        _selectedScreen = Screens.requestList;
+      } else if (widget.selectedTabIndex == 2) {
+        _selectedScreen = Screens.chatList;
+      } else if (widget.selectedTabIndex == 3) {
+        _selectedScreen = Screens.networkList;
+      } else if (widget.selectedTabIndex == 4) {
+        _selectedScreen = Screens.blockedList;
+      }
+    }
 
     _connectionsTabController = TabController(length: 2, vsync: this);
     _connectionsTabController?.addListener(() {
@@ -311,7 +327,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              'Connections of ${widget.userName.substring(0, 1).toUpperCase()}${widget.userName.substring(1)}',
+                              widget.userName==''?'Connections':'Connections of ${widget.userName.substring(0, 1).toUpperCase()}${widget.userName.substring(1)}',
                               style: CustomTypography.H5_Regular),
                           SizedBox(height: CustomSpacing.two),
                           Text('Manage all connections from this panel',

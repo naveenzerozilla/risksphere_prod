@@ -25,6 +25,7 @@ import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../service/shared_preference_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -48,6 +49,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool isEdit = false;
+
+  bool showAssignDeleteManager = true;
+  bool showAddDelegate = true;
+  bool showRevokeDelegate = true;
+  bool showAddReportee = true;
 
   // General Info
   String userImageUrl = '';
@@ -83,6 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
+    _setClaims();
     _tabController = TabController(length: 3, vsync: this);
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
@@ -104,6 +111,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     _getData();
   }
+  
+  _setClaims() async {
+    showAssignDeleteManager = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMAM)?? false;
+    showAddDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDA)??false;
+    showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;
+    showAddReportee = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRE)??false;
+  }
 
   _getData() {
     Provider.of<UserProfileProvider>(context, listen: false)
@@ -113,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           userImageUrl = value.displayImageUrl ?? "";
           nameLabelText = value.name ?? "";
-          displayNameLabelText = value.displayName ?? "";
+          displayNameLabelText = value.displayName ??  value.name ?? "";
           emailLabelText = value.email ?? "";
           phoneLabelText = value.phone ?? "";
           // Set roles and assign from List<Roles> to List<Categories>
@@ -1401,7 +1415,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   'My Manager',
                   style: CustomTypography.Body1,
                 ),
-                Row(
+                !showAssignDeleteManager?SizedBox():Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1469,11 +1483,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                     Spacer(),
                     // Actions
-                    PopupMenuButton<PopupMenuItem<dynamic>>(
+                    !showAssignDeleteManager?SizedBox():PopupMenuButton<PopupMenuItem<dynamic>>(
                       itemBuilder: (BuildContext context) {
                         List<PopupMenuEntry<PopupMenuItem<dynamic>>> items = [];
 
-                        if (userProfileProvider.myManager.isEmpty || userProfileProvider.myManager[0] == null) {
+                        /*if (userProfileProvider.myManager.isEmpty || userProfileProvider.myManager[0] == null) {
                           items.add(
                             PopupMenuItem(
                               onTap: () {
@@ -1492,9 +1506,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                             ),
                           );
-                        }
+                        }*/
 
-                        items.add(
+                        if(showAssignDeleteManager) {
+                          items.add(
                           PopupMenuItem(
                             onTap: () {
                               // Show delete dialog and pop off the menu also on ok
@@ -1542,6 +1557,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ),
                         );
+                        }
 
                         return items;
                       },
@@ -1591,7 +1607,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   'My Delegation',
                   style: CustomTypography.Body1,
                 ),
-                Row(
+                !showAddDelegate?SizedBox():Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1662,7 +1678,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       itemBuilder: (BuildContext context) {
                         List<PopupMenuEntry<PopupMenuEntry<dynamic>>> items = [];
 
-                        if (userProfileProvider.myDeligate.isNotEmpty && userProfileProvider.myDeligate[0] != null) {
+                        /*if (userProfileProvider.myDeligate.isNotEmpty && userProfileProvider.myDeligate[0] != null) {
                           items.add(
                             PopupMenuItem(
                               onTap: () {
@@ -1681,9 +1697,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                             ),
                           );
-                        }
+                        }*/
 
-                        items.add(
+                        if(showRevokeDelegate) {
+                          items.add(
                           PopupMenuItem(
                             onTap: () {
                               // Show delete dialog and pop off the menu also on ok
@@ -1732,6 +1749,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ),
                         );
+                        }
 
                         return items;
                       },
@@ -1784,7 +1802,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   'My Reportee(s)',
                   style: CustomTypography.Body1,
                 ),
-                Row(
+                !showAddReportee?SizedBox():Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1866,10 +1884,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 
               Spacer(),
               // Actions
-              PopupMenuButton(
+              !showAddReportee?SizedBox():PopupMenuButton(
                 itemBuilder: (BuildContext context) {
                   return [
-                    PopupMenuItem(
+                    /*PopupMenuItem(
                       onTap: () {
                         // Handle search
                         showDialog(
@@ -1884,7 +1902,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           Text('Search'),
                         ],
                       ),
-                    ),
+                    ),*/
                     PopupMenuItem(
                       onTap: () {
                         // Show delete dialog and pop off the menu also on ok

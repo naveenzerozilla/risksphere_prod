@@ -957,34 +957,36 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
                     });
                   },
-                  optionsViewBuilder: (context, onSelected, options) => Align(
-                    alignment: Alignment.topLeft,
-                    child: Material(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(4.0)),
-                      ),
-                      child: Container(
-                        height: 52.0 * options.length,
-                        width: constraints.biggest.width + 100, // <-- Right here !
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: options.length,
-                          physics: ClampingScrollPhysics(),
-                          shrinkWrap: false,
-                          itemBuilder: (BuildContext context, int index) {
-                            final option = options.elementAt(index);
-                            return InkWell(
-                              onTap: () => onSelected(option),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(option.name, style: CustomTypography.Subtitle1),
-                              ),
-                            );
-                          },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(4.0)),
+                        ),
+                        child: Container(
+                          height: 52.0 * options.length,
+                          width: MediaQuery.of(context).size.width, // Adjust the width to fit your needs
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: options.length,
+                            physics: ClampingScrollPhysics(),
+                            shrinkWrap: false,
+                            itemBuilder: (BuildContext context, int index) {
+                              final option = options.elementAt(index);
+                              return InkWell(
+                                onTap: () => onSelected(option),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(option.name, style: CustomTypography.Subtitle1),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                   onSelected: (Companies selection) {
                     setState(() {
                       selectedCompany = selection;
@@ -994,7 +996,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       _enableCompanyTypeDropdown = false;
                       _customRoles = true;
                     });
-
                   },
                   displayStringForOption: (Companies option) => option.name,
                   fieldViewBuilder: (BuildContext context,
@@ -1004,9 +1005,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     return TextFormField(
                       controller: textEditingController,
                       focusNode: focusNode,
-                      onFieldSubmitted: (_) {
-
-                      },
+                      onFieldSubmitted: (_) {},
                       onChanged: (value) {
                         setState(() {
                           _showRoles = false;
@@ -1032,6 +1031,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     );
                   },
                 );
+
               },
             );
           },

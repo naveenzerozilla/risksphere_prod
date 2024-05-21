@@ -110,6 +110,7 @@ class CorporateProvider with ChangeNotifier {
         bool isSearch = false,
       }) async {
     try {
+      print("Company ID: $companyId");
       // Clear normal pagination is isSearch is true
       if (isSearch) {
         nextPageToken = null;
@@ -141,7 +142,7 @@ class CorporateProvider with ChangeNotifier {
       additionalParams += "&pageSize=5";
 
       ApiService apiService = ApiService(AppConstant.GET_CORPORATE_USER);
-      String url = companyId != null ? "?company_id=$companyId" : "";
+      String url = companyId != null && companyId != ""? "?users=true&company_id=$companyId" : "?users=true&current=true";
       if (additionalParams.isNotEmpty) {
         url += (url.contains("?") ? "&" : "?") + additionalParams.substring(1);
       }
@@ -151,8 +152,13 @@ class CorporateProvider with ChangeNotifier {
 
       // Parse response
       List<CorporateUsers> employees = [];
-      employees = (isSearch && searchText!="" ? response['users'] : response['corporate_users'])
-          .map<CorporateUsers>((employee) => CorporateUsers.fromJson(employee, isSearch: isSearch, searchText: searchText))
+      if(response['users'] == null) {
+        isLoading = false;
+        isNextPageLoading = false;
+        return [];
+      }
+      employees = (response['users'])
+          .map<CorporateUsers>((employee) => CorporateUsers.fromJson(employee))
           .toList();
 
       // Update pagination variables
@@ -616,6 +622,78 @@ class CorporateProvider with ChangeNotifier {
       // Show a generic error message to the user
       if (context.mounted) CustomToast.error(context, e.toString());
       return false;
+    }
+  }
+
+  Future<List<Roles>> getRoles(BuildContext context) async {
+    try {
+      // Set loading state to true
+      isLoading = true;
+      // Use API Service to fetch companies
+      ApiService apiService = ApiService(AppConstant.GET__ROLES_FOR_CORPORATE_EMPLOYEES);
+      // Send a GET request to the API
+      Map<String, dynamic> response = await apiService.get();
+      // Parse the response into a list of corporateType
+      List<Roles> rolesList = [];
+      print("Contains Key? ${response.containsKey('roles')}");
+      if (response.containsKey('roles')) {
+        // Parse corporateType from the response
+        rolesList = (response['roles'] as List)
+            .map((roles) => Roles.fromJson(roles))
+            .toList();
+        print("Roles: $rolesList");
+
+        _roles = rolesList;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+      }
+      isLoading = false;
+      return rolesList;
+    } catch (e, stackTrace) {
+      // Catch any errors that occur during the process
+      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+      log('Error: $e'); // Log the error
+      // Show a generic error message to the user
+      if (context.mounted) CustomToast.error(context, e.toString());
+      isLoading = false;
+      return []; // Return an empty list in case of error
+    }
+  }
+  Future<List<Roles>> getRolesWithCompanyId(BuildContext context, String companyId) async {
+    try {
+      // Set loading state to true
+      isLoading = true;
+      // Use API Service to fetch companies
+      ApiService apiService = ApiService(AppConstant.GET__ROLES_FOR_CORPORATE_EMPLOYEES);
+      String params = companyId != ""? "&company_id=$companyId" : "";
+      // Send a GET request to the API
+      Map<String, dynamic> response = await apiService.get(params);
+      // Parse the response into a list of corporateType
+      List<Roles> rolesList = [];
+      print("Contains Key? ${response.containsKey('roles')}");
+      if (response.containsKey('roles')) {
+        // Parse corporateType from the response
+        rolesList = (response['roles'] as List)
+            .map((roles) => Roles.fromJson(roles))
+            .toList();
+        print("Roles: $rolesList");
+
+        _roles = rolesList;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+      }
+      isLoading = false;
+      return rolesList;
+    } catch (e, stackTrace) {
+      // Catch any errors that occur during the process
+      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+      log('Error: $e'); // Log the error
+      // Show a generic error message to the user
+      if (context.mounted) CustomToast.error(context, e.toString());
+      isLoading = false;
+      return []; // Return an empty list in case of error
     }
   }
 }

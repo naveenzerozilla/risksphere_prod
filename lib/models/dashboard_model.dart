@@ -34,7 +34,7 @@ class DashboardModel {
     verificationCount = json['verification_count'];
     rolePercent = json['role_percent'];
     companyPercent = json['company_percent'];
-    requests = json['requests'];
+    requests = json['request'];
   }
 
   Map<String, dynamic> toJson() {

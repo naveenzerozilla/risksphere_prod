@@ -378,6 +378,7 @@ class CompanyProvider with ChangeNotifier {
             CustomToast.success(context, response['message']);
         });
       }
+      getAllCompanies(context, "", "", "");
       return true;
     } catch (e, stackTrace) {
       // Catch any errors that occur during the process

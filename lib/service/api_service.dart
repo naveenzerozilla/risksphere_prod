@@ -147,6 +147,8 @@ class ApiService {
       final Map<String, dynamic> jsonResponse = json.decode(body);
       if (jsonResponse.containsKey('message')) {
         return jsonResponse['message'];
+      } else if (jsonResponse.containsKey('error')) {
+        return jsonResponse['error'];
       }
     } catch (_) {
       // If the response is not a valid JSON, return the whole body

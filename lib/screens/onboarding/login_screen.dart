@@ -16,6 +16,7 @@ import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
 import '../../providers/auth_provider.dart';
+import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'create_account_screen.dart';
 
@@ -333,6 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   var token = await user.getIdToken();
                                   log(
                                       "Claims: " + parseJwt(token!).toString());
+
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
