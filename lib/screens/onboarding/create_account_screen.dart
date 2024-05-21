@@ -330,8 +330,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                         // If selected roles contains a role with trial period, show 'Start Trial' else 'Create Account'
                                         _selectedRoles.any(
                                                 (role) => role.isApplicableForTrial)
-                                            ? 'Start your 7-day free trial'
-                                            : 'Create Account',
+                                            ? LanguageService.getTranslated(context,"register_non_corporate_freetrail_btn")
+                                            : LanguageService.getTranslated(context,"usermanagement_cuser_create_account_btn"),
                                         style:
                                             CustomTypography.ButtonLarge.copyWith(
                                                 color: Colors.black),
@@ -360,8 +360,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           Center(
             child: Text(
               _selectedOption == SignUpOptions.individual
-                  ? 'Create a user account'
-                  : 'Do you want to create a corporate account?',
+                  ? LanguageService.getTranslated(context,"register_non_corporate_create_user_account_title")
+                  :
+              LanguageService.getTranslated(context,"register_corporate_create_corporate_act_title"),
               style: CustomTypography.H5_Regular.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
               textAlign: TextAlign.center,
@@ -373,7 +374,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               Expanded(
                 child: RadioListTile<SignUpOptions>(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Individual'),
+                  title:  Text(
+                      LanguageService.getTranslated(context,"register_non_corporate_radio_Individual")
+                  ),
                   value: SignUpOptions.individual,
                   groupValue: _selectedOption,
                   onChanged: (value) {
@@ -387,7 +390,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               Expanded(
                 child: RadioListTile<SignUpOptions>(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Corporate'),
+                  title:  Text(
+                      LanguageService.getTranslated(context,"register_non_corporate_radio_Corporate")
+                      ),
                   value: SignUpOptions.corporate,
                   groupValue: _selectedOption,
                   onChanged: (value) {
@@ -444,7 +449,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Add your onPressed function here
                 await authNotifier.signInWithGoogle(context: context);
               },
-              buttonText: 'Continue with Google',
+              buttonText:
+              LanguageService.getTranslated(context,"login_googlebutton"),
               iconPath: 'assets/images/googleLogo.svg',
             );
           }
@@ -456,7 +462,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           onPressed: () {
             // Add your onPressed function here
           },
-          buttonText: 'Continue with Microsoft',
+          buttonText: LanguageService.getTranslated(context,"login_microsoft_button"),
           iconPath: 'assets/images/microsoftLogo.svg',
         ),
         SizedBox(height: CustomSpacing.eight),
@@ -473,7 +479,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
             SizedBox(width: CustomSpacing.three),
             Text(
-              'Or register manually',
+              LanguageService.getTranslated(context,"register_non_corporate_register_manually"),
               style: CustomTypography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),
@@ -490,8 +496,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Name
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Name',
-            hintText: 'Enter your name',
+            labelText:
+
+            LanguageService.getTranslated(context,"user_profile_user_management_name_filed_label"),
+
+            hintText:   LanguageService.getTranslated(context,"user_profile_user_management_name_placeholder"),
+
             hintStyle: CustomTypography.Body1,
             labelStyle: CustomTypography.Body1,
             border: const OutlineInputBorder(),
@@ -511,8 +521,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Display Name
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Display Name',
-            hintText: 'Enter display name',
+            labelText:   LanguageService.getTranslated(context,"usermanagement_display_name_field_label"),
+
+            hintText:  LanguageService.getTranslated(context,"usermanagement_display_name_placeholder"),
             hintStyle: CustomTypography.Body1,
             labelStyle: CustomTypography.Body1,
             border: const OutlineInputBorder(),
@@ -533,8 +544,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Email
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Email',
-            hintText: 'Enter your email address',
+            labelText: LanguageService.getTranslated(context,"register_non_corporate_emailfield_label"),
+
+            hintText: LanguageService.getTranslated(context,"register_non_corporate_emailfield_placeholder"),
+
             hintStyle: CustomTypography.Body1,
             labelStyle: CustomTypography.Body1,
             border: const OutlineInputBorder(),
@@ -601,8 +614,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   FilteringTextInputFormatter.digitsOnly // Only allows digits
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Mobile Number',
-                  hintText: 'Enter your mobile number',
+                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
+
+                  hintText:  LanguageService.getTranslated(context,"register_non_corporate_mobilefield_placeholder"),
+
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
@@ -617,8 +632,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Password
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Password',
-            hintText: 'Enter new password',
+            labelText:LanguageService.getTranslated(context,"register_non_corporate_passwordfield_label"),
+
+            hintText: LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
+
             border: const OutlineInputBorder(),
           ),
           obscureText: true,
@@ -635,8 +652,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Confirm Password
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Confirm Password',
-            hintText: 'Re-enter your password to confirm',
+            labelText:  LanguageService.getTranslated(context,"register_corporate_confirm_password_field_label"),
+
+            hintText:LanguageService.getTranslated(context,"register_corporate_confirm_password_field_placeholder"),
+
             border: const OutlineInputBorder(),
           ),
           obscureText: true,
@@ -653,7 +672,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Text(
-              "Roles",
+              LanguageService.getTranslated(context,"categorymanagement_category_role_field_label"),
+
               style: CustomTypography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
             ),
@@ -699,7 +719,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Handle input changes
               },
               decoration: InputDecoration(
-                labelText: 'Role(s)',
+                labelText:  LanguageService.getTranslated(context,"_field_label"),
+
                 hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -818,8 +839,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   FilteringTextInputFormatter.digitsOnly // Only allows digits
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Mobile Number',
-                  hintText: 'Enter your mobile number',
+                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
+
+                  hintText: LanguageService.getTranslated(context,"register_enter_mobile_number"),
+
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
@@ -834,7 +857,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Text(
-              "Roles",
+              LanguageService.getTranslated(context,"register_non_corporate_role_field_label"),
+
               style: CustomTypography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
             ),
@@ -880,8 +904,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Handle input changes
               },
               decoration: InputDecoration(
-                labelText: 'Role(s)',
-                hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                labelText:   LanguageService.getTranslated(context,"usermanagement_roles_label"),
+                hintText: _selectedRoles.isEmpty ?  LanguageService.getTranslated(context,"usermanagement_cuser_roles_placeholder") : "",
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: Icon(Icons.arrow_drop_down),
@@ -1028,8 +1052,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         });
                       },
                       decoration: InputDecoration(
-                        labelText: 'Company Legal Name',
-                        hintText: 'Enter the legal name of your company',
+                        labelText:   LanguageService.getTranslated(context,"register_corporate_legalname_field_label"),
+
+                        hintText:   LanguageService.getTranslated(context,"register_corporate_legalname_filed_placeholder"),
+
                         border: const OutlineInputBorder(),
                       ),
                     );
@@ -1073,8 +1099,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     }).toList() ?? [],
                     decoration: InputDecoration(
                       enabled: _enableCompanyTypeDropdown,
-                      labelText: 'Company Type',
-                      hintText: 'Select company type',
+                      labelText:   LanguageService.getTranslated(context,"register_corporate_company_type_field_label"),
+                      hintText:  LanguageService.getTranslated(context,"register_corporate_company_type_field_placeholder"),
+
                       border: const OutlineInputBorder(),
                       errorText: state.errorText,
                     ),
@@ -1100,8 +1127,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         TextFormField(
           decoration: InputDecoration(
             enabled: _enableCompanyTypeDropdown,
-            labelText: 'Company Display Name',
-            hintText: 'Enter the display name of your company',
+            labelText:   LanguageService.getTranslated(context,"register_corporate_company_displayname_field_label"),
+            hintText:   LanguageService.getTranslated(context,"register_corporate_comapny_displayname_field_placeholder"),
+
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -1177,8 +1205,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Admin Email
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Name',
-            hintText: 'Enter user name',
+            labelText:   LanguageService.getTranslated(context,"usermanagement_name_field_label"),
+            hintText:   LanguageService.getTranslated(context,"usermanagemet_cuser_name_place_holder"),
+
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -1196,8 +1225,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Admin Email
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Email',
-            hintText: 'Enter your email address',
+            labelText:   LanguageService.getTranslated(context,"connections_user_connection_email_filter"),
+
+            hintText:  LanguageService.getTranslated(context,"user_profile_user_management_email_placeholer"),
+
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -1263,8 +1294,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   FilteringTextInputFormatter.digitsOnly // Only allows digits
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Mobile Number',
-                  hintText: 'Enter your mobile number',
+                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
+                  hintText:   LanguageService.getTranslated(context,"register_mobile_number"),
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
@@ -1280,8 +1311,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Password',
-            hintText: 'Enter new password',
+            labelText:   LanguageService.getTranslated(context,"emailsetup_field_password"),
+
+            hintText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
+
             border: const OutlineInputBorder(),
           ),
           obscureText: true,
@@ -1298,8 +1331,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         TextFormField(
           decoration: InputDecoration(
-            labelText: 'Confirm Password',
-            hintText: 'Re-enter your password to confirm',
+            labelText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
+            hintText:   LanguageService.getTranslated(context,"register_corporate_confirm_password_field_placeholder"),
+
             border: const OutlineInputBorder(),
           ),
           obscureText: true,
