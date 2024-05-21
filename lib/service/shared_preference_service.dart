@@ -29,11 +29,13 @@ class SharedPreferenceService {
   static const String NCMEU = 'NCMEU'; // My corporate users
   static const String NCMVP = 'NCMVP'; // Connections Request
   static const String NCMCL = 'NCMCL'; // Verification request
+  static const String NCMUL = 'NCMUL'; // Non-Corporate User List
   static const String EMPED = 'EMPED'; // Company Onboarding Stats
   static const String EMPDU = 'EMPDU'; // User Onboarding Stats
   static const String EMPEU = 'EMPEU'; // Categories
   static const String EMPVP = 'EMPVP'; // Role
   static const String EMPCL = 'EMPCL'; // Features
+  static const String EMPUL = 'EMPUL'; // Employee List
   static const String DASTC = 'DASTC'; // Email
   static const String DASTU = 'DASTU'; // Corporate Role
   static const String DASMU = 'DASMU'; // Placeholder for future use
@@ -49,6 +51,55 @@ class SharedPreferenceService {
 
   static Future<void> setClaims(Map<String, dynamic> claims) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Set all keys to false
+    prefs.setBool(CAMCL, false);
+    prefs.setBool(CAMUL, false);
+    prefs.setBool(CAMCC, false);
+    prefs.setBool(CAMEC, false);
+    prefs.setBool(CAMVC, false);
+    prefs.setBool(CAMDC, false);
+    prefs.setBool(CAMED, false);
+    prefs.setBool(CAMLL, false);
+    prefs.setBool(CAMCUM, false);
+    prefs.setBool(CAMCUL, false);
+    prefs.setBool(CAMVU, false);
+    prefs.setBool(CUMED, false);
+    prefs.setBool(CUMDU, false);
+    prefs.setBool(CUMAM, false);
+    prefs.setBool(CUMDA, false);
+    prefs.setBool(CUMRD, false);
+    prefs.setBool(CUMRE, false);
+    prefs.setBool(CUMAU, false);
+    prefs.setBool(CUMBU, false);
+    prefs.setBool(CUMEU, false);
+    prefs.setBool(CUMVP, false);
+    prefs.setBool(CUMCL, false);
+    prefs.setBool(CUMCU, false);
+    prefs.setBool(NCMED, false);
+    prefs.setBool(NCMDU, false);
+    prefs.setBool(NCMEU, false);
+    prefs.setBool(NCMVP, false);
+    prefs.setBool(NCMCL, false);
+    prefs.setBool(NCMUL, false);
+    prefs.setBool(EMPED, false);
+    prefs.setBool(EMPDU, false);
+    prefs.setBool(EMPEU, false);
+    prefs.setBool(EMPVP, false);
+    prefs.setBool(EMPCL, false);
+    prefs.setBool(EMPUL, false);
+    prefs.setBool(DASTC, false);
+    prefs.setBool(DASTU, false);
+    prefs.setBool(DASMU, false);
+    prefs.setBool(DASCR, false);
+    prefs.setBool(DASVR, false);
+    prefs.setBool(DASCO, false);
+    prefs.setBool(DASUO, false);
+    prefs.setBool(SETCA, false);
+    prefs.setBool(SETRO, false);
+    prefs.setBool(SETFE, false);
+    prefs.setBool(SETEM, false);
+    prefs.setBool(SETROL, false);
+
     claims.forEach((key, value) {
       switch (key) {
         case CAMCL:
@@ -79,11 +130,13 @@ class SharedPreferenceService {
         case NCMEU:
         case NCMVP:
         case NCMCL:
+        case NCMUL:
         case EMPED:
         case EMPDU:
         case EMPEU:
         case EMPVP:
         case EMPCL:
+        case EMPUL:
         case DASTC:
         case DASTU:
         case DASMU:
@@ -138,11 +191,13 @@ class SharedPreferenceService {
       NCMEU,
       NCMVP,
       NCMCL,
+      NCMUL,
       EMPED,
       EMPDU,
       EMPEU,
       EMPVP,
       EMPCL,
+      EMPUL,
       DASTC,
       DASTU,
       DASMU,
@@ -157,7 +212,7 @@ class SharedPreferenceService {
       SETROL,
     ];
     for (String key in staticStrings) {
-      bool? value = prefs.getBool(key);
+      bool value = prefs.getBool(key) ?? false;
       if (value != null) {
         claims[key] = value;
         print('Retrieved claim $key with value $value');

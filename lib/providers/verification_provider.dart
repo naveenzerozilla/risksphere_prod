@@ -186,7 +186,23 @@ class VerificationProvider with ChangeNotifier {
       });
       isUserLoading = false;
       return userList;
-    } catch (e, stackTrace) {
+    } on BackendException catch (e, stackTrace) {
+      // Catch any errors that occur during the process
+      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+      log('Error: $e'); // Log the error
+      // Show a generic error message to the user
+      isUserLoading = false;
+      if (!context.mounted) return [];
+      if(e.message != null) {
+        CustomToast.error(context, e.message);
+      } else {
+        CustomToast.error(context, 'Error fetching requests. Please try again later.');
+      }
+      CustomToast.error(
+          context, 'Error fetching requests. Please try again later.');
+      return []; // Return an empty list in case of error
+    }
+    catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error

@@ -91,6 +91,14 @@ class CustomTypography {
     height: 1.75,
     letterSpacing: 0.15000000596046448,
   );
+  static const TextStyle Subtitle2 = TextStyle(
+    fontFamily: 'General Sans',
+    fontSize: 14.0,
+    fontWeight: FontWeight.w500,
+    height: 1.57, // Calculated based on the provided line-height of 157%
+    letterSpacing: 0.1,
+  );
+
 
   static const TextStyle BottomNavigationActiveLabel = TextStyle(
     fontFamily: 'General Sans',

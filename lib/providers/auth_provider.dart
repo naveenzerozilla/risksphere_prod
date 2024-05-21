@@ -14,6 +14,7 @@ import '../design_system/primitives/utilities/custom_spacing.dart';
 import '../models/initial_data_model.dart';
 import '../screens/onboarding/create_account_screen.dart';
 import '../screens/onboarding/splash_screen.dart';
+import '../service/shared_preference_service.dart';
 
 class AuthNotifier extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -106,6 +107,13 @@ class AuthNotifier extends ChangeNotifier {
         password: password,
       );
       _user = userCredential.user;
+
+      IdTokenResult token = await userCredential.user!.getIdTokenResult();
+      Map<String, dynamic>? claims = token.claims?? {};
+      log("Claims: $claims");
+
+      await SharedPreferenceService.setClaims(claims);
+      await SharedPreferenceService.getAllClaims();
       _isSigningIn = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -146,6 +154,9 @@ class AuthNotifier extends ChangeNotifier {
         IdTokenResult token = await userCredential.user!.getIdTokenResult();
         Map<String, dynamic>? claims = token.claims?? {};
         log("Claims: $claims");
+
+        await SharedPreferenceService.setClaims(claims);
+        await SharedPreferenceService.getAllClaims();
 
         print('Is Individual? ${claims['isIndividual']}');
         if(claims['isIndividual']==null) {
