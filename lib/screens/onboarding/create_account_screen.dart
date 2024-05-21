@@ -247,7 +247,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 context: context,
                                                 builder: (BuildContext context) {
                                                   return AlertDialog(
-                                                    title: Text('Your account has been successfully activated.', style: CustomTypography.ButtonLarge,),
+                                                    title: Text(
+                                                      LanguageService.getTranslated(context,"register_non_corporate_success_status_title"),
+
+
+                                                      style: CustomTypography.ButtonLarge,),
                                                     actions: [
                                                       TextButton(
                                                         onPressed: () {
