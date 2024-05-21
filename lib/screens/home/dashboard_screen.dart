@@ -8,7 +8,7 @@ import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
+// import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -453,22 +453,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         onTap: () async {
-                          final DateTime? pickedDate = await showMonthPicker(
-                            context: context,
-                            initialDate: _selectedDateCompany ?? DateTime.now(),
-                            firstDate: DateTime(DateTime.now().year - 10),
-                            lastDate: DateTime.now(),
-                          );
-
-                          if (pickedDate != null &&
-                              pickedDate != _selectedDateCompany) {
-                            setState(() {
-                              _selectedDateCompany = pickedDate;
-                            });
-                            Provider.of<DashboardProvider>(context, listen: false)
-                                .getDashboardDataForCompanies(context, pickedDate);
-
-                          }
+                          // final DateTime? pickedDate = await showMonthPicker(
+                          //   context: context,
+                          //   initialDate: _selectedDateCompany ?? DateTime.now(),
+                          //   firstDate: DateTime(DateTime.now().year - 10),
+                          //   lastDate: DateTime.now(),
+                          // );
+                          //
+                          // if (pickedDate != null &&
+                          //     pickedDate != _selectedDateCompany) {
+                          //   setState(() {
+                          //     _selectedDateCompany = pickedDate;
+                          //   });
+                          //   Provider.of<DashboardProvider>(context, listen: false)
+                          //       .getDashboardDataForCompanies(context, pickedDate);
+                          //
+                          // }
                         },
                       ),
                     ),
@@ -537,22 +537,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onTap: () async {
-                      final DateTime? pickedDate = await showMonthPicker(
-                        context: context,
-                        initialDate: _selectedDateCompany ?? DateTime.now(),
-                        firstDate: DateTime(DateTime.now().year - 10),
-                        lastDate: DateTime.now(),
-                      );
+                      // final DateTime? pickedDate = await showMonthPicker(
+                      //   context: context,
+                      //   initialDate: _selectedDateCompany ?? DateTime.now(),
+                      //   firstDate: DateTime(DateTime.now().year - 10),
+                      //   lastDate: DateTime.now(),
+                      // );
 
-                      if (pickedDate != null &&
-                          pickedDate != _selectedDateCompany) {
-                        setState(() {
-                          _selectedDateCompany = pickedDate;
-                        });
-                        Provider.of<DashboardProvider>(context, listen: false)
-                            .getDashboardDataForCompanies(context, pickedDate);
-
-                      }
+                      // if (pickedDate != null &&
+                      //     pickedDate != _selectedDateCompany) {
+                      //   setState(() {
+                      //     _selectedDateCompany = pickedDate;
+                      //   });
+                      //   Provider.of<DashboardProvider>(context, listen: false)
+                      //       .getDashboardDataForCompanies(context, pickedDate);
+                      //
+                      // }
                     },
                   ),
                 ),
@@ -706,21 +706,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         onTap: () async {
-                          final DateTime? pickedDate = await showMonthPicker(
-                            context: context,
-                            initialDate: _selectedDateUser ?? DateTime.now(),
-                            firstDate: DateTime(DateTime.now().year - 10),
-                            lastDate: DateTime.now(),
-                          );
-
-                          if (pickedDate != null &&
-                              pickedDate != _selectedDateUser) {
-                            setState(() {
-                              _selectedDateUser = pickedDate;
-                            });
-                            Provider.of<DashboardProvider>(context, listen: false)
-                                .getDashboardDataForRoles(context, pickedDate);
-                          }
+                          // final DateTime? pickedDate = await showMonthPicker(
+                          //   context: context,
+                          //   initialDate: _selectedDateUser ?? DateTime.now(),
+                          //   firstDate: DateTime(DateTime.now().year - 10),
+                          //   lastDate: DateTime.now(),
+                          // );
+                          //
+                          // if (pickedDate != null &&
+                          //     pickedDate != _selectedDateUser) {
+                          //   setState(() {
+                          //     _selectedDateUser = pickedDate;
+                          //   });
+                          //   Provider.of<DashboardProvider>(context, listen: false)
+                          //       .getDashboardDataForRoles(context, pickedDate);
+                          // }
                         },
                       ),
                     ),
@@ -789,21 +789,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onTap: () async {
-                      final DateTime? pickedDate = await showMonthPicker(
-                        context: context,
-                        initialDate: _selectedDateUser ?? DateTime.now(),
-                        firstDate: DateTime(DateTime.now().year - 10),
-                        lastDate: DateTime.now(),
-                      );
-
-                      if (pickedDate != null &&
-                          pickedDate != _selectedDateUser) {
-                        setState(() {
-                          _selectedDateUser = pickedDate;
-                        });
-                        Provider.of<DashboardProvider>(context, listen: false)
-                            .getDashboardDataForRoles(context, pickedDate);
-                      }
+                      // final DateTime? pickedDate = await showMonthPicker(
+                      //   context: context,
+                      //   initialDate: _selectedDateUser ?? DateTime.now(),
+                      //   firstDate: DateTime(DateTime.now().year - 10),
+                      //   lastDate: DateTime.now(),
+                      // );
+                      //
+                      // if (pickedDate != null &&
+                      //     pickedDate != _selectedDateUser) {
+                      //   setState(() {
+                      //     _selectedDateUser = pickedDate;
+                      //   });
+                      //   Provider.of<DashboardProvider>(context, listen: false)
+                      //       .getDashboardDataForRoles(context, pickedDate);
+                      // }
                     },
                   ),
                 ),
