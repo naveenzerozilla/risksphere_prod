@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:country_pickers/country.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -42,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     AuthNotifier authNotifier =
-    Provider.of<AuthNotifier>(context, listen: false);
+        Provider.of<AuthNotifier>(context, listen: false);
     authNotifier.signOut();
 
     super.initState();
@@ -79,12 +83,66 @@ class _LoginScreenState extends State<LoginScreen> {
                     Positioned.fill(
                       child: Center(
                         child: Text(
-                          LanguageService.getTranslated(context,"login_image_text"),
+                          LanguageService.getTranslated(
+                              context, "login_image_text"),
                           style: CustomTypography.H5_Regular,
                         ),
                       ),
                     ),
                   ],
+                ),
+                SizedBox(height: CustomSpacing.two),
+                CountryPickerDropdown(
+                  initialValue: _getInitialCountry(),
+                  itemBuilder: (Country country) {
+                    return SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(
+                              CountryPickerUtils.getFlagImageAssetPath(
+                                  country.isoCode),
+                              package: 'country_pickers',
+                            ),
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              country.name,
+                              style: CustomTypography.Body1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemFilter: (Country country) {
+                    // Only include countries with these ISO codes
+                    return ['US', 'ES', 'FR', 'JP', 'CN']
+                        .contains(country.isoCode);
+                  },
+                  icon: SizedBox(),
+                  onValuePicked: (Country country) {
+                    switch (country.isoCode) {
+                      case 'US':
+                        context.setLocale(Locale('en'));
+                        break;
+                      case 'ES':
+                        context.setLocale(Locale('es'));
+                        break;
+                      case 'FR':
+                        context.setLocale(Locale('fr'));
+                        break;
+                      case 'JP':
+                        context.setLocale(Locale('ja'));
+                        break;
+                      case 'CN':
+                        context.setLocale(Locale('zh'));
+                        break;
+                    }
+                  },
                 ),
                 _loginForm(),
               ],
@@ -97,19 +155,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _loginForm() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageService.getTranslated(context,"login_title"),
+            LanguageService.getTranslated(context, "login_title"),
             style: CustomTypography.H4,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: CustomSpacing.eight),
           // Social Media Buttons
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-
             return SocialMediaButton(
               onPressed: () async {
                 // Add your onPressed function here
@@ -138,7 +195,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              buttonText: LanguageService.getTranslated(context,"login_googlebutton"),
+              buttonText:
+                  LanguageService.getTranslated(context, "login_googlebutton"),
               iconPath: 'assets/images/googleLogo.svg',
             );
           }),
@@ -150,7 +208,8 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () {
               // Add your onPressed function here
             },
-            buttonText: LanguageService.getTranslated(context,"login_microsoft_button"),
+            buttonText: LanguageService.getTranslated(
+                context, "login_microsoft_button"),
             iconPath: 'assets/images/microsoftLogo.svg',
           ),
           SizedBox(height: CustomSpacing.eight),
@@ -167,8 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(width: CustomSpacing.three),
               Text(
-                LanguageService.getTranslated(context,"register_non_corporate_register_manually"),
-
+                LanguageService.getTranslated(
+                    context, "register_non_corporate_register_manually"),
                 style: CustomTypography.Subtitle1.copyWith(
                     color: Theme.of(context).colorScheme.onSurface),
               ),
@@ -185,8 +244,10 @@ class _LoginScreenState extends State<LoginScreen> {
           // Email
           TextFormField(
             decoration: InputDecoration(
-              labelText:LanguageService.getTranslated(context,"register_non_corporate_emailfield_label"),
-              hintText: LanguageService.getTranslated(context,'register_non_corporate_emailfield_placeholder'),
+              labelText: LanguageService.getTranslated(
+                  context, "register_non_corporate_emailfield_label"),
+              hintText: LanguageService.getTranslated(
+                  context, 'register_non_corporate_emailfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             validator: (value) {
@@ -212,14 +273,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   });
                 },
               ),
-              labelText: LanguageService.getTranslated(context,'register_non_corporate_passwordfield_label'),
-              hintText:LanguageService.getTranslated(context,'login_passwordfield_placeholder'),
+              labelText: LanguageService.getTranslated(
+                  context, 'register_non_corporate_passwordfield_label'),
+              hintText: LanguageService.getTranslated(
+                  context, 'login_passwordfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             obscureText: !_showPassword,
             validator: (value) {
               if (value == null || value.isEmpty || value.length < 8) {
-                return LanguageService.getTranslated(context,'login_password_length_error');
+                return LanguageService.getTranslated(
+                    context, 'login_password_length_error');
               }
               // You can add more specific password validation here if needed
               return null;
@@ -237,7 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 : GestureDetector(
                     onTap: () async {
                       if (validateEmail(emailController.text)) {
-                        await authNotifier.resetPassword(emailController.text, context);
+                        await authNotifier.resetPassword(
+                            emailController.text, context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -254,7 +319,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                     },
                     child: Text(
-                        LanguageService.getTranslated(context,'login_forgot_password'),
+                        LanguageService.getTranslated(
+                            context, 'login_forgot_password'),
                         style: CustomTypography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
@@ -312,13 +378,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-
                                 final String email =
                                     emailController.text.trim();
                                 final String password =
                                     passwordController.text.trim();
 
-                               /* if(isCaptchaVerified == false) {
+                                /* if(isCaptchaVerified == false) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -335,8 +400,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
-                                  log(
-                                      "Claims: " + parseJwt(token!).toString());
+                                  log("Claims: " + parseJwt(token!).toString());
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
@@ -362,7 +426,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               }
                             },
                             child: Text(
-                              LanguageService.getTranslated(context,'login_submit_button'),
+                              LanguageService.getTranslated(
+                                  context, 'login_submit_button'),
                               style: CustomTypography.ButtonLarge.copyWith(
                                   color: Colors.black),
                             ),
@@ -387,14 +452,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: CustomSpacing.onePointFive,
                 ),
                 Text(
-                    LanguageService.getTranslated(context,'login_dont_hv_account'),
+                    LanguageService.getTranslated(
+                        context, 'login_dont_hv_account'),
                     style: CustomTypography.Body1.copyWith(
                         color: Theme.of(context).colorScheme.onSurface)),
                 Text(
-                    LanguageService.getTranslated(context,'login_register_now'),
-
-                    style: CustomTypography.Subtitle1.copyWith(
-                        color: AppColors.primaryMain)),
+                  ' ',
+                  style: CustomTypography.Body1.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface),
+                ),
+                Flexible(
+                  child: Text(
+                      LanguageService.getTranslated(
+                          context, 'login_register_now'),
+                      style: CustomTypography.Subtitle1.copyWith(
+                          color: AppColors.primaryMain)),
+                ),
               ],
             ),
           ),
@@ -405,8 +478,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-
-    void handleBrightnessChange(bool useLightMode) {}
+  void handleBrightnessChange(bool useLightMode) {}
 
   void handleMaterialVersionChange() {}
 
@@ -429,6 +501,20 @@ class _LoginScreenState extends State<LoginScreen> {
     final String decoded = utf8.decode(base64Url.decode(normalized));
     return json.decode(decoded);
   }
+
+  _getInitialCountry() {
+    String isoCode = context.locale.languageCode;
+    switch (isoCode) {
+      case 'en':
+        return 'US';
+      case 'es':
+        return 'ES';
+      case 'fr':
+        return 'FR';
+      case 'ja':
+        return 'JP';
+      case 'zh':
+        return 'CN';
+    }
+  }
 }
-
-
