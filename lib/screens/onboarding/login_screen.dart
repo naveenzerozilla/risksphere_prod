@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
+import 'package:green/service/language_service.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/custom_checkbox.dart';
@@ -41,18 +42,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     AuthNotifier authNotifier =
-        Provider.of<AuthNotifier>(context, listen: false);
+    Provider.of<AuthNotifier>(context, listen: false);
     authNotifier.signOut();
 
     super.initState();
   }
 
-
   @override
   void dispose() {
-    // TODO: implement dispose
-    super.dispose();
     recaptchaV2Controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -79,10 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Positioned.fill(
                       child: Center(
-                          child: Text(
-                        "Manage your Risk Profile",
-                        style: CustomTypography.H5_Regular,
-                      )),
+                        child: Text(
+                          LanguageService.getTranslated("login_image_text"),
+                          style: CustomTypography.H5_Regular,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -95,20 +95,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  _loginForm() {
+  Widget _loginForm() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Let’s get started!',
+            LanguageService.getTranslated("login_title"),
             style: CustomTypography.H4,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: CustomSpacing.eight),
           // Social Media Buttons
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+
             return SocialMediaButton(
               onPressed: () async {
                 // Add your onPressed function here
@@ -137,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              buttonText: 'Continue with Google',
+              buttonText: LanguageService.getTranslated("login_googlebutton"),
               iconPath: 'assets/images/googleLogo.svg',
             );
           }),
@@ -149,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () {
               // Add your onPressed function here
             },
-            buttonText: 'Continue with Microsoft',
+            buttonText: LanguageService.getTranslated("login_microsoft_button"),
             iconPath: 'assets/images/microsoftLogo.svg',
           ),
           SizedBox(height: CustomSpacing.eight),
@@ -166,7 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(width: CustomSpacing.three),
               Text(
-                'Or register manually',
+                LanguageService.getTranslated("register_non_corporate_register_manually"),
+
                 style: CustomTypography.Subtitle1.copyWith(
                     color: Theme.of(context).colorScheme.onSurface),
               ),
@@ -183,8 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
           // Email
           TextFormField(
             decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email address',
+              labelText:LanguageService.getTranslated("register_non_corporate_emailfield_label"),
+              hintText: LanguageService.getTranslated('register_non_corporate_emailfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             validator: (value) {
@@ -210,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   });
                 },
               ),
-              labelText: 'Password',
+              labelText: LanguageService.getTranslated('register_non_corporate_passwordfield_label'),
               hintText: 'Enter your password',
               border: const OutlineInputBorder(),
             ),
@@ -334,7 +336,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   var token = await user.getIdToken();
                                   log(
                                       "Claims: " + parseJwt(token!).toString());
-
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
@@ -384,7 +385,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   height: CustomSpacing.onePointFive,
                 ),
-                Text('Don’t have an account? ',
+                Text(
+
+                    'Don’t have an account? ',
                     style: CustomTypography.Body1.copyWith(
                         color: Theme.of(context).colorScheme.onSurface)),
                 Text('Register now!',
@@ -400,7 +403,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void handleBrightnessChange(bool useLightMode) {}
+
+    void handleBrightnessChange(bool useLightMode) {}
 
   void handleMaterialVersionChange() {}
 
@@ -424,3 +428,5 @@ class _LoginScreenState extends State<LoginScreen> {
     return json.decode(decoded);
   }
 }
+
+

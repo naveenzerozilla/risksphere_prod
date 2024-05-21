@@ -19,6 +19,7 @@ import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
+import '../../service/language_service.dart';
 import '../../utils/utils.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -141,7 +142,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         Positioned.fill(
                           child: Center(
                               child: Text(
-                            "Manage your Risk Profile",
+                                LanguageService.getTranslated("login_image_text"),
                             style: CustomTypography.H5_Regular,
                           )),
                         ),
@@ -220,7 +221,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             return;
                                           }*/
                                           if(authNotifier.isNewUser) {
-                                            print('Individual Account');
                                             String result = await authNotifier
                                                 .signUpIndividualWithGoogle(
                                               widget.userCredential!,
