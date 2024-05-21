@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Positioned.fill(
                       child: Center(
                         child: Text(
-                          LanguageService.getTranslated("login_image_text"),
+                          LanguageService.getTranslated(context,"login_image_text"),
                           style: CustomTypography.H5_Regular,
                         ),
                       ),
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageService.getTranslated("login_title"),
+            LanguageService.getTranslated(context,"login_title"),
             style: CustomTypography.H4,
             textAlign: TextAlign.center,
           ),
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              buttonText: LanguageService.getTranslated("login_googlebutton"),
+              buttonText: LanguageService.getTranslated(context,"login_googlebutton"),
               iconPath: 'assets/images/googleLogo.svg',
             );
           }),
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () {
               // Add your onPressed function here
             },
-            buttonText: LanguageService.getTranslated("login_microsoft_button"),
+            buttonText: LanguageService.getTranslated(context,"login_microsoft_button"),
             iconPath: 'assets/images/microsoftLogo.svg',
           ),
           SizedBox(height: CustomSpacing.eight),
@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(width: CustomSpacing.three),
               Text(
-                LanguageService.getTranslated("register_non_corporate_register_manually"),
+                LanguageService.getTranslated(context,"register_non_corporate_register_manually"),
 
                 style: CustomTypography.Subtitle1.copyWith(
                     color: Theme.of(context).colorScheme.onSurface),
@@ -185,8 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
           // Email
           TextFormField(
             decoration: InputDecoration(
-              labelText:LanguageService.getTranslated("register_non_corporate_emailfield_label"),
-              hintText: LanguageService.getTranslated('register_non_corporate_emailfield_placeholder'),
+              labelText:LanguageService.getTranslated(context,"register_non_corporate_emailfield_label"),
+              hintText: LanguageService.getTranslated(context,'register_non_corporate_emailfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             validator: (value) {
@@ -212,14 +212,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   });
                 },
               ),
-              labelText: LanguageService.getTranslated('register_non_corporate_passwordfield_label'),
-              hintText: 'Enter your password',
+              labelText: LanguageService.getTranslated(context,'register_non_corporate_passwordfield_label'),
+              hintText:LanguageService.getTranslated(context,'login_passwordfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             obscureText: !_showPassword,
             validator: (value) {
               if (value == null || value.isEmpty || value.length < 8) {
-                return 'Password must be at least 8 characters';
+                return LanguageService.getTranslated(context,'login_password_length_error');
               }
               // You can add more specific password validation here if needed
               return null;
@@ -253,7 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       }
                     },
-                    child: Text('Forgot Password?',
+                    child: Text(
+                        LanguageService.getTranslated(context,'login_forgot_password'),
                         style: CustomTypography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
@@ -361,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               }
                             },
                             child: Text(
-                              'Submit',
+                              LanguageService.getTranslated(context,'login_submit_button'),
                               style: CustomTypography.ButtonLarge.copyWith(
                                   color: Colors.black),
                             ),
@@ -386,11 +387,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: CustomSpacing.onePointFive,
                 ),
                 Text(
-
-                    'Don’t have an account? ',
+                    LanguageService.getTranslated(context,'login_dont_hv_account'),
                     style: CustomTypography.Body1.copyWith(
                         color: Theme.of(context).colorScheme.onSurface)),
-                Text('Register now!',
+                Text(
+                    LanguageService.getTranslated(context,'login_register_now'),
+
                     style: CustomTypography.Subtitle1.copyWith(
                         color: AppColors.primaryMain)),
               ],

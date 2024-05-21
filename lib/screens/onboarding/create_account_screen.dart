@@ -248,7 +248,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 builder: (BuildContext context) {
                                                   return AlertDialog(
                                                     title: Text(
-                                                      LanguageService.getTranslated("register_non_corporate_success_status_title"),
+                                                      LanguageService.getTranslated(context,"register_non_corporate_success_status_title"),
 
 
                                                       style: CustomTypography.ButtonLarge,),
