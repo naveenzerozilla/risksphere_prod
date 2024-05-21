@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:green/providers/auth_provider.dart';
@@ -22,7 +23,9 @@ import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -43,7 +46,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CorporateProvider()),
         ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
       ],
-      child: const MyApp(),
+      child: EasyLocalization(
+          supportedLocales: [Locale('en', 'US'), Locale('es', 'ES'), Locale('fr', 'FR'), Locale('ja', 'JA'), Locale('zh', 'ZH')],
+          path: 'assets/translations', // <-- change the path of the translation files
+          fallbackLocale: Locale('en', 'US'),
+          child: const MyApp()),
     ),
   );
 }
