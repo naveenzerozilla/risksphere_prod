@@ -1,6 +1,7 @@
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/providers/auth_provider.dart';
@@ -113,8 +114,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           },
           icon: SizedBox(),
           onValuePicked: (Country country) {
-            print(country.name);
+            print(country.toString());
             // Do something with the selected country
+            context.setLocale(Locale(country.isoCode, country.iso3Code));
+
           },
         ),
         VerticalDivider(
