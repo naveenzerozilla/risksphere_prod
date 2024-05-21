@@ -142,7 +142,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         Positioned.fill(
                           child: Center(
                               child: Text(
-                                LanguageService.getTranslated("login_image_text"),
+                                LanguageService.getTranslated(context, "login_image_text"),
                             style: CustomTypography.H5_Regular,
                           )),
                         ),
