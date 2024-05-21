@@ -433,8 +433,12 @@
   "connection_request_saysomethingnice_placeholder": "Say something nice",
   "coming_soon_title": "This feature is launching soon!",
   "coming_soon_subtitle": " We have something coming that is going to blow you away. Check back often for the launch.",
+  "coming_soon_subtitle": " We have something coming that is going to blow you away. Check back often for the launch.",
   "listing_maps_geocodetype": "Geocode Type",
   "listing_maps_geocodetype_placeholder": "Enter Geocode Type",
   "listing_maps_propertytype": "Property Type",
-  "listing_maps_ratings": "Ratings"
+  "listing_maps_ratings": "Ratings",
+  "register_mobile_number": "Mobile Number",
+  "register_enter_mobile_number": " Enter your mobile number"
+
 }
