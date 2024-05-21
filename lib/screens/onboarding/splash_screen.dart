@@ -39,6 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Call function to move to the next screen after 2 seconds of animation completion
     Future.delayed(Duration(seconds: 2) + Duration(seconds: 4), () {
       bool isUserLoggedIn = authNotifier.user!=null;
+      print("User: ${authNotifier.user}");
       if(FirebaseAuth.instance.currentUser==null) {
         Navigator.pushReplacement(
           context,
@@ -73,9 +74,11 @@ class _SplashScreenState extends State<SplashScreen>
     String? tokenString = await user.getIdToken();
     log("Token: ${token.token}");
 
+
     if(claims['isIndividual']==null) {
       isUserLoggedIn = false;
     }
+    log("Is User Logged In: $isUserLoggedIn");
     if(isUserLoggedIn) {
       // redirect to dashboard
       Navigator.pushReplacement(

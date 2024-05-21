@@ -152,7 +152,7 @@ class EmployeeProvider with ChangeNotifier {
       }
       additionalParams += "&pageSize=10"; // Adjust page size as needed
       if (status) {
-        additionalParams += "&status=$status";
+        additionalParams += "&active_users=$status";
       }
 
       // Construct the URL with correct formatting
@@ -566,4 +566,5 @@ class EmployeeProvider with ChangeNotifier {
       return []; // Return an empty list in case of error
     }
   }
+
 }

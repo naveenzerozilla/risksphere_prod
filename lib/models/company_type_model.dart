@@ -60,7 +60,11 @@ class CorporateType {
 
   CorporateType.fromJson(Map<String, dynamic>? json) {
     if (json != null) {
-      isApplicableForTrial = json['is_applicable_for_trial']??"";
+      if (json['is_applicable_for_trial'] !=null && json['is_applicable_for_trial'] is String) {
+        isApplicableForTrial = json['is_applicable_for_trial'].toLowerCase() == 'true';
+      } else {
+        isApplicableForTrial = json['is_applicable_for_trial'] ?? false;
+      }
       isActive = json['is_active'];
       dataSharing = json['data_sharing'];
       if (json['roles'] != null) {
@@ -71,16 +75,31 @@ class CorporateType {
           }
         });
       }
-      canBeListed = json['can_be_listed'];
+      if (json['can_be_listed'] != null && json['can_be_listed'] is String) {
+        canBeListed = json['can_be_listed'].toLowerCase() == 'true';
+      } else {
+        canBeListed = json['can_be_listed'] ?? false;
+      }
       trialPeriodDays = json['trial_period_days'];
       adminSelfRegistration = json['admin_self_registration'];
       type = json['type'];
       usedBy = json['used_by'];
-      enableCorporateVerification = json['enable_corporate_verification'];
-      corporateUserSelfRegistration = json['corporate_user_self_registration'];
+      if (json['enable_corporate_verification'] != null && json['enable_corporate_verification'] is String) {
+        enableCorporateVerification = json['enable_corporate_verification'].toLowerCase() == 'true';
+      } else {
+        enableCorporateVerification = json['enable_corporate_verification'] ?? false;
+      }
+      if (json['corporate_user_self_registration'] != null && json['corporate_user_self_registration'] is String) {
+        corporateUserSelfRegistration = json['corporate_user_self_registration'].toLowerCase() == 'true';
+      } else {
+        corporateUserSelfRegistration = json['corporate_user_self_registration'] ?? false;
+      }
       name = json['name'];
-      corporateUserVerificationByAdmin =
-      json['corporate_user_verification_by_admin'];
+      if (json['corporate_user_verification_by_admin'] != null && json['corporate_user_verification_by_admin'] is String) {
+        corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'].toLowerCase() == 'true';
+      } else {
+        corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'] ?? false;
+      }
       isEnabled = json['is_enabled'];
       id = json['id'];
     }

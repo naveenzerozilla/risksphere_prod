@@ -1,7 +1,7 @@
 class Non_Corporate_User_Model {
   String? data;
   List<IndividualUsers>? individualUsers;
-  Users? users;
+  //Users? users;
 
   // List<Null>? corporateUsers;
   String? pageToken;
@@ -14,13 +14,13 @@ class Non_Corporate_User_Model {
     this.pageToken,
     this.direction,
     this.nextPageExists,
-    this.counts, this.users});
+    this.counts,});
 
   Non_Corporate_User_Model.fromJson(Map<String, dynamic> json, {bool isSearch = false}) {
     data = json['data'];
-    if(isSearch) {
+   /* if(isSearch) {
       users = json['users'] != null ? new Users.fromJson(json['users']) : null;
-    } else {
+    } else {*/
       if (json['individual_users'] != null) {
         individualUsers = <IndividualUsers>[];
         json['individual_users'].forEach((v) {
@@ -33,7 +33,7 @@ class Non_Corporate_User_Model {
       nextPageExists = json['nextPageExists'];
       counts =
       json['counts'] != null ? new Counts.fromJson(json['counts']) : null;
-    }
+  //  }
     // if (json['corporate_users'] != null) {
     //   corporateUsers = <Null>[];
     //   json['corporate_users'].forEach((v) {
@@ -62,7 +62,7 @@ class Non_Corporate_User_Model {
     return data;
   }
 }
-
+/*
 class Users {
   List<IndividualUsers>? individualUsers;
 
@@ -118,7 +118,7 @@ class Users {
     }
     return data;
   }
-}
+}*/
 
 class IndividualUsers {
   List<Role>? role;

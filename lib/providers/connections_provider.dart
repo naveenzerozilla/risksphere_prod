@@ -218,7 +218,7 @@ class ConnectionsProvider with ChangeNotifier {
       // Use API Service to fetch companies
       ApiService apiService = ApiService(AppConstant.GET_REQUESTS);
       // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get('&user_id=$userId');
+      Map<String, dynamic> response = await apiService.get('');
 
       // Parse the response into a list of employees
       List<RequestUser> requestUsers = [];

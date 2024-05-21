@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 class InitialDataModel {
   InitialDataModel({
     required this.companyType,
@@ -14,6 +16,9 @@ class InitialDataModel {
     companyType = List.from(json['company_type']).map((e)=>CompanyType.fromJson(e)).toList();
     role = List.from(json['role']).map((e)=>Role.fromJson(e)).toList();
     companies = List.from(json['companies']).map((e)=>Companies.fromJson(e)).toList();
+    companies!.forEach((element) {
+      log("company: ${element.name}");
+    });
     config = List.from(json['config']).map((e)=>Config.fromJson(e)).toList();
   }
 
@@ -60,7 +65,7 @@ class CompanyType {
     enableCorporateVerification = json['enable_corporate_verification'];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
     corporateUserSelfRegistration = json['corporate_user_self_registration'];
-    name = json['name'];
+    name = json['name']??"";
     corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
     canBeListed = json['can_be_listed'];
     trialPeriodDays = json['trial_period_days'];
@@ -194,11 +199,8 @@ class Companies {
     required this.isActive,
     required this.isAuthorized,
     required this.userIds,
-    required this.activeDate,
-    required this.createdAt,
     required this.displayName,
     required this.adminSelfRegistration,
-    required this.updatedAt,
     required this.companyTypeId,
     required this.name,
     required this.corporateUserSelfRegistration,
@@ -210,11 +212,8 @@ class Companies {
   late final bool isActive;
   late final bool isAuthorized;
   late final List<UserIds> userIds;
-  late final ActiveDate activeDate;
-  late final CreatedAt createdAt;
   late final String displayName;
   late final bool adminSelfRegistration;
-  late final UpdatedAt updatedAt;
   late final String companyTypeId;
   late final String name;
   late final bool corporateUserSelfRegistration;
@@ -224,25 +223,24 @@ class Companies {
   late final List<Roles> roles;
 
   Companies.fromJson(Map<String, dynamic> json){
-    isActive = json['is_active']??false;
+    isActive = json['status']??false;
     isAuthorized = json['is_authorized'];
     /*if(json['user_ids']!=null) {
       userIds =
           List.from(json['user_ids']).map((e) => UserIds.fromJson(e)).toList();
     }*/
     userIds= [];
-    activeDate = ActiveDate.fromJson(json['active_date']);
-    createdAt = CreatedAt.fromJson(json['created_at']);
-    if(json['display_name']!=null) {
-      displayName = json['display_name'];
+
+    if(json['company_display_name']!=null) {
+      displayName = json['company_display_name'];
     } else {
       displayName = "";
     }
     adminSelfRegistration = json['admin_self_registration'];
-    updatedAt = UpdatedAt.fromJson(json['updated_at']);
+
     companyTypeId = json['company_type_id']??"";
-    if(json['name']!=null) {
-      name = json['name'];
+    if(json['company_name']!=null) {
+      name = json['company_name'];
     } else {
       name = "";
     }
@@ -251,6 +249,7 @@ class Companies {
     noOfUsers = json['no_of_users'];
     admins = [];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
+
   }
 
   Map<String, dynamic> toJson() {
@@ -258,13 +257,10 @@ class Companies {
     _data['is_active'] = isActive;
     _data['is_authorized'] = isAuthorized;
     _data['user_ids'] = userIds.map((e)=>e.toJson()).toList();
-    _data['active_date'] = activeDate.toJson();
-    _data['created_at'] = createdAt.toJson();
     _data['display_name'] = displayName;
     _data['admin_self_registration'] = adminSelfRegistration;
-    _data['updated_at'] = updatedAt.toJson();
     _data['company_type_id'] = companyTypeId;
-    _data['name'] = name;
+    _data['company_name'] = name;
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['corporate_user_verification_by_admin'] = corporateUserVerificationByAdmin;
     _data['no_of_users'] = noOfUsers;

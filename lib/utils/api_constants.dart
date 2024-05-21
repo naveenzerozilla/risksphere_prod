@@ -1,6 +1,7 @@
 
 class AppConstant {
-  // url for corporate management
+  /// R1 API URL
+  // Url for corporate management
   static const String CORPORATE_MANAGEMENT_URL = "https://companies-nzc3rkheha-uc.a.run.app";
   static const String CREATE_CORPORATE_URL = "https://new-user-create-nzc3rkheha-uc.a.run.app";
   static const String UPDATE_CORPORATE_URL = "https://companies-nzc3rkheha-uc.a.run.app";
@@ -14,6 +15,7 @@ class AppConstant {
   static const String CHANGE_STATUS = "https://support-nzc3rkheha-uc.a.run.app";
   static const String GET_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app?employees_list=true";
   static const String GET_ROLES_FOR_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=internal";
+  static const String GET__ROLES_FOR_CORPORATE_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=external";
   static const String CREATE_EMPLOYEES = "https://new-user-create-nzc3rkheha-uc.a.run.app";
   static const String UPDATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
   static const String VIEW_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
@@ -34,7 +36,7 @@ class AppConstant {
   static const String GET_USER_TEAMS = "https://user-management-nzc3rkheha-uc.a.run.app?my_team=true";
   static const String DELETE_TEAM_MEMBER = "https://user-management-nzc3rkheha-uc.a.run.app";
   static const String ADD_TEAM_MEMBERS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static  const String GET_CORPORATE_USER = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static  const String GET_CORPORATE_USER = "https://companies-nzc3rkheha-uc.a.run.app";
 
   static  const String UPDATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
   static  const String NON_CORPORATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";

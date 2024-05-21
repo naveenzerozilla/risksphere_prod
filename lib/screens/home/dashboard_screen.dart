@@ -1,11 +1,16 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_pickers.dart';
 import 'package:country_pickers/utils/utils.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/dashboard_model.dart';
+import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:intl/intl.dart';
 // import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
@@ -19,6 +24,8 @@ import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../service/shared_preference_service.dart';
+import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -39,10 +46,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _selectedDateCompany;
   DateTime? _selectedDateUser;
 
+  bool showTotalCorporates = false;
+  bool showAllUsers = false;
+  bool showConnectionRequests = false;
+  bool showCompanyOnboardingStats = false;
+  bool showUserOnboardingStats = false;
+
   @override
   void initState() {
+    _setClaims();
     _getData();
     super.initState();
+  }
+
+  _setClaims() async {
+    showTotalCorporates = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASTC)??false;
+    showAllUsers = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASTU)??false;
+    showConnectionRequests = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASCR)??false;
+    showCompanyOnboardingStats = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASCO)??false;
+    showUserOnboardingStats = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASUO)??false;
+    setState(()  {
+
+    });
+
   }
 
   _getData() {
@@ -115,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: CustomTypography.H5_Regular,
                     ),
                     SizedBox(height: CustomSpacing.six),
-                    _overviewCardHorizontal(
+                    !showTotalCorporates?SizedBox():_overviewCardHorizontal(
                       title: 'Total Corporates',
                       amount: dashboardProvider
                           .dashboard!.signups!.current!.csignup
@@ -138,7 +164,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(width: CustomSpacing.four),
+                    !showTotalCorporates?SizedBox():SizedBox(width: CustomSpacing.four),
+                    !showAllUsers?SizedBox():
                     _overviewCardHorizontal(
                       title: 'Sign Ups',
                       amount: dashboardProvider.dashboardModel?.signups?.current?.signup.toString()??'0',
@@ -198,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(width: CustomSpacing.four),
+                    !showConnectionRequests?SizedBox():SizedBox(width: CustomSpacing.four),
                     _overviewCardHorizontal(
                       title: 'Connection Requests',
                       amount: dashboardProvider.dashboardModel?.requests?.toString()??'0',
@@ -209,7 +236,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           //reduce border radius
                           CustomButton(
                             type: ButtonType.outlined,
-                            onPressed: () {},
+                            onPressed: () async {
+                              FirebaseAuth auth = FirebaseAuth.instance;
+                              String uid = auth.currentUser!.uid;
+                              IdTokenResult token = await auth.currentUser!.getIdTokenResult();
+                              Map<String, dynamic>? claims = token.claims?? {};
+                              log(claims.toString());
+                              log(auth.currentUser.toString());
+                              String name = claims['name']??''; //name of the user
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ConnectionsScreen(userId: uid, userName: name, selectedTabIndex: 1,),
+                                ),
+                              );
+                            },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -230,7 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     SizedBox(height: CustomSpacing.one),
-                    dashboardProvider.isCompanyLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
+                    !showCompanyOnboardingStats?SizedBox():dashboardProvider.isCompanyLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
                       isExpanded: isCompanyOnboardingStatsExpanded,
                       collapsedChild: _collapsedCompanyCardWidget(
                         title: Text(
@@ -241,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       expandedChild: _expandedCompanyOnboardingStatsWidget(dashboardProvider),
                     ),
                     SizedBox(height: CustomSpacing.one),
-                    dashboardProvider.isRoleLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
+                    !showUserOnboardingStats?SizedBox():dashboardProvider.isRoleLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
                       isExpanded: isUserOnboardingStatsExpanded,
                       collapsedChild: _collapsedUserCardWidget(
                         title: Text(
@@ -962,5 +1002,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     print(changeText);
     return changeText;
 
+  }
+
+  Map<String, dynamic>? parseJwt(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      return null;
+    }
+
+    final payload = parts[1];
+    final String normalized = base64Url.normalize(payload);
+    final String decoded = utf8.decode(base64Url.decode(normalized));
+    return json.decode(decoded);
   }
 }

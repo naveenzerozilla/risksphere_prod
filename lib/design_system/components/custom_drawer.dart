@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
+import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/settings/settings.dart';
 import 'package:green/screens/userManagement/user_management.dart';
 import 'package:provider/provider.dart';
@@ -82,7 +83,7 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Location(s) List'),
                           onTap: () {
-                            Navigator.pop(context);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => LocationProfile()));
                           },
                         ),
                         ListTile(
@@ -343,20 +344,20 @@ class CustomDrawer extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  IconButton(
+                  /*IconButton(
                     icon: Icon(Icons.settings),
                     onPressed: () {
                       // Navigate to Settings Screen
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsScreen()));
                     },
-                  ),
-                  IconButton(
+                  ),*/
+                  /*IconButton(
                     icon: Icon(Icons.brightness_7_rounded),
                     onPressed: () {
                       // Change Theme
                       Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
                     },
-                  ),
+                  ),*/
                   IconButton(
                     icon: Icon(Icons.person),
                     onPressed: () {

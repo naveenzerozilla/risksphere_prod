@@ -13,10 +13,10 @@ class Corporate_User_Model {
       this.counts});
 
   Corporate_User_Model.fromJson(Map<String, dynamic> json) {
-    if (json['corporate_users'] != null) {
+    if (json['users'] != null) {
       corporateUsers = <CorporateUsers>[];
-      json['corporate_users'].forEach((v) {
-        corporateUsers!.add(new CorporateUsers.fromJson(v, isSearch: false, searchText: ""));
+      json['users'].forEach((v) {
+        corporateUsers!.add(new CorporateUsers.fromJson(v));
       });
     }
     pageToken = json['pageToken'];
@@ -29,7 +29,7 @@ class Corporate_User_Model {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.corporateUsers != null) {
-      data['corporate_users'] =
+      data['users'] =
           this.corporateUsers!.map((v) => v.toJson()).toList();
     }
     data['pageToken'] = this.pageToken;
@@ -51,7 +51,6 @@ class CorporateUsers {
   String? email;
   // List<dynamic>? requestSent;
   String? displayImageUrl;
-  List<String>? myAssignee;
   bool? isVerified;
   String? countryCode;
   String? userId;
@@ -71,7 +70,6 @@ class CorporateUsers {
       this.email,
       // this.requestSent,
       this.displayImageUrl,
-      this.myAssignee,
       this.isVerified,
       this.countryCode,
       this.userId,
@@ -81,20 +79,13 @@ class CorporateUsers {
       this.status,
       this.username, this.isSelected = false});
 
-  factory CorporateUsers.fromJson(Map<String, dynamic> json, {required bool isSearch, required String searchText}) {
+  factory CorporateUsers.fromJson(Map<String, dynamic> json) {
     Role? role;
-    if (isSearch && searchText.isNotEmpty) {
-      // For search results where role is an array of strings
-      final roleList = json['role'] as List<dynamic>? ?? [];
-      if (roleList.isNotEmpty) {
-        role = Role(name: roleList.first.toString());
-      }
-    } else {
+
       // For other cases where role is an object
       final roleJson = json['role'] as Map<String, dynamic>? ?? {};
       if (roleJson.isNotEmpty) {
         role = Role.fromJson(roleJson);
-      }
     }
 
     return CorporateUsers(
@@ -104,7 +95,6 @@ class CorporateUsers {
       isIndividual: json['isIndividual'] ?? false,
       email: json['email'] ?? '',
       displayImageUrl: json['display_image_url'] ?? '',
-      myAssignee: List<String>.from(json['my_assignee'] ?? []),
       isVerified: json['is_verified'] ?? false,
       countryCode: json['country_code'] ?? '',
       userId: json['user_id'] ?? '',
@@ -133,7 +123,6 @@ class CorporateUsers {
     //   data['request_sent'] = this.requestSent!.map((e) => e).toList(); // Mapping directly to the list
     // }
     data['display_image_url'] = this.displayImageUrl;
-    data['my_assignee'] = this.myAssignee;
     data['is_verified'] = this.isVerified;
     data['country_code'] = this.countryCode;
     data['user_id'] = this.userId;

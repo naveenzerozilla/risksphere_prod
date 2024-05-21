@@ -115,12 +115,38 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   // Claims local variables
   bool showCorporateList = true;
   bool showCorporateUserList = true;
+  bool showCorporateUserListDropdown = true;
   bool showCreateCorporate = true;
   bool showEditCorporate = true;
   bool showViewCorporate = true;
   bool showDeleteCorporate = true;
   bool showEnableDisableCorporate = true;
   bool showCorporateVerificationTab = true;
+  bool showUserVerificationTab = true;
+  bool showCorporateProfile = true;
+  bool showEnableDisableUser = true;
+  bool showDeleteUser = true;
+  bool showEditUser = true;
+  bool showConnectionListUser = true;
+  bool showCreateUser = true;
+  bool showEnableDisableNonCorporate = true;
+  bool showDeleteNonCorporate = true;
+  bool showEditNonCorporate = true;
+  bool showNonCorporateConnectionList = true;
+  bool showEnableDisableEmployee = true;
+  bool showDeleteEmployee = true;
+  bool showEditEmployee = true;
+  bool showConnectionListEmployee = true;
+  bool showCreateEmployee = true;
+  bool showNonCorporateList = true;
+  bool showEmployeeList = true;
+  bool showCorporateManagementTab = true;
+  bool showNonCorporateManagementTab = true;
+  bool showEmployeeManagementTab = true;
+
+  bool showMainLoading = true;
+  int visibleTabCount = 0;
+
 
   List<DropdownMenuItem<String>> corporateDropdownItems = [
     DropdownMenuItem(
@@ -164,6 +190,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       ),
       value: 'Verification Requests',
     ),
+  ];
+
+  List<Widget> _verificationTabs = [
+  Tab(
+  child: Text(
+  'Corporate',
+  style: CustomTypography.BottomNavigationActiveLabel,
+  ),
+  ),
+  Tab(
+  child: Text(
+  'User',
+  style: CustomTypography.BottomNavigationActiveLabel,
+  ),
+  ),
   ];
 
   // Filters
@@ -276,7 +317,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         // Call the common function to fetch data
         await Provider.of<CorporateProvider>(context, listen: false)
             .getCorporateUserList(context,
-                searchText: searchText, roleFilter: roleFilter, isSearch: true);
+                searchText: searchText, roleFilter: roleFilter, isSearch: true, companyId: selectedCorporateId);
       });
 
   void nonCorporateDebounce(
@@ -289,7 +330,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     nonCorporateDeBouncer = Timer(duration, callback);
   }
 
-  void nonCorporateSearchClient(String query) async =>
+  void nonCorporateSearchClient(String query, {bool? status}) async =>
       nonCorporateDebounce(() async {
         if (!mounted) return;
         // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
@@ -320,14 +361,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         // If no filters and search is empty call api with isSearch false
         bool isSearch = searchText.isNotEmpty ||
             filterCompanies.isNotEmpty ||
-            filterRoles.isNotEmpty;
+            filterRoles.isNotEmpty || status != null;
 
         // Call the common function to fetch data
         await Provider.of<NonCorporateProvider>(context, listen: false)
             .getNonCorporateUserList(context,
                 searchText: searchText,
                 roleFilter: roleFilter,
-                isSearch: isSearch);
+                isSearch: isSearch, status: status);
       });
 
   void employeeDebounce(
@@ -433,115 +474,245 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   @override
   void initState() {
-    // Set claims for access rights to corporate list
-    _setTabsForCAM();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController?.addListener(() {
-      if (_tabController?.index == 0) {
-        setState(() {
-          _selectedScreen = showCorporateList
-              ? Screens.corporateList
-              : showCorporateUserList
-                  ? Screens.corporateEmployeeList
-                  : showCorporateVerificationTab
-                      ? Screens.verificationList
-                      : Screens.corporateProfile;
-          clearFilters();
-        });
-      } else if (_tabController?.index == 1) {
-        setState(() {
-          _selectedScreen = Screens.nonCorporateList;
-          clearFilters();
-        });
-      } else if (_tabController?.index == 2) {
-        setState(() {
-          _selectedScreen = Screens.employeeList;
-          clearFilters();
-        });
-      }
-      print(
-          'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
+    super.initState();
+    _initializeTabs();
+  }
+
+  Future<void> _initializeTabs() async {
+    setState(() {
+      showMainLoading = true;
     });
 
-    ///
-    if (widget.initialIndex == 0) {
-      _tabController?.animateTo(0);
-      if (widget.initialScreen == Screens.verificationList) {
-        _selectedScreen = Screens.verificationList;
-        clearFilters();
-        //Future.delayed(Duration(seconds: 1), () {
-        if (widget.subIndex == 0) {
-          _tabVerificationController?.animateTo(0);
-        } else if (widget.subIndex == 1) {
-          _tabVerificationController?.animateTo(1);
-        }
-        // });
-      }
-    } else if (widget.initialIndex == 1) {
-      _tabController?.animateTo(1);
-    } else if (widget.initialIndex == 2) {
-      _tabController?.animateTo(2);
+    await _setTabs();
+    print('Tabs count: $visibleTabCount');
+
+    _configureMainTabController();
+    _configureSubTabControllers();
+
+    if (widget.initialIndex != null) {
+      _tabController?.animateTo(widget.initialIndex);
     }
-    _tabNonCorporateController = TabController(length: 2, vsync: this);
-    _tabEmployeeController = TabController(length: 2, vsync: this);
-    _tabVerificationController = TabController(length: 2, vsync: this);
+    if (widget.initialIndex == 0 && widget.initialScreen == Screens.verificationList) {
+      _selectedScreen = Screens.verificationList;
+      clearFilters();
+      _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+    }
 
     _getData();
 
-    _tabEmployeeController?.addListener(() {
-      if (_tabEmployeeController?.index == 0) {
-        employeeSearchClient(_employeeSearchController.text);
-      } else if (_tabEmployeeController?.index == 1) {
-        employeeSearchClient(_employeeSearchController.text, status: true);
-      }
+    setState(() {
+      showMainLoading = false;
     });
-    super.initState();
   }
 
-  _setTabsForCAM() async {
+  Future<void> _setTabs() async {
     showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMCL) ??
+        SharedPreferenceService.CAMCL) ??
+        false;
+    showCorporateUserListDropdown = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCUM) ??
         false;
     showCorporateUserList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMUL) ??
+        SharedPreferenceService.CAMCL) ??
         false;
     showCreateCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMCC) ??
+        SharedPreferenceService.CAMCC) ??
         false;
     showEditCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMEC) ??
+        SharedPreferenceService.CAMEC) ??
         false;
     showViewCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMVC) ??
+        SharedPreferenceService.CAMVC) ??
         false;
     showDeleteCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMDC) ??
+        SharedPreferenceService.CAMDC) ??
         false;
     showEnableDisableCorporate =
         await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMED) ??
+            SharedPreferenceService.CAMED) ??
             false;
     showCorporateVerificationTab =
         await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMLL) ??
+            SharedPreferenceService.CAMLL) ??
             false;
+    showUserVerificationTab = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMUL) ??
+        false;
 
-    if (!showCorporateList) {
-      corporateDropdownItems
-          .removeWhere((element) => element.value == 'Companies');
+    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCUL) ??
+        false;
+
+    showEnableDisableUser = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CUMED) ?? false;
+    showDeleteUser = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CUMDU) ??
+        false;
+    showEditUser = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CUMEU) ??
+        false;
+    showConnectionListUser = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CUMCL) ??
+        false;
+    showCreateUser = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CUMCU) ??
+        false;
+    showEnableDisableNonCorporate =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.NCMED) ??
+            false;
+    showDeleteNonCorporate = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.NCMDU) ??
+        false;
+    showEditNonCorporate = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.NCMEU) ??
+        false;
+    showNonCorporateConnectionList =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.NCMCL) ??
+            false;
+    showEnableDisableEmployee = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPED) ??
+        false;
+    showDeleteEmployee = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPDU) ?? false;
+    showEditEmployee = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPEU) ??
+        false;
+    showConnectionListEmployee = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPCL) ??
+        false;
+    showNonCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.NCMUL) ??
+        false;
+    showEmployeeList = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPUL) ?? false;
+
+
+
+    showCorporateManagementTab = showCorporateList || showCorporateUserListDropdown || showCorporateVerificationTab || showCorporateProfile;
+    showNonCorporateManagementTab = showNonCorporateList;
+    showEmployeeManagementTab = showEmployeeList;
+    if (!showCorporateManagementTab && !showNonCorporateManagementTab && !showEmployeeManagementTab) {
+      setState(() {
+        _selectedScreen = Screens.defaultScreen;
+      });
     }
-    if (!showCorporateUserList) {
+
+    visibleTabCount = [
+      showCorporateManagementTab,
+      showNonCorporateManagementTab,
+      showEmployeeManagementTab,
+    ].where((tab) => tab).length;
+
+    _tabController = TabController(length: visibleTabCount, vsync: this);
+    print('Tab Count: $visibleTabCount');
+    _removeUnusedDropdownItems();
+    _adjustVerificationTabs();
+  }
+
+  void _removeUnusedDropdownItems() {
+    if (!showCorporateList) {
+      corporateDropdownItems.removeWhere((element) => element.value == 'Companies');
+    }
+    if (!showCorporateUserListDropdown) {
       corporateDropdownItems.removeWhere((element) => element.value == 'Users');
     }
-    if (!showCorporateVerificationTab) {
-      corporateDropdownItems
-          .removeWhere((element) => element.value == 'Verification Requests');
+    if (!showCorporateVerificationTab && !showUserVerificationTab) {
+      corporateDropdownItems.removeWhere((element) => element.value == 'Verification Requests');
+    }
+    if (!showCorporateProfile) {
+      corporateDropdownItems.removeWhere((element) => element.value == 'Company Profiles');
     }
   }
 
+  void _adjustVerificationTabs() {
+    if (!showCorporateVerificationTab && showUserVerificationTab) {
+      _tabVerificationController = TabController(length: 1, vsync: this);
+      _verificationTabs.removeAt(0);
+    } else if (showCorporateVerificationTab && !showUserVerificationTab) {
+      _tabVerificationController = TabController(length: 1, vsync: this);
+      _verificationTabs.removeAt(1);
+    } else {
+      _tabVerificationController = TabController(length: 2, vsync: this);
+    }
+  }
+
+  void _configureMainTabController() {
+    print('Controller size: ${_tabController?.length}');
+    _tabController?.addListener(() {
+      setState(() {
+        _selectedScreen = _getScreenForCurrentTab(_tabController?.index);
+        clearFilters();
+      });
+      print('Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
+    });
+  }
+
+  Screens _getScreenForCurrentTab(int? tabIndex) {
+    if (tabIndex == null) return Screens.defaultScreen;
+
+    int visibleTabIndex = 0;
+
+    if (showCorporateManagementTab) {
+      if (tabIndex == visibleTabIndex) {
+        return _getCorporateManagementScreen();
+      }
+      visibleTabIndex++;
+    }
+
+    if (showNonCorporateManagementTab) {
+      if (tabIndex == visibleTabIndex) {
+        return Screens.nonCorporateList;
+      }
+      visibleTabIndex++;
+    }
+
+    if (showEmployeeManagementTab) {
+      if (tabIndex == visibleTabIndex) {
+        return Screens.employeeList;
+      }
+    }
+
+    return Screens.defaultScreen;
+  }
+
+  Screens _getCorporateManagementScreen() {
+    if (showCorporateList) {
+      return Screens.corporateList;
+    } else if (showCorporateUserListDropdown) {
+      return Screens.corporateEmployeeList;
+    } else if (showCorporateVerificationTab) {
+      return Screens.verificationList;
+    } else {
+      return Screens.corporateProfile;
+    }
+  }
+
+
+  void _configureSubTabControllers() {
+    _tabNonCorporateController = TabController(length: 2, vsync: this);
+    _tabNonCorporateController?.addListener(() {
+      final provider = Provider.of<NonCorporateProvider>(context, listen: false);
+      provider.nextPageToken = null;
+      provider.nextPageExists = true;
+      provider.getNonCorporateUserList(context, status: _tabNonCorporateController?.index == 1);
+    });
+
+    _tabEmployeeController = TabController(length: 2, vsync: this);
+    _tabEmployeeController?.addListener(() {
+      final provider = Provider.of<EmployeeProvider>(context, listen: false);
+      provider.nextPageToken = null;
+      provider.nextPageExists = true;
+      provider.getAllEmployees(context, status: _tabEmployeeController?.index == 1);
+      employeeSearchClient(_employeeSearchController.text, status: _tabEmployeeController?.index == 1);
+    });
+  }
+
+
   Future<void> _getData() async {
-    /* Provider.of<CorporateProvider>(context, listen: false)
-        .getCorporateUserList(context);*/
+     Provider.of<CorporateProvider>(context, listen: false)
+        .getCorporateUserList(context);
     Provider.of<NonCorporateProvider>(context, listen: false)
         .getNonCorporateUserList(context);
     Provider.of<CompanyProvider>(context, listen: false)
@@ -585,7 +756,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           },
         ),
         drawer: CustomDrawer(),
-        floatingActionButton: _selectedScreen != Screens.corporateEdit &&
+        floatingActionButton: /*_selectedScreen != Screens.corporateEdit &&
                 _selectedScreen != Screens.corporateAdd &&
                 _selectedScreen != Screens.corporateEmployeeAdd &&
                 _selectedScreen != Screens.employeeAdd &&
@@ -594,12 +765,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 _selectedScreen != Screens.corporateEmployeeEdit &&
                 _selectedScreen != Screens.nonCorporateEdit &&
                 (_selectedScreen == Screens.corporateList &&
-                    !showCreateCorporate)
+                    showCreateCorporate) &&
+            (_selectedScreen == Screens.corporateEmployeeList &&
+                showCreateUser) &&
+            (_selectedScreen == Screens.employeeList &&
+                showCreateEmployee)*/
+          (_selectedScreen == Screens.corporateList && showCreateCorporate) ||
+              (_selectedScreen == Screens.corporateEmployeeList && showCreateUser) ||
+              (_selectedScreen == Screens.employeeList&&showCreateEmployee)
             ? FloatingActionButton(
-                onPressed: () {
-                  print(_tabController?.index);
+                onPressed: () async {
                   if (_selectedScreen == Screens.corporateList) {
                     print("object");
+                    selectedCorporateTypeRole = [
+                      companyType.Roles(
+                        name: "Admin",
+                        role: "admin",
+                      )
+                    ];
                     setState(() {
                       _selectedScreen = Screens.corporateAdd;
                       clearFilters();
@@ -610,6 +793,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       clearFilters();
                     });
                   } else if (_selectedScreen == Screens.corporateEmployeeList) {
+                    filterRoleList = await Provider.of<CorporateProvider>(context, listen: false)
+                        .getRolesWithCompanyId(context, selectedCorporateId??"");
                     setState(() {
                       _selectedScreen = Screens.corporateEmployeeAdd;
                       clearFilters();
@@ -625,7 +810,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               )
             : SizedBox(),
         body: PopScope(
-          canPop: _selectedScreen == Screens.corporateList && !showCheckbox,
+          canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) || _selectedScreen == Screens.defaultScreen,
           onPopInvoked: (canPop) {
             print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
             if (showCheckbox) {
@@ -668,7 +853,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 if (showCorporateList) {
                   _selectedScreen = Screens.corporateList;
                 } else {
-                  if (showCorporateUserList) {
+                  if (showCorporateUserListDropdown) {
                     _selectedScreen = Screens.corporateEmployeeList;
                   } else {
                     _selectedScreen = Screens.verificationList;
@@ -688,21 +873,43 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               });
             } else if (_selectedScreen == Screens.verificationList) {
               setState(() {
-                if (_tabVerificationController?.index == 0) {
+                if(showCorporateVerificationTab && showUserVerificationTab) {
+                  if (_tabVerificationController?.index == 0) {
+                    if (showCorporateList) {
+                      _selectedScreen = Screens.corporateList;
+                    } else {
+                      if (showCorporateUserListDropdown) {
+                        _selectedScreen = Screens.corporateEmployeeList;
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    }
+                  } else if (_tabVerificationController?.index == 1) {
+                    if (showCorporateList) {
+                      _selectedScreen = Screens.corporateList;
+                    } else {
+                      if (showCorporateUserListDropdown) {
+                        _selectedScreen = Screens.corporateEmployeeList;
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    }
+                  }
+                } else if(showCorporateVerificationTab) {
                   if (showCorporateList) {
                     _selectedScreen = Screens.corporateList;
                   } else {
-                    if (showCorporateUserList) {
+                    if (showCorporateUserListDropdown) {
                       _selectedScreen = Screens.corporateEmployeeList;
                     } else {
                       Navigator.pop(context);
                     }
                   }
-                } else if (_tabVerificationController?.index == 1) {
+                } else if(showUserVerificationTab) {
                   if (showCorporateList) {
                     _selectedScreen = Screens.corporateList;
                   } else {
-                    if (showCorporateUserList) {
+                    if (showCorporateUserListDropdown) {
                       _selectedScreen = Screens.corporateEmployeeList;
                     } else {
                       Navigator.pop(context);
@@ -730,9 +937,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               Column(
                 children: [
                   Expanded(
-                    child: Container(
+                    child: showMainLoading? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(),),) :Container(
                       margin: EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-                      child: Column(
+                      child: _selectedScreen == Screens.defaultScreen?_defaultScreen():Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -748,12 +955,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           SizedBox(
                             height: CustomSpacing.two,
                           ),
+                          _selectedScreen == Screens.defaultScreen
+                              ? _defaultScreen()
+                              : SizedBox(),
                           TabBar(
                             isScrollable: true,
                             controller: _tabController,
                             labelStyle:
                                 CustomTypography.BottomNavigationActiveLabel,
                             tabs: [
+                              if (showCorporateManagementTab)
                               Tab(
                                 child: DropdownButton(
                                   underline: SizedBox(),
@@ -773,12 +984,17 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       });
                                     } else if (value == 'Users') {
                                       setState(() {
+                                        selectedCorporateId = "";
                                         _selectedScreen =
                                             Screens.corporateEmployeeList;
                                         clearFilters();
                                       });
                                     } else if (value == 'Company Profiles') {
                                       // Handle company profiles option
+                                      setState(() {
+                                        _selectedScreen = Screens.corporateProfile;
+                                        clearFilters();
+                                      });
                                     } else if (value ==
                                         'Verification Requests') {
                                       // Handle verification requests option
@@ -794,9 +1010,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   },
                                 ),
                               ),
+                              if (showNonCorporateManagementTab)
                               InkWell(
                                 onTap: () {
-                                  _tabController?.animateTo(1);
+                                  _tabController?.animateTo(showCorporateManagementTab ? 1 : 0);
                                   _selectedScreen = Screens.nonCorporateList;
                                 },
                                 child: Row(
@@ -810,9 +1027,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   ],
                                 ),
                               ),
+                              if (showEmployeeManagementTab)
                               InkWell(
                                 onTap: () {
-                                  _tabController?.animateTo(2);
+                                  int destinationTabIndex = showCorporateManagementTab
+                                      ? showNonCorporateManagementTab
+                                      ? 2 // If both Corporate and Non-Corporate tabs are visible
+                                      : 1 // If only Corporate tab is visible
+                                      : 0; // If neither Corporate nor Non-Corporate tabs are visible
+                                  _tabController?.animateTo(destinationTabIndex);
                                   _selectedScreen = Screens.employeeList;
                                 },
                                 child: Row(
@@ -835,12 +1058,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               controller: _tabController,
                               children: [
                                 // Corporate Management
-                                //_corporateManagement(),
-                                _getCorporateManagementUI(),
+                                if (showCorporateManagementTab) _getCorporateManagementUI(),
                                 // Non Corporate Management
-                                _getNonCorporateManagementUI(),
+                                if (showNonCorporateManagementTab) _getNonCorporateManagementUI(),
                                 // Employee Management
-                                _getEmployeeManagementUI(),
+                                if (showEmployeeManagementTab) _getEmployeeManagementUI(),
                               ],
                             ),
                           ),
@@ -1232,6 +1454,30 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     });
   }
 
+  _defaultScreen() {
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        Expanded(
+          child: Center(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Text('This feature is launching soon!',
+                      style: CustomTypography.H4),
+                ),
+                SizedBox(
+                  height: CustomSpacing.two,
+                ),
+                Text('We have something coming that is going to blow you away. Check back often for the launch.', style: CustomTypography.Body1),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   _corporateManagement() {
     return RefreshIndicator(
       onRefresh: () async {
@@ -1437,348 +1683,362 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _companyListItem(int index, CompanyProvider companyProvider) {
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
-    return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onLongPress: !showDeleteCorporate
-            ? null
-            : () {
-                // Show checkbox
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  setState(() {
-                    showCheckbox = !showCheckbox;
-                  });
-                });
-                selectedCompanyListIndex = index;
-                setState(() {
-                  companyProvider.companies[index].isSelected =
-                      !companyProvider.companies[index].isSelected!;
-                });
-              },
-        child: Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: CustomSpacing.two,
-              ),
-              Row(
+    return Builder(
+      builder: (context) {
+        return Container(
+          margin: EdgeInsets.only(top: 0.0, bottom: 8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onLongPress: !showDeleteCorporate
+                ? null
+                : () {
+                    // Show checkbox
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      setState(() {
+                        showCheckbox = !showCheckbox;
+                      });
+                    });
+                    selectedCompanyListIndex = index;
+                    setState(() {
+                      companyProvider.companies[index].isSelected =
+                          !companyProvider.companies[index].isSelected!;
+                    });
+                  },
+            child: Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: CustomSpacing.four,
+                    height: CustomSpacing.two,
                   ),
-                  !showDeleteCorporate
-                      ? SizedBox()
-                      : showCheckbox
-                          ? Checkbox(
-                              value:
-                                  companyProvider.companies[index].isSelected!,
-                              onChanged: (value) {
-                                // Handle checkbox value change
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  setState(() {
-                                    companyProvider
-                                        .companies[index].isSelected = value;
-                                  });
-                                });
-                              },
-                            )
-                          : SizedBox(),
-                  CircleAvatar(
-                    child: companyProvider.companies[index].companyImageUrl !=
-                                null &&
-                            companyProvider.companies[index].companyImageUrl !=
-                                ''
-                        ? ClipOval(
-                            child: Image.network(
-                              companyProvider.companies[index].companyImageUrl!,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : Text(
-                            companyProvider.companies[index].displayName
-                                    ?.substring(0, 1)
-                                    .toUpperCase() ??
-                                "",
-                          ),
-                  ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (companyProvider.companies[index].displayName
-                                      ?.substring(0, 1)
-                                      .toUpperCase() ??
-                                  "") +
-                              (companyProvider.companies[index].displayName
-                                      ?.substring(1) ??
-                                  ""),
-                          style: CustomTypography.Body2.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? AppColors.white
-                                  : AppColors.black),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                            companyProvider.companies[index].companyTypeName ??
-                                "",
-                            style: CustomTypography.Caption),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                  !showEnableDisableCorporate
-                      ? SizedBox()
-                      : companyProvider.isStatusLoading &&
-                              selectedCompanyListIndex == index
-                          ? Padding(
-                              padding:
-                                  const EdgeInsets.only(top: 8.0, right: 8.0),
-                              child: Center(child: CircularProgressIndicator()),
-                            )
-                          : Switch(
-                              value:
-                                  companyProvider.companies[index].isEnabled ??
-                                      false,
-                              onChanged: (value) {
-                                // Handle switch value change
-                                selectedCompanyListIndex = index;
-                                companyProvider
-                                    .changeCompanyStatus(
-                                        context,
-                                        companyProvider.companies[index].id ??
-                                            '',
-                                        value)
-                                    .then((value) {
-                                  WidgetsBinding.instance
-                                      .addPostFrameCallback((_) {
-                                    setState(() {
-                                      companyProvider
-                                          .companies[index].isEnabled = value;
-                                    });
-                                  });
-                                });
-                              },
-                            ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: CustomSpacing.four,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     children: [
                       SizedBox(
-                        height: CustomSpacing.two,
+                        width: CustomSpacing.four,
                       ),
-                      Text(
-                        (companyProvider.companies[index].admins?.name
-                                    ?.substring(0, 1)
-                                    .toUpperCase() ??
-                                "") +
-                            (companyProvider.companies[index].admins?.name
-                                    ?.substring(1) ??
-                                ""),
-                        style: CustomTypography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black),
+                      !showDeleteCorporate
+                          ? SizedBox()
+                          : showCheckbox
+                              ? Checkbox(
+                                  value:
+                                      companyProvider.companies[index].isSelected!,
+                                  onChanged: (value) {
+                                    // Handle checkbox value change
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      setState(() {
+                                        companyProvider
+                                            .companies[index].isSelected = value;
+                                      });
+                                    });
+                                  },
+                                )
+                              : SizedBox(),
+                      CircleAvatar(
+                        child: companyProvider.companies[index].companyImageUrl !=
+                                    null &&
+                                companyProvider.companies[index].companyImageUrl !=
+                                    ''
+                            ? ClipOval(
+                                child: Image.network(
+                                  companyProvider.companies[index].companyImageUrl!,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Text(
+                                companyProvider.companies[index].displayName
+                                        ?.substring(0, 1)
+                                        .toUpperCase() ??
+                                    "",
+                              ),
                       ),
-                      Text(companyProvider.companies[index].admins?.email ?? '',
-                          style: CustomTypography.Caption),
                       SizedBox(
-                        height: CustomSpacing.two,
+                        width: CustomSpacing.two,
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              (companyProvider.companies[index].displayName
+                                          ?.substring(0, 1)
+                                          .toUpperCase() ??
+                                      "") +
+                                  (companyProvider.companies[index].displayName
+                                          ?.substring(1) ??
+                                      ""),
+                              style: CustomTypography.Body2.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                                companyProvider.companies[index].companyTypeName ??
+                                    "",
+                                style: CustomTypography.Caption),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: CustomSpacing.two,
+                      ),
+                      !showEnableDisableCorporate
+                          ? SizedBox()
+                          : companyProvider.isStatusLoading &&
+                                  selectedCompanyListIndex == index
+                              ? Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 8.0, right: 8.0),
+                                  child: Center(child: CircularProgressIndicator()),
+                                )
+                              : Switch(
+                                  value:
+                                      companyProvider.companies[index].isEnabled ??
+                                          false,
+                                  onChanged: (value) {
+                                    // Handle switch value change
+                                    selectedCompanyListIndex = index;
+                                    companyProvider
+                                        .changeCompanyStatus(
+                                            context,
+                                            companyProvider.companies[index].id ??
+                                                '',
+                                            value)
+                                        .then((value) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        setState(() {
+                                          companyProvider
+                                              .companies[index].isEnabled = value;
+                                        });
+                                      });
+                                    });
+                                  },
+                                ),
+                      SizedBox(
+                        width: CustomSpacing.two,
                       ),
                     ],
                   ),
-                ],
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  // bottom left and right corners curved
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(8),
-                    bottomRight: Radius.circular(8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: CustomSpacing.four,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Text(
+                            (companyProvider.companies[index].admins?.name
+                                        ?.substring(0, 1)
+                                        .toUpperCase() ??
+                                    "") +
+                                (companyProvider.companies[index].admins?.name
+                                        ?.substring(1) ??
+                                    ""),
+                            style: CustomTypography.Body2.copyWith(
+                                color:
+                                    Theme.of(context).brightness == Brightness.dark
+                                        ? AppColors.white
+                                        : AppColors.black),
+                          ),
+                          Text(companyProvider.companies[index].admins?.email ?? '',
+                              style: CustomTypography.Caption),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                child: Row(
-                  children: [
-                    // Icon with text
-                    TextButton.icon(
-                      onPressed: () {
-                        // Handle view employees
-                        Provider.of<CorporateProvider>(context, listen: false)
-                            .getCorporateUserList(context,
-                                companyId:
-                                    companyProvider.companies[index].id ?? '');
-                        selectedCorporateId =
-                            companyProvider.companies[index].id ?? '';
-                        setState(() {
-                          _selectedScreen = Screens.corporateEmployeeList;
-                          clearFilters();
-                        });
-                      },
-                      icon: Icon(Icons.people),
-                      label: Text('View Employees',
-                          style: CustomTypography.Caption.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? AppColors.white
-                                  : AppColors.black)),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      // bottom left and right corners curved
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
                     ),
-                    Spacer(),
-                    showEditCorporate
-                        ? IconButton(
-                            icon: Icon(Icons.edit),
-                            color: AppColors.primaryMain,
-                            onPressed: () async {
-                              /// Handle edit company
-                              await companyProvider.viewCompany(context,
-                                  companyProvider.companies[index].id ?? '');
-                              log(companyProvider.company.toJson().toString());
-                              // Prefill values
-                              companyImageUrl =
-                                  companyProvider.company.companyImageUrl;
-                              selectedCompanyType = CorporateType(
-                                name: companyProvider.company.companyTypeName,
-                                type: companyProvider.company.companyType,
-                              );
-                              _enableDomainCheck =
-                                  companyProvider.company.enableDomainCheck ??
-                                      false;
-                              selectedCorporateTypeRole = [
-                                companyType.Roles(
-                                  name: "Admin",
-                                  role: "admin",
-                                )
-                              ];
-                              _domainListController.text = companyProvider
-                                      .company.domainList
-                                      ?.join(",") ??
-                                  '';
-                              _companyLegalNameController.text =
-                                  companyProvider.company.name ?? '';
-                              if (companyProvider.company.displayName != null) {
-                                _companyDisplayNameController.text =
-                                    companyProvider
-                                                .company.displayName!
-                                                .substring(0, 1)
-                                                .toUpperCase() +
-                                            companyProvider.company.displayName!
-                                                .substring(1) ??
-                                        '';
-                              }
+                    child: Row(
+                      children: [
+                        // Icon with text
+                        showCorporateUserList?Consumer<CorporateProvider>(
+                          builder: (context, corporateProvider, child) {
+                            return TextButton.icon(
+                              onPressed: () async {
+                                // Handle view employees
+                                print('View Employees');
+                                selectedCorporateId =
+                                    companyProvider.companies[index].id ?? '';
 
-                              _adminNameController.text =
-                                  companyProvider.company.admins?.name ?? "";
-                              _adminDisplayNameController.text =
-                                  companyProvider.company.admins?.displayName ??
-                                      '';
-                              _adminEmailController.text =
-                                  companyProvider.company.admins?.email ?? '';
-                              _selectedCountryCode = _adminMobileController
-                                      .text =
-                                  companyProvider.company.admins?.mobile ?? '';
-                              _enableDomainCheck =
-                                  companyProvider.company.enableDomainCheck ??
-                                      false;
-                              // Set screen to edit
+                                await corporateProvider
+                                    .getCorporateUserList(context,
+                                        companyId:
+                                            companyProvider.companies[index].id ?? '', isSearch: true);
 
-                              setState(() {
-                                _selectedScreen = Screens.corporateEdit;
-                                clearFilters();
-                              });
-                            },
-                          )
-                        : SizedBox(),
-                    !showDeleteCorporate
-                        ? SizedBox()
-                        : companyProvider.isDeleteLoading &&
-                                selectedCompanyListIndex == index
-                            ? Center(
-                                child: Container(
-                                    height: 20,
-                                    width: 20,
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: CircularProgressIndicator()),
-                              )
-                            : IconButton(
-                                icon: Icon(Icons.delete),
+                                selectedCorporateId =
+                                    companyProvider.companies[index].id ?? '';
+                                setState(() {
+                                  _corporateEmployeeSearchController.text = "";
+                                  _selectedScreen = Screens.corporateEmployeeList;
+                                  clearFilters();
+                                });
+                              },
+                              icon: Icon(Icons.people),
+                              label: Text('View Employees',
+                                  style: CustomTypography.Caption.copyWith(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.white
+                                          : AppColors.black)),
+                            );
+                          }
+                        ):SizedBox(),
+                        Spacer(),
+                        showEditCorporate
+                            ? IconButton(
+                                icon: Icon(Icons.edit),
                                 color: AppColors.primaryMain,
-                                onPressed: () {
-                                  selectedCompanyListIndex = index;
-                                  // Handle delete by showing dialog
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      // delete company name
-                                      return AlertDialog(
-                                        title: Text('Delete Company',
-                                            style: CustomTypography.H6),
-                                        content: Text(
-                                            'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
-                                            style: CustomTypography.Body1),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              companyProvider.deleteCompany(
-                                                  context, [
-                                                companyProvider
-                                                        .companies[index].id ??
-                                                    ''
-                                              ]).then((value) {
-                                                if (value) {
-                                                  WidgetsBinding.instance
-                                                      .addPostFrameCallback(
-                                                          (_) {
-                                                    setState(() {
-                                                      companyProvider.companies
-                                                          .removeAt(index);
-                                                    });
+                                onPressed: () async {
+                                  /// Handle edit company
+                                  await companyProvider.viewCompany(context,
+                                      companyProvider.companies[index].id ?? '');
+                                  log(companyProvider.company.toJson().toString());
+                                  // Prefill values
+                                  companyImageUrl =
+                                      companyProvider.company.companyImageUrl;
+                                  selectedCompanyType = CorporateType(
+                                    name: companyProvider.company.companyTypeName,
+                                    type: companyProvider.company.companyType,
+                                  );
+                                  _enableDomainCheck =
+                                      companyProvider.company.enableDomainCheck ??
+                                          false;
+                                  selectedCorporateTypeRole = [
+                                    companyType.Roles(
+                                      name: "Admin",
+                                      role: "admin",
+                                    )
+                                  ];
+                                  _domainListController.text = companyProvider
+                                          .company.domainList
+                                          ?.join(",") ??
+                                      '';
+                                  _companyLegalNameController.text =
+                                      companyProvider.company.name ?? '';
+                                  if (companyProvider.company.displayName != null) {
+                                    _companyDisplayNameController.text =
+                                        companyProvider
+                                                    .company.displayName!
+                                                    .substring(0, 1)
+                                                    .toUpperCase() +
+                                                companyProvider.company.displayName!
+                                                    .substring(1) ??
+                                            '';
+                                  }
+
+                                  _adminNameController.text =
+                                      companyProvider.company.admins?.name ?? "";
+                                  _adminDisplayNameController.text =
+                                      companyProvider.company.admins?.displayName ??
+                                          '';
+                                  _adminEmailController.text =
+                                      companyProvider.company.admins?.email ?? '';
+                                  _selectedCountryCode = _adminMobileController
+                                          .text =
+                                      companyProvider.company.admins?.mobile ?? '';
+                                  _enableDomainCheck =
+                                      companyProvider.company.enableDomainCheck ??
+                                          false;
+                                  // Set screen to edit
+
+                                  setState(() {
+                                    _selectedScreen = Screens.corporateEdit;
+                                    clearFilters();
+                                  });
+                                },
+                              )
+                            : SizedBox(),
+                        !showDeleteCorporate
+                            ? SizedBox()
+                            : companyProvider.isDeleteLoading &&
+                                    selectedCompanyListIndex == index
+                                ? Center(
+                                    child: Container(
+                                        height: 20,
+                                        width: 20,
+                                        margin: EdgeInsets.only(right: 8),
+                                        child: CircularProgressIndicator()),
+                                  )
+                                : IconButton(
+                                    icon: Icon(Icons.delete),
+                                    color: AppColors.primaryMain,
+                                    onPressed: () {
+                                      selectedCompanyListIndex = index;
+                                      // Handle delete by showing dialog
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          // delete company name
+                                          return AlertDialog(
+                                            title: Text('Delete Company',
+                                                style: CustomTypography.H6),
+                                            content: Text(
+                                                'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
+                                                style: CustomTypography.Body1),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  companyProvider.deleteCompany(
+                                                      context, [
+                                                    companyProvider
+                                                            .companies[index].id ??
+                                                        ''
+                                                  ]).then((value) {
+                                                    if (value) {
+                                                      WidgetsBinding.instance
+                                                          .addPostFrameCallback(
+                                                              (_) {
+                                                        setState(() {
+                                                          companyProvider.companies
+                                                              .removeAt(index);
+                                                        });
+                                                      });
+                                                    }
                                                   });
-                                                }
-                                              });
-                                            },
-                                            child: Text('Delete'),
-                                          ),
-                                        ],
+                                                },
+                                                child: Text('Delete'),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                              ),
-                  ],
-                ),
+                                  ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -2290,103 +2550,49 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             SizedBox(height: CustomSpacing.four),
                             // Role Dropdown
                             Consumer<CompanyProvider>(
-                                builder: (_, companyProvider, child) {
-                              print(
-                                  'Selected Company Type: $selectedCorporateTypeRole');
-                              return Stack(
-                                children: [
-                                  TextField(
-                                    readOnly: true,
-                                    onTap: () {
-                                      showModalBottomSheet(
-                                        context: context,
-                                        useSafeArea: true,
-                                        isScrollControlled: true,
-                                        builder: (BuildContext context) {
-                                          return CorporateTypeRolesBottomSheet(
-                                            selectedRoles:
-                                                selectedCorporateTypeRole,
-                                            addChip: _addCorporateChip,
-                                            removeChip: _removeCorporateChip,
-                                            removeAllChips:
-                                                _removeAllCorporateChips,
-                                            roles: selectedCompanyType?.roles ??
-                                                [],
-                                          );
-                                        },
-                                      );
-                                    },
-                                    controller: _textEditingController,
-                                    onChanged: (value) {
-                                      // Handle input changes
-                                    },
-                                    decoration: InputDecoration(
-                                      labelText: 'Role(s)',
-                                      hintText: _selectedRoles.isEmpty
-                                          ? 'Select Roles'
-                                          : "",
-                                      border: OutlineInputBorder(),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(Icons.arrow_drop_down),
-                                        onPressed: () {
-                                          showModalBottomSheet(
-                                            context: context,
-                                            useSafeArea: true,
-                                            isScrollControlled: true,
-                                            builder: (BuildContext context) {
-                                              return CorporateTypeRolesBottomSheet(
-                                                selectedRoles:
-                                                    selectedCorporateTypeRole,
-                                                addChip: _addCorporateChip,
-                                                removeChip:
-                                                    _removeCorporateChip,
-                                                removeAllChips:
-                                                    _removeAllCorporateChips,
-                                                roles: selectedCompanyType
-                                                        ?.roles ??
-                                                    [],
-                                              );
-                                            },
-                                          );
-                                        },
+                              builder: (_, companyProvider, child) {
+                                print('Selected Company Type: $selectedCorporateTypeRole');
+                                return Stack(
+                                  children: [
+                                    TextField(
+                                      readOnly: true,
+                                      enabled: false, // Disable user input
+                                      controller: _textEditingController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Role(s)',
+                                        //hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.arrow_drop_down), // Remove onPressed handler
                                       ),
                                     ),
-                                  ),
-                                  Positioned(
-                                    top: 10.0,
-                                    left: 10.0,
-                                    right: 10.0,
-                                    child: Container(
-                                      margin:
-                                          const EdgeInsets.only(right: 32.0),
-                                      child: SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: Row(
-                                          children: selectedCorporateTypeRole
-                                              .map(
-                                                (value) => Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 8.0),
-                                                  child: Chip(
-                                                    label:
-                                                        Text(value.name ?? ''),
-                                                    deleteIcon:
-                                                        Icon(Icons.cancel),
-                                                    onDeleted: () =>
-                                                        _removeCorporateChip(
-                                                            value),
-                                                  ),
+                                    Positioned(
+                                      top: 10.0,
+                                      left: 10.0,
+                                      right: 10.0,
+                                      child: Container(
+                                        margin: const EdgeInsets.only(right: 32.0),
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children: selectedCorporateTypeRole
+                                                .map(
+                                                  (value) => Padding(
+                                                padding: const EdgeInsets.only(right: 8.0),
+                                                child: Chip(
+                                                  label: Text(value.name ?? ''),
+                                                  deleteIcon: Icon(Icons.cancel), // Remove onDeleted handler
                                                 ),
-                                              )
-                                              .toList(),
+                                              ),
+                                            )
+                                                .toList(),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            }),
+                                  ],
+                                );
+                              },
+                            ),
                             SizedBox(height: CustomSpacing.four),
                             // Name
                             TextFormField(
@@ -2710,7 +2916,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                               .split(','),
                                                       "is_pgsupport": false,
                                                       "isIndividual": false,
-                                                      "company_image_url":
+                                                      "display_image_url":
                                                           companyImageUrl,
                                                     }
                                                   };
@@ -3138,9 +3344,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     },
                                     decoration: InputDecoration(
                                       labelText: 'Role(s)',
-                                      hintText: _selectedRoles.isEmpty
+                                      /*hintText: _selectedRoles.isEmpty
                                           ? 'Select Roles'
-                                          : "",
+                                          : "",*/
                                       border: OutlineInputBorder(),
                                       suffixIcon: IconButton(
                                         icon: Icon(Icons.arrow_drop_down),
@@ -3421,11 +3627,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   // Edit body
 
                                                   Map<String, dynamic> body = {
-                                                    "action": "create_company",
+                                                    "action": "",
                                                     "userdata": {
                                                       "company_id":
                                                           companyProvider
                                                               .company.id,
+                                                      "id": companyProvider
+                                                          .company.id,
                                                       "company_name":
                                                           _companyLegalNameController
                                                               .text,
@@ -3438,7 +3646,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           _domainListController
                                                               .text
                                                               .split(','),
-                                                      "company_image_url":
+                                                      "display_image_url":
                                                           companyImageUrl,
                                                     }
                                                   };
@@ -3542,410 +3750,449 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _viewCompany() {
     // Add Company
-    return SingleChildScrollView(
-      child: Container(
-        margin: EdgeInsets.only(top: 8),
-        child: Card(
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: CustomSpacing.four,
-                      ),
-                      Text('View corporate account',
-                          style: CustomTypography.H7.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? AppColors.white
-                                  : AppColors.black)),
-                      SizedBox(
-                        height: CustomSpacing.four,
-                      ),
-                      Row(
-                        children: [
-                          Text('Here are the necessary information.',
-                              style: CustomTypography.Body2),
-                        ],
-                      ),
-                      SizedBox(
-                        height: CustomSpacing.three,
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: CustomSpacing.one,
-                      ),
-                      // Add Company Form
-                      // Profile Pic
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // If company image is not uploaded, show default image
-                            companyImageUrl == null || companyImageUrl == ''
-                                ? CircleAvatar(
-                                    backgroundImage: AssetImage(
-                                        'assets/images/loginImage.png'),
-                                    radius: 40,
-                                  )
-                                : CircleAvatar(
-                                    backgroundImage:
-                                        NetworkImage(companyImageUrl!),
-                                    radius: 40,
-                                  ),
-                            SizedBox(
-                              width: CustomSpacing.four,
-                            ),
-                          ],
+    return Consumer<CompanyProvider>(
+      builder: (context, companyProvider, child) {
+        return SingleChildScrollView(
+          child: Container(
+            margin: EdgeInsets.only(top: 8),
+            child: companyProvider.isLoading?Container(height: 20, width: 20, child: CircularProgressIndicator(),):Card(
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
                         ),
                       ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          Text('View corporate account',
+                              style: CustomTypography.H7.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black)),
+                          SizedBox(
+                            height: CustomSpacing.four,
+                          ),
+                          Row(
+                            children: [
+                              Text('View the necessary information.',
+                                  style: CustomTypography.Body2),
+                            ],
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.three,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.one,
+                          ),
+                          // Add Company Form
+                          // Profile Pic
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // If company image is not uploaded, show default image
+                                companyImageUrl == null || companyImageUrl == ''
+                                    ? CircleAvatar(
+                                  backgroundImage: AssetImage(
+                                      'assets/images/loginImage.png'),
+                                  radius: 40,
+                                )
+                                    : CircleAvatar(
+                                  backgroundImage:
+                                  NetworkImage(companyImageUrl!),
+                                  radius: 40,
+                                ),
+                                SizedBox(
+                                  width: CustomSpacing.eight,
+                                ),
+                              ],
+                            ),
+                          ),
 
-                      SizedBox(height: CustomSpacing.four),
-                      Form(
-                          key: _createCompanyFormKey,
-                          child: Column(children: [
-                            // Company Type
-                            Consumer<CompanyProvider>(
-                              builder: (_, companyProvider, child) {
-                                // Get the theme's button large color
-                                final buttonLargeColor =
-                                    Theme.of(context).textTheme.button?.color;
-
-                                return Row(
-                                  children: [
-                                    Expanded(
-                                      child: DropdownButtonFormField(
-                                        value: selectedCompanyType?.type,
-                                        decoration: InputDecoration(
-                                          labelText: 'Company Type',
-                                          labelStyle:
-                                              CustomTypography.Body1.copyWith(
-                                                  color: buttonLargeColor),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        items: [
-                                          DropdownMenuItem(
-                                            child: Text(
-                                              selectedCompanyType?.name ?? "",
-                                              style: CustomTypography.Body1
-                                                  .copyWith(
-                                                      color: buttonLargeColor),
+                          SizedBox(height: CustomSpacing.four),
+                          Form(
+                              key: _createCompanyFormKey,
+                              child: Column(children: [
+                                // Company Type
+                                Consumer<CompanyProvider>(
+                                    builder: (_, companyProvider, child) {
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            child: DropdownButtonFormField(
+                                              value: selectedCompanyType?.type,
+                                              decoration: InputDecoration(
+                                                labelText: 'Company Type',
+                                                labelStyle: CustomTypography.Body1,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                  BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              items: [
+                                                DropdownMenuItem(
+                                                  child: Text(
+                                                    selectedCompanyType?.name ?? "",
+                                                    style: CustomTypography.Body1,
+                                                  ),
+                                                  value: selectedCompanyType?.type,
+                                                ),
+                                              ],
+                                              onChanged: null,
                                             ),
-                                            value: selectedCompanyType?.type,
                                           ),
                                         ],
-                                        onChanged: null, // Disable the dropdown
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                                      );
+                                    }),
 
-                            SizedBox(height: CustomSpacing.four),
-
-// Switch for Enable/Disable Domain
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.outline,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Domain Check',
-                                    style: CustomTypography.Body1,
-                                  ),
-                                  Icon(
-                                    _enableDomainCheck
-                                        ? Icons.check_box
-                                        : Icons.check_box_outline_blank,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Domain List
-                            _enableDomainCheck
-                                ? Text(
-                                    _domainListController.text,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
-                                  )
-                                : SizedBox(),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Company Legal Name
-                            Text(
-                              _companyLegalNameController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .button
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Company Display Name
-                            Text(
-                              _companyDisplayNameController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// User & Role(s) divider
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'User & Role(s)',
-                                  style: CustomTypography.Subtitle1.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                                SizedBox(width: CustomSpacing.three),
-                                Expanded(
-                                  child: Divider(
-                                    thickness: 1,
-                                    color: Colors.white
-                                        .withOpacity(0.11999999731779099),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Role Dropdown
-                            Consumer<CompanyProvider>(
-                              builder: (_, companyProvider, child) {
-                                return Wrap(
-                                  spacing: 8.0,
-                                  children: selectedCorporateTypeRole
-                                      .map(
-                                        (value) => Chip(
-                                          label: Text(
-                                            value.name ?? '',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium
-                                                ?.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                ),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                );
-                              },
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Name
-                            Text(
-                              _adminNameController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Display Name
-                            Text(
-                              _adminDisplayNameController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Phone
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 4,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.white.withOpacity(0.5)),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16.0),
-                                    child: Center(
-                                      child: CountryListPicker(
-                                        initialCountry: Countries.United_States,
-                                        border: InputBorder.none,
-                                        flagSize: Size(35, 30),
-                                        isShowInputField: false,
-                                        dialogTheme: DialogThemeData(
-                                          style: CustomTypography.Body1,
-                                          isShowFloatButton: false,
-                                        ),
-                                        countryNameStyle:
-                                            CustomTypography.Body1,
-                                        isShowCountryName: false,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                                 SizedBox(height: CustomSpacing.four),
 
-                                // Mobile Number TextFormField
-                                Expanded(
-                                  flex: 7,
-                                  child: Text(
-                                    _adminMobileController.text,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
+                                // Switch for Enable/Disable Domain
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.outline,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Enable Domain Check?',
+                                        style: CustomTypography.Body1,
+                                      ),
+                                      Switch(
+                                        value: _enableDomainCheck,
+                                        onChanged: (value) {
+                                          // Handle switch value change
+                                          setState(() {
+                                            _enableDomainCheck = value;
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
 
-                            SizedBox(height: CustomSpacing.four),
-
-// Email
-                            Text(
-                              _adminEmailController.text,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-
-                            SizedBox(height: CustomSpacing.four),
-
-// Cancel and Submit Buttons
-                            Consumer<CompanyProvider>(
-                              builder: (_, companyProvider, child) {
-                                return Column(
+                                SizedBox(height: CustomSpacing.four),
+                                // Domain List
+                                _enableDomainCheck
+                                    ? Column(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: companyProvider.isLoading
-                                              ? Center(
-                                                  child: SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ))
-                                              : SizedBox(),
+                                    TextFormField(
+                                      controller: _domainListController,
+                                      decoration: InputDecoration(
+                                        labelText:
+                                        'Domain List (Separated by commas)',
+                                        labelStyle: CustomTypography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                          BorderRadius.circular(8),
                                         ),
-                                      ],
+                                      ),
+                                      maxLines: 3,
+                                      validator: (value) {
+                                        if (value == "" ||
+                                            !RegExp(r'@(?:[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)(?:,@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)*')
+                                                .hasMatch(value!)) {
+                                          return 'Please select a domain';
+                                        }
+                                        return null;
+                                      },
                                     ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: ElevatedButton(
-                                            onPressed: null,
-                                            style: ElevatedButton.styleFrom(
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: 22, vertical: 8),
-                                            ),
-                                            child: Text(
-                                              'Cancel',
-                                              style:
-                                                  CustomTypography.ButtonLarge,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    SizedBox(height: CustomSpacing.four),
+                                  ],
+                                )
+                                    : SizedBox(),
+                                // Company Legal Name
+                                TextFormField(
+                                  controller: _companyLegalNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Company Legal Name',
+                                    labelStyle: CustomTypography.Body1,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == "") {
+                                      return 'Please enter a legal name';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // Company Display Name
+                                TextFormField(
+                                  controller: _companyDisplayNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Company Display Name',
+                                    labelStyle: CustomTypography.Body1,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    // can be empty but if not empty, should not have digits
+                                    if (value != null &&
+                                        value != "" &&
+                                        RegExp(r'[0-9]').hasMatch(value)) {
+                                      return 'Display name cannot contain digits';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // User & Role(s) divider
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'User & Role(s)',
+                                      style: CustomTypography.Subtitle1.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface),
+                                    ),
+                                    SizedBox(width: CustomSpacing.three),
+                                    Expanded(
+                                      child: Divider(
+                                        thickness: 1,
+                                        color: Colors.white
+                                            .withOpacity(0.11999999731779099),
+                                      ),
                                     ),
                                   ],
-                                );
-                              },
-                            ),
-                          ]))
-                    ],
-                  ),
-                ),
-              ]),
-        ),
-      ),
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // Role Dropdown
+                                Consumer<CompanyProvider>(
+                                    builder: (_, companyProvider, child) {
+                                      print(
+                                          'Selected Company Type: $selectedCorporateTypeRole');
+                                      return Stack(
+                                        children: [
+                                          TextField(
+                                            readOnly: true,
+                                            onTap: null,
+                                            onChanged: (value) {
+                                              // Handle input changes
+                                            },
+                                            decoration: InputDecoration(
+                                              labelText: 'Role(s)',
+                                              hintText: _selectedRoles.isEmpty
+                                                  ? 'Select Roles'
+                                                  : "",
+                                              border: OutlineInputBorder(),
+                                              suffixIcon: IconButton(
+                                                icon: Icon(Icons.arrow_drop_down),
+                                                onPressed: null,
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 10.0,
+                                            left: 10.0,
+                                            right: 10.0,
+                                            child: Container(
+                                              margin:
+                                              const EdgeInsets.only(right: 32.0),
+                                              child: SingleChildScrollView(
+                                                scrollDirection: Axis.horizontal,
+                                                child: Row(
+                                                  children: selectedCorporateTypeRole
+                                                      .map(
+                                                        (value) => Padding(
+                                                      padding:
+                                                      const EdgeInsets.only(
+                                                          right: 8.0),
+                                                      child: Chip(
+                                                        label:
+                                                        Text(value.name ?? ''),
+                                                        deleteIcon:
+                                                        Icon(Icons.cancel),
+                                                        onDeleted: null,
+                                                      ),
+                                                    ),
+                                                  )
+                                                      .toList(),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }),
+                                SizedBox(height: CustomSpacing.four),
+                                // Name
+                                TextFormField(
+                                  readOnly: true,
+                                  controller: _adminNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Name',
+                                    labelStyle: CustomTypography.Body1,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == "") {
+                                      return 'Please enter a name';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // Display Name
+                                TextFormField(
+                                  readOnly: true,
+                                  controller: _adminDisplayNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Display Name',
+                                    labelStyle: CustomTypography.Body1,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    // can be empty but if not empty, should not have digits
+                                    if (value != null &&
+                                        value != "" &&
+                                        RegExp(r'[0-9]').hasMatch(value)) {
+                                      return 'Display name cannot contain digits';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // Phone
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 4,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: Colors.white.withOpacity(0.5)),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16.0),
+                                        child: Center(
+                                          child: CountryListPicker(
+                                            initialCountry: Countries.United_States,
+                                            border: InputBorder.none,
+                                            flagSize: Size(35, 30),
+                                            onChanged: null,
+                                            diallingCodeStyle:
+                                            CustomTypography.Body1,
+                                            isShowInputField: false,
+                                            dialogTheme: DialogThemeData(
+                                              style: CustomTypography.Body1,
+                                              isShowFloatButton: false,
+                                            ),
+                                            countryNameStyle:
+                                            CustomTypography.Body1,
+                                            isShowCountryName: false,
+                                            onCountryChanged: null,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.four),
+
+                                    // Mobile Number TextFormField
+                                    Expanded(
+                                      flex: 7,
+                                      child: TextFormField(
+                                        readOnly: true,
+                                        keyboardType: TextInputType.number,
+                                        maxLength: 10,
+                                        // Numeric keyboard
+                                        inputFormatters: <TextInputFormatter>[
+                                          FilteringTextInputFormatter.digitsOnly
+                                          // Only allows digits
+                                        ],
+                                        decoration: InputDecoration(
+                                          labelText: 'Mobile Number',
+                                          hintText: 'Enter your mobile number',
+                                          border: const OutlineInputBorder(),
+                                          counterText: '',
+                                        ),
+                                        validator: (value) {
+                                          if (!RegExp(r'^[0-9]+$')
+                                              .hasMatch(value!)) {
+                                            return 'Mobile number can only contain digits';
+                                          }
+                                          return null;
+                                        },
+                                        controller: _adminMobileController,
+                                      ),
+                                    ),
+                                    // Dropdown Icon Suffix
+                                  ],
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                                // Email
+                                TextFormField(
+                                  readOnly: true,
+                                  controller: _adminEmailController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Email',
+                                    labelStyle: CustomTypography.Body1,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null ||
+                                        value.isEmpty ||
+                                        regextest(value) == false) {
+                                      return 'Enter a valid email address';
+                                    }
+                                    // You can add more specific email validation here if needed
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: CustomSpacing.four),
+                              ]))
+                        ],
+                      ),
+                    ),
+                  ]),
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -4061,7 +4308,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
-                  corporateProvider.isStatusLoading &&
+                 !showEnableDisableUser? SizedBox():corporateProvider.isStatusLoading &&
                           selectedCompanyEmployeeListIndex == index
                       ? Padding(
                           padding: const EdgeInsets.only(top: 8.0, right: 8.0),
@@ -4139,7 +4386,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: Row(
                   children: [
                     // Icon with text
-                    TextButton.icon(
+                    !showConnectionListUser?const SizedBox():TextButton.icon(
                       onPressed: () {
                         // Handle view employees
                         Navigator.of(context).push(MaterialPageRoute(
@@ -4161,7 +4408,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black)),
                     ),
                     Spacer(),
-                    corporateProvider.isEditViewEmployeeLoading &&
+                    !showEditUser?SizedBox():corporateProvider.isEditViewEmployeeLoading &&
                             selectedCompanyEmployeeListIndex == index
                         ? Center(
                             child: Container(
@@ -4194,7 +4441,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               });
                             },
                           ),
-                    corporateProvider.isDeleteLoading &&
+                    !showDeleteUser?SizedBox():corporateProvider.isDeleteLoading &&
                             selectedCompanyEmployeeListIndex == index
                         ? Center(
                             child: Container(
@@ -4994,7 +5241,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       height: CustomSpacing.four,
                     ),
                     // Role Dropdown
-                    Consumer<EmployeeProvider>(
+                    Consumer<CorporateProvider>(
                         builder: (_, employeeProvider, child) {
                       print(
                           'Selected Employee Type: $selectedCorporateTypeRole');
@@ -5008,12 +5255,27 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 useSafeArea: true,
                                 isScrollControlled: true,
                                 builder: (BuildContext context) {
+                                  List<companyType.Roles> roles = [];
+
+                                  if (employeeProvider.roles != null) {
+                                    employeeProvider.roles!.forEach((role) {
+                                      roles.add(companyType.Roles(
+                                        isForIndividual: role.isForIndividual,
+                                        isMultipleRoleEnabled: role.isMultipleRoleEnabled,
+                                        isApplicableForTrial: role.isApplicableForTrial,
+                                        name: role.name,
+                                        role: role.role,
+                                        isApplicableForInternal: role.isApplicableForInternal,
+                                        status: role.status,
+                                      ));
+                                    });
+                                  }
                                   return CorporateTypeRolesBottomSheet(
                                     selectedRoles: selectedCorporateTypeRole,
                                     addChip: _addCorporateChip,
                                     removeChip: _removeCorporateChip,
                                     removeAllChips: _removeAllCorporateChips,
-                                    roles: employeeProvider.roles ?? [],
+                                    roles: roles,
                                     isEnabled: true,
                                   );
                                 },
@@ -5036,6 +5298,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     useSafeArea: true,
                                     isScrollControlled: true,
                                     builder: (BuildContext context) {
+                                      List<companyType.Roles> roles = [];
+
+                                      if (employeeProvider.roles != null) {
+                                        employeeProvider.roles!.forEach((role) {
+                                          roles.add(companyType.Roles(
+                                            isForIndividual: role.isForIndividual,
+                                            isMultipleRoleEnabled: role.isMultipleRoleEnabled,
+                                            isApplicableForTrial: role.isApplicableForTrial,
+                                            name: role.name,
+                                            role: role.role,
+                                            isApplicableForInternal: role.isApplicableForInternal,
+                                            status: role.status,
+                                          ));
+                                        });
+                                      }
                                       return CorporateTypeRolesBottomSheet(
                                         selectedRoles:
                                             selectedCorporateTypeRole,
@@ -5043,7 +5320,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         removeChip: _removeCorporateChip,
                                         removeAllChips:
                                             _removeAllCorporateChips,
-                                        roles: employeeProvider.roles ?? [],
+                                        roles: roles,
                                         isEnabled: true,
                                       );
                                     },
@@ -5082,6 +5359,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ],
                       );
                     }),
+
                     SizedBox(
                       height: CustomSpacing.four,
                     ),
@@ -6019,10 +6297,69 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     } else if (_selectedScreen == Screens.corporateAdd) {
       return _verificationRequestsUI();
     } else if (_selectedScreen == Screens.corporateProfile) {
-      return _editCompany();
+     return _getViewCompany();
+      return _viewCompany();
     } else {
       return _corporateManagement();
     }
+  }
+
+  _getViewCompany() {
+    var companyProvider = Provider.of<CompanyProvider>(context, listen: false);
+    companyProvider.viewCompany(context,
+        "true");
+    log(companyProvider.company.toJson().toString());
+    // Prefill values
+    companyImageUrl =
+        companyProvider.company.companyImageUrl;
+    selectedCompanyType = CorporateType(
+      name: companyProvider.company.companyTypeName,
+      type: companyProvider.company.companyType,
+    );
+    _enableDomainCheck =
+        companyProvider.company.enableDomainCheck ??
+            false;
+    selectedCorporateTypeRole = [
+      companyType.Roles(
+        name: "Admin",
+        role: "admin",
+      )
+    ];
+    _domainListController.text = companyProvider
+        .company.domainList
+        ?.join(",") ??
+        '';
+    _companyLegalNameController.text =
+        companyProvider.company.name ?? '';
+    if (companyProvider.company.displayName != null) {
+      _companyDisplayNameController.text =
+          companyProvider
+              .company.displayName!
+              .substring(0, 1)
+              .toUpperCase() +
+              companyProvider.company.displayName!
+                  .substring(1) ??
+              '';
+    }
+
+    _adminNameController.text =
+        companyProvider.company.admins?.name ?? "";
+    _adminDisplayNameController.text =
+        companyProvider.company.admins?.displayName ??
+            '';
+    _adminEmailController.text =
+        companyProvider.company.admins?.email ?? '';
+    _selectedCountryCode = _adminMobileController
+        .text =
+        companyProvider.company.admins?.mobile ?? '';
+    _enableDomainCheck =
+        companyProvider.company.enableDomainCheck ??
+            false;
+    // Set screen to edit
+
+      _selectedScreen = Screens.corporateProfile;
+      clearFilters();
+      return _viewCompany();
   }
 
   /// Non Corporate Management
@@ -6152,37 +6489,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   }),
                 ],
               )),
-
-              // Tab(
-              //     child: Row(
-              //   children: [
-              //     Text(
-              //       'Pending',
-              //       style: CustomTypography.BottomNavigationActiveLabel,
-              //     ),
-              //     SizedBox(
-              //       width: CustomSpacing.two,
-              //     ),
-              //     // rounded container to show number of all users
-              //     SizedBox(
-              //       height: 25,
-              //       width: 35,
-              //       child: Chip(
-              //         labelPadding: EdgeInsets.all(0),
-              //         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              //         label: Text(
-              //           '10',
-              //           style:
-              //               CustomTypography.BottomNavigationActiveLabel.copyWith(
-              //                   height: -0.6),
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // )),
             ],
           ),
-          showCheckbox
+          !showDeleteNonCorporate?SizedBox():showCheckbox
               ? Consumer<NonCorporateProvider>(
                   builder: (_, nonCorporateProvider, child) {
                   return Row(
@@ -6298,47 +6607,91 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       child: Text('No individuals found',
                                           style: CustomTypography.Body1),
                                     )
-                                  : ListView.builder(
-                                      itemCount: noncorporateProvider
-                                              .employeeList!.length +
-                                          (noncorporateProvider.nextPageExists
-                                              ? 1
-                                              : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index ==
-                                            noncorporateProvider
-                                                .employeeList!.length) {
-                                          // Reached the end of the current list, load more data
-                                          noncorporateProvider
-                                              .getNonCorporateUserList(
-                                            context,
-                                            searchText: "",
-                                            // Adjust parameters as needed
-                                            roleFilter: "",
-                                            isSearch: false,
-                                          );
-                                          return SizedBox(
-                                            height: 50,
-                                            // Placeholder for loading indicator
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                          );
-                                        } else {
-                                          return _nonCorporateListItem(
-                                              index, noncorporateProvider);
-                                        }
-                                      },
-                                    );
+                                  : Builder(
+                                    builder: (context) {
+
+                                      return ListView.builder(
+                                          itemCount: noncorporateProvider
+                                                  .employeeList!.length +
+                                              (noncorporateProvider.nextPageExists
+                                                  ? 1
+                                                  : 0),
+                                          itemBuilder: (context, index) {
+                                            if (index ==
+                                                noncorporateProvider
+                                                    .employeeList!.length) {
+                                              // Reached the end of the current list, load more data
+                                              noncorporateProvider
+                                                  .getNonCorporateUserList(
+                                                context,
+                                                searchText: "",
+                                                // Adjust parameters as needed
+                                                roleFilter: "",
+                                                isSearch: false,
+                                              );
+                                              return SizedBox(
+                                                height: 50,
+                                                // Placeholder for loading indicator
+                                                child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              );
+                                            } else {
+                                              return _nonCorporateListItem(
+                                                  index, noncorporateProvider);
+                                            }
+                                          },
+                                        );
+                                    }
+                                  );
                         }),
                         // Active Tab
-                        ListView.builder(
-                          itemCount: 5,
-                          itemBuilder: (context, index) {
-                            return _corporateEmployeeManagement();
-                          },
-                        ),
+                        Consumer<NonCorporateProvider>(
+                            builder: (context, noncorporateProvider, child) {
+                              return noncorporateProvider.isLoading
+                                  ? Center(
+                                child: CircularProgressIndicator(),
+                              )
+                                  : noncorporateProvider.employeeList!.isEmpty
+                                  ? Center(
+                                child: Text('No individuals found',
+                                    style: CustomTypography.Body1),
+                              )
+                                  : ListView.builder(
+                                itemCount: noncorporateProvider
+                                    .employeeList!.length +
+                                    (noncorporateProvider.nextPageExists
+                                        ? 1
+                                        : 0),
+                                itemBuilder: (context, index) {
+                                  if (index ==
+                                      noncorporateProvider
+                                          .employeeList!.length) {
+                                    // Reached the end of the current list, load more data
+                                    noncorporateProvider
+                                        .getNonCorporateUserList(
+                                      context,
+                                      searchText: "",
+                                      // Adjust parameters as needed
+                                      roleFilter: "",
+                                      isSearch: false,
+                                    );
+                                    return SizedBox(
+                                      height: 50,
+                                      // Placeholder for loading indicator
+                                      child: Center(
+                                        child:
+                                        CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  } else {
+                                    return _nonCorporateListItem(
+                                        index, noncorporateProvider);
+                                  }
+                                },
+                              );
+                            }),
                         // Pending Tab
                         // ListView.builder(
                         //   itemCount: 5,
@@ -6364,7 +6717,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onLongPress: () {
+        onLongPress: !showDeleteNonCorporate?null:() {
           // Show checkbox
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
@@ -6389,7 +6742,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.four,
                   ),
-                  showCheckbox
+                  !showDeleteNonCorporate?SizedBox():showCheckbox
                       ? Checkbox(
                           value: nonCorporateProvider
                               .employeeList![index].isSelected!,
@@ -6461,7 +6814,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
-                  nonCorporateProvider.isStatusLoading &&
+                  !showEnableDisableNonCorporate?SizedBox():nonCorporateProvider.isStatusLoading &&
                           selectedNonCorporateListIndex == index
                       ? Padding(
                           padding: const EdgeInsets.only(top: 8.0, right: 8.0),
@@ -6561,7 +6914,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: Row(
                   children: [
                     // Icon with text
-                    TextButton.icon(
+                    !showNonCorporateConnectionList?SizedBox():TextButton.icon(
                       onPressed: () {
                         // Handle view employees
                         Navigator.of(context).push(MaterialPageRoute(
@@ -6583,7 +6936,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black)),
                     ),
                     Spacer(),
-                    nonCorporateProvider.isEditViewEmployeeLoading &&
+                    !showEditNonCorporate?SizedBox():nonCorporateProvider.isEditViewEmployeeLoading &&
                             selectedNonCorporateListIndex == index
                         ? Center(
                             child: Container(
@@ -7429,7 +7782,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               )),
             ],
           ),
-          showCheckbox
+          !showDeleteEmployee?SizedBox():showCheckbox
               ? Consumer<EmployeeProvider>(
                   builder: (_, employeeProvider, child) {
                   return Row(
@@ -7648,14 +8001,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onLongPress: () {
+        onLongPress: !showDeleteEmployee?null:() {
           // Show checkbox
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
               showCheckbox = !showCheckbox;
             });
           });
-          selectedCompanyListIndex = index;
+          selectedEmployeeListIndex = index;
           setState(() {
             employeeProvider.employeeList?[index].isSelected =
                 !employeeProvider.employeeList![index].isSelected;
@@ -7673,7 +8026,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.four,
                   ),
-                  showCheckbox
+                  !showDeleteEmployee?SizedBox():showCheckbox
                       ? Checkbox(
                           value:
                               employeeProvider.employeeList?[index].isSelected!,
@@ -7742,7 +8095,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   SizedBox(
                     width: CustomSpacing.two,
                   ),
-                  employeeProvider.isStatusLoading &&
+                  !showEnableDisableEmployee?SizedBox():employeeProvider.isStatusLoading &&
                           selectedEmployeeListIndex == index
                       ? Padding(
                           padding: const EdgeInsets.only(top: 8.0, right: 8.0),
@@ -7753,7 +8106,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               false,
                           onChanged: (value) {
                             // Handle switch value change
-                            selectedCompanyListIndex = index;
+                            selectedEmployeeListIndex = index;
                             employeeProvider
                                 .changeEmployeeStatus(
                                     context,
@@ -7810,7 +8163,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: Row(
                   children: [
                     // Icon with text
-                    TextButton.icon(
+                    !showConnectionListEmployee?SizedBox():TextButton.icon(
                       onPressed: () {
                         // Handle view employees
                         Navigator.of(context).push(MaterialPageRoute(
@@ -7832,7 +8185,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black)),
                     ),
                     Spacer(),
-                    employeeProvider.isEditViewEmployeeLoading
+                    !showEditEmployee?SizedBox():employeeProvider.isEditViewEmployeeLoading && selectedEmployeeListIndex == index
                         ? Center(
                             child: Container(
                               margin: EdgeInsets.only(right: 8),
@@ -7846,6 +8199,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             color: AppColors.primaryMain,
                             onPressed: () async {
                               /// Handle edit company
+                              selectedEmployeeListIndex = index;
                               await employeeProvider.viewEmployee(
                                   context,
                                   employeeProvider.employeeList?[index].id ??
@@ -7889,7 +8243,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             },
                           ),
                     employeeProvider.isDeleteLoading &&
-                            selectedCompanyListIndex == index
+                            selectedEmployeeListIndex == index
                         ? Center(
                             child: Container(
                                 height: 20,
@@ -7982,26 +8336,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           // two tabs for Corporate verification and user verification
           TabBar(
             controller: _tabVerificationController,
-            tabs: [
-              Tab(
-                child: Text(
-                  'Corporate',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-              ),
-              Tab(
-                child: Text(
-                  'User',
-                  style: CustomTypography.BottomNavigationActiveLabel,
-                ),
-              ),
-            ],
+            tabs: _verificationTabs,
           ),
           Expanded(
             child: TabBarView(
               controller: _tabVerificationController,
               children: [
                 // Corporate Tab
+                if (showCorporateVerificationTab)
                 RefreshIndicator(
                   onRefresh: () async {
                     Provider.of<VerificationProvider>(context, listen: false)
@@ -8059,6 +8401,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   ),
                 ),
                 // User Tab
+                if (showUserVerificationTab)
                 RefreshIndicator(
                   onRefresh: () async {
                     Provider.of<VerificationProvider>(context, listen: false)
@@ -8608,7 +8951,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 value: 'Companies',
               ),
             ),
-      showCorporateUserList
+      showCorporateUserListDropdown
           ? DropdownMenuItem(
               child: Text(
                 'Users',
