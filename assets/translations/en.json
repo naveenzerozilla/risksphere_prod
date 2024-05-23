@@ -116,7 +116,6 @@
   "usermanagement_dash_verification_req": "Verification Requests",
   "usermanagement_dash_verification_req_list_btn": "See list",
   "usermanagement_dash_connection_request": "Connection Request",
-  "usermanagement_dash_connection_request": "Connection Request",
   "usermanagement_dash_connection_req_list_btn": "See list",
   "usermanagement_dash_company_onboarding_status_title": "Company onboarding stats",
   "usermanagement_dash_select_period_label": "Select Period",
@@ -434,7 +433,6 @@
   "connection_request_saysomethingnice_placeholder": "Say something nice",
   "coming_soon_title": "This feature is launching soon!",
   "coming_soon_subtitle": " We have something coming that is going to blow you away. Check back often for the launch.",
-  "coming_soon_subtitle": " We have something coming that is going to blow you away. Check back often for the launch.",
   "listing_maps_geocodetype": "Geocode Type",
   "listing_maps_geocodetype_placeholder": "Enter Geocode Type",
   "listing_maps_propertytype": "Property Type",
@@ -444,7 +442,7 @@
   "connection_no_corporate_connection": "No corporate connections",
   "connection_no_non_corporate_connection": "No non corporate connections",
  "view_connections": "View Connections",
- "no_requests": "No requests",
+ "no_requests": "No requests"
 
 
 }
