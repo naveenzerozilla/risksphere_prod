@@ -116,6 +116,7 @@
   "usermanagement_dash_verification_req": "Verification Requests",
   "usermanagement_dash_verification_req_list_btn": "See list",
   "usermanagement_dash_connection_request": "Connection Request",
+  "usermanagement_dash_connection_request": "Connection Request",
   "usermanagement_dash_connection_req_list_btn": "See list",
   "usermanagement_dash_company_onboarding_status_title": "Company onboarding stats",
   "usermanagement_dash_select_period_label": "Select Period",
@@ -439,6 +440,11 @@
   "listing_maps_propertytype": "Property Type",
   "listing_maps_ratings": "Ratings",
   "register_mobile_number": "Mobile Number",
-  "register_enter_mobile_number": " Enter your mobile number"
+  "register_enter_mobile_number": " Enter your mobile number",
+  "connection_no_corporate_connection": "No corporate connections",
+  "connection_no_non_corporate_connection": "No non corporate connections",
+ "view_connections": "View Connections",
+ "no_requests": "No requests",
+
 
 }
