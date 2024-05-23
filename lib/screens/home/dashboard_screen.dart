@@ -13,6 +13,7 @@ import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:intl/intl.dart';
+
 // import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +25,7 @@ import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
@@ -60,15 +62,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   _setClaims() async {
-    showTotalCorporates = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASTC)??false;
-    showAllUsers = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASTU)??false;
-    showConnectionRequests = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASCR)??false;
-    showCompanyOnboardingStats = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASCO)??false;
-    showUserOnboardingStats = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.DASUO)??false;
-    setState(()  {
-
-    });
-
+    showTotalCorporates = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.DASTC) ??
+        false;
+    showAllUsers = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.DASTU) ??
+        false;
+    showConnectionRequests =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.DASCR) ??
+            false;
+    showCompanyOnboardingStats =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.DASCO) ??
+            false;
+    showUserOnboardingStats =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.DASUO) ??
+            false;
+    setState(() {});
   }
 
   _getData() {
@@ -137,57 +149,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      'Overview',
+                      LanguageService.getTranslated(
+                          context, 'usermanagement_dash_overview'),
                       style: CustomTypography.H5_Regular,
                     ),
                     SizedBox(height: CustomSpacing.six),
-                    !showTotalCorporates?SizedBox():_overviewCardHorizontal(
-                      title: 'Total Corporates',
+                    !showTotalCorporates
+                        ? SizedBox()
+                        : _overviewCardHorizontal(
+                            title: LanguageService.getTranslated(
+                                context, 'usermanagement_dash_total_corps'),
+                            amount: dashboardProvider
+                                .dashboard!.signups!.current!.csignup
+                                .toString(),
+                            icon:
+                                'assets/images/total_corporates_list_check.svg',
+                            bottomWidget: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                (dashboardProvider.dashboardModel?.signups
+                                                ?.current?.csignup ??
+                                            0) >
+                                        (dashboardProvider.dashboardModel
+                                                ?.signups?.past?.csignup ??
+                                            0)
+                                    ? Icon(Icons.trending_up,
+                                        color: Colors.green)
+                                    : Icon(Icons.trending_down,
+                                        color: Colors.red),
+                                SizedBox(width: CustomSpacing.two),
+                                Flexible(
+                                  child: Text(
+                                    _getTotalCorporatePercentage(
+                                        dashboardProvider),
+                                    style: CustomTypography.Subtitle1,
+                                    maxLines: 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                    !showTotalCorporates
+                        ? SizedBox()
+                        : SizedBox(width: CustomSpacing.four),
+                    !showAllUsers
+                        ? SizedBox()
+                        : _overviewCardHorizontal(
+                            title: LanguageService.getTranslated(
+                                context, 'usermanagement_dash_signups'),
+                            amount: dashboardProvider
+                                    .dashboardModel?.signups?.current?.signup
+                                    .toString() ??
+                                '0',
+                            icon: 'assets/images/sign_ups_users.svg',
+                            bottomWidget: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                (dashboardProvider.dashboardModel?.signups
+                                                ?.current?.signup ??
+                                            0) >
+                                        (dashboardProvider.dashboardModel
+                                                ?.signups?.past?.signup ??
+                                            0)
+                                    ? Icon(Icons.trending_up,
+                                        color: Colors.green)
+                                    : Icon(Icons.trending_down,
+                                        color: Colors.red),
+                                SizedBox(width: CustomSpacing.two),
+                                Flexible(
+                                  child: Text(
+                                    _getSignupsPercentage(dashboardProvider),
+                                    style: CustomTypography.Subtitle1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                    _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_verification_req'),
                       amount: dashboardProvider
-                          .dashboard!.signups!.current!.csignup
-                          .toString(),
-                      icon: 'assets/images/total_corporates_list_check.svg',
-                      bottomWidget: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          (dashboardProvider.dashboardModel?.signups?.current?.csignup??0)>(dashboardProvider.dashboardModel?.signups?.past?.csignup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
-                          SizedBox(width: CustomSpacing.two),
-                          Flexible(
-                            child: Text(
-                              _getTotalCorporatePercentage(
-                                  dashboardProvider),
-                              style: CustomTypography.Subtitle1,
-                              maxLines: 2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    !showTotalCorporates?SizedBox():SizedBox(width: CustomSpacing.four),
-                    !showAllUsers?SizedBox():
-                    _overviewCardHorizontal(
-                      title: 'Sign Ups',
-                      amount: dashboardProvider.dashboardModel?.signups?.current?.signup.toString()??'0',
-                      icon: 'assets/images/sign_ups_users.svg',
-                      bottomWidget: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          (dashboardProvider.dashboardModel?.signups?.current?.signup??0)>(dashboardProvider.dashboardModel?.signups?.past?.signup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
-                          SizedBox(width: CustomSpacing.two),
-                          Flexible(
-                            child: Text(
-                              _getSignupsPercentage(dashboardProvider),
-                              style: CustomTypography.Subtitle1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _overviewCardHorizontal(
-                      title: 'Verification Requests',
-                      amount: dashboardProvider.dashboardModel?.verificationCount.toString()??'0',
+                              .dashboardModel?.verificationCount
+                              .toString() ??
+                          '0',
                       icon: 'assets/images/verification_req_checks.svg',
                       bottomWidget: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -211,7 +257,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'See List',
+                                  LanguageService.getTranslated(
+                                      context, 'usermanagement_dash_verification_req_list_btn'),
                                   style: CustomTypography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
@@ -225,10 +272,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                    !showConnectionRequests?SizedBox():SizedBox(width: CustomSpacing.four),
+                    !showConnectionRequests
+                        ? SizedBox()
+                        : SizedBox(width: CustomSpacing.four),
                     _overviewCardHorizontal(
-                      title: 'Connection Requests',
-                      amount: dashboardProvider.dashboardModel?.requests?.toString()??'0',
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_connection_request'),
+                      amount: dashboardProvider.dashboardModel?.requests
+                              ?.toString() ??
+                          '0',
                       icon: 'assets/images/connection_request_people.svg',
                       bottomWidget: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -239,14 +291,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             onPressed: () async {
                               FirebaseAuth auth = FirebaseAuth.instance;
                               String uid = auth.currentUser!.uid;
-                              IdTokenResult token = await auth.currentUser!.getIdTokenResult();
-                              Map<String, dynamic>? claims = token.claims?? {};
+                              IdTokenResult token =
+                                  await auth.currentUser!.getIdTokenResult();
+                              Map<String, dynamic>? claims = token.claims ?? {};
                               log(claims.toString());
                               log(auth.currentUser.toString());
-                              String name = claims['name']??''; //name of the user
+                              String name =
+                                  claims['name'] ?? ''; //name of the user
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => ConnectionsScreen(userId: uid, userName: name, selectedTabIndex: 1,),
+                                  builder: (context) => ConnectionsScreen(
+                                    userId: uid,
+                                    userName: name,
+                                    selectedTabIndex: 1,
+                                  ),
                                 ),
                               );
                             },
@@ -255,7 +313,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'See List',
+                                  LanguageService.getTranslated(
+                                      context, 'usermanagement_dash_connection_req_list_btn'),
                                   style: CustomTypography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
@@ -270,27 +329,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     SizedBox(height: CustomSpacing.one),
-                    !showCompanyOnboardingStats?SizedBox():dashboardProvider.isCompanyLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
-                      isExpanded: isCompanyOnboardingStatsExpanded,
-                      collapsedChild: _collapsedCompanyCardWidget(
-                        title: Text(
-                          'Company onboarding stats',
-                          style: CustomTypography.Body1,
-                        ),
-                      ),
-                      expandedChild: _expandedCompanyOnboardingStatsWidget(dashboardProvider),
-                    ),
+                    !showCompanyOnboardingStats
+                        ? SizedBox()
+                        : dashboardProvider.isCompanyLoading
+                            ? Column(
+                                children: [
+                                  Center(
+                                    child: SizedBox(
+                                        height: 25,
+                                        width: 25,
+                                        child: CircularProgressIndicator()),
+                                  )
+                                ],
+                              )
+                            : ExpandableCardContainer(
+                                isExpanded: isCompanyOnboardingStatsExpanded,
+                                collapsedChild: _collapsedCompanyCardWidget(
+                                  title: Text(
+                                    LanguageService.getTranslated(
+                                        context, 'usermanagement_dash_company_onboarding_status_title'),
+                                    style: CustomTypography.Body1,
+                                  ),
+                                ),
+                                expandedChild:
+                                    _expandedCompanyOnboardingStatsWidget(
+                                        dashboardProvider),
+                              ),
                     SizedBox(height: CustomSpacing.one),
-                    !showUserOnboardingStats?SizedBox():dashboardProvider.isRoleLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
-                      isExpanded: isUserOnboardingStatsExpanded,
-                      collapsedChild: _collapsedUserCardWidget(
-                        title: Text(
-                          'User onboarding stats',
-                          style: CustomTypography.Body1,
-                        ),
-                      ),
-                      expandedChild: _expandedUserOnboardingStatsWidget(dashboardProvider),
-                    ),
+                    !showUserOnboardingStats
+                        ? SizedBox()
+                        : dashboardProvider.isRoleLoading
+                            ? Column(
+                                children: [
+                                  Center(
+                                    child: SizedBox(
+                                        height: 25,
+                                        width: 25,
+                                        child: CircularProgressIndicator()),
+                                  )
+                                ],
+                              )
+                            : ExpandableCardContainer(
+                                isExpanded: isUserOnboardingStatsExpanded,
+                                collapsedChild: _collapsedUserCardWidget(
+                                  title: Text(
+                                    LanguageService.getTranslated(
+                                        context, 'usermanagement_dash_user_on_boarding_status'),
+                                    style: CustomTypography.Body1,
+                                  ),
+                                ),
+                                expandedChild:
+                                    _expandedUserOnboardingStatsWidget(
+                                        dashboardProvider),
+                              ),
                     SizedBox(height: CustomSpacing.eight),
                   ],
                 ),
@@ -299,64 +390,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  _overviewCard(
-      {required String title,
-      required String amount,
-      required String icon,
-      required Row bottomWidget}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        width: 160,
-        height: 240,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Circular elevated container icon
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Card(
-                  elevation: 100,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Container(
-                    padding: EdgeInsets.all(CustomSpacing.two),
-                    child: SvgPicture.asset(
-                      icon,
-                      width: 24,
-                      height: 24,
-                    ),
-                  ),
-                ),
-                SizedBox(height: CustomSpacing.two),
-                Text(
-                  title,
-                  style: CustomTypography.Body1,
-                ),
-                SizedBox(height: CustomSpacing.two),
-                Text(
-                  amount,
-                  style: CustomTypography.H4,
-                ),
-              ],
-            ),
-            Spacer(),
-            Divider(),
-            SizedBox(height: CustomSpacing.one),
-            bottomWidget,
-          ],
-        ),
-      ),
-    );
-  }
 
   _overviewCardHorizontal(
       {required String title,
@@ -486,8 +519,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateCompany!)),
                         decoration: InputDecoration(
-                          labelText: 'Select Period',
-                          hintText: 'MM/YYYY',
+                          labelText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_select_period_label'),
+                          hintText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -551,7 +586,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 SizedBox(width: CustomSpacing.two),
                 Text(
-                  'Company onboarding stats',
+                  LanguageService.getTranslated(
+                      context, 'usermanagement_dash_company_onboarding_status_title'),
                   style: CustomTypography.Body1,
                 ),
               ],
@@ -570,8 +606,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : DateFormat('MMMM yyyy')
                                 .format(_selectedDateCompany!)),
                     decoration: InputDecoration(
-                      labelText: 'Select Period',
-                      hintText: 'MM/YYYY',
+                      labelText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_select_period_label'),
+                      hintText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_calendar'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -604,12 +642,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 shrinkWrap: true,
                 physics: ClampingScrollPhysics(),
-                children: [
-                  ]
-                    ..addAll(dashboardProvider.dashboardModel?.companyType?.map((corporate) {
-                      return companyOnboardingStatsProgressCards(corporate, dashboardProvider);
-                    })??[]),
-            ),),
+                children: []..addAll(dashboardProvider
+                        .dashboardModel?.companyType
+                        ?.map((corporate) {
+                      return companyOnboardingStatsProgressCards(
+                          corporate, dashboardProvider);
+                    }) ??
+                    []),
+              ),
+            ),
             SizedBox(height: CustomSpacing.four),
             Container(
               margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
@@ -617,14 +658,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getPercentConversions(dashboardProvider.dashboardModel?.companyPercent??"0"),
+                    _getPercentConversions(
+                        dashboardProvider.dashboardModel?.companyPercent ??
+                            "0"),
                     style: CustomTypography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    ' in conversions compared to last year',
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_conversions'),
                     style: CustomTypography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
@@ -635,14 +679,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'This year ',
+                                text: LanguageService.getTranslated(
+                                    context, 'usermanagement_dash_forcast_part_1'),
                                 style: CustomTypography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
                                 text:
-                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
+                                    LanguageService.getTranslated(
+                                        context, 'usermanagement_dash_forcast_part_2'),
                                 style: CustomTypography.Body1,
                               ),
                             ],
@@ -660,7 +706,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget companyOnboardingStatsProgressCards(CompanyType corporate, DashboardProvider dashboardProvider) {
+  Widget companyOnboardingStatsProgressCards(
+      CompanyType corporate, DashboardProvider dashboardProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -676,7 +723,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: LinearProgressIndicator(
                 value: corporate.count == null
                     ? 0
-                    : corporate.count! / (dashboardProvider.dashboardModel?.max??1),
+                    : corporate.count! /
+                        (dashboardProvider.dashboardModel?.max ?? 1),
               ),
             ),
             SizedBox(width: CustomSpacing.two),
@@ -739,8 +787,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateUser!)),
                         decoration: InputDecoration(
-                          labelText: 'Select Period',
-                          hintText: 'MM/YYYY',
+                          labelText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_select_period_label'),
+                          hintText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -803,7 +853,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 SizedBox(width: CustomSpacing.two),
                 Text(
-                  'User onboarding stats',
+                  LanguageService.getTranslated(
+                      context, 'usermanagement_dash_user_on_boarding_status'),
                   style: CustomTypography.Body1,
                 ),
               ],
@@ -822,8 +873,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : DateFormat('MMMM yyyy')
                                 .format(_selectedDateUser!)),
                     decoration: InputDecoration(
-                      labelText: 'Select Period',
-                      hintText: 'MM/YYYY',
+                      labelText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_select_period_label'),
+                      hintText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_calendar'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -855,11 +908,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 shrinkWrap: true,
                 physics: ClampingScrollPhysics(),
-                children: [
-                  ]
-                    ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
-                      return userOnboardingStatsProgressCards(role, dashboardProvider);
-                    })??[]),),
+                children: []
+                  ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
+                        return userOnboardingStatsProgressCards(
+                            role, dashboardProvider);
+                      }) ??
+                      []),
+              ),
             ),
             SizedBox(height: CustomSpacing.four),
             Container(
@@ -868,14 +923,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getPercentConversions(dashboardProvider.dashboardModel?.rolePercent??"0"),
+                    _getPercentConversions(
+                        dashboardProvider.dashboardModel?.rolePercent ?? "0"),
                     style: CustomTypography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    ' in conversions compared to last year',
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_conversions'),
                     style: CustomTypography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
@@ -886,14 +943,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'This year ',
+                                text: LanguageService.getTranslated(
+                                    context, 'usermanagement_dash_forcast_part_1'),
                                 style: CustomTypography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
                                 text:
-                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
+                                    LanguageService.getTranslated(
+                                        context, 'usermanagement_dash_forcast_part_2'),
                                 style: CustomTypography.Body1,
                               ),
                             ],
@@ -911,7 +970,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget userOnboardingStatsProgressCards(DashboardRoles role, DashboardProvider dashboardProvider) {
+  Widget userOnboardingStatsProgressCards(
+      DashboardRoles role, DashboardProvider dashboardProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -927,7 +987,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: LinearProgressIndicator(
                 value: role.count == null
                     ? 0
-                    : role.count! / (dashboardProvider.dashboardModel?.max??1),
+                    : role.count! /
+                        (dashboardProvider.dashboardModel?.max ?? 1),
               ),
             ),
             SizedBox(width: CustomSpacing.two),
@@ -955,24 +1016,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _getTotalCorporatePercentage(DashboardProvider dashboardProvider) {
-
-    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.csignup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.csignup ?? 0);
+    double changePercentage = getChangePercentage(
+        dashboardProvider.dashboardModel?.signups?.current?.csignup ?? 0,
+        dashboardProvider.dashboardModel?.signups?.past?.csignup ?? 0);
 
     print('changePercentage: $changePercentage');
 
-    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+    String changeText = changePercentage >= 0
+        ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}}';
 
-    String output = changeText + ' vs last month';
+    String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
 
   String _getSignupsPercentage(DashboardProvider dashboardProvider) {
-    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.signup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.signup ?? 0);
+    double changePercentage = getChangePercentage(
+        dashboardProvider.dashboardModel?.signups?.current?.signup ?? 0,
+        dashboardProvider.dashboardModel?.signups?.past?.signup ?? 0);
 
-    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+    String changeText = changePercentage >= 0
+        ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}}';
 
-    String output = changeText + ' vs last month';
+    String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
@@ -984,24 +1052,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return changePercentage;
   }
 
-  String _getPercentConversions(String percent ){
+  String _getPercentConversions(String percent) {
     //double.parse(dashboardProvider.dashboardModel?.rolePercent??"0")>=0?"${dashboardProvider.dashboardModel?.rolePercent??0}% Increase":"${dashboardProvider.dashboardModel?.rolePercent??0}% Decrease",
     String rolePercentText = percent ?? "0";
 // Remove '%' sign and any other non-digit characters
-    String rolePercentCleaned = rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
+    String rolePercentCleaned =
+        rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
     double rolePercent = double.parse(rolePercentCleaned);
 
     String changeText;
     if (rolePercent < 0) {
       rolePercent = -rolePercent; // Make it positive
-      changeText = "${rolePercent.toStringAsFixed(0)}% Decrease";
+      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
     } else {
-      changeText = "${rolePercent.toStringAsFixed(0)}% Increase";
+      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}}";
     }
 
     print(changeText);
     return changeText;
-
   }
 
   Map<String, dynamic>? parseJwt(String token) {

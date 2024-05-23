@@ -112,12 +112,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
           },
+          itemFilter: (Country country) {
+            // Only include countries with these ISO codes
+            return ['US', 'ES', 'FR', 'JP', 'CN']
+                .contains(country.isoCode);
+          },
           icon: SizedBox(),
           onValuePicked: (Country country) {
-            print(country.toString());
-            // Do something with the selected country
-            context.setLocale(Locale(country.isoCode, country.iso3Code));
-
+            switch (country.isoCode) {
+              case 'US':
+                context.setLocale(Locale('en'));
+                break;
+              case 'ES':
+                context.setLocale(Locale('es'));
+                break;
+              case 'FR':
+                context.setLocale(Locale('fr'));
+                break;
+              case 'JP':
+                context.setLocale(Locale('ja'));
+                break;
+              case 'CN':
+                context.setLocale(Locale('zh'));
+                break;
+            }
           },
         ),
         VerticalDivider(

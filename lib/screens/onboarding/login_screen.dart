@@ -301,14 +301,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 : GestureDetector(
                     onTap: () async {
                       if (validateEmail(emailController.text)) {
-                        await authNotifier.resetPassword(
-                            emailController.text, context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Email sent to reset password. Please check your email.'),
-                          ),
-                        );
+                        try {
+                          var result = await authNotifier.resetPassword(
+                              emailController.text, context);
+                          if (result) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Email sent to reset password. Please check your email.'),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Email not found. Please enter a valid email address.'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Email not found. Please enter a valid email address.'),
+                            ),
+                          );
+                        }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

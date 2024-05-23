@@ -217,24 +217,41 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> resetPassword(String email, BuildContext context) async {
+  Future<bool> resetPassword(String email, BuildContext context) async {
     try {
       _isResettingPassword = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
+      bool isUserRegistered =  await userExists(email.trim());
 
-      await _auth.sendPasswordResetEmail(email: email);
-      // Reset password email sent successfully
-      _isResettingPassword = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      if (isUserRegistered) {
+        await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
+// and another things...
+        await _auth.sendPasswordResetEmail(email: email);
+        // Reset password email sent successfully
+        _isResettingPassword = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return true;
+      }
+      else {
+// show error message etc.
+        _isResettingPassword = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+      return false;
+      }
+
+
     } on FirebaseAuthException catch (e) {
       _isResettingPassword = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
+
       // Handle error
       print("Error sending password reset email: $e");
       ScaffoldMessenger.of(context!).showSnackBar(
@@ -242,6 +259,30 @@ class AuthNotifier extends ChangeNotifier {
           content: Text(e.message!),
         ),
       );
+      return false;
+    }
+  }
+
+  Future<bool> userExists(String email) async {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    try {
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: 'TemporaryPassword123!', // Use a temporary password
+      );
+
+      // If the account creation is successful, delete the account and return false
+      await userCredential.user!.delete();
+      return false;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        // If account creation fails because the email is already in use,
+        // return true
+        return true;
+      } else {
+        // If account creation fails for any other reason, return false
+        return false;
+      }
     }
   }
 

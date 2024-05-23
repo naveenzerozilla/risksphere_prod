@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:green/models/company_type_model.dart';
 
+import '../../service/language_service.dart';
 import '../primitives/custom_typography.dart';
 
 class CorporateTypeRolesBottomSheet extends StatefulWidget {
@@ -47,7 +48,7 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
             children: [
               Container(
                 margin: const EdgeInsets.only(left: 24, top: 24),
-                child: Text('Select Account Roles',
+                child: Text(LanguageService.getTranslated(context, 'usermanagement_app_employee_create_account_select_role_title'),
                     style: CustomTypography.H7.copyWith(
                       color: Theme.of(context).colorScheme.onBackground,
                       fontWeight: FontWeight.bold,
@@ -66,7 +67,7 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
           ),
           Expanded(
             child: widget.roles.length == 0
-                ? Center(child: Text('Select company type', style: CustomTypography.Body1,))
+                ? Center(child: Text(LanguageService.getTranslated(context, "usermanagement_app_employee_create_account_select_role_company_type"), style: CustomTypography.Body1,))
                 : ListView.builder(
               itemCount: widget.roles.length,
               itemBuilder: (context, index) {
@@ -100,7 +101,11 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text('SUBMIT'),
+            child: Text(LanguageService.getTranslated(context, 'usermanagement_app_employee_create_account_select_role_submit'),
+                style: CustomTypography.Body1.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+            ),
           ),
         ],
       ),
