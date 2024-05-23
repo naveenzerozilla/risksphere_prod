@@ -719,7 +719,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Handle input changes
               },
               decoration: InputDecoration(
-                labelText:  LanguageService.getTranslated(context,"_field_label"),
+                labelText:  LanguageService.getTranslated(context,"register_non_corporate_role_field_label"),
 
                 hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                 border: OutlineInputBorder(),

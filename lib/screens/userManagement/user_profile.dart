@@ -9,6 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/expandable_card_container.dart';
 import 'package:green/models/networking_model.dart';
+import 'package:green/service/language_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -198,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(left: 8.0),
-                            child: Text('User Management',
+                            child: Text(LanguageService.getTranslated(context, "user_profile_user_management_title"),
                                 style: CustomTypography.H5_Regular),
                           ),
                           // Add 3 tabs
@@ -217,7 +218,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     _selectedScreen = Screens.connectionList;
                                   },
                                   child: Tab(
-                                    text: 'Info',
+                                    text: LanguageService.getTranslated(
+                                        context, "user_profile_app_user_management_general_info_tab"),
                                   ),
                                 ),
                               ),
@@ -227,7 +229,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   _selectedScreen = Screens.requestList;
                                 },
                                 child: Tab(
-                                  text: 'My Team',
+                                  text: LanguageService.getTranslated(
+                                      context, "user_profile_app_user_management_my_team_tab"),
                                 ),
                               ),
                               InkWell(
@@ -236,7 +239,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   _selectedScreen = Screens.chatList;
                                 },
                                 child: Tab(
-                                  text: 'Security',
+                                  text: LanguageService.getTranslated(
+                                      context, "user_profile_app_user_management_security_tab"),
                                 ),
                               ),
                             ],
@@ -296,12 +300,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   )),
                   SizedBox(height: CustomSpacing.six),
                   // name, phone, email, company, role dropdown, status,
-                  Form(
-                      child: Column(children: [
+              Form(
+                child: Column(
+                  children: [
                     // Name
                     TextFormField(
                       decoration: InputDecoration(
-                        labelText: 'Name',
+                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_name"),
                         labelStyle: CustomTypography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -314,7 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     // Email
                     TextFormField(
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_email"),
                         labelStyle: CustomTypography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -331,8 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           flex: 4,
                           child: Container(
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.5)),
+                              border: Border.all(color: Colors.white.withOpacity(0.5)),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -365,7 +369,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         SizedBox(width: CustomSpacing.two),
-
                         // Mobile Number TextFormField
                         Expanded(
                           flex: 7,
@@ -378,14 +381,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                               // Only allows digits
                             ],
                             decoration: InputDecoration(
-                              labelText: 'Mobile Number',
-                              hintText: 'Enter your mobile number',
+                              labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone"),
+                              hintText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone_hint"),
                               border: const OutlineInputBorder(),
                               counterText: '',
                             ),
                             validator: (value) {
                               if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                return 'Mobile number can only contain digits';
+                                return LanguageService.getTranslated(context, "usermanagement_app_filter_phone_validation");
                               }
                               return null;
                             },
@@ -399,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     // Company
                     TextFormField(
                       decoration: InputDecoration(
-                        labelText: 'Company Name',
+                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_company"),
                         labelStyle: CustomTypography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -438,9 +441,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             // Handle input changes
                           },
                           decoration: InputDecoration(
-                            labelText: 'Role(s)',
-                            hintText:
-                                _selectedRoles.isEmpty ? 'Select Roles' : "",
+                            labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_roles"),
+                            hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                             border: OutlineInputBorder(),
                             suffixIcon: IconButton(
                               icon: Icon(Icons.arrow_drop_down),
@@ -458,8 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       removeChip: _removeChip,
                                       removeAllChips: _removeAllChips,
                                       selectedOption: SignUpOptions.corporate,
-                                      onOptionChanged:
-                                          (SignUpOptions signUpOptions) {
+                                      onOptionChanged: (SignUpOptions signUpOptions) {
                                         setState(() {
                                           _selectedOption = signUpOptions;
                                         });
@@ -483,15 +484,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 children: _selectedRoles
                                     .map(
                                       (value) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8.0),
-                                        child: Chip(
-                                          label: Text(value.name),
-                                          deleteIcon: Icon(Icons.cancel),
-                                          onDeleted: () => _removeChip(value),
-                                        ),
-                                      ),
-                                    )
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: Chip(
+                                      label: Text(value.name),
+                                      deleteIcon: Icon(Icons.cancel),
+                                      onDeleted: () => _removeChip(value),
+                                    ),
+                                  ),
+                                )
                                     .toList(),
                               ),
                             ),
@@ -503,7 +503,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     // Status
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Status',
+                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_status"),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -525,17 +525,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              // Handle submit button
+                              // Handle cancel button
                             },
                             style: ElevatedButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 22, vertical: 8),
+                              padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
                             ),
                             child: Text(
-                              'Cancel',
+                              LanguageService.getTranslated(context, "usermanagement_app_filter_cancel"),
                               style: CustomTypography.ButtonLarge,
                             ),
                           ),
@@ -548,15 +547,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                             },
                             type: ButtonType.filled,
                             child: Text(
-                              'Add Filter',
+                              LanguageService.getTranslated(context, "usermanagement_app_filter_submit"),
                               style: CustomTypography.ButtonLarge,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ]))
-                ],
+                  ],
+                ),
+              ),
+
+              ],
               ),
             ),
           ),
@@ -639,7 +641,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             height: CustomSpacing.two,
                                           ),
                                           Text(
-                                            "Upload Image",
+                                            LanguageService.getTranslated(context, "user_profile_user_managemt_uploadimage_text"),
                                             style:
                                                 CustomTypography.Body1.copyWith(
                                                     color: Colors.white),
@@ -649,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             height: CustomSpacing.two,
                                           ),
                                           Text(
-                                            "Min 400x400px\nPNG or JPEG",
+                                            LanguageService.getTranslated(context, "usermanagement_app_image_size"),
                                             style: CustomTypography
                                                 .BottomNavigationActiveLabel,
                                             textAlign: TextAlign.center,
@@ -700,7 +702,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                           });
                                                         },
                                                         child: Text(
-                                                          "Upload Image",
+                                                          LanguageService.getTranslated(context, "user_profile_user_management_upload_imamge_btn"),
                                                           style: CustomTypography
                                                               .ButtonLarge,
                                                           textAlign:
@@ -713,7 +715,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 width: CustomSpacing.four,
                                               ),
                                               Text(
-                                                "or",
+                                                LanguageService.getTranslated(context, "user_profile_user_management_upload_or"),
                                                 style: CustomTypography.Body1,
                                                 textAlign: TextAlign.center,
                                               ),
@@ -753,7 +755,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                             Row(
                                                                               children: [
                                                                                 Text(
-                                                                                  "Select Avatar",
+                                                                                  LanguageService.getTranslated(context, "user_profile_user_management_select_avatar_btn"),
                                                                                   style: CustomTypography
                                                                                       .H6
                                                                                       .copyWith(
@@ -842,7 +844,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                           context);
                                                                     },
                                                                     child: Text(
-                                                                      "Cancel",
+                                                                      LanguageService.getTranslated(context, "user_profile_user_management_ cancel_btn"),
                                                                       style: CustomTypography
                                                                           .ButtonLarge,
                                                                       textAlign:
@@ -861,7 +863,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                                                 },
                                                 child: Text(
-                                                  "Upload Avatar",
+                                                  LanguageService.getTranslated(context, "user_profile_app_user_management_upload_avatar_button"),
                                                   style: CustomTypography.ButtonLarge,
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -895,8 +897,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                       .two),
                                                           Text(
                                                             isEdit
-                                                                ? "Save"
-                                                                : "Edit Profile",
+                                                                ? LanguageService.getTranslated(context, "user_profile_app_user_management_profile_save_text")
+                                                                : LanguageService.getTranslated(context, "user_profile_app_user_management_edit_profile_text"),
                                                             style:
                                                                 CustomTypography
                                                                     .ButtonLarge,
@@ -928,7 +930,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       enabled: isEdit,
                       controller: _nameGeneralInfoController,
                       decoration: InputDecoration(
-                        labelText: isEdit ? 'Name' : nameLabelText,
+                        labelText: isEdit ? LanguageService.getTranslated(context, "user_profile_user_management_name_filed_label") : nameLabelText,
                         labelStyle: isEdit
                             ? CustomTypography.Body1
                             : CustomTypography.Body1.copyWith(
@@ -1099,7 +1101,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       decoration: InputDecoration(
                         labelText: isEdit
-                            ? 'Email'
+                            ? LanguageService.getTranslated(context, "user_profile_user_management_email_field_label")
                             : emailLabelText,
                         labelStyle: isEdit
                             ? CustomTypography.Body1.copyWith(
@@ -1195,7 +1197,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ],
                                   decoration: InputDecoration(
                                     labelText: isEdit
-                                        ? 'Mobile number'
+                                        ? LanguageService.getTranslated(context, "user_profile_user_management_mobile_field")
                                         : phoneLabelText,
                                     labelStyle: isEdit
                                         ? CustomTypography.Body1
@@ -1213,13 +1215,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         !.color!,
                                       ),
                                     ),
-                                    hintText: 'Enter your mobile number',
+                                    hintText: LanguageService.getTranslated(context, "user_profile_user_management_mobile_placeholder"),
                                     border: const OutlineInputBorder(),
                                     counterText: '',
                                   ),
                                   validator: (value) {
                                     if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                      return 'Mobile number can only contain digits';
+                                      return LanguageService.getTranslated(context, "user_profile_user_management_mobile_validation");
                                     }
                                     return null;
                                   },
@@ -1286,7 +1288,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       },
                                       type: ButtonType.filled,
                                       child: Text(
-                                        'Save',
+                                        LanguageService.getTranslated(context, "user_profile_user_management_btn_submit"),
                                         style: CustomTypography.ButtonLarge,
                                       ),
                                     ),
@@ -1311,7 +1313,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             horizontal: 22, vertical: 8),
                                       ),
                                       child: Text(
-                                        'Cancel',
+                                        LanguageService.getTranslated(context, "user_profile_user_management_btn_cancel"),
                                         style: CustomTypography.ButtonLarge,
                                       ),
                                     ),
@@ -1412,7 +1414,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'My Manager',
+                  LanguageService.getTranslated(
+                      context, "user_profile_user_management_row_name_manager"),
                   style: CustomTypography.Body1,
                 ),
                 !showAssignDeleteManager?SizedBox():Row(
@@ -1604,7 +1607,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'My Delegation',
+                  LanguageService.getTranslated(
+                      context, "user_profile_user_management_row_name_Delegate"),
                   style: CustomTypography.Body1,
                 ),
                 !showAddDelegate?SizedBox():Row(
@@ -1799,7 +1803,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'My Reportee(s)',
+                  LanguageService.getTranslated(
+                      context, "user_profile_user_management_row_name_reportee"),
                   style: CustomTypography.Body1,
                 ),
                 !showAddReportee?SizedBox():Row(
@@ -1979,7 +1984,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: CustomSpacing.two),
-          Text(type == "add_manager" ? 'Add Manager' : type == 'add_delegate' ? 'Add Delegate' : 'Add Reportee',
+          Text(type == "add_manager" ? LanguageService.getTranslated(context, "user_profile_user_management_add_manager_btn") : type == 'add_delegate' ? LanguageService.getTranslated(context, "user_profile_user_management_add_delegate_btn") : LanguageService.getTranslated(context, "user_profile_user_management_add_reportee"),
               style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
           SizedBox(height: CustomSpacing.two),
           // Search Box with Autocomplete
@@ -2081,7 +2086,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
                   ),
                   child: Text(
-                    'Cancel',
+                    LanguageService.getTranslated(context, "user_profile_user_management_btn_cancel"),
                     style: CustomTypography.ButtonLarge,
                   ),
                 ),
@@ -2125,143 +2130,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   },
                   type: ButtonType.filled,
                   child: Text(
-                    'Submit',
-                    style: CustomTypography.ButtonLarge,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  _addDelegateDialogUI() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        // add manager text, below it search box with search icon and submit button
-        children: [
-          SizedBox(height: CustomSpacing.two),
-          Text('Add Manager',
-              style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
-          SizedBox(height: CustomSpacing.two),
-          // Search Box
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search by name or email',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              suffixIcon: IconButton(
-                onPressed: () {
-                  // Handle submit button
-                },
-                icon: Icon(Icons.search),
-              ),
-            ),
-          ),
-          SizedBox(height: CustomSpacing.two),
-          // Cancel and Submit Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle submit button
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: CustomTypography.ButtonLarge,
-                  ),
-                ),
-              ),
-              SizedBox(width: CustomSpacing.two),
-              Expanded(
-                child: CustomButton(
-                  onPressed: () {
-                    // Handle submit button
-                  },
-                  type: ButtonType.filled,
-                  child: Text(
-                    'Submit',
-                    style: CustomTypography.ButtonLarge,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  _addReporteeDialogUI() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        // add manager text, below it search box with search icon and submit button
-        children: [
-          SizedBox(height: CustomSpacing.two),
-          Text('Add Manager',
-              style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
-          SizedBox(height: CustomSpacing.two),
-          // Search Box
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search by name or email',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              suffixIcon: IconButton(
-                onPressed: () {
-                  // Handle submit button
-                },
-                icon: Icon(Icons.search),
-              ),
-            ),
-          ),
-          SizedBox(height: CustomSpacing.two),
-          // Cancel and Submit Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Handle submit button
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: CustomTypography.ButtonLarge,
-                  ),
-                ),
-              ),
-              SizedBox(width: CustomSpacing.two),
-              Expanded(
-                child: CustomButton(
-                  onPressed: () {
-                    // Handle submit button
-                  },
-                  type: ButtonType.filled,
-                  child: Text(
-                    'Submit',
+                    LanguageService.getTranslated(context, "user_profile_user_management_btn_submit"),
                     style: CustomTypography.ButtonLarge,
                   ),
                 ),
