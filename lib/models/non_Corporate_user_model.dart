@@ -124,7 +124,6 @@ class IndividualUsers {
   List<Role>? role;
   String? displayName;
   int? rating;
-  CreatedAt? createdAt;
   bool? isIndividual;
   String? email;
   bool? isSelected;
@@ -145,7 +144,6 @@ class IndividualUsers {
       {this.role,
       this.displayName,
       this.rating,
-      this.createdAt,
       this.isIndividual,
       this.email,
       // this.requestSent,
@@ -168,9 +166,6 @@ class IndividualUsers {
     }
     displayName = json['displayName'];
     rating = json['rating'];
-    createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
-        : null;
     isIndividual = json['isIndividual'];
     email = json['email'];
     // if (json['request_sent'] != null) {
@@ -202,9 +197,6 @@ class IndividualUsers {
     }
     data['displayName'] = this.displayName;
     data['rating'] = this.rating;
-    if (this.createdAt != null) {
-      data['created_at'] = this.createdAt!.toJson();
-    }
     data['isIndividual'] = this.isIndividual;
     data['email'] = this.email;
     // if (this.requestSent != null) {

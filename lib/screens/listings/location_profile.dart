@@ -10,6 +10,7 @@ import 'package:green/constants/enums.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:green/models/account_list_model.dart';
 import 'package:green/providers/place_api_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -20,7 +21,7 @@ import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
 
 class LocationProfile extends StatefulWidget {
-  const LocationProfile({super.key});
+  const LocationProfile({super.key, required Accounts account});
 
   @override
   State<LocationProfile> createState() => _LocationProfileState();

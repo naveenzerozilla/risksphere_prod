@@ -181,6 +181,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   @override
   void initState() {
     super.initState();
+    print('User ID: ${widget.userId}');
+    print('User Name: ${widget.userName}');
     _tabController = TabController(length: 5, vsync: this);
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
@@ -231,6 +233,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   _getData() async {
     // Fetch data from API
+    Provider.of<ConnectionsProvider>(context, listen: false).nextPageToken =
+        null;
+    Provider.of<ConnectionsProvider>(context, listen: false).nextPageExists = true;
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllConnections(context, widget.userId);
     Provider.of<ConnectionsProvider>(context, listen: false)
@@ -1023,6 +1028,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       itemCount:
                           connectionsProvider.corporateConnections.length,
                       itemBuilder: (context, index) {
+                        if(index == connectionsProvider.corporateConnections.length - 1) {
+                          return Column(
+                            children: [
+                              _corporateConnectionsCardUI(
+                                  connectionsProvider, index),
+                              SizedBox(
+                                height: CustomSpacing.twentyEight,
+                              ),
+                            ],
+                          );
+                        }
                         return _corporateConnectionsCardUI(
                             connectionsProvider, index);
                       },
@@ -1287,13 +1303,50 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       SizedBox(
                         width: CustomSpacing.two,
                       ),
+
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: CustomSpacing.four,
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                            Text(
+                              connectionsProvider
+                                      .corporateConnections[index].companyName ??
+                                  "",
+                              style: CustomTypography.Body2.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black),
+                            ),
+                            Text(
+                                connectionsProvider
+                                        .corporateConnections[index].role?[0] ??
+                                    "",
+                                style: CustomTypography.Caption),
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                          ],
+                        ),
+                      ),
                       // show like 4 (Star icon)
                       Row(
                         children: [
                           Text(
                             connectionsProvider
-                                    .corporateConnections[index].rating
-                                    ?.toString() ??
+                                .corporateConnections[index].rating
+                                ?.toString() ??
                                 "",
                             style: CustomTypography.Caption,
                           ),
@@ -1306,40 +1359,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       ),
                       SizedBox(
                         width: CustomSpacing.two,
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: CustomSpacing.four,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          Text(
-                            connectionsProvider
-                                    .corporateConnections[index].companyName ??
-                                "",
-                            style: CustomTypography.Body2.copyWith(
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black),
-                          ),
-                          Text(
-                              connectionsProvider
-                                      .corporateConnections[index].role?[0] ??
-                                  "",
-                              style: CustomTypography.Caption),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -1766,7 +1785,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           Center(
                             child: Text(
                               LanguageService.getTranslated(
-                                  context, "no_requests"),
+                                  context, "connections_no_requests"),
                             ),
                           ),
                         ],
@@ -1840,30 +1859,55 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         children: [
                           Row(
                             children: [
-                              Text(
-                                  connectionsProvider
-                                          .requestUsers[index].name ??
-                                      "",
-                                  style: CustomTypography.Body1.copyWith(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? AppColors.white
-                                          : AppColors.black)),
-                              Text(
-                                LanguageService.getTranslated(context,
-                                    "connections_user_connection_request_submit"),
-                                maxLines: 2,
-                                style: CustomTypography.Body1.copyWith(),
+                              Flexible(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: (connectionsProvider
+                                                        .requestUsers[index]
+                                                        .name
+                                                        ?.substring(0, 1)
+                                                        .toUpperCase() ??
+                                                    "") +
+                                                (connectionsProvider
+                                                        .requestUsers[index].name
+                                                        ?.substring(1) ??
+                                                    ""),
+                                            style: CustomTypography.Body2.copyWith(
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? AppColors.white
+                                                    : AppColors.black),
+                                          ),
+                                          TextSpan(
+                                            text: ' ',
+                                          ),
+                                          TextSpan(
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_request_submit"),
+                                            style: CustomTypography.Body2.copyWith(),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                           SizedBox(height: CustomSpacing.two),
                           connectionsProvider.requestUsers[index].role != null
                               ? Text(
-                                  connectionsProvider.requestUsers[index].role!
-                                      .map((e) =>
+                                  connectionsProvider.requestUsers[index].role??"",
+                                     /* .map((e) =>
                                           e[0].toUpperCase() + e.substring(1))
-                                      .join(', '),
+                                      .join(', '),*/
                                   style: CustomTypography.Caption)
                               : SizedBox(),
                           Text(
@@ -1978,13 +2022,34 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   _getChatsUI() {
-    return ListView.builder(
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text('Chat $index'),
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'coming_soon_title'),
+                        style: CustomTypography.H4),
+                  ),
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      style: CustomTypography.Body1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2049,87 +2114,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           }),
         ),
       ],
-    );
-  }
-
-  Widget _networkingCardUIOld(
-      ConnectionsProvider connectionsProvider, int index) {
-    //profile avatar, role, company, rating out of 5, actions are in popupmenu (send message, connections, remove connection)
-    return Container(
-      margin: EdgeInsets.only(bottom: CustomSpacing.two),
-      child: Card(
-        child: Column(
-          children: [
-            // Stack with request pending container top left
-            Column(
-              children: [
-                SizedBox(height: CustomSpacing.two),
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: CircleAvatar(
-                        radius: 24,
-                        backgroundImage:
-                            AssetImage('assets/images/loginImage.png'),
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Amit Didwania', style: CustomTypography.Body1),
-                        SizedBox(height: CustomSpacing.two),
-                        Text('Risk Manager', style: CustomTypography.Body2),
-                        Text('Green', style: CustomTypography.Body2),
-                        SizedBox(height: CustomSpacing.two),
-                        RatingBar(rating: 4, maxRating: 5),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: CustomSpacing.two),
-              ],
-            ),
-            Divider(),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 8),
-                    child: //change to custom button
-                        CustomButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) {
-                            return AlertDialog(
-                              content: _addNetworkDialogUI(
-                                  dialogContext, connectionsProvider, index),
-                            );
-                          },
-                        );
-                      },
-                      type: ButtonType.filled,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_circle_outline),
-                          SizedBox(width: CustomSpacing.two),
-                          Text(
-                            'Connect',
-                            style: CustomTypography.ButtonLarge,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: CustomSpacing.two),
-          ],
-        ),
-      ),
     );
   }
 
@@ -2453,13 +2437,34 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   _getBlockedUI() {
-    return ListView.builder(
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text('Blocked $index'),
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'coming_soon_title'),
+                        style: CustomTypography.H4),
+                  ),
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      style: CustomTypography.Body1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -163,6 +163,7 @@ class ConnectionsProvider with ChangeNotifier {
 
       // Fetch data from API
       Map<String, dynamic> response = await apiService.get(url);
+      print("URL_LOCAL: $url");
 
       // Parse response
 
@@ -179,6 +180,12 @@ class ConnectionsProvider with ChangeNotifier {
               .toList();
           _nonCorporateConnections.addAll(nonCorporateConnections);
         }
+      }
+      if (response['users'].containsKey('total_connections')) {
+        totalConnections = response['users']['total_connections'].toString();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
       }
 
       notifyListeners();
@@ -234,12 +241,7 @@ class ConnectionsProvider with ChangeNotifier {
               .toList();
           print("Request Users: $requestUsers");
         }
-        if (response['users'].containsKey('total_connections')) {
-          totalConnections = response['users']['total_connections'].toString();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            notifyListeners();
-          });
-        }
+
         if (response['users'].containsKey('request_received_count')) {
           requestReceivedCount = response['users']['request_received_count'].toString();
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -248,9 +250,7 @@ class ConnectionsProvider with ChangeNotifier {
         }
       }
       print("Request Users: $requestUsers");
-      if (response.containsKey('total_connections')) {
-        totalConnections = response['total_connections'];
-      }
+
       if (response.containsKey('request_received_count')) {
         requestReceivedCount = response['request_received_count'];
       }

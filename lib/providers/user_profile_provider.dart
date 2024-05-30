@@ -411,7 +411,7 @@ class UserProfileProvider with ChangeNotifier {
       // Use API Service to fetch companies
       ApiService apiService = ApiService(AppConstant.GET_NETWORKING_USER_SUGGESTIONS);
       // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get('?search=$query');
+      Map<String, dynamic> response = await apiService.get('?search=$query&within_company=true');
 
       // Parse the response into a list of employees
       List<NetworkingUsers> networkingUsersLocal = [];

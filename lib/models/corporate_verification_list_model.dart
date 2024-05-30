@@ -29,7 +29,6 @@ class Company {
   bool? ignore;
   String? companyName;
   String? companyTypeName;
-  CreatedAt? createdAt;
   String? id;
 
   Company(
@@ -37,7 +36,6 @@ class Company {
         this.ignore,
         this.companyName,
         this.companyTypeName,
-        this.createdAt,
         this.id});
 
   Company.fromJson(Map<String, dynamic> json) {
@@ -45,9 +43,6 @@ class Company {
     ignore = json['ignore'];
     companyName = json['company_name'];
     companyTypeName = json['company_type_name'];
-    createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
-        : null;
     id = json['id'];
   }
 
@@ -59,9 +54,6 @@ class Company {
     data['ignore'] = this.ignore;
     data['company_name'] = this.companyName;
     data['company_type_name'] = this.companyTypeName;
-    if (this.createdAt != null) {
-      data['created_at'] = this.createdAt!.toJson();
-    }
     data['id'] = this.id;
     return data;
   }

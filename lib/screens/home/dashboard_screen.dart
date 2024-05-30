@@ -12,7 +12,9 @@ import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/theme_provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 
 // import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 import 'package:provider/provider.dart';
@@ -53,11 +55,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool showConnectionRequests = false;
   bool showCompanyOnboardingStats = false;
   bool showUserOnboardingStats = false;
+  bool showVerificationRequests = false;
 
   @override
   void initState() {
     _setClaims();
-    _getData();
     super.initState();
   }
 
@@ -80,12 +82,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await SharedPreferenceService.getClaimForSubfeature(
                 SharedPreferenceService.DASUO) ??
             false;
+    bool showCorporateVerificationRequests =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMLL) ??
+            false;
+    bool showUserVerificationRequests =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMVU) ??
+            false;
+    showVerificationRequests = showCorporateVerificationRequests || showUserVerificationRequests;
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.DASVR) ??
+            false;
+
+    _getData();
     setState(() {});
   }
 
   _getData() {
     Provider.of<DashboardProvider>(context, listen: false)
         .getDashboardData(context);
+    Provider.of<UserProfileProvider>(context, listen: false)
+        .getAllUserData(context,"", "");
   }
 
   @override
@@ -227,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                           ),
-                    _overviewCardHorizontal(
+                    !showVerificationRequests?SizedBox():_overviewCardHorizontal(
                       title: LanguageService.getTranslated(
                           context, 'usermanagement_dash_verification_req'),
                       amount: dashboardProvider
@@ -528,22 +546,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         onTap: () async {
-                          // final DateTime? pickedDate = await showMonthPicker(
-                          //   context: context,
-                          //   initialDate: _selectedDateCompany ?? DateTime.now(),
-                          //   firstDate: DateTime(DateTime.now().year - 10),
-                          //   lastDate: DateTime.now(),
-                          // );
-                          //
-                          // if (pickedDate != null &&
-                          //     pickedDate != _selectedDateCompany) {
-                          //   setState(() {
-                          //     _selectedDateCompany = pickedDate;
-                          //   });
-                          //   Provider.of<DashboardProvider>(context, listen: false)
-                          //       .getDashboardDataForCompanies(context, pickedDate);
-                          //
-                          // }
+                          final DateTime? pickedDate = await showMonthPicker(
+                            context: context,
+                            initialDate: _selectedDateCompany ?? DateTime.now(),
+                            firstDate: DateTime(DateTime.now().year - 10),
+                            lastDate: DateTime.now(),
+                          );
+
+                          if (pickedDate != null &&
+                              pickedDate != _selectedDateCompany) {
+                            setState(() {
+                              _selectedDateCompany = pickedDate;
+                            });
+                            Provider.of<DashboardProvider>(context, listen: false)
+                                .getDashboardDataForCompanies(context, pickedDate);
+
+                          }
                         },
                       ),
                     ),
@@ -615,22 +633,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onTap: () async {
-                      // final DateTime? pickedDate = await showMonthPicker(
-                      //   context: context,
-                      //   initialDate: _selectedDateCompany ?? DateTime.now(),
-                      //   firstDate: DateTime(DateTime.now().year - 10),
-                      //   lastDate: DateTime.now(),
-                      // );
+                      final DateTime? pickedDate = await showMonthPicker(
+                        context: context,
+                        initialDate: _selectedDateCompany ?? DateTime.now(),
+                        firstDate: DateTime(DateTime.now().year - 10),
+                        lastDate: DateTime.now(),
+                      );
 
-                      // if (pickedDate != null &&
-                      //     pickedDate != _selectedDateCompany) {
-                      //   setState(() {
-                      //     _selectedDateCompany = pickedDate;
-                      //   });
-                      //   Provider.of<DashboardProvider>(context, listen: false)
-                      //       .getDashboardDataForCompanies(context, pickedDate);
-                      //
-                      // }
+                      if (pickedDate != null &&
+                          pickedDate != _selectedDateCompany) {
+                        setState(() {
+                          _selectedDateCompany = pickedDate;
+                        });
+                        Provider.of<DashboardProvider>(context, listen: false)
+                            .getDashboardDataForCompanies(context, pickedDate);
+
+                      }
                     },
                   ),
                 ),
@@ -796,21 +814,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         onTap: () async {
-                          // final DateTime? pickedDate = await showMonthPicker(
-                          //   context: context,
-                          //   initialDate: _selectedDateUser ?? DateTime.now(),
-                          //   firstDate: DateTime(DateTime.now().year - 10),
-                          //   lastDate: DateTime.now(),
-                          // );
-                          //
-                          // if (pickedDate != null &&
-                          //     pickedDate != _selectedDateUser) {
-                          //   setState(() {
-                          //     _selectedDateUser = pickedDate;
-                          //   });
-                          //   Provider.of<DashboardProvider>(context, listen: false)
-                          //       .getDashboardDataForRoles(context, pickedDate);
-                          // }
+                          final DateTime? pickedDate = await showMonthPicker(
+                            context: context,
+                            initialDate: _selectedDateUser ?? DateTime.now(),
+                            firstDate: DateTime(DateTime.now().year - 10),
+                            lastDate: DateTime.now(),
+                          );
+
+                          if (pickedDate != null &&
+                              pickedDate != _selectedDateUser) {
+                            setState(() {
+                              _selectedDateUser = pickedDate;
+                            });
+                            Provider.of<DashboardProvider>(context, listen: false)
+                                .getDashboardDataForRoles(context, pickedDate);
+                          }
                         },
                       ),
                     ),
@@ -882,21 +900,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onTap: () async {
-                      // final DateTime? pickedDate = await showMonthPicker(
-                      //   context: context,
-                      //   initialDate: _selectedDateUser ?? DateTime.now(),
-                      //   firstDate: DateTime(DateTime.now().year - 10),
-                      //   lastDate: DateTime.now(),
-                      // );
-                      //
-                      // if (pickedDate != null &&
-                      //     pickedDate != _selectedDateUser) {
-                      //   setState(() {
-                      //     _selectedDateUser = pickedDate;
-                      //   });
-                      //   Provider.of<DashboardProvider>(context, listen: false)
-                      //       .getDashboardDataForRoles(context, pickedDate);
-                      // }
+                      final DateTime? pickedDate = await showMonthPicker(
+                        context: context,
+                        initialDate: _selectedDateUser ?? DateTime.now(),
+                        firstDate: DateTime(DateTime.now().year - 10),
+                        lastDate: DateTime.now(),
+                      );
+
+                      if (pickedDate != null &&
+                          pickedDate != _selectedDateUser) {
+                        setState(() {
+                          _selectedDateUser = pickedDate;
+                        });
+                        Provider.of<DashboardProvider>(context, listen: false)
+                            .getDashboardDataForRoles(context, pickedDate);
+                      }
                     },
                   ),
                 ),
@@ -1058,6 +1076,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // Remove '%' sign and any other non-digit characters
     String rolePercentCleaned =
         rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
+    if ( rolePercentCleaned.runtimeType != String) {
+      rolePercentCleaned = rolePercentCleaned.toString();
+
+    }
+    if (rolePercentCleaned.isEmpty) {
+      rolePercentCleaned = "0";
+    }
+    print("rolePercentCleaned: $rolePercentCleaned");
     double rolePercent = double.parse(rolePercentCleaned);
 
     String changeText;
@@ -1065,7 +1091,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       rolePercent = -rolePercent; // Make it positive
       changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
     } else {
-      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}}";
+      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}";
     }
 
     print(changeText);

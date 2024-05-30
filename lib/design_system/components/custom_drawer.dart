@@ -6,7 +6,10 @@ import 'package:green/screens/settings/settings.dart';
 import 'package:green/screens/userManagement/user_management.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../screens/listings/account_list.dart';
+import '../../screens/onboarding/splash_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({
@@ -83,7 +86,7 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Location(s) List'),
                           onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => LocationProfile()));
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
                           },
                         ),
                         ListTile(
@@ -358,6 +361,40 @@ class CustomDrawer extends StatelessWidget {
                       Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
                     },
                   ),*/
+                  Consumer<AuthNotifier>(
+                      builder: (context, authNotifier, child) {
+                      return IconButton(
+                        icon: Icon(Icons.logout_rounded),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text('Logout'),
+                                content: Text('Are you sure you want to logout?'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      authNotifier.signOut();
+                                      Navigator.pushAndRemoveUntil(
+                                          context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+                                    },
+                                    child: Text('Logout'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    }
+                  ),
                   IconButton(
                     icon: Icon(Icons.person),
                     onPressed: () {

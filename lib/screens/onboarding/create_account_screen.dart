@@ -11,6 +11,7 @@ import 'package:green/models/initial_data_model.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
+import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/roles_bottom_sheet.dart';
@@ -40,7 +41,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   TextEditingController nameController = TextEditingController();
   TextEditingController displayNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
-  TextEditingController mobileController = TextEditingController();
+  PhoneController mobileController = PhoneController(PhoneNumber(nsn:  '', isoCode: IsoCode.US));
   TextEditingController countryCodeController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
@@ -224,8 +225,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             String result = await authNotifier
                                                 .signUpIndividualWithGoogle(
                                               widget.userCredential!,
-                                              mobileController.text,
-                                              _selectedCountryCode,
+                                              mobileController.value?.nsn??"",
+                                              mobileController.value?.countryCode??"",
                                               _selectedRoles,
                                               context,
                                             );
@@ -279,7 +280,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 'Display Name: ${displayNameController.text}');
                                             print('Email: ${emailController.text}');
                                             print(
-                                                'Mobile: $_selectedCountryCode ${mobileController.text}');
+                                                'Mobile: $_selectedCountryCode ${mobileController.value?.nsn??""}');
                                             print('Roles: $_selectedRoles');
                                             print('Account Type: $_selectedOption');
                                             authNotifier
@@ -288,8 +289,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               passwordController.text,
                                               nameController.text,
                                               displayNameController.text,
-                                              mobileController.text,
-                                              _selectedCountryCode,
+                                              mobileController.value?.nsn??"",
+                                              mobileController.value?.countryCode??"",
                                               _selectedRoles,
                                               context,
                                             );
@@ -314,11 +315,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               companyDisplayNameController.text,
                                               adminNameController.text,
                                               adminEmailController.text,
-                                              _selectedAdminCountryCode,
+                                              mobileController.value?.countryCode??"",
 
-                                              adminMobileController.text,
+                                              mobileController.value?.nsn??"",
                                               adminPasswordController.text,
-                                              !_enableCompanyTypeDropdown?selectedCompanyRole:null,
+                                              !_enableCompanyTypeDropdown?selectedCompanyRole: Roles(isForIndividual: true, isApplicableForTrial: false, role: "admin", name: "Admin", isMultipleRoleEnabled: false, id: ""),
                                               context,
                                               selectedCompany,
                                             );
@@ -566,66 +567,44 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Expanded(
-              flex: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.5)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(
-                  child: CountryListPicker(
-                    initialCountry: Countries.United_States,
-                    border: InputBorder.none,
-                    flagSize: Size(35, 30),
-                    onChanged: (code) {
-                      setState(() {
-                        _selectedCountryCode = code;
-                      });
-                    },
-                    diallingCodeStyle: CustomTypography.Body1,
-                    isShowInputField: false,
-                    dialogTheme: DialogThemeData(
-                      style: CustomTypography.Body1,
-                      isShowFloatButton: false,
-                    ),
-                    countryNameStyle: CustomTypography.Body1,
-                    isShowCountryName: false,
-                    onCountryChanged: (country) {
-                      print('This is the country code: $country');
-                      setState(() {
-                        _selectedCountryCode = country.dialing_code;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: CustomSpacing.two),
-
-            // Mobile Number TextFormField
-            Expanded(
-              flex: 7,
-              child: TextFormField(
-                keyboardType: TextInputType.number,
-                maxLength: 15,
-                // Numeric keyboard
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly // Only allows digits
-                ],
+              child: PhoneInput(
+                key: const Key('phone-field'),
+                controller: mobileController,
+                shouldFormat: true,
+                defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
-
-                  hintText:  LanguageService.getTranslated(context,"register_non_corporate_mobilefield_placeholder"),
-
+                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
+                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                validator: validatePhoneNumber,
-                controller: mobileController,
+                countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                  showSearchInput: true,
+                  searchInputDecoration: InputDecoration(
+                    hintText: 'Search Country',
+                  ),
+                ),
+                showFlagInInput: true,
+                flagShape: BoxShape.circle,
+                flagSize: 35,
+                onChanged: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
+                onSaved: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
               ),
             ),
-            // Dropdown Icon Suffix
           ],
         ),
         SizedBox(height: CustomSpacing.two),
@@ -791,66 +770,44 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Expanded(
-              flex: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.5)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(
-                  child: CountryListPicker(
-                    initialCountry: Countries.United_States,
-                    border: InputBorder.none,
-                    flagSize: Size(35, 30),
-                    onChanged: (code) {
-                      setState(() {
-                        _selectedCountryCode = code;
-                      });
-                    },
-                    diallingCodeStyle: CustomTypography.Body1,
-                    isShowInputField: false,
-                    dialogTheme: DialogThemeData(
-                      style: CustomTypography.Body1,
-                      isShowFloatButton: false,
-                    ),
-                    countryNameStyle: CustomTypography.Body1,
-                    isShowCountryName: false,
-                    onCountryChanged: (country) {
-                      print('This is the country code: $country');
-                      setState(() {
-                        _selectedCountryCode = country.dialing_code;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: CustomSpacing.two),
-
-            // Mobile Number TextFormField
-            Expanded(
-              flex: 7,
-              child: TextFormField(
-                keyboardType: TextInputType.number,
-                maxLength: 15,
-                // Numeric keyboard
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly // Only allows digits
-                ],
+              child: PhoneInput(
+                key: const Key('phone-field'),
+                controller: mobileController,
+                shouldFormat: true,
+                defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
-
-                  hintText: LanguageService.getTranslated(context,"register_enter_mobile_number"),
-
+                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
+                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                validator: validatePhoneNumber,
-                controller: mobileController,
+                countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                  showSearchInput: true,
+                  searchInputDecoration: InputDecoration(
+                    hintText: 'Search Country',
+                  ),
+                ),
+                showFlagInInput: true,
+                flagShape: BoxShape.circle,
+                flagSize: 35,
+                onChanged: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
+                onSaved: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
               ),
             ),
-            // Dropdown Icon Suffix
           ],
         ),
         SizedBox(height: CustomSpacing.two),
@@ -1067,7 +1024,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
 
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Company Type
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
@@ -1122,7 +1079,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
 
 
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Company Display Name
         TextFormField(
           decoration: InputDecoration(
@@ -1143,7 +1100,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: companyDisplayNameController,
         ),
-        SizedBox(height: CustomSpacing.eight),
+        SizedBox(height: CustomSpacing.four),
         Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
@@ -1163,7 +1120,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ],
         ),
-        SizedBox(height: CustomSpacing.eight),
+        SizedBox(height: CustomSpacing.four),
         !_enableCompanyTypeDropdown?Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
 
@@ -1201,7 +1158,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             );
           },
         ):SizedBox(),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Admin Email
         TextFormField(
           decoration: InputDecoration(
@@ -1221,7 +1178,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: adminNameController,
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Admin Email
         TextFormField(
           decoration: InputDecoration(
@@ -1241,74 +1198,52 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           controller: adminEmailController,
         ),
         // Admin Mobile
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         Row(
           children: [
-
             Expanded(
-              flex: 4,
-              child:
-                  Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.5)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(
-                  child: CountryListPicker(
-                    initialCountry: Countries.United_States,
-                    border: InputBorder.none,
-                    flagSize: Size(35, 30),
-                    onChanged: (code) {
-                      setState(() {
-                        _selectedAdminCountryCode = code;
-                      });
-                    },
-                    diallingCodeStyle: CustomTypography.Body1,
-                    isShowInputField: false,
-                    dialogTheme: DialogThemeData(
-                      style: CustomTypography.Body1,
-                      isShowFloatButton: false,
-                    ),
-                    countryNameStyle: CustomTypography.Body1,
-                    isShowCountryName: false,
-                    onCountryChanged: (country) {
-                      print('This is the country code: $country');
-                      setState(() {
-                        _selectedAdminCountryCode = country.dialing_code;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: CustomSpacing.two),
-
-            // Mobile Number TextFormField
-            Expanded(
-              flex: 7,
-              child: TextFormField(
-                keyboardType: TextInputType.number,
-                // Numeric keyboard
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly // Only allows digits
-                ],
+              child: PhoneInput(
+                key: const Key('phone-field'),
+                controller: mobileController,
+                shouldFormat: true,
+                defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText:   LanguageService.getTranslated(context,"register_mobile_number"),
-                  hintText:   LanguageService.getTranslated(context,"register_mobile_number"),
+                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
+                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
-                maxLength: 15,
-                validator: validatePhoneNumber,
-                controller: adminMobileController,
+                countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                  showSearchInput: true,
+                  searchInputDecoration: InputDecoration(
+                    hintText: 'Search Country',
+                  ),
+                ),
+                showFlagInInput: true,
+                flagShape: BoxShape.circle,
+                flagSize: 35,
+                onChanged: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
+                onSaved: (PhoneNumber? p) {
+                  if(p==null)
+                    return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
               ),
             ),
-            // Dropdown Icon Suffix
           ],
         ),
         // Admin Password
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
             labelText:   LanguageService.getTranslated(context,"emailsetup_field_password"),
@@ -1328,7 +1263,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           controller: adminPasswordController,
         ),
         // Admin Confirm Password
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
             labelText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),

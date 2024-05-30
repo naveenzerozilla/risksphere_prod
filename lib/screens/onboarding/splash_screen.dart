@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../../design_system/repo/home.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../service/shared_preference_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -63,34 +64,51 @@ class _SplashScreenState extends State<SplashScreen>
 
     try {
       await user.reload();
-    } catch (e) {
-      print("Error: $e");
-    }
-    IdTokenResult token = await user.getIdTokenResult();
-    Map<String, dynamic>? claims = token.claims?? {};
-    log("Claims: $claims");
-    await SharedPreferenceService.setClaims(claims);
-    await SharedPreferenceService.getAllClaims();
-    String? tokenString = await user.getIdToken();
-    log("Token: ${token.token}");
+      IdTokenResult token = await user.getIdTokenResult();
+      Map<String, dynamic>? claims = token.claims?? {};
+      log("Claims: $claims");
+      await SharedPreferenceService.setClaims(claims);
+      await SharedPreferenceService.getAllClaims();
+      String? tokenString = await user.getIdToken();
+      log("Token: ${token.token}");
 
 
-    if(claims['isIndividual']==null) {
-      isUserLoggedIn = false;
-    }
-    log("Is User Logged In: $isUserLoggedIn");
-    if(isUserLoggedIn) {
-      // redirect to dashboard
-      Navigator.pushReplacement(
+      if(claims['isIndividual']==null) {
+        isUserLoggedIn = false;
+      }
+      log("Is User Logged In: $isUserLoggedIn");
+      if(isUserLoggedIn) {
+        // redirect to dashboard
+        Provider.of<UserProfileProvider>(context, listen: false)
+            .getAllUserData(context, '', '');
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => DashboardScreen(),),);
 
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen( )),
-      );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen( )),
+        );
+      }
+    } catch (e) {
+      print("Error: $e");
+      if(isUserLoggedIn) {
+        // redirect to dashboard
+        Provider.of<UserProfileProvider>(context, listen: false)
+            .getAllUserData(context, '', '');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen(),),);
+
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen( )),
+        );
+      }
     }
+
   }
 
   @override

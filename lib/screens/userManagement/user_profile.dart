@@ -11,6 +11,7 @@ import 'package:green/design_system/components/expandable_card_container.dart';
 import 'package:green/models/networking_model.dart';
 import 'package:green/service/language_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -26,7 +27,9 @@ import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_profile_provider.dart';
-import '../../service/shared_preference_service.dart';
+import '../../service/shared_preference_service.dart';import 'package:image/image.dart' as img;
+
+import '../../utils/utils.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -46,6 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   SignUpOptions? _selectedOption;
   String _selectedCountryCode = '+1';
   TextEditingController mobileController = TextEditingController();
+  PhoneController phoneController = PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -55,6 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool showAddDelegate = true;
   bool showRevokeDelegate = true;
   bool showAddReportee = true;
+  bool showEditUser = true;
 
   // General Info
   String userImageUrl = '';
@@ -68,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   String emailLabelText = "";
   String phoneLabelText = "";
   String selectedAvatar = "";
+  String selectedCountryCode = "+1";
 
   // My Team
   TextEditingController _searchManagerController = TextEditingController();
@@ -118,6 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     showAddDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDA)??false;
     showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;
     showAddReportee = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRE)??false;
+    showEditUser = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC)??false;
   }
 
   _getData() {
@@ -131,6 +138,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           displayNameLabelText = value.displayName ??  value.name ?? "";
           emailLabelText = value.email ?? "";
           phoneLabelText = value.phone ?? "";
+          _selectedCountryCode = value.countryCode ?? "+1";
+          print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
+          phoneController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: phoneLabelText??"");
           // Set roles and assign from List<Roles> to List<Categories>
           _selectedRoles = (value.role ?? []).map((role) => Categories(
               id: role.id ?? "",
@@ -140,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               isApplicableForTrial: role.isApplicableForTrial ?? false,
 
           )).toList();
+          _selectedCountryCode = value.countryCode ?? "+1";
 
         });
       }
@@ -179,6 +190,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           canPop: _selectedScreen == Screens.connectionList,
           onPopInvoked: (canPop) {
             print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+            if (_selectedScreen != Screens.connectionList) {
+              setState(() {
+                _selectedScreen = Screens.connectionList;
+                _tabController?.animateTo(0);
+              });
+            }
           },
           child: Stack(
             children: [
@@ -256,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 // My Team
                                 _getMyTeamUI(),
                                 // Security
-                                _getChatsUI(),
+                                _getSecurityUI(),
                               ],
                             ),
                           ),
@@ -661,8 +678,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           ),
 
                                           // Add button
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.start,
                                             children: [
                                               Consumer<UserProfileProvider>(builder:
                                                   (_, userProfileProvider, child) {
@@ -674,33 +691,44 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                       )
                                                     : CustomButton(
                                                         type: ButtonType.filled,
-                                                        onPressed: !isEdit?null:() {
-                                                          // Show image picker
-                                                          ImagePicker()
-                                                              .pickImage(
-                                                                  source:
-                                                                      ImageSource
-                                                                          .gallery)
-                                                              .then((value) {
-                                                            if (value != null) {
-                                                              // Handle image upload
-                                                              File v =
-                                                                  File(value.path);
-                                                              userProfileProvider
-                                                                  .uploadImage(
-                                                                      context, v)
-                                                                  .then((value) {
-                                                                if (value != '') {
-                                                                  // Handle image upload response
-                                                                  setState(() {
-                                                                    userImageUrl =
-                                                                        value;
-                                                                  });
-                                                                }
+                                                  onPressed: !isEdit ? null : () async {
+                                                    // Show image picker
+                                                    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+                                                    if (pickedFile != null) {
+                                                      File file = File(pickedFile.path);
+
+                                                      // Load image to check its dimensions and format
+                                                      final img.Image? image = img.decodeImage(file.readAsBytesSync());
+                                                      if (image != null) {
+                                                        if ((image.width >= 400 && image.height >= 400) &&
+                                                            (pickedFile.path.endsWith('.png') || pickedFile.path.endsWith('.jpg') || pickedFile.path.endsWith('.jpeg'))) {
+
+                                                          // Valid image, proceed with the upload
+                                                          userProfileProvider.uploadImage(context, file).then((value) {
+                                                            if (value != '') {
+                                                              setState(() {
+                                                                userImageUrl = value;
                                                               });
                                                             }
                                                           });
-                                                        },
+                                                        } else {
+                                                          // Show an error if the image does not meet the requirements
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Image must be at least 400x400 pixels and in PNG or JPEG format.'),
+                                                            ),
+                                                          );
+                                                        }
+                                                      } else {
+                                                        // Show an error if the image could not be loaded
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text('Could not load the image. Please try again.'),
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  },
                                                         child: Text(
                                                           LanguageService.getTranslated(context, "user_profile_user_management_upload_imamge_btn"),
                                                           style: CustomTypography
@@ -712,7 +740,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               }),
                                               // or upload avatar
                                               SizedBox(
-                                                width: CustomSpacing.four,
+                                                height: CustomSpacing.three,
                                               ),
                                               Text(
                                                 LanguageService.getTranslated(context, "user_profile_user_management_upload_or"),
@@ -876,7 +904,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           ),
                                           // If edit is enables user can edit else its disabled fields: Name, Display Name, Roles with bottom sheet selection, Email and phone with country code
                                           // Edit button
-                                          !isEdit
+                                          !showEditUser?SizedBox():!isEdit
                                               ? Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.end,
@@ -1137,75 +1165,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                           return Row(
                             children: [
                               Expanded(
-                                flex: 4,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.5)),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
-                                  child: Center(
-                                    child: CountryListPicker(
-                                      initialCountry: Countries.United_States,
-                                      border: InputBorder.none,
-                                      flagSize: Size(35, 30),
-                                      onChanged: isEdit
-                                          ? (code) {
-                                              setState(() {
-                                                _selectedCountryCode = code;
-                                              });
-                                            }
-                                          : null,
-                                      diallingCodeStyle: CustomTypography.Body1,
-                                      isShowInputField: false,
-                                      dialogTheme: DialogThemeData(
-                                        style: CustomTypography.Body1,
-                                        isShowFloatButton: false,
-                                      ),
-                                      countryNameStyle: CustomTypography.Body1,
-                                      isShowCountryName: false,
-                                      onCountryChanged: isEdit
-                                          ? (country) {
-                                              print(
-                                                  'This is the country code: $country');
-                                              setState(() {
-                                                _selectedCountryCode =
-                                                    country.dialing_code;
-                                              });
-                                            }
-                                          : null,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: CustomSpacing.four),
-
-                              // Mobile Number TextFormField
-                              Expanded(
-                                flex: 7,
-                                child: TextFormField(
+                                child: PhoneInput(
                                   enabled: isEdit,
-
-                                  keyboardType: TextInputType.number,
-                                  maxLength: 10,
-                                  // Numeric keyboard
-                                  inputFormatters: <TextInputFormatter>[
-                                    FilteringTextInputFormatter.digitsOnly
-                                    // Only allows digits
-                                  ],
+                                  key: const Key('phone-field'),
+                                  controller: phoneController,
+                                  shouldFormat: true,
+                                  // set _selectedCountryCode to your country code if not null
+                                  defaultCountry: IsoCode.US,
                                   decoration: InputDecoration(
-                                    labelText: isEdit
+                                    labelText: !isEdit
                                         ? LanguageService.getTranslated(context, "user_profile_user_management_mobile_field")
                                         : phoneLabelText,
+
                                     labelStyle: isEdit
                                         ? CustomTypography.Body1
                                         : CustomTypography.Body1.copyWith(
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium
-                                                ?.color),
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium
+                                            ?.color),
                                     disabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide(
@@ -1216,19 +1194,43 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                     ),
                                     hintText: LanguageService.getTranslated(context, "user_profile_user_management_mobile_placeholder"),
+                                   /* hintStyle: isEdit
+                                  ? CustomTypography.Body1
+                                      : CustomTypography.Body1.copyWith(
+                                      color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.color),*/
                                     border: const OutlineInputBorder(),
                                     counterText: '',
                                   ),
-                                  validator: (value) {
-                                    if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                      return LanguageService.getTranslated(context, "user_profile_user_management_mobile_validation");
-                                    }
-                                    return null;
+                                  countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                                    showSearchInput: true,
+                                    searchInputDecoration: InputDecoration(
+                                      hintText: 'Search Country',
+                                    ),
+                                  ),
+                                  showFlagInInput: true,
+                                  flagShape: BoxShape.circle,
+                                  flagSize: 35,
+                                  onChanged: (PhoneNumber? p) {
+                                    if(p==null)
+                                      return;
+                                    setState(() {
+                                      _selectedCountryCode = p.countryCode;
+                                    });
+                                    print('changed ${p.countryCode}');
                                   },
-                                  controller: _phoneGeneralInfoController,
+                                  onSaved: (PhoneNumber? p) {
+                                    if(p==null)
+                                      return;
+                                    setState(() {
+                                      _selectedCountryCode = p.countryCode;
+                                    });
+                                    print('changed ${p.countryCode}');
+                                  },
                                 ),
                               ),
-                              // Dropdown Icon Suffix
                             ],
                           );
                         }),
@@ -1262,7 +1264,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             "company_id": userProfileProvider.userData.companyId ?? "",
                                             "isIndividual": (userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false),
                                             "displayName": _displayNameGeneralInfoController.text,
-                                            "phone": _phoneGeneralInfoController.text,
+                                            "phone": phoneController.value?.nsn??"",
                                             "my_assignee": [""],
                                             "roles": _selectedRoles.map((role) => role.toJson()).toList(),
                                             "selectedCountryCode": _selectedCountryCode,
@@ -1277,7 +1279,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               nameLabelText = _nameGeneralInfoController.text;
                                               displayNameLabelText = _displayNameGeneralInfoController.text;
                                               emailLabelText = _emailGeneralInfoController.text;
-                                              phoneLabelText = _phoneGeneralInfoController.text;
+                                              phoneLabelText = phoneController.value?.nsn??"";
                                               isEdit = false;
                                             });
                                           }
@@ -1413,32 +1415,39 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  LanguageService.getTranslated(
-                      context, "user_profile_user_management_row_name_manager"),
-                  style: CustomTypography.Body1,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, "user_profile_user_management_row_name_manager"),
+                    style: CustomTypography.Body1,
+                  ),
                 ),
-                !showAssignDeleteManager?SizedBox():Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    userProfileProvider.myManager.isNotEmpty&&userProfileProvider.myManager[0] != null?SizedBox(height: 48,): IconButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (localContext) {
-                            return AlertDialog(
-                              content: _addMemberDialogUI(localContext, "add_manager"),
+                !showAssignDeleteManager?SizedBox():Builder(
+                  builder: (context) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        userProfileProvider.myManager.isNotEmpty&&userProfileProvider.myManager[0] != null?SizedBox(height: 48,): IconButton(
+                          onPressed: () {
+                            showAdaptiveDialog(
+                              context: context,
+                              builder: (localContext) {
+                                return AlertDialog(
+                                  content: _addMemberDialogUI(localContext, "add_manager"),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
-                      icon: Icon(
-                        Icons.add,
-                        color: AppColors.primaryMain,
-                      ),
-                    ),
-                  ],
+                          icon: Icon(
+                            Icons.add,
+                            color: AppColors.primaryMain,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
                 ),
               ],
             ),
@@ -1606,31 +1615,40 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  LanguageService.getTranslated(
-                      context, "user_profile_user_management_row_name_Delegate"),
-                  style: CustomTypography.Body1,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, "user_profile_user_management_row_name_Delegate"),
+                    style: CustomTypography.Body1,
+                  ),
                 ),
-                !showAddDelegate?SizedBox():Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    userProfileProvider.myDeligate.isNotEmpty&&userProfileProvider.myDeligate[0] != null?SizedBox(height: 48,): IconButton(
-                      onPressed: () {
-                        // Handle submit button
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return _addMemberDialogUI(context, "add_deligate");
+                !showAddDelegate?SizedBox():Builder(
+                  builder: (context) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        userProfileProvider.myDeligate.isNotEmpty&&userProfileProvider.myDeligate[0] != null?SizedBox(height: 48,): IconButton(
+                          onPressed: () {
+                            // Handle submit button
+                            showDialog(
+                              context: context,
+                              builder: (localContext) {
+                                return AlertDialog(
+                                  content: _addMemberDialogUI(localContext, "add_delegate"),
+                                );
+                              },
+                            );
                           },
-                        );
-                      },
-                      icon: Icon(
-                        Icons.add,
-                        color: AppColors.primaryMain,
-                      ),
-                    ),
-                  ],
+                          icon: Icon(
+                            Icons.add,
+                            color: AppColors.primaryMain,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
                 ),
               ],
             ),
@@ -1802,10 +1820,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  LanguageService.getTranslated(
-                      context, "user_profile_user_management_row_name_reportee"),
-                  style: CustomTypography.Body1,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, "user_profile_user_management_row_name_reportee"),
+                    style: CustomTypography.Body1,
+                  ),
                 ),
                 !showAddReportee?SizedBox():Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1814,10 +1835,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                     IconButton(
                       onPressed: () {
                         // Handle submit button
-                        showDialog(
+                        showAdaptiveDialog(
                           context: context,
-                          builder: (context) {
-                            return _addMemberDialogUI(context, "add_reportee");
+                          builder: (localContext) {
+                            return AlertDialog(
+                              content: _addMemberDialogUI(localContext, "add_reportee"),
+                            );
                           },
                         );
                       },
@@ -2142,8 +2165,36 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  _getChatsUI() {
-    return Container();
+  _getSecurityUI() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'coming_soon_title'),
+                        style: CustomTypography.H4),
+                  ),
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      style: CustomTypography.Body1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addChip(Categories value) {
