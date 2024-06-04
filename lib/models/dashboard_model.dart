@@ -16,7 +16,7 @@ class DashboardModel {
         this.verificationCount, this.rolePercent, this.companyPercent, this.requests});
 
   DashboardModel.fromJson(Map<String, dynamic> json) {
-    max = json['max'];
+    max = json['max']??0;
     if (json['company_type'] != null) {
       companyType = <CompanyType>[];
       json['company_type'].forEach((v) {
@@ -31,10 +31,10 @@ class DashboardModel {
     }
     signups =
     json['signups'] != null ? new Signups.fromJson(json['signups']) : null;
-    verificationCount = json['verification_count'];
+    verificationCount = json['verification_count']??0;
     rolePercent = json['role_percent'];
     companyPercent = json['company_percent'];
-    requests = json['request'];
+    requests = json['request']??0;
   }
 
   Map<String, dynamic> toJson() {
@@ -67,7 +67,7 @@ class CompanyType {
   CompanyType.fromJson(Map<String, dynamic> json) {
     name = json['name'];
     id = json['id'];
-    count = json['count'];
+    count = json['count']??0;
   }
 
   Map<String, dynamic> toJson() {
@@ -110,8 +110,8 @@ class Current {
   Current({this.signup, this.csignup});
 
   Current.fromJson(Map<String, dynamic> json) {
-    signup = json['signup']??"";
-    csignup = json['csignup']??"";
+    signup = json['signup']??0;
+    csignup = json['csignup']??0;
   }
 
   Map<String, dynamic> toJson() {
@@ -131,7 +131,7 @@ class DashboardRoles {
 
   DashboardRoles.fromJson(Map<String, dynamic> json) {
     name = json['name']??"";
-    count = json['count']??"";
+    count = json['count']??0;
     id = json['id']??"";
   }
 

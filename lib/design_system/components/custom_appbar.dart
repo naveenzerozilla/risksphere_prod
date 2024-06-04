@@ -4,6 +4,7 @@ import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:green/design_system/components/profile_image_widget.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:green/screens/userManagement/user_profile.dart';
@@ -70,9 +71,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             builder: (context, authNotifier, child) {
             return InkWell(
               onTap: () {
-                authNotifier.signOut();
-                Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+                SnackBar snackBar = SnackBar(
+                  content: Text('Coming Soon!'),
+                  duration: Duration(seconds: 2),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                  ),
+                );
               },
               child: Stack(
                 clipBehavior: Clip.none,
@@ -104,6 +111,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         CountryPickerDropdown(
           initialValue: 'US',
+
           itemBuilder: (Country country) {
             return CircleAvatar(
               backgroundImage: AssetImage(
@@ -151,11 +159,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Navigator.push(
                     context, MaterialPageRoute(builder: (_) => ProfileScreen()),);
               },
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZ0OTAqC4xVoXNE8eLYie4DDjlLgZZrwj2cB64su1Z9f5YuarNKHYM8WoOrdFxTqoYjVE&usqp=CAU"),
-                radius: 20,
-
+              child: Center(
+                child: ProfileImageWidget(),
               ),
             );
           }

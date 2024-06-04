@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -112,6 +113,21 @@ class AuthNotifier extends ChangeNotifier {
       Map<String, dynamic>? claims = token.claims?? {};
       log("Claims: $claims");
 
+      if(!(_user?.emailVerified??false)) {
+        _isSigningIn = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please verify your email address before signing in.'),
+          ),
+        );
+
+        await _auth.signOut();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return;
+      }
+
       await SharedPreferenceService.setClaims(claims);
       await SharedPreferenceService.getAllClaims();
       _isSigningIn = false;
@@ -191,6 +207,74 @@ class AuthNotifier extends ChangeNotifier {
           content: Text(e.message!),
         ),
       );
+    }
+  }
+
+  Future<void> signInWithMicrosoft({BuildContext? context}) async {
+    try {
+      _isSigningIn = true;
+      notifyListeners();
+
+      final microsoftProvider = MicrosoftAuthProvider();
+
+      microsoftProvider.addScope('email');
+      microsoftProvider.addScope('openid');
+      microsoftProvider.addScope('profile');
+      microsoftProvider.addScope('User.Read');
+
+      UserCredential userCredential;
+      if (kIsWeb) {
+        userCredential = await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
+      } else {
+        userCredential = await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
+      }
+
+      // Handle user data or token claims if necessary
+      // Example:
+    IdTokenResult token = await userCredential.user!.getIdTokenResult();
+    Map<String, dynamic>? claims = token.claims ?? {};
+    log("Claims: $claims");
+
+    await SharedPreferenceService.setClaims(claims);
+    await SharedPreferenceService.getAllClaims();
+
+    print('Is Individual? ${claims['isIndividual']}');
+
+    print('Current User: ${userCredential.user!.email}');
+    print('Current firebase user: ${_auth.currentUser!.email}');
+    _user = userCredential.user;
+    if (claims['isIndividual'] == null) {
+      isNewUser = true;
+      Navigator.push(
+        context!,
+        MaterialPageRoute(
+          builder: (context) => CreateAccountScreen(
+            userCredential: userCredential,
+          ),
+        ),
+      );
+    } else {
+      isNewUser = false;
+      Navigator.pushAndRemoveUntil(
+        context!,
+        MaterialPageRoute(builder: (context) => App()),
+        (route) => false,
+      );
+    }
+
+      _isSigningIn = false;
+      notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      _isSigningIn = false;
+      notifyListeners();
+      print("Error signing in with Microsoft: $e");
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An error occurred'),
+          ),
+        );
+      }
     }
   }
 
@@ -288,6 +372,63 @@ class AuthNotifier extends ChangeNotifier {
 
   /// Registration for Individual on Google Signup
   Future<String> signUpIndividualWithGoogle(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
+    try {
+      _isSigningUp = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      print('cred: $userCredential');
+
+
+      var body = {
+        'email': userCredential.user?.email,
+        'name': userCredential.user?.displayName,
+        'displayName': userCredential.user?.displayName,
+        'roles': selectedRoles.map((role) => role.toJson()).toList(),
+        'authData': userCredential.toJson(),
+        "country_code": selectedCountryCode,
+        'phone': phone,
+        'is_email_password': false,
+        'isIndividual': true,
+        'uId': userCredential.user?.uid,
+      };
+      log("body: ${jsonEncode(body)}");
+
+      // Call the Firebase Cloud Function
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(
+          body
+      );
+
+      print('Cloud Function result: ${result.data}');
+
+      _user = userCredential.user;
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return result.data;
+    } on FirebaseAuthException catch (e) {
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      // Handle error
+      print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
+
+      return '';
+    }
+  }
+
+  /// Registration for Individual on Microsoft Signup
+  Future<String> signUpIndividualWithMicrosoft(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -581,6 +722,19 @@ class AuthNotifier extends ChangeNotifier {
           content: Text(e.message!),
         ),
       );
+    } catch (e) {
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      // Handle error
+      print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
     }
   }
 
@@ -590,7 +744,7 @@ class AuthNotifier extends ChangeNotifier {
     try {
       final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('send_default_data');
       final result = await callable.call();
-      log('Cloud Function result: ${json.encode(result.data)}');
+     // log('Cloud Function result: ${json.encode(result.data)}');
 
 
 
@@ -608,7 +762,7 @@ class AuthNotifier extends ChangeNotifier {
       companyTypeList = initialDataModel.companyType;
 
 
-
+/*
       // Print all three lists
       print('Role List:');
       roleList?.forEach((role) {
@@ -623,7 +777,7 @@ class AuthNotifier extends ChangeNotifier {
       print('Company List:');
       companyList?.forEach((company) {
         print(company.toJson());
-      });
+      });*/
 
     } catch (e, stack) {
       // Handle error

@@ -35,6 +35,9 @@ enum Screens {
   corporateConnectionList,
   nonCorporateConnectionList, corporateEmployeeEdit, nonCorporateEdit,
   corporateProfile,
+  /////////
+  accountList,
+  locationList,
 }
 
 enum EmailOptions {

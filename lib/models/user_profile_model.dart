@@ -25,7 +25,6 @@ class UserProfileModel {
 
 class UserData {
   int? rating;
-  CreatedAt? createdAt;
   String? email;
   String? displayImageUrl;
   String? displayName;
@@ -45,7 +44,6 @@ class UserData {
 
   UserData(
       {this.rating,
-        this.createdAt,
         this.email,
         this.displayImageUrl,
         this.displayName,
@@ -64,9 +62,7 @@ class UserData {
 
   UserData.fromJson(Map<String, dynamic> json) {
     rating = json['rating'];
-    createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
-        : null;
+
     email = json['email'];
     displayImageUrl = json['display_image_url'];
     displayName = json['display_name'];
@@ -99,9 +95,6 @@ class UserData {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['rating'] = this.rating;
-    if (this.createdAt != null) {
-      data['created_at'] = this.createdAt!.toJson();
-    }
     data['email'] = this.email;
     data['display_image_url'] = this.displayImageUrl;
     data['displayName'] = this.displayName;

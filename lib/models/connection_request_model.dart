@@ -56,7 +56,7 @@ class RequestUser {
   String? displayImageUrl;
   String? message;
   bool? requestPending;
-  List<String>? role;
+  String? role;
 
   RequestUser(
       {this.name,
@@ -77,7 +77,7 @@ class RequestUser {
     message = json['message'];
     requestPending = json['request_pending'];
     if(json['role'] != null) {
-      role = json['role'].cast<String>();
+      role = json['role'];
     }
   }
 

@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  static const Color progressGoodGradient1 = Color(0x0066BB6A);
+  static const Color progressGoodGradient2 = Color(0xff66BB6A);
+  static const Color progressGoodBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressGoodBackgroundGradient2 = Color(0x4d90CAF9);
+  static const Color progressExcellentGradient1 = Color(0x8042A5F5);
+  static const Color progressExcellentGradient2 = Color(0xff90CAF9);
+  static const Color progressExcellentBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressExcellentBackgroundGradient2 = Color(0x4d90CAF9);
+  static const Color progressBadGradient1 = Color(0x00D32F2F);
+  static const Color progressBadGradient2 = Color(0xffD32F2F);
+  static const Color progressBadBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressBadBackgroundGradient2 = Color(0x4d90CAF9);
+
   static const Color paperElevation2 = Color(0xFF232323);
   static const Color avatarBackground = Color(0xFFCE93D8);
   static const Color paperElavation25 = Color(0xAD000000);

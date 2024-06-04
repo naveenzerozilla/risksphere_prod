@@ -21,6 +21,7 @@ import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'create_account_screen.dart';
@@ -174,6 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Check if the user is authenticated after login attempt
                 if (authNotifier.user != null && !authNotifier.isNewUser) {
                   // Navigate to the home screen or any other screen after login
+                  Provider.of<UserProfileProvider>(context, listen: false)
+                      .getAllUserData(context, '', '');
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -204,13 +207,50 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(
             height: CustomSpacing.one,
           ),
-          SocialMediaButton(
-            onPressed: () {
-              // Add your onPressed function here
-            },
-            buttonText: LanguageService.getTranslated(
-                context, "login_microsoft_button"),
-            iconPath: 'assets/images/microsoftLogo.svg',
+          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+              return SocialMediaButton(
+                onPressed: () async {
+                  // Add your onPressed function here
+                  await authNotifier.signInWithMicrosoft(context: context);
+                  // Check if the user is authenticated after login attempt
+                  if (authNotifier.user != null && !authNotifier.isNewUser) {
+                    // Navigate to the home screen or any other screen after login
+                    Provider.of<UserProfileProvider>(context, listen: false)
+                        .getAllUserData(context, '', '');
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => /*Home(
+                          useLightMode: false,
+                          useMaterial3: true,
+                          colorSelected: ColorSeed.baseColor,
+                          imageSelected: ColorImageProvider.leaves,
+                          handleBrightnessChange: handleBrightnessChange,
+                          handleMaterialVersionChange:
+                              handleMaterialVersionChange,
+                          handleColorSelect: handleColorSelect,
+                          handleImageSelect: handleImageSelect,
+                          colorSelectionMethod: ColorSelectionMethod.colorSeed,
+                        ),*/
+                        DashboardScreen(),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Email not found. Please enter a valid email address.'),
+                      ),
+                    );
+                  }
+                },
+                buttonText: LanguageService.getTranslated(
+                    context, "login_microsoft_button"),
+                iconPath: 'assets/images/microsoftLogo.svg',
+              );
+            }
+
           ),
           SizedBox(height: CustomSpacing.eight),
           Row(

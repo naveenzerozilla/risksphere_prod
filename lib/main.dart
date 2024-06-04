@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/providers/company_provider.dart';
 import 'package:green/providers/connections_provider.dart';
@@ -50,6 +51,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
           ChangeNotifierProvider(create: (_) => CorporateProvider()),
           ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
+          ChangeNotifierProvider(create: (_) => AccountListProvider()),
         ],
         child: const MyApp(),
       ),
@@ -80,7 +82,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   bool useMaterial3 = true;
-  ThemeMode themeMode = ThemeMode.system;
+  ThemeMode themeMode = ThemeMode.dark;
   ColorSeed colorSelected = ColorSeed.baseColor;
   ColorImageProvider imageSelected = ColorImageProvider.leaves;
   ColorScheme? imageColorScheme = const ColorScheme.light();
@@ -89,7 +91,7 @@ class _AppState extends State<App> {
   bool get useLightMode {
     switch (themeMode) {
       case ThemeMode.system:
-        return View.of(context).platformDispatcher.platformBrightness == Brightness.light;
+        return View.of(context).platformDispatcher.platformBrightness == Brightness.dark;
       case ThemeMode.light:
         return true;
       case ThemeMode.dark:
