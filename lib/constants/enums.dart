@@ -37,6 +37,7 @@ enum Screens {
   corporateProfile,
   /////////
   accountList,
+  locationList,
 }
 
 enum EmailOptions {

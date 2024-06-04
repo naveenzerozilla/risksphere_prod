@@ -17,7 +17,7 @@ class EmployeeListModel {
   EmployeeListModel.fromJson(Map<String, dynamic> json, {bool isSearch = false}) {
     data = json['data'];
     if(isSearch) {
-      users = json['users'] != null ? new Users.fromJson(json['users']) : null;
+      users = json['users'] != null ? Users.fromJson(json['users']) : null;
     } else {
       if (json['employees'] != null) {
         employees = <Employees>[];

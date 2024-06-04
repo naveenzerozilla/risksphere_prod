@@ -75,6 +75,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   content: Text('Coming Soon!'),
                   duration: Duration(seconds: 2),
                 );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                  ),
+                );
               },
               child: Stack(
                 clipBehavior: Clip.none,

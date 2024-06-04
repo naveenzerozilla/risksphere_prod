@@ -9,6 +9,7 @@ import 'package:green/design_system/components/corporate_type_roles_bottom_sheet
 import 'package:green/design_system/components/custom_chip.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/company_type_model.dart';
+import 'package:green/models/corporate_verification_list_model.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 import 'package:green/providers/company_provider.dart';
 import 'package:green/providers/employee_provider.dart';
@@ -18,6 +19,7 @@ import 'package:green/screens/userManagement/connections_screen.dart';
 import 'package:green/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
 import 'package:green/screens/userManagement/service/verification_tab_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
@@ -9137,7 +9139,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     children: [
                       Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
-                      Text('Mar 7, 2024 23:26',
+                      Text(formatCreatedAt(verificationProvider
+                              .corporateRequests[index]),
                           style: CustomTypography.Caption),
                     ],
                   ),
@@ -9148,6 +9151,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         ),
       ),
     );
+  }
+
+  String formatCreatedAt(Company? company) {
+    DateTime dateTime = company?.createdAt?.toDateTime()??DateTime.now();
+    DateFormat dateFormat = DateFormat('MMM d, yyyy HH:mm');
+    return dateFormat.format(dateTime.toLocal());
   }
 
   _verificationUserRequestsListItem(

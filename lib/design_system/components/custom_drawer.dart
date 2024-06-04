@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/settings/settings.dart';
@@ -86,13 +87,23 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Location(s) List'),
                           onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                            //Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                            //Show coming soon snackbar 
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Location(s) Map'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -113,13 +124,21 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Risk Manager List'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Manage insurers List'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -140,19 +159,31 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Upload Locations'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Add A Location'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Create A Campus'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -173,37 +204,61 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Improved Locations'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Cat Modellers And Risk Engineers Work'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('See Vendor Activity'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Real Time Weather Activity'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Broker Activity'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Insights'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -224,37 +279,61 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('See Data Quality'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('See Hazard Scores'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('See Vendor Results'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('See Vendor Recommendations'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('See Data Improvement Recommendations'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Comparison Data'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -275,19 +354,31 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Add Vendor'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Add Broker'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Add Freelancer'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -309,7 +400,11 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Get Paid To Create Tags On Phrases'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -330,13 +425,21 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Leads List'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                         ListTile(
                           title: const Text('Leads Map'),
                           onTap: () {
-                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                              ),
+                            );
                           },
                         ),
                       ],

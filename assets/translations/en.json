@@ -575,5 +575,10 @@
     "connection_no_corporate_connection": "No corporate connections",
     "usermanagement_app_corporate_verification_request_text": " has requested to create new corporate account.",
     "usermanagement_app_user_verification_no_requests": "No requests",
-    "usermanagement_app_corporate_create_image_text": "Upload Image"
+    "usermanagement_app_corporate_create_image_text": "Upload Image",
+    "locationlist_app_sub_title_description_pt_1": "Manage all SOV of “",
+    "locationlist_app_sub_title_description_pt_2": "” from this panel.",
+    "locationlist_search_field_hint_text": "Search by ID, Name...",
+    "locationlist_app_connections_tab_all": "All",
+    "locationlist_app_connections_tab_certified": "Certified"
 }

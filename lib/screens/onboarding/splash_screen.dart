@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -25,9 +26,13 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _animation;
   late ThemeProvider themeProvider;
+
+  int progress = 0;
+
   @override
   void initState() {
     super.initState();
+    _test();
     _getInitData();
     _controller = AnimationController(
       vsync: this,
@@ -58,6 +63,18 @@ class _SplashScreenState extends State<SplashScreen>
         );
       }
     });
+  }
+
+  Future<void> _test() async {
+    final db = FirebaseFirestore.instance;
+    final docRef = db.collection("test_process").doc("6gIC6Ljq3A3TQxUIH2oz");
+    docRef.snapshots().listen(
+          (event) {
+            log("current data: ${event.data()}");
+            log("loading percent: ${event.data()?['progress']}");
+          },
+      onError: (error) => log("Listen failed: $error"),
+    );
   }
 
   Future<void> navigationMethod(bool isUserLoggedIn, User user) async {
