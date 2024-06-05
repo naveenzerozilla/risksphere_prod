@@ -75,6 +75,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _customRoles = false;
   Companies? selectedCompany;
   String companyName = '';
+  String companyId = "";
 
   String _selectedAdminCountryCode = '+1';
 
@@ -310,6 +311,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             print('Account Type: $_selectedOption');
                                             authNotifier
                                                 .signUpCorporateWithEmailAndPassword(
+                                              companyId,
                                               companyName,
                                               selectedCompanyType!,
                                               companyDisplayNameController.text,
@@ -976,6 +978,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     setState(() {
                       selectedCompany = selection;
                       companyName = selection.name;
+                      companyId = selection.id;
                       selectedCompanyType = authNotifier.companyTypeList?.firstWhere((element) => element.id == selection.companyTypeId);
                       companyDisplayNameController.text = selection.displayName;
                       _enableCompanyTypeDropdown = false;
@@ -993,6 +996,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       onFieldSubmitted: (_) {},
                       onChanged: (value) {
                         setState(() {
+                          companyId = "";
                           _showRoles = false;
                           _showCompanyType = false;
                           selectedCompany = null;

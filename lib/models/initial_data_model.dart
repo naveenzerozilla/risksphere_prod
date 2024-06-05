@@ -68,7 +68,7 @@ class CompanyType {
     name = json['name']??"";
     corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
     canBeListed = json['can_be_listed'];
-    trialPeriodDays = json['trial_period_days'];
+    trialPeriodDays = json['trial_period_days']??0;
     id = json['id'];
     adminSelfRegistration = json['admin_self_registration'];
     type = json['type'];
@@ -221,8 +221,10 @@ class Companies {
   late final int noOfUsers;
   late final List<Admins> admins;
   late final List<Roles> roles;
+  late final String id;
 
   Companies.fromJson(Map<String, dynamic> json){
+    id = json['id']??"";
     isActive = json['status']??false;
     isAuthorized = json['is_authorized'];
     /*if(json['user_ids']!=null) {
@@ -266,6 +268,7 @@ class Companies {
     _data['no_of_users'] = noOfUsers;
     _data['admins'] = admins.map((e)=>e.toJson()).toList();
     _data['roles'] = roles.map((e)=>e.toJson()).toList();
+    _data["id"] = id;
     return _data;
   }
 }
