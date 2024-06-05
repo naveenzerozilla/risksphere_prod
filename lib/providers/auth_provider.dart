@@ -575,7 +575,7 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Corporate
-  Future<void> signUpCorporateWithEmailAndPassword(String companyLegalName, CompanyType companyType, String companyDisplayName, String adminName, String adminEmail, String adminCountryCode, String adminPhone, String adminPassword, Roles? roles, BuildContext context, [Companies? selectedCompany]) async {
+  Future<void> signUpCorporateWithEmailAndPassword(String companyId, String companyLegalName, CompanyType companyType, String companyDisplayName, String adminName, String adminEmail, String adminCountryCode, String adminPhone, String adminPassword, Roles? roles, BuildContext context, [Companies? selectedCompany]) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -591,6 +591,7 @@ class AuthNotifier extends ChangeNotifier {
 
 
       var body = {
+        "company_id": companyId,
         "company_name": companyLegalName,
         "company_type": companyType.type,
         "company_display_name": companyDisplayName,
