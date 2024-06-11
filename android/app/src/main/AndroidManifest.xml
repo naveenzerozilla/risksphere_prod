@@ -7,6 +7,7 @@
             android:value="AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w"/>
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"

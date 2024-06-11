@@ -1,4 +1,4 @@
-
+// region-projectid.cloudfunction.net/{function name}
 class AppConstant {
   /// R1 API URL
   // Url for corporate management

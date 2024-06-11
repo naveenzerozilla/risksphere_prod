@@ -11,11 +11,72 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../screens/listings/account_list.dart';
 import '../../screens/onboarding/splash_screen.dart';
+import '../../service/shared_preference_service.dart';
 
-class CustomDrawer extends StatelessWidget {
+class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<CustomDrawer> createState() => _CustomDrawerState();
+}
+
+class _CustomDrawerState extends State<CustomDrawer> {
+  bool showCorporateManagementTab = true;
+
+  bool showNonCorporateManagementTab = true;
+
+  bool showEmployeeManagementTab = true;
+
+  bool showCorporateList = true;
+
+  bool showCorporateUserListDropdown = true;
+
+  bool showCorporateVerificationTab = true;
+
+  bool showCorporateProfile = true;
+
+  @override
+  void initState() {
+    _getClaims();
+    super.initState();
+  }
+
+  _getClaims() async {
+    showNonCorporateManagementTab = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.NCMUL) ??
+        false;
+    showEmployeeManagementTab = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPUL) ??
+        false;
+
+    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCL) ??
+        false;
+
+    showCorporateUserListDropdown =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCUM) ??
+            false;
+    showCorporateVerificationTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMLL) ??
+            false;
+
+    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCUL) ??
+        false;
+
+
+    showCorporateManagementTab = showCorporateList ||
+        showCorporateUserListDropdown ||
+        showCorporateVerificationTab ||
+        showCorporateProfile;
+
+
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,13 +148,13 @@ class CustomDrawer extends StatelessWidget {
                         ListTile(
                           title: const Text('Location(s) List'),
                           onTap: () {
-                            //Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
-                            //Show coming soon snackbar 
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                            //Show coming soon snackbar
+                            /*ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Coming Soon!', style: CustomTypography.Body1,),
                               ),
-                            );
+                            );*/
                           },
                         ),
                         ListTile(
@@ -498,12 +559,14 @@ class CustomDrawer extends StatelessWidget {
                       );
                     }
                   ),
-                  IconButton(
+                  (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
+                      ? IconButton(
                     icon: Icon(Icons.person),
                     onPressed: () {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserManagementScreen()));
                     },
-                  ),
+                  )
+                      : SizedBox()
                 ],
               ),
             ],

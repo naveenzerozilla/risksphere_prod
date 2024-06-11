@@ -1,10 +1,13 @@
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:green/design_system/components/country_picker_flag_name.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/main.dart';
 import 'package:green/models/initial_data_model.dart';
@@ -14,6 +17,7 @@ import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/enums.dart';
 import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/app_colors.dart';
@@ -22,6 +26,9 @@ import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
 import '../../service/language_service.dart';
 import '../../utils/utils.dart';
+
+import 'package:country_picker/country_picker.dart' as country_picker;
+
 
 class CreateAccountScreen extends StatefulWidget {
 
@@ -73,6 +80,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _showCompanyType = true;
   bool _enableCompanyTypeDropdown = true;
   bool _customRoles = false;
+  bool _enableCountryDropdown = true;
   Companies? selectedCompany;
   String companyName = '';
   String companyId = "";
@@ -80,6 +88,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   String _selectedAdminCountryCode = '+1';
 
   //bool isNewUser = false;
+
+
+  String _corporateAdminHintText = '+1 (XXX) XXX-XXXX';
+  String _selectedAdminCorporateCountry = 'US';
+  String _selectedCorporateCountryName = 'United States';
+
+  String _individualHintText = '(XXX) XXX-XXXX';
+  String _selectedIndividualCountry = 'US';
 
   @override
   void initState() {
@@ -90,6 +106,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         isNewUser = true;
       });
     }*/
+    _updateHintText();
   }
 
   @override
@@ -114,6 +131,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     Provider.of<AuthNotifier>(context, listen: false).isNewUser = false;
     Provider.of<AuthNotifier>(context, listen: false).signOut();
     super.dispose();
+  }
+
+  void _updateHintText() {
+    setState(() {
+      print('Selected Corporate Country: $_selectedAdminCorporateCountry');
+      print('Selected Individual Country: $_selectedIndividualCountry');
+      _corporateAdminHintText = countryPlaceholders[_selectedAdminCorporateCountry] ?? '';
+      _individualHintText = countryPlaceholders[_selectedIndividualCountry] ?? '';
+    });
   }
 
 
@@ -284,6 +310,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 'Mobile: $_selectedCountryCode ${mobileController.value?.nsn??""}');
                                             print('Roles: $_selectedRoles');
                                             print('Account Type: $_selectedOption');
+                                            if(_selectedCorporateCountryName.isEmpty) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                      LanguageService.getTranslated(context,"usermanagement_app_corporate_create_company_country_invalid_error_text")),
+                                                ),
+                                              );
+                                            }
                                             authNotifier
                                                 .signUpIndividualWithEmailAndPassword(
                                               emailController.text,
@@ -324,6 +358,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                               !_enableCompanyTypeDropdown?selectedCompanyRole: Roles(isForIndividual: true, isApplicableForTrial: false, role: "admin", name: "Admin", isMultipleRoleEnabled: false, id: ""),
                                               context,
                                               selectedCompany,
+                                              _selectedCorporateCountryName,
                                             );
 
                                           }
@@ -408,7 +443,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               ),
             ],
           ),
-          SizedBox(height: CustomSpacing.eight),
+          SizedBox(height: CustomSpacing.four),
           _selectedOption == SignUpOptions.individual
               ? _individualAccountUI()
               : _corporateAccountUI(),
@@ -576,7 +611,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
                   labelText: LanguageService.getTranslated(context, "register_mobile_number"),
-                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
+                  hintText: _individualHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
@@ -594,6 +629,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
+                    _selectedIndividualCountry = p.isoCode.name;
+                    _updateHintText();
                   });
                   print('changed ${p.countryCode}');
                 },
@@ -927,9 +964,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _corporateAccountUI() {
+    print('Corporate Country: $_selectedCorporateCountryName');
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Corporate Country just show flag and country name
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded(
+              child: CountryPickerFlagName(onCountryChange: !_enableCountryDropdown? null: (country) {
+                setState(() {
+                  _selectedCorporateCountryName = country.name;
+                });
+              }, initialValue: country_picker.Country(phoneCode: '1', countryCode: getCountryCodeFromName(_selectedCorporateCountryName)??"", e164Sc: 1, geographic: true, level: 1, name: _selectedCorporateCountryName, example: '', displayName: '', displayNameNoCountryCode: '', e164Key: '', ),),
+            ),
+          ],
+        ),
+        SizedBox(height: CustomSpacing.eight),
+
         // Company Legal Name
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
@@ -965,7 +1019,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 onTap: () => onSelected(option),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
-                                  child: Text(option.name, style: CustomTypography.Subtitle1),
+                                  child: Text('${option.name} (${option.countryName})', style: CustomTypography.Subtitle1),
                                 ),
                               );
                             },
@@ -982,7 +1036,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       selectedCompanyType = authNotifier.companyTypeList?.firstWhere((element) => element.id == selection.companyTypeId);
                       companyDisplayNameController.text = selection.displayName;
                       _enableCompanyTypeDropdown = false;
+                      _enableCountryDropdown = false;
                       _customRoles = true;
+                      _selectedCorporateCountryName = selection.countryName;
+                      print('Selected Company Country: $_selectedCorporateCountryName');
                     });
                   },
                   displayStringForOption: (Companies option) => option.name,
@@ -994,7 +1051,35 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       controller: textEditingController,
                       focusNode: focusNode,
                       onFieldSubmitted: (_) {},
+
                       onChanged: (value) {
+                        final splitValue = value.split(' ');
+                        final normalizedWords = splitValue.map((word) {
+                          final matchedAbbr = abbreviationMap.keys.firstWhere(
+                                (abbr) => word.toLowerCase() == (abbr.toLowerCase()),
+                            orElse: () => '',
+                          );
+
+                          if (matchedAbbr.isEmpty) {
+                            return word;
+                          } else {
+                            final fullForm = abbreviationMap[matchedAbbr]!;
+                            //final prefix = word.substring(0, word.length - matchedAbbr.length);
+                           // if (prefix.isEmpty) {
+                              return fullForm;
+                           // } else {
+                          //    return '$prefix${fullForm.capitalizeAfterAbbr(matchedAbbr)}';
+                           // }
+                          }
+                        }).toList();
+
+                        final normalizedValue = normalizedWords.join(' ');
+
+
+                        textEditingController.value = TextEditingValue(
+                          text: normalizedValue,
+                          selection: TextSelection.collapsed(offset: normalizedValue.length),
+                        );
                         setState(() {
                           companyId = "";
                           _showRoles = false;
@@ -1002,8 +1087,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           selectedCompany = null;
                           selectedCompanyType = null;
                           _enableCompanyTypeDropdown = true;
+                          _enableCountryDropdown = true;
                           _customRoles = false;
-                          companyName = value;
+                          companyName = normalizedValue;
                         });
                         Future.delayed(Duration(milliseconds: 1), () {
                           setState(() {
@@ -1213,7 +1299,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
                   labelText: LanguageService.getTranslated(context, "register_mobile_number"),
-                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
+                  hintText: _corporateAdminHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
                 ),
@@ -1231,6 +1317,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
+                    _selectedAdminCorporateCountry = p.isoCode.name;
+                    _updateHintText();
                   });
                   print('changed ${p.countryCode}');
                 },
@@ -1378,6 +1466,21 @@ print("dialingCode: $dialingCode");
     return null; // Return null if validation passes
   }
 
+  String? getCountryCodeFromName(String countryName) {
+    return countryNameToCodeMap[countryName];
+  }
+
 }
+extension StringExtensions on String {
+  bool isSameStringCaseAs(String other) {
+    if (length != other.length) return false;
+    return isNotEmpty && this[0].toUpperCase() == other[0].toUpperCase();
+  }
 
-
+  String capitalizeAfterAbbr(String abbr) {
+    if (abbr.isEmpty) return this;
+    final firstLetter = abbr[0].toUpperCase();
+    final rest = substring(abbr.length).toLowerCase();
+    return '$firstLetter$rest';
+  }
+}

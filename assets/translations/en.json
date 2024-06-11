@@ -580,5 +580,26 @@
     "locationlist_app_sub_title_description_pt_2": "” from this panel.",
     "locationlist_search_field_hint_text": "Search by ID, Name...",
     "locationlist_app_connections_tab_all": "All",
-    "locationlist_app_connections_tab_certified": "Certified"
+    "locationlist_app_connections_tab_certified": "Certified",
+    "usermanagement_app_corporate_create_company_country_invalid_error_text": "Country cannot be empty",
+    "locationlist_app_select_all": "Select All",
+    "addlocation_app_title": "Add Location",
+    "addlocation_app_subtitle": "Please provide the necessary information to create add new location.",
+    "addlocation_location_name": "Location Name",
+    "addlocation_location_name_hint": "Enter location name",
+    "addlocation_location_type": "Location Type",
+    "addlocation_address1": "Address Line 1",
+    "addlocation_address1_hint": "Street address, P.O. box, company name, c/o",
+    "addlocation_address2": "Address Line 2",
+    "addlocation_address2_hint": "Apartment, suite, unit, building, floor, etc.",
+    "addlocation_city": "City",
+    "addlocation_city_hint": "Enter city name",
+    "addlocation_state": "State/Province/Region",
+    "addlocation_state_hint": "Enter state name",
+    "addlocation_zip": "Zip/Postal Code",
+    "addlocation_zip_hint": "Enter zip code",
+    "addlocation_formatted_address": "Formatted Address",
+    "addlocation_formatted_address_hint": "Enter properly formatted address"
+
+
 }

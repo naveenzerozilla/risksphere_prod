@@ -81,6 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     try {
       await user.reload();
+
       IdTokenResult token = await user.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims?? {};
       log("Claims: $claims");
@@ -91,6 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
 
 
       if(claims['isIndividual']==null) {
+        print("User is not registered");
         isUserLoggedIn = false;
       }
       log("Is User Logged In: $isUserLoggedIn");

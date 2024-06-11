@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -60,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool showRevokeDelegate = true;
   bool showAddReportee = true;
   bool showEditUser = true;
+  bool showMyTeams = true;
 
   // General Info
   String userImageUrl = '';
@@ -83,6 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<NetworkingUsers> _managerList = [];
   NetworkingUsers? _selectedManager;
 
+  bool _tabsLoading = true;
+  int _tabLength = 3;
+
   void debounce(
       VoidCallback callback, {
         Duration duration = const Duration(seconds: 1),
@@ -97,25 +102,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _setClaims();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController?.addListener(() {
-      if (_tabController?.index == 0) {
-        setState(() {
-          _selectedScreen = Screens.connectionList;
-        });
-      } else if (_tabController?.index == 1) {
-        setState(() {
-          _selectedScreen = Screens.requestList;
-        });
-      } else if (_tabController?.index == 2) {
-        setState(() {
-          _selectedScreen = Screens.chatList;
-        });
-      }
-      print(
-          'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
-    });
-
     _getData();
   }
   
@@ -125,6 +111,62 @@ class _ProfileScreenState extends State<ProfileScreen>
     showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;
     showAddReportee = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRE)??false;
     showEditUser = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC)??false;
+    bool showNonCorporateMyTeams = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMMT)??false;
+    bool showEmployeeMyTeams = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPMT)??false;
+    User user = FirebaseAuth.instance.currentUser!;
+    await user.getIdTokenResult().then((value) {
+      if (value.claims != null) {
+        if(value.claims!['isIndividual'] == true) {
+          showMyTeams = showNonCorporateMyTeams;
+          print('isIndividual: $showMyTeams');
+        } else if(value.claims!['isInternal'] == true) {
+          showMyTeams = showEmployeeMyTeams;
+          print('isInternal: $showMyTeams');
+      } else {
+          showMyTeams = true;
+         print('external: $showMyTeams');
+        }
+    }});
+
+
+    if(!showMyTeams) {
+      _tabLength = 2;
+    }
+
+    _tabController = TabController(length: _tabLength, vsync: this);
+    _tabController?.addListener(() {
+      if(_tabLength == 3) {
+        if (_tabController?.index == 0) {
+          setState(() {
+            _selectedScreen = Screens.generalInfo;
+          });
+        } else if (_tabController?.index == 1) {
+          setState(() {
+            _selectedScreen = Screens.teamsScreen;
+          });
+        } else if (_tabController?.index == 2) {
+          setState(() {
+            _selectedScreen = Screens.securityScreen;
+          });
+        }
+      } else if(_tabLength == 2) {
+        if (_tabController?.index == 0) {
+          setState(() {
+            _selectedScreen = Screens.generalInfo;
+          });
+        } else if (_tabController?.index == 1) {
+          setState(() {
+            _selectedScreen = Screens.securityScreen;
+          });
+        }
+      }
+      print(
+          'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
+    });
+    setState(() {
+      _tabsLoading = false;
+    });
+
   }
 
   _getData() {
@@ -186,13 +228,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           },
         ),
         drawer: CustomDrawer(),
-        body: PopScope(
-          canPop: _selectedScreen == Screens.connectionList,
+        body: _tabsLoading?Column(children: [
+          SizedBox(height: CustomSpacing.four,),
+          Center(child: CircularProgressIndicator(),)
+        ],):PopScope(
+          canPop: _selectedScreen == Screens.generalInfo,
           onPopInvoked: (canPop) {
             print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-            if (_selectedScreen != Screens.connectionList) {
+            if (_selectedScreen != Screens.generalInfo) {
               setState(() {
-                _selectedScreen = Screens.connectionList;
+                _selectedScreen = Screens.generalInfo;
                 _tabController?.animateTo(0);
               });
             }
@@ -227,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             controller: _tabController,
                             labelStyle:
                                 CustomTypography.BottomNavigationActiveLabel,
-                            tabs: [
+                            tabs: _tabLength == 3?[
                               Tab(
                                 child: InkWell(
                                   onTap: () {
@@ -240,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ),
                                 ),
                               ),
-                              InkWell(
+                              !showMyTeams?SizedBox():InkWell(
                                 onTap: () {
                                   _tabController?.animateTo(1);
                                   _selectedScreen = Screens.requestList;
@@ -260,6 +305,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       context, "user_profile_app_user_management_security_tab"),
                                 ),
                               ),
+                            ]:[
+                              Tab(
+                                child: InkWell(
+                                  onTap: () {
+                                    _tabController?.animateTo(0);
+                                    _selectedScreen = Screens.connectionList;
+                                  },
+                                  child: Tab(
+                                    text: LanguageService.getTranslated(
+                                        context, "user_profile_app_user_management_general_info_tab"),
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  _tabController?.animateTo(1);
+                                  _selectedScreen = Screens.chatList;
+                                },
+                                child: Tab(
+                                  text: LanguageService.getTranslated(
+                                      context, "user_profile_app_user_management_security_tab"),
+                                ),
+                              ),
                             ],
                           ),
 
@@ -267,11 +335,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                           Expanded(
                             child: TabBarView(
                               controller: _tabController,
-                              children: [
+                              children: _tabLength == 3?[
                                 // General Info
                                 _getGeneralInfoUI(),
                                 // My Team
-                                _getMyTeamUI(),
+                                !showMyTeams?SizedBox():_getMyTeamUI(),
+                                // Security
+                                _getSecurityUI(),
+                              ]:[
+                                // General Info
+                                _getGeneralInfoUI(),
                                 // Security
                                 _getSecurityUI(),
                               ],

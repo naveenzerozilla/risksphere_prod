@@ -10,6 +10,7 @@ import 'package:green/design_system/components/roles_dropdown.dart';
 import 'package:green/models/account_list_model.dart';
 import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/connections_provider.dart';
+import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:provider/provider.dart';
 
@@ -278,9 +279,9 @@ class _AccountListScreenState extends State<AccountListScreen>
             });
           }
           Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return LocationProfile(
+            return/* LocationProfile(
               account: accountListProvider.accountList[index],
-            );
+            );*/LocationList(userId: accountListProvider.accountList[index].id??"", companyName: accountListProvider.accountList[index].name??"",);
           }));
         },
         child: Row(
