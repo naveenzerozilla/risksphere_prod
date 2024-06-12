@@ -1790,19 +1790,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               children: [
                 Expanded(
                   flex: 7,
-                  child: TextField(
-                    controller: _corporateSearchController,
-                    onChanged: companySearchClient,
-                    decoration: InputDecoration(
-                      hintText: LanguageService.getTranslated(context,
-                          'usermanagement_search_field_lable_name_email_mobile'),
-                      label: Text(
-                          LanguageService.getTranslated(
-                              context, 'usermanagement_search_field_lable'),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 50,
+                    child: TextField(
+                      controller: _corporateSearchController,
+                      onChanged: companySearchClient,
+                      decoration: InputDecoration(
+                        hintText: LanguageService.getTranslated(context,
+                            'usermanagement_search_field_lable_name_email_mobile'),
+                        label: Text(
+                            LanguageService.getTranslated(
+                                context, 'usermanagement_search_field_lable'),
+                            style: CustomTypography.Body1),
+                        hintStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -2400,19 +2403,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               children: [
                 Expanded(
                   flex: 7,
-                  child: TextField(
-                    controller: _corporateEmployeeSearchController,
-                    onChanged: corporateEmployeeSearchClient,
-                    decoration: InputDecoration(
-                      hintText: LanguageService.getTranslated(context,
-                          'usermanagement_search_field_lable_name_email_mobile'),
-                      label: Text(
-                          LanguageService.getTranslated(
-                              context, "usermanagement_search_field_lable"),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 50,
+                    child: TextField(
+                      controller: _corporateEmployeeSearchController,
+                      onChanged: corporateEmployeeSearchClient,
+                      decoration: InputDecoration(
+                        hintText: LanguageService.getTranslated(context,
+                            'usermanagement_search_field_lable_name_email_mobile'),
+                        label: Text(
+                            LanguageService.getTranslated(
+                                context, "usermanagement_search_field_lable"),
+                            style: CustomTypography.Body1),
+                        hintStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -6254,19 +6260,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Expanded(
                 flex: 7,
-                child: TextField(
-                  controller: _nonCorporateSearchController,
-                  onChanged: nonCorporateSearchClient,
-                  decoration: InputDecoration(
-                    hintText: LanguageService.getTranslated(context,
-                        'usermanagement_search_field_lable_name_email_mobile'),
-                    label: Text(
-                        LanguageService.getTranslated(
-                            context, "usermanagement_search_field_lable"),
-                        style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 50,
+                  child: TextField(
+                    controller: _nonCorporateSearchController,
+                    onChanged: nonCorporateSearchClient,
+                    decoration: InputDecoration(
+                      hintText: LanguageService.getTranslated(context,
+                          'usermanagement_search_field_lable_name_email_mobile'),
+                      label: Text(
+                          LanguageService.getTranslated(
+                              context, "usermanagement_search_field_lable"),
+                          style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -7638,19 +7647,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Expanded(
                 flex: 7,
-                child: TextField(
-                  controller: _employeeSearchController,
-                  onChanged: employeeSearchClient,
-                  decoration: InputDecoration(
-                    hintText: LanguageService.getTranslated(context,
-                        'usermanagement_app_employee_management_phone_hint'),
-                    label: Text(
-                        LanguageService.getTranslated(context,
-                            'usermanagement_app_employee_management_search_text'),
-                        style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 50,
+                  child: TextField(
+                    controller: _employeeSearchController,
+                    onChanged: employeeSearchClient,
+                    decoration: InputDecoration(
+                      hintText: LanguageService.getTranslated(context,
+                          'usermanagement_app_employee_management_phone_hint'),
+                      label: Text(
+                          LanguageService.getTranslated(context,
+                              'usermanagement_app_employee_management_search_text'),
+                          style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),

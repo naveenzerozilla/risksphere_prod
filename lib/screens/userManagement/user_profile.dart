@@ -78,9 +78,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   String selectedCountryCode = "+1";
 
   // My Team
-  TextEditingController _searchManagerController = TextEditingController();
-  TextEditingController _searchDeligateController = TextEditingController();
-  TextEditingController _searchReporteeController = TextEditingController();
   Timer? deBouncer;
   List<NetworkingUsers> _managerList = [];
   NetworkingUsers? _selectedManager;
@@ -2101,17 +2098,20 @@ class _ProfileScreenState extends State<ProfileScreen>
               });
             },
             fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-              return TextField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Search by name or email',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  suffixIcon: IconButton(
-                    onPressed: onFieldSubmitted,
-                    icon: Icon(Icons.search),
+              return SizedBox(
+                height: 50,
+                child: TextField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: onFieldSubmitted,
+                      icon: Icon(Icons.search),
+                    ),
                   ),
                 ),
               );

@@ -229,7 +229,7 @@ bool isSearch = searchText.isNotEmpty ||
                     Expanded(
                       child: Container(
                         margin:
-                        EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -342,19 +342,22 @@ bool isSearch = searchText.isNotEmpty ||
                                   children: [
                                     Expanded(
                                       flex: 7,
-                                      child: TextField(
-                                        controller: _locationSearchController,
-                                        onChanged: locationSearchClient,
-                                        decoration: InputDecoration(
-                                          hintText: LanguageService.getTranslated(context,
-                                              'locationlist_search_field_hint_text'),
-                                          label: Text(
-                                              LanguageService.getTranslated(
-                                                  localContext, 'usermanagement_search_field_lable'),
-                                              style: CustomTypography.Body1),
-                                          hintStyle: CustomTypography.Body1,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                      child: SizedBox(
+                                        height: 50,
+                                        child: TextField(
+                                          controller: _locationSearchController,
+                                          onChanged: locationSearchClient,
+                                          decoration: InputDecoration(
+                                            hintText: LanguageService.getTranslated(context,
+                                                'locationlist_search_field_hint_text'),
+                                            label: Text(
+                                                LanguageService.getTranslated(
+                                                    localContext, 'usermanagement_search_field_lable'),
+                                                style: CustomTypography.Body1),
+                                            hintStyle: CustomTypography.Body1,
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -379,6 +382,7 @@ bool isSearch = searchText.isNotEmpty ||
                             Consumer<ConnectionsProvider>(
                               builder: (context, connectionsProvider, child) {
                                 return TabBar(
+
                                   controller: _tabController,
                                   labelStyle: CustomTypography
                                       .BottomNavigationActiveLabel,
@@ -528,7 +532,7 @@ bool isSearch = searchText.isNotEmpty ||
                   SvgPicture.asset(
                     'assets/images/certified.svg',
                     semanticsLabel: 'Verified',
-                    height: 40,
+                    height: 35,
                   ),
                   SizedBox(width: CustomSpacing.four),
                   Stack(

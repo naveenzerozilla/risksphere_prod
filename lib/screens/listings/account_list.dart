@@ -97,6 +97,7 @@ class _AccountListScreenState extends State<AccountListScreen>
             backgroundColor: themeProvider.getTheme.colorScheme.background,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
+              showDropdown: true,
               showNotificationDot: _showNotificationDot,
               onExpandPressed: (isExpanded) {
                 setState(() {
@@ -176,7 +177,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
 
-                              Row(
+                         /*     Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   Row(
@@ -187,7 +188,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     ],
                                   ),
                                 ],
-                              ),
+                              ),*/
                               Text(
                                 '${LanguageService.getTranslated(context, "account_list_app_title")} ',
                                 style: CustomTypography.H5_Regular,
@@ -199,19 +200,22 @@ class _AccountListScreenState extends State<AccountListScreen>
                               ),
                               SizedBox(height: CustomSpacing.four),
                               // Search
-                              TextField(
-                                controller: _textEditingController,
-                                onChanged: (query) {
-                                  accountsSearchClient(query);
-                                },
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                              SizedBox(
+                                height: 50,
+                                child: TextField(
+                                  controller: _textEditingController,
+                                  onChanged: (query) {
+                                    accountsSearchClient(query);
+                                  },
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    hintText: LanguageService.getTranslated(
+                                        context, "account_list_search_hint"),
+                                    hintStyle: CustomTypography.Body2,
+                                    prefixIcon: Icon(Icons.search),
                                   ),
-                                  hintText: LanguageService.getTranslated(
-                                      context, "account_list_search_hint"),
-                                  hintStyle: CustomTypography.Body2,
-                                  prefixIcon: Icon(Icons.search),
                                 ),
                               ),
                               SizedBox(height: CustomSpacing.four),
@@ -292,7 +296,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      height: CustomSpacing.four,
+                      height: CustomSpacing.three,
                     ),
                     Row(
                       children: [
@@ -359,7 +363,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                       ],
                     ),
                     SizedBox(
-                      height: CustomSpacing.four,
+                      height: CustomSpacing.three,
                     ),
                   ],
                 ),
@@ -369,7 +373,7 @@ class _AccountListScreenState extends State<AccountListScreen>
               width: CustomSpacing.four,
             ),
             CustomGradientCircularProgressBar(
-              radius: 25,
+              radius: 23,
               value: double.parse(accountListProvider.accountList[index].overAllScore ?? "0"),
               strokeWidth: 6,
               showText: true,

@@ -519,7 +519,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       },
                     ),
                     SizedBox(width: CustomSpacing.two),
-                    title,
+                    Flexible(child: title),
                     Spacer(),
                   ],
                 ),
@@ -603,10 +603,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                 ),
                 SizedBox(width: CustomSpacing.two),
-                Text(
-                  LanguageService.getTranslated(
-                      context, 'usermanagement_dash_company_onboarding_status_title'),
-                  style: CustomTypography.Body1,
+                Flexible(
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_company_onboarding_status_title'),
+                    style: CustomTypography.Body1,
+                  ),
                 ),
               ],
             ),
@@ -787,7 +789,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       },
                     ),
                     SizedBox(width: CustomSpacing.two),
-                    title,
+                    Flexible(child: title),
                     Spacer(),
                   ],
                 ),
@@ -870,10 +872,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                 ),
                 SizedBox(width: CustomSpacing.two),
-                Text(
-                  LanguageService.getTranslated(
-                      context, 'usermanagement_dash_user_on_boarding_status'),
-                  style: CustomTypography.Body1,
+                Flexible(
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_user_on_boarding_status'),
+                    style: CustomTypography.Body1,
+                  ),
                 ),
               ],
             ),

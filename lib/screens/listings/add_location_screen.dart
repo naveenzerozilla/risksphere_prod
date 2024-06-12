@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:green/screens/listings/widgets/map_full_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -253,29 +254,30 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                   ),
                                   SizedBox(height: CustomSpacing.three),
                                   // Google map preview container
-                                  ClipRRect(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                      child: Container(
-                                        height: 300,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: themeProvider.getTheme.colorScheme.onSurface,
-                                          ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    child: Container(
+                                      height: 300,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: themeProvider.getTheme.colorScheme.onSurface,
                                         ),
-                                        child: GoogleMap(
-                                          initialCameraPosition: CameraPosition(
-                                            target: LatLng(37.7749, -122.4194),
-                                            zoom: 14.4746,
-                                          ),
-                                          markers: {
-                                            Marker(
-                                              markerId: MarkerId('1'),
-                                              position: LatLng(37.7749, -122.4194),
-                                            ),
-                                          },
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      child: GoogleMap(
+                                        initialCameraPosition: CameraPosition(
+                                          target: LatLng(37.7749, -122.4194),
+                                          zoom: 18,
                                         ),
+                                        markers: {
+                                          /*Marker(
+                                            markerId: MarkerId('1'),
+                                            position: LatLng(37.7749, -122.4194),
+                                          ),*/
+                                        },
+                                        onTap: (latlng) {
+                                          Navigator.push(context, MaterialPageRoute(builder: (context) => MapFullScreen()));
+                                        },
                                       ),
                                     ),
                                   ),

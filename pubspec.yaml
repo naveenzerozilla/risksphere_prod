@@ -60,6 +60,7 @@ dependencies:
   image: ^4.2.0
   cloud_firestore: ^4.15.8
   country_picker: ^2.0.26
+  location: ^6.0.2
 
 dev_dependencies:
   flutter_test:
