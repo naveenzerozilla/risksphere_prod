@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/user_profile_provider.dart';
@@ -43,14 +44,14 @@ class ProfileMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       itemBuilder: (context) => [
-        PopupMenuItem(
+        const PopupMenuItem(
 
           value: 1,
           child: Row(
             children: [
               Icon(Icons.edit),
               SizedBox(width: 8),
-              Text('Edit Profile'),
+              Text('Edit Profile', style: CustomTypography.Body1,),
             ],
           ),
         ),

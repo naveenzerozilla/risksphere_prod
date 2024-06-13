@@ -158,6 +158,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_locations_map"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -183,6 +184,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_risk_manager_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -193,6 +195,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_manage_insurers_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -218,6 +221,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_upload_locations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -228,16 +232,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_add_location"), style: CustomTypography.Body1,),
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_create_campus"), style: CustomTypography.Body1,),
-                          onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -263,6 +258,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_improve_locations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -273,6 +269,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_cat_modelers_risk_engineer_work"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -283,6 +280,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_vendor_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -293,6 +291,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_weather_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -303,6 +302,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_broker_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -313,6 +313,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_insights"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -338,6 +339,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_data_quality"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -348,6 +350,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_hazard_scores"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -358,6 +361,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_vendor_results"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -368,6 +372,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_verndor_recommendations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -378,6 +383,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_data_improvement_recommendations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -388,6 +394,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_comparison_data"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -413,6 +420,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_add_broker"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -423,6 +431,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_add_broker"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -433,6 +442,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_add_freelancer"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -459,6 +469,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_create_tags_on_phrases"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -484,6 +495,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -494,6 +506,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_map"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
@@ -509,53 +522,39 @@ class _CustomDrawerState extends State<CustomDrawer> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  /*IconButton(
-                    icon: Icon(Icons.settings),
-                    onPressed: () {
-                      // Navigate to Settings Screen
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsScreen()));
-                    },
-                  ),*/
-                  /*IconButton(
-                    icon: Icon(Icons.brightness_7_rounded),
-                    onPressed: () {
-                      // Change Theme
-                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-                    },
-                  ),*/
                   Consumer<AuthNotifier>(
                       builder: (context, authNotifier, child) {
-                      return IconButton(
-                        icon: Icon(Icons.logout_rounded),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
-                                content: Text(LanguageService.getTranslated(context, "drawer_menu_logout_confirmation"), style: CustomTypography.Body1),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text(LanguageService.getTranslated(context, "drawer_menu_cancel"), style: CustomTypography.Body1,),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      authNotifier.signOut();
-                                      Navigator.pushAndRemoveUntil(
-                                          context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
-                                    },
-                                    child: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      );
-                    }
+                        return IconButton(
+                          icon: Icon(Icons.logout_rounded),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
+                                  content: Text(LanguageService.getTranslated(context, "drawer_menu_logout_confirmation"), style: CustomTypography.Body1),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text(LanguageService.getTranslated(context, "drawer_menu_cancel"), style: CustomTypography.Body1,),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        authNotifier.signOut();
+                                        Navigator.pushAndRemoveUntil(
+                                            context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+                                      },
+                                      child: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
                   ),
                   (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
                       ? IconButton(

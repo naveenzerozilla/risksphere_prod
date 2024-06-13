@@ -217,23 +217,23 @@ bool isSearch = searchText.isNotEmpty ||
             }),
             body: Stack(
               children: [
-                // Background image
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/mesh.png',
                     fit: BoxFit.cover,
                   ),
                 ),
-                Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      automaticallyImplyLeading: false,
+                      forceMaterialTransparency: true,
+                      pinned: true,
+                      expandedHeight: 250.0,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: Column(
                           children: [
-                            // logo
+                            SizedBox(height: CustomSpacing.two),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -245,7 +245,6 @@ bool isSearch = searchText.isNotEmpty ||
                               ],
                             ),
                             SizedBox(height: CustomSpacing.two),
-                            // title
                             Row(
                               children: [
                                 Flexible(
@@ -293,13 +292,11 @@ bool isSearch = searchText.isNotEmpty ||
                                     ),
                                   ),
                                 ),
-
                               ],
                             ),
                             SizedBox(height: CustomSpacing.two),
-                            // description
-                            RichText(text:
-                              TextSpan(
+                            RichText(
+                              text: TextSpan(
                                 text: '',
                                 style: CustomTypography.Subtitle1,
                                 children: [
@@ -308,7 +305,7 @@ bool isSearch = searchText.isNotEmpty ||
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
-                                    text: widget.companyName == ''?"":'${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
+                                    text: widget.companyName == '' ? "" : '${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
@@ -318,159 +315,151 @@ bool isSearch = searchText.isNotEmpty ||
                                 ],
                               ),
                             ),
-                            SizedBox(height: CustomSpacing.two),
-                            // search bar
-                            showSelectAll?
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Checkbox(
-                                      value: false,
-                                      onChanged: (value) {
-                                        // Select all from model or deselect all from model
-                                      },
+                          ],
+                        ),
+                      ),
+                      bottom: PreferredSize(
+                        preferredSize: Size.fromHeight(60.0),
+                        child: Column(
+                          children: [
+                            showSelectAll ?
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Checkbox(
+                                  value: false,
+                                  onChanged: (value) {
+                                    // Select all from model or deselect all from model
+                                  },
+                                ),
+                                Text(
+                                  LanguageService.getTranslated(context, "locationlist_app_select_all"),
+                                  style: CustomTypography.Body1,
+                                ),
+                              ],
+                            )
+                                :
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 7,
+                                  child: SizedBox(
+                                    height: 50,
+                                    child: TextField(
+                                      controller: _locationSearchController,
+                                      onChanged: locationSearchClient,
+                                      decoration: InputDecoration(
+                                        hintText: LanguageService.getTranslated(context,
+                                            'locationlist_search_field_hint_text'),
+                                        label: Text(
+                                            LanguageService.getTranslated(
+                                                context, 'usermanagement_search_field_lable'),
+                                            style: CustomTypography.Body1),
+                                        hintStyle: CustomTypography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
                                     ),
-                                    Text(
-                                      LanguageService.getTranslated(context, "locationlist_app_select_all"),
-                                      style: CustomTypography.Body1,
-                                    ),
-                                  ],
-                                )
-                                :Builder(
-                              builder: (localContext) {
-                                return Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 7,
-                                      child: SizedBox(
-                                        height: 50,
-                                        child: TextField(
-                                          controller: _locationSearchController,
-                                          onChanged: locationSearchClient,
-                                          decoration: InputDecoration(
-                                            hintText: LanguageService.getTranslated(context,
-                                                'locationlist_search_field_hint_text'),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: CustomSpacing.four,
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    //Show end drawer
+                                    Scaffold.of(context).openEndDrawer();
+                                  },
+                                  child: Icon(
+                                    Icons.filter_list,
+                                    size: 28,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            TabBar(
+                              controller: _tabController,
+                              labelStyle: CustomTypography.BottomNavigationActiveLabel,
+                              tabs: [
+                                Tab(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _tabController?.animateTo(0);
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Tab(
+                                          text: LanguageService.getTranslated(
+                                              context,
+                                              "locationlist_app_connections_tab_all"),
+                                        ),
+                                        SizedBox(width: CustomSpacing.two),
+                                        SizedBox(
+                                          height: 25,
+                                          width: 35,
+                                          child: Chip(
+                                            labelPadding: EdgeInsets.all(0),
+                                            materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                             label: Text(
-                                                LanguageService.getTranslated(
-                                                    localContext, 'usermanagement_search_field_lable'),
-                                                style: CustomTypography.Body1),
-                                            hintStyle: CustomTypography.Body1,
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              "15",
+                                              style: CustomTypography
+                                                  .BottomNavigationActiveLabel
+                                                  .copyWith(height: -0.6),
                                             ),
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    _tabController?.animateTo(1);
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Tab(
+                                        text: LanguageService.getTranslated(
+                                            context,
+                                            "locationlist_app_connections_tab_certified"),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: CustomSpacing.four,
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        //Show end drawer
-                                        Scaffold.of(localContext).openEndDrawer();
-                                      },
-                                      child: Icon(
-                                        Icons.filter_list,
-                                        size: 28,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }
-                            ),
-                            Consumer<ConnectionsProvider>(
-                              builder: (context, connectionsProvider, child) {
-                                return TabBar(
-
-                                  controller: _tabController,
-                                  labelStyle: CustomTypography
-                                      .BottomNavigationActiveLabel,
-                                  tabs: [
-                                    Tab(
-                                      child: InkWell(
-                                        onTap: () {
-                                          _tabController?.animateTo(0);
-                                        },
-                                        child:  Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                          children: [
-                                            Tab(
-                                              text: LanguageService.getTranslated(
-                                                  context,
-                                                  "locationlist_app_connections_tab_all"),
-                                            ),
-                                            SizedBox(width: CustomSpacing.two),
-                                            SizedBox(
-                                              height: 25,
-                                              width: 35,
-                                              child: Chip(
-                                                labelPadding: EdgeInsets.all(0),
-                                                materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                                label: Text(
-                                                  "15",
-                                                  style: CustomTypography
-                                                      .BottomNavigationActiveLabel
-                                                      .copyWith(height: -0.6),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                      SizedBox(width: CustomSpacing.two),
+                                      SizedBox(
+                                        height: 25,
+                                        width: 35,
+                                        child: Chip(
+                                          labelPadding: EdgeInsets.all(0),
+                                          materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                          label: Text(
+                                            "5",
+                                            style: CustomTypography
+                                                .BottomNavigationActiveLabel
+                                                .copyWith(height: -0.6),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    InkWell(
-                                      onTap: () {
-                                        _tabController?.animateTo(1);
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                        children: [
-                                          Tab(
-                                            text: LanguageService.getTranslated(
-                                                context,
-                                                "locationlist_app_connections_tab_certified"),
-                                          ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            width: 35,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize:
-                                              MaterialTapTargetSize
-                                                  .shrinkWrap,
-                                              label: Text(
-                                                connectionsProvider
-                                                    .requestReceivedCount,
-                                                style: CustomTypography
-                                                    .BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            Expanded(
-                              child: TabBarView(
-                                controller: _tabController,
-                                children: [
-                                  _getLocationListAllUI(),
-                                  _getLocationListCertifiedUI(),
-                                ],
-                              ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: true,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _getLocationListAllUI(),
+                          _getLocationListCertifiedUI(),
+                        ],
                       ),
                     ),
                   ],
@@ -486,8 +475,11 @@ bool isSearch = searchText.isNotEmpty ||
         });
   }
 
+
   _getLocationListAllUI() {
     return ListView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       itemCount: 10,
       itemBuilder: (context, index) {
         return index == 0?Column(
@@ -686,7 +678,9 @@ bool isSearch = searchText.isNotEmpty ||
 
   _getLocationListCertifiedUI() {
     return ListView.builder(
+      physics: NeverScrollableScrollPhysics(),
       itemCount: 10,
+      shrinkWrap: true,
       itemBuilder: (context, index) {
         return index == 0?Column(
           children: [

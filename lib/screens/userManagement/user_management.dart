@@ -4778,7 +4778,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             child: Image.network(
                               corporateProvider
                                   .employeeList![index].displayImageUrl!,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.fill,
                             ),
                           )
                         : Text(

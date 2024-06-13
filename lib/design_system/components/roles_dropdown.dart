@@ -22,29 +22,36 @@ class _RolesDropdownState extends State<RolesDropdown> {
       ),*/
       child: Row(
         children: [
-          DropdownButton<String>(
-            underline: SizedBox(),
-            value: _selectedItem,
-            isDense: false,
-            items: _items.map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value, style: CustomTypography.Body2),
-              );
-            }).toList(),
-            onChanged: (String? value) {
-              setState(() {
-                _selectedItem = value;
-              });
-            },
-            hint: Row(
-              children: [
-                Icon(Icons.switch_account),
-                SizedBox(width: 8),
-                Text('Risk Manager', style: CustomTypography.Body2),
-              ],
+          Expanded(
+            child: DropdownButton<String>(
+              underline: SizedBox(),
+              value: _selectedItem,
+              isDense: false,
+              isExpanded: true,
+              items: _items.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Text(value, style: CustomTypography.Body1),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedItem = value;
+                });
+              },
+              hint: Row(
+                children: [
+                  Icon(Icons.switch_account),
+                  SizedBox(width: 8),
+                  Text('Risk Manager', style: CustomTypography.Body1),
+                ],
+              ),
+              icon: Icon(Icons.arrow_drop_down),
             ),
-            icon: Icon(Icons.arrow_drop_down),
           ),
         ],
       ),
