@@ -60,6 +60,7 @@ class Companies {
   String? id;
   bool? isSelected = false;
   bool? enableDomainCheck;
+  String? countryName;
 
   Companies(
       {this.companyType,
@@ -73,7 +74,7 @@ class Companies {
         this.admins,
         this.status,
         this.id, this.isSelected,
-        this.enableDomainCheck});
+        this.enableDomainCheck, this.countryName});
 
   Companies.fromJson(Map<String, dynamic> json) {
     companyType = json['company_type'];
@@ -89,6 +90,7 @@ class Companies {
     status = json['status'];
     id = json['id'];
     enableDomainCheck = json['enable_domain_check'];
+    countryName = json['country'];
   }
 
   Map<String, dynamic> toJson() {
@@ -109,6 +111,7 @@ class Companies {
     data['status'] = status;
     data['enable_domain_check'] = enableDomainCheck;
     data['id'] = id;
+    data['country'] = countryName;
     return data;
   }
 }

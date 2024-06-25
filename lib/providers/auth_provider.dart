@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -9,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:green/main.dart';
+import 'package:green/service/api_service.dart';
 
 import '../design_system/primitives/custom_typography.dart';
 import '../design_system/primitives/utilities/custom_spacing.dart';
@@ -21,22 +23,27 @@ class AuthNotifier extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+
   bool isNewUser = false;
 
   User? _user;
+
   User? get user => _user;
 
-
   bool _isSigningIn = false;
+
   bool get isSigningIn => _isSigningIn;
 
   bool _isSigningOut = false;
+
   bool get isSigningOut => _isSigningOut;
 
   bool _isSigningUp = false;
+
   bool get isSigningUp => _isSigningUp;
 
   bool _isResettingPassword = false;
+
   bool get isResettingPassword => _isResettingPassword;
 
 // Private variables to hold role list, company list, and company type list
@@ -46,39 +53,43 @@ class AuthNotifier extends ChangeNotifier {
 
 // Getters for role list, company list, and company type list
   List<Role>? get roleList => _roleList;
+
   List<Companies>? get companyList => _companyList;
+
   List<CompanyType>? get companyTypeList => _companyTypeList;
 
   // Setters for role list, company list, and company type list
   set roleList(List<Role>? roleList) {
     _roleList = roleList;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+    });
   }
+
   set companyList(List<Companies>? companyList) {
     _companyList = companyList;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+    });
   }
+
   set companyTypeList(List<CompanyType>? companyTypeList) {
     _companyTypeList = companyTypeList;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+    });
   }
 
   InitialDataModel? _initialData;
+
   InitialDataModel? get initialData => _initialData;
+
   set initialData(InitialDataModel? initialData) {
     _initialData = initialData;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+    });
   }
-
-
 
   AuthNotifier() {
     _initAuthState();
@@ -87,37 +98,40 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> _initAuthState() async {
     _user = _auth.currentUser;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners();
+    });
+
   }
+
   /// Splash Screen
-
-
 
   /// Login
 
-  Future<void> signInWithEmailAndPassword(String email, String password, BuildContext context) async {
+  Future<void> signInWithEmailAndPassword(
+      String email, String password, BuildContext context) async {
     try {
       _isSigningIn = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
 
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       _user = userCredential.user;
 
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
-      Map<String, dynamic>? claims = token.claims?? {};
+      Map<String, dynamic>? claims = token.claims ?? {};
       log("Claims: $claims");
 
-      if(!(_user?.emailVerified??false)) {
+      if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please verify your email address before signing in.'),
+            content:
+                Text('Please verify your email address before signing in.'),
           ),
         );
 
@@ -156,26 +170,29 @@ class AuthNotifier extends ChangeNotifier {
         notifyListeners();
       });
 
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount =
+          await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+        final GoogleSignInAuthentication googleSignInAuthentication =
+            await googleSignInAccount.authentication;
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleSignInAuthentication.accessToken,
           idToken: googleSignInAuthentication.idToken,
         );
-        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        final UserCredential userCredential =
+            await _auth.signInWithCredential(credential);
         _user = userCredential.user;
         log('user: $userCredential');
         print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
         IdTokenResult token = await userCredential.user!.getIdTokenResult();
-        Map<String, dynamic>? claims = token.claims?? {};
+        Map<String, dynamic>? claims = token.claims ?? {};
         log("Claims: $claims");
 
         await SharedPreferenceService.setClaims(claims);
         await SharedPreferenceService.getAllClaims();
 
         print('Is Individual? ${claims['isIndividual']}');
-        if(claims['isIndividual']==null) {
+        if (claims['isIndividual'] == null) {
           isNewUser = true;
           // Navigate to create account screen and pass the user data
           Navigator.push(
@@ -188,7 +205,8 @@ class AuthNotifier extends ChangeNotifier {
           );
         } else {
           isNewUser = false;
-          Navigator.pushAndRemoveUntil(context!, MaterialPageRoute(builder: (context) => App()), (route) => false);
+          Navigator.pushAndRemoveUntil(context!,
+              MaterialPageRoute(builder: (context) => App()), (route) => false);
         }
       }
       _isSigningIn = false;
@@ -224,43 +242,45 @@ class AuthNotifier extends ChangeNotifier {
 
       UserCredential userCredential;
       if (kIsWeb) {
-        userCredential = await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
+        userCredential =
+            await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
       } else {
-        userCredential = await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
+        userCredential =
+            await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
       }
 
       // Handle user data or token claims if necessary
       // Example:
-    IdTokenResult token = await userCredential.user!.getIdTokenResult();
-    Map<String, dynamic>? claims = token.claims ?? {};
-    log("Claims: $claims");
+      IdTokenResult token = await userCredential.user!.getIdTokenResult();
+      Map<String, dynamic>? claims = token.claims ?? {};
+      log("Claims: $claims");
 
-    await SharedPreferenceService.setClaims(claims);
-    await SharedPreferenceService.getAllClaims();
+      await SharedPreferenceService.setClaims(claims);
+      await SharedPreferenceService.getAllClaims();
 
-    print('Is Individual? ${claims['isIndividual']}');
+      print('Is Individual? ${claims['isIndividual']}');
 
-    print('Current User: ${userCredential.user!.email}');
-    print('Current firebase user: ${_auth.currentUser!.email}');
-    _user = userCredential.user;
-    if (claims['isIndividual'] == null) {
-      isNewUser = true;
-      Navigator.push(
-        context!,
-        MaterialPageRoute(
-          builder: (context) => CreateAccountScreen(
-            userCredential: userCredential,
+      print('Current User: ${userCredential.user!.email}');
+      print('Current firebase user: ${_auth.currentUser!.email}');
+      _user = userCredential.user;
+      if (claims['isIndividual'] == null) {
+        isNewUser = true;
+        Navigator.push(
+          context!,
+          MaterialPageRoute(
+            builder: (context) => CreateAccountScreen(
+              userCredential: userCredential,
+            ),
           ),
-        ),
-      );
-    } else {
-      isNewUser = false;
-      Navigator.pushAndRemoveUntil(
-        context!,
-        MaterialPageRoute(builder: (context) => App()),
-        (route) => false,
-      );
-    }
+        );
+      } else {
+        isNewUser = false;
+        Navigator.pushAndRemoveUntil(
+          context!,
+          MaterialPageRoute(builder: (context) => App()),
+          (route) => false,
+        );
+      }
 
       _isSigningIn = false;
       notifyListeners();
@@ -307,7 +327,7 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-      bool isUserRegistered =  await userExists(email.trim());
+      bool isUserRegistered = await userExists(email.trim());
 
       if (isUserRegistered) {
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
@@ -319,17 +339,14 @@ class AuthNotifier extends ChangeNotifier {
           notifyListeners();
         });
         return true;
-      }
-      else {
+      } else {
 // show error message etc.
         _isResettingPassword = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-      return false;
+        return false;
       }
-
-
     } on FirebaseAuthException catch (e) {
       _isResettingPassword = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -350,7 +367,8 @@ class AuthNotifier extends ChangeNotifier {
   Future<bool> userExists(String email) async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: 'TemporaryPassword123!', // Use a temporary password
       );
@@ -371,7 +389,12 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual on Google Signup
-  Future<String> signUpIndividualWithGoogle(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
+  Future<String> signUpIndividualWithGoogle(
+      UserCredential userCredential,
+      String phone,
+      String selectedCountryCode,
+      List<Categories> selectedRoles,
+      BuildContext context) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -379,7 +402,6 @@ class AuthNotifier extends ChangeNotifier {
       });
 
       print('cred: $userCredential');
-
 
       var body = {
         'email': userCredential.user?.email,
@@ -396,10 +418,9 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
-      final result = await callable.call(
-          body
-      );
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
 
@@ -428,7 +449,12 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual on Microsoft Signup
-  Future<String> signUpIndividualWithMicrosoft(UserCredential userCredential, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
+  Future<String> signUpIndividualWithMicrosoft(
+      UserCredential userCredential,
+      String phone,
+      String selectedCountryCode,
+      List<Categories> selectedRoles,
+      BuildContext context) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -436,7 +462,6 @@ class AuthNotifier extends ChangeNotifier {
       });
 
       print('cred: $userCredential');
-
 
       var body = {
         'email': userCredential.user?.email,
@@ -453,10 +478,9 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
-      final result = await callable.call(
-          body
-      );
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
 
@@ -485,21 +509,28 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual
-  Future<void> signUpIndividualWithEmailAndPassword(String mail, String password, String name, String displayName, String phone, String selectedCountryCode, List<Categories> selectedRoles, BuildContext context) async {
+  Future<void> signUpIndividualWithEmailAndPassword(
+      String mail,
+      String password,
+      String name,
+      String displayName,
+      String phone,
+      String selectedCountryCode,
+      List<Categories> selectedRoles,
+      BuildContext context) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
 
-
       // Create a new user with email and password
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: mail,
         password: password,
       );
       print('cred: $userCredential');
-
 
       var body = {
         'email': mail,
@@ -516,13 +547,12 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
-      final result = await callable.call(
-          body
-      );
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
-      if(result.data == 'role_assigned') {
+      if (result.data == 'role_assigned') {
         //Send email to verify
         await userCredential.user?.sendEmailVerification();
         showDialog(
@@ -530,14 +560,25 @@ class AuthNotifier extends ChangeNotifier {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text(selectedRoles.any(
-                      (role) => role.isApplicableForTrial)?'Enjoy your 7-day free trial!':'Check your inbox.', style: CustomTypography.H6.copyWith(color: Colors.white),),
-              content: Text(selectedRoles.any(
-                      (role) => role.isApplicableForTrial)?'Trial account created with full features. Upgrade for continued access or remain free after 7 days. Activate email by clicking link sent.':'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+              title: Text(
+                selectedRoles.any((role) => role.isApplicableForTrial)
+                    ? 'Enjoy your 7-day free trial!'
+                    : 'Check your inbox.',
+                style: CustomTypography.H6.copyWith(color: Colors.white),
+              ),
+              content: Text(
+                selectedRoles.any((role) => role.isApplicableForTrial)
+                    ? 'Trial account created with full features. Upgrade for continued access or remain free after 7 days. Activate email by clicking link sent.'
+                    : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.',
+                style: CustomTypography.Body1.copyWith(color: Colors.white),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
+                    Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => App()),
+                        (route) => false);
                   },
                   child: Row(
                     children: [
@@ -551,7 +592,6 @@ class AuthNotifier extends ChangeNotifier {
             );
           },
         );
-
       }
 
       _user = userCredential.user;
@@ -559,7 +599,7 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-    } on FirebaseAuthException catch  (e) {
+    } on FirebaseAuthException catch (e) {
       print('Failed with error code: ${e.code}');
       print(e.message);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -575,7 +615,20 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Corporate
-  Future<void> signUpCorporateWithEmailAndPassword(String companyId, String companyLegalName, CompanyType companyType, String companyDisplayName, String adminName, String adminEmail, String adminCountryCode, String adminPhone, String adminPassword, Roles? roles, BuildContext context, [Companies? selectedCompany]) async {
+  Future<void> signUpCorporateWithEmailAndPassword(
+      String companyId,
+      String companyLegalName,
+      CompanyType companyType,
+      String companyDisplayName,
+      String adminName,
+      String adminEmail,
+      String adminCountryCode,
+      String adminPhone,
+      String adminPassword,
+      Roles? roles,
+      BuildContext context,
+      Companies? selectedCompany,
+      String? _selectedCorporateCountryName) async {
     try {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -583,21 +636,21 @@ class AuthNotifier extends ChangeNotifier {
       });
 
       // Create a new user with email and password
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: adminEmail,
         password: adminPassword,
       );
       print('cred: $userCredential');
 
-
       var body = {
         "company_id": companyId,
-        "company_name": companyLegalName,
+        "company_name": companyLegalName.trim(),
         "company_type": companyType.type,
         "company_display_name": companyDisplayName,
         "displayName": adminName,
         'display_name': companyDisplayName,
-        "email": adminEmail,
+        "email": adminEmail.trim(),
         "country_code": adminCountryCode,
         "phone": adminPhone,
         'authData': userCredential.toJson(),
@@ -611,33 +664,46 @@ class AuthNotifier extends ChangeNotifier {
         'password': adminPassword,
         'confirm_password': adminPassword,
         'name': adminName,
+        'country': _selectedCorporateCountryName,
       };
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
-      final result = await callable.call(
-          body
-      );
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
-      if(result.data == 'role_assigned') {
+      if (result.data == 'role_assigned') {
         //Send email to verify
         await userCredential.user?.sendEmailVerification();
-        print("company verified by admin and selected company is null: ${initialData!.config[0].companyVerificationByAdmin} ${selectedCompany == null}");
-        print("selected company is not null: ${selectedCompany != null} ${selectedCompany?.corporateUserVerificationByAdmin} ${roles?.name.toLowerCase() != 'admin'}");
-        if(initialData!=null&&initialData!.config[0].companyVerificationByAdmin && selectedCompany == null) {
+        print(
+            "company verified by admin and selected company is null: ${initialData!.config[0].companyVerificationByAdmin} ${selectedCompany == null}");
+        print(
+            "selected company is not null: ${selectedCompany != null} ${selectedCompany?.corporateUserVerificationByAdmin} ${roles?.name.toLowerCase() != 'admin'}");
+        if (initialData != null &&
+            initialData!.config[0].companyVerificationByAdmin &&
+            selectedCompany == null) {
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text('Check your inbox', style: CustomTypography.H6.copyWith(color: Colors.white),),
-                content: Text('We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+                title: Text(
+                  'Check your inbox',
+                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                ),
+                content: Text(
+                  'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.',
+                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                ),
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => App()),
+                          (route) => false);
                     },
                     child: Row(
                       children: [
@@ -651,18 +717,29 @@ class AuthNotifier extends ChangeNotifier {
               );
             },
           );
-        } else if(selectedCompany!=null&& selectedCompany.corporateUserVerificationByAdmin && roles?.name.toLowerCase() != 'admin') {
+        } else if (selectedCompany != null &&
+            selectedCompany.corporateUserVerificationByAdmin &&
+            roles?.name.toLowerCase() != 'admin') {
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text('Registration request submitted', style: CustomTypography.H6.copyWith(color: Colors.white),),
-                content: Text('Great news! Your registration request has been successfully submitted to your Corporate Admin, Amit at ${obscureEmail(adminEmail)}. Just a friendly reminder that your registration is currently pending approval. You should have received an email to verify your email address. Thank you for your cooperation!', style: CustomTypography.Body1.copyWith(color: Colors.white),),
+                title: Text(
+                  'Registration request submitted',
+                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                ),
+                content: Text(
+                  'Great news! Your registration request has been successfully submitted to your Corporate Admin, Amit at ${obscureEmail(adminEmail)}. Just a friendly reminder that your registration is currently pending approval. You should have received an email to verify your email address. Thank you for your cooperation!',
+                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                ),
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => App()),
+                          (route) => false);
                     },
                     child: Row(
                       children: [
@@ -678,31 +755,39 @@ class AuthNotifier extends ChangeNotifier {
           );
         } else {
           showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('Check your inbox', style: CustomTypography.H6.copyWith(color: Colors.white),),
-                  content: Text('We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.', style: CustomTypography.Body1.copyWith(color: Colors.white),),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => App()), (route) => false);
-                      },
-                      child: Row(
-                        children: [
-                          Icon(Icons.arrow_back),
-                          SizedBox(width: CustomSpacing.four),
-                          Text('Back to Login'),
-                        ],
-                      ),
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(
+                  'Check your inbox',
+                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                ),
+                content: Text(
+                  'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.',
+                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => App()),
+                          (route) => false);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_back),
+                        SizedBox(width: CustomSpacing.four),
+                        Text('Back to Login'),
+                      ],
                     ),
-                  ],
-                );
-              },
+                  ),
+                ],
+              );
+            },
           );
         }
-
       }
 
       _user = userCredential.user;
@@ -721,6 +806,32 @@ class AuthNotifier extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message!),
+        ),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      // Handle error
+      print('$e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? "Error signing up"),
+        ),
+      );
+    } on BackendException catch (e) {
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      // Handle error
+      print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
         ),
       );
     } catch (e) {
@@ -743,11 +854,10 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> initialOptions() async {
     try {
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('send_default_data');
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('send_default_data');
       final result = await callable.call();
-     // log('Cloud Function result: ${json.encode(result.data)}');
-
-
+      // log('Cloud Function result: ${json.encode(result.data)}');
 
       // Parse the data as JSON
       final jsonData = json.decode(json.encode(result.data));
@@ -761,7 +871,6 @@ class AuthNotifier extends ChangeNotifier {
       roleList = initialDataModel.role;
       companyList = initialDataModel.companies;
       companyTypeList = initialDataModel.companyType;
-
 
 /*
       // Print all three lists
@@ -779,18 +888,19 @@ class AuthNotifier extends ChangeNotifier {
       companyList?.forEach((company) {
         print(company.toJson());
       });*/
-
     } catch (e, stack) {
       // Handle error
       print('Error getting initial options: $e');
       print(stack);
     }
   }
+
   String obscureEmail(String email) {
     List<String> parts = email.split('@');
 
     String obscure(String part, int visibleStart, int visibleEnd) {
-      return part.replaceRange(visibleStart, visibleEnd, '*' * (visibleEnd - visibleStart));
+      return part.replaceRange(
+          visibleStart, visibleEnd, '*' * (visibleEnd - visibleStart));
     }
 
     String localPart = obscure(parts[0], 1, parts[0].length - 1);
@@ -799,11 +909,23 @@ class AuthNotifier extends ChangeNotifier {
     return '$localPart@$domainPart';
   }
 
+  Future<void> getAllClaims() async {
+    try {
+      final HttpsCallable callable =
+      FirebaseFunctions.instance.httpsCallable('assignClaims');
+      String? token = await _auth.currentUser!.getIdToken(true);
+      log("Old: $token");
+      await callable.call(<String, dynamic>{
+        'Authorization': 'Bearer ${token ?? ""}',
+      });
+      String? newToken  =await _auth.currentUser!.getIdTokenResult(true).then((value) => value.token);
+      log("New: $newToken");
 
 
-
-
-
+    } catch (e) {
+      print('Error getting all claims: $e');
+    }
+  }
 }
 
 extension UserCredentialExtension on UserCredential {
@@ -812,31 +934,29 @@ extension UserCredentialExtension on UserCredential {
     final additionalUserInfo = this.additionalUserInfo;
     final credential = this.credential;
     return {
-
-        'displayName': user?.displayName,
-        'email': user?.email,
-        'isEmailVerified': user?.emailVerified,
-        'isAnonymous': user?.isAnonymous,
-        'metadata': {
-          'creationTime': user?.metadata.creationTime?.toIso8601String(),
-          'lastSignInTime': user?.metadata.lastSignInTime?.toIso8601String(),
-        },
-        'phoneNumber': user?.phoneNumber,
-        'photoURL': user?.photoURL,
-        'providerData': user?.providerData
-            .map((userInfo) => {
-          'displayName': userInfo.displayName,
-          'email': userInfo.email,
-          'phoneNumber': userInfo.phoneNumber,
-          'photoURL': userInfo.photoURL,
-          'providerId': userInfo.providerId,
-          'uid': userInfo.uid,
-        })
-            .toList(),
-        'refreshToken': user?.refreshToken,
-        'tenantId': user?.tenantId,
-        'uid': user?.uid,
-
+      'displayName': user?.displayName,
+      'email': user?.email,
+      'isEmailVerified': user?.emailVerified,
+      'isAnonymous': user?.isAnonymous,
+      'metadata': {
+        'creationTime': user?.metadata.creationTime?.toIso8601String(),
+        'lastSignInTime': user?.metadata.lastSignInTime?.toIso8601String(),
+      },
+      'phoneNumber': user?.phoneNumber,
+      'photoURL': user?.photoURL,
+      'providerData': user?.providerData
+          .map((userInfo) => {
+                'displayName': userInfo.displayName,
+                'email': userInfo.email,
+                'phoneNumber': userInfo.phoneNumber,
+                'photoURL': userInfo.photoURL,
+                'providerId': userInfo.providerId,
+                'uid': userInfo.uid,
+              })
+          .toList(),
+      'refreshToken': user?.refreshToken,
+      'tenantId': user?.tenantId,
+      'uid': user?.uid,
       'additionalUserInfo': {
         'isNewUser': additionalUserInfo?.isNewUser,
         'profile': additionalUserInfo?.profile,
@@ -846,15 +966,16 @@ extension UserCredentialExtension on UserCredential {
       },
       'credential': credential is EmailAuthCredential
           ? {
-        'email': (credential as EmailAuthCredential).email,
-        'password': (credential as EmailAuthCredential).password,
-      }
+              'email': (credential as EmailAuthCredential).email,
+              'password': (credential as EmailAuthCredential).password,
+            }
           : credential is GoogleAuthCredential
-          ? {
-        'accessToken': (credential as GoogleAuthCredential).accessToken,
-        'idToken': (credential as GoogleAuthCredential).idToken,
-      }
-          : null,
+              ? {
+                  'accessToken':
+                      (credential as GoogleAuthCredential).accessToken,
+                  'idToken': (credential as GoogleAuthCredential).idToken,
+                }
+              : null,
     };
   }
 

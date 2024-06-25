@@ -26,7 +26,7 @@ class CustomToast {
   }
 
   static void error(BuildContext context, String message) {
-    print("error");
+    print("error snackbar");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

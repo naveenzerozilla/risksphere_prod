@@ -18,6 +18,7 @@ class InitialDataModel {
     companies = List.from(json['companies']).map((e)=>Companies.fromJson(e)).toList();
     companies!.forEach((element) {
       log("company: ${element.name}");
+      log("country: ${element.countryName}");
     });
     config = List.from(json['config']).map((e)=>Config.fromJson(e)).toList();
   }
@@ -208,6 +209,7 @@ class Companies {
     required this.noOfUsers,
     required this.admins,
     required this.roles,
+    required this.countryName,
   });
   late final bool isActive;
   late final bool isAuthorized;
@@ -222,6 +224,7 @@ class Companies {
   late final List<Admins> admins;
   late final List<Roles> roles;
   late final String id;
+  late final String countryName;
 
   Companies.fromJson(Map<String, dynamic> json){
     id = json['id']??"";
@@ -251,6 +254,7 @@ class Companies {
     noOfUsers = json['no_of_users'];
     admins = [];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
+    countryName = json['country']??"";
 
   }
 
@@ -269,6 +273,7 @@ class Companies {
     _data['admins'] = admins.map((e)=>e.toJson()).toList();
     _data['roles'] = roles.map((e)=>e.toJson()).toList();
     _data["id"] = id;
+    _data['country'] = countryName;
     return _data;
   }
 }

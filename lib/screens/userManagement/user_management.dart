@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:green/design_system/components/corporate_type_roles_bottom_sheet.dart';
@@ -24,6 +25,7 @@ import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
+import '../../design_system/components/country_picker_flag_name.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
@@ -39,6 +41,7 @@ import '../../providers/theme_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
+import 'package:country_picker/country_picker.dart' as country_picker;
 
 class UserManagementScreen extends StatefulWidget {
   final Screens? initialScreen;
@@ -76,9 +79,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   SignUpOptions? _selectedOption;
   String _selectedCountryCode = '+1';
   TextEditingController mobileController = TextEditingController();
-  PhoneController corporateMobileController = PhoneController(PhoneNumber(nsn:  '', isoCode: IsoCode.US));
-  PhoneController corporateEmployeeMobileController = PhoneController(PhoneNumber(nsn:  '', isoCode: IsoCode.US));
-  PhoneController corporateEditMobileController = PhoneController(PhoneNumber(nsn:  '', isoCode: IsoCode.US));
+  PhoneController corporateMobileController = PhoneController(const PhoneNumber(nsn:  '', isoCode: IsoCode.US));
+  PhoneController corporateEmployeeMobileController = PhoneController(const PhoneNumber(nsn:  '', isoCode: IsoCode.US));
+  PhoneController corporateEditMobileController = PhoneController(const PhoneNumber(nsn:  '', isoCode: IsoCode.US));
   int selectedCompanyListIndex = 0;
   int selectedCompanyEmployeeListIndex = 0;
   int selectedNonCorporateListIndex = 0;
@@ -120,6 +123,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   roleModel.Roles? selectedRole;
 
   String selectedCorporateId = '';
+
+  String _selectedCorporateCountryName = 'United States';
 
   // Claims local variables
   bool showCorporateList = true;
@@ -778,6 +783,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
         corporateEditMobileController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: companyProvider.company.admins?.mobile??"");
         _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
+        _selectedCorporateCountryName = companyProvider.company.countryName ?? 'United States';
         // Set screen to edit
         _selectedScreen = Screens.corporateProfile;
         clearFilters();
@@ -805,7 +811,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             });
           },
         ),
-        drawer: CustomDrawer(),
+        drawer: const CustomDrawer(),
         floatingActionButton: (_selectedScreen == Screens.corporateList &&
                     showCreateCorporate) ||
                 (_selectedScreen == Screens.corporateEmployeeList &&
@@ -847,9 +853,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     });
                   }
                 },
-                child: Icon(Icons.add),
+                child: const Icon(Icons.add),
               )
-            : SizedBox(),
+            : const SizedBox(),
         body: PopScope(
           canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
               _selectedScreen == Screens.defaultScreen,
@@ -943,6 +949,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       corporateEditMobileController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: companyProvider.company.admins?.mobile??"");
                       _enableDomainCheck =
                           companyProvider.company.enableDomainCheck ?? false;
+                      _selectedCorporateCountryName = companyProvider.company.countryName ?? 'United States';
                       // Set screen to edit
 
                       /// Todo: Add the code to view the company profile
@@ -1034,7 +1041,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 children: [
                   Expanded(
                     child: showMainLoading
-                        ? Center(
+                        ? const Center(
                             child: SizedBox(
                               width: 20,
                               height: 20,
@@ -1042,7 +1049,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             ),
                           )
                         : Container(
-                            margin: EdgeInsets.symmetric(
+                            margin: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 24),
                             child: _selectedScreen == Screens.defaultScreen
                                 ? _defaultScreen()
@@ -1066,7 +1073,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       ),
                                       _selectedScreen == Screens.defaultScreen
                                           ? _defaultScreen()
-                                          : SizedBox(),
+                                          : const SizedBox(),
                                       TabBar(
                                         isScrollable: true,
                                         controller: _tabController,
@@ -1076,7 +1083,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           if (showCorporateManagementTab)
                                             Tab(
                                               child: DropdownButton(
-                                                underline: SizedBox(),
+                                                underline: const SizedBox(),
                                                 value: 'Corporate',
                                                 items:
                                                     corporateDropdownMenuService
@@ -1210,6 +1217,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                     .company
                                                                     .enableDomainCheck ??
                                                                 false;
+                                                        _selectedCorporateCountryName = companyProvider.company.countryName??"United States";
                                                         // Set screen to edit
 
                                                         _selectedScreen = Screens
@@ -1220,6 +1228,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                             .company
                                                             .toJson()
                                                             .toString());
+                                                        _selectedCorporateCountryName = companyProvider.company.countryName??"United States";
                                                       });
                                                       _selectedScreen = Screens
                                                           .corporateProfile;
@@ -1255,11 +1264,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
                                                 children: [
-                                                  Icon(Icons.people),
+                                                  const Icon(Icons.people),
                                                   SizedBox(
                                                     width: CustomSpacing.two,
                                                   ),
-                                                  Tab(
+                                                  const Tab(
                                                       text:
                                                           'Non Corporate Management'),
                                                 ],
@@ -1283,11 +1292,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
                                                 children: [
-                                                  Icon(Icons.account_circle),
+                                                  const Icon(Icons.account_circle),
                                                   SizedBox(
                                                     width: CustomSpacing.two,
                                                   ),
-                                                  Tab(
+                                                  const Tab(
                                                       text:
                                                           'Employee Management'),
                                                 ],
@@ -1338,12 +1347,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 8,
-                          offset: Offset(0, 4),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16.0),
                       child: Icon(
                         Icons.filter_alt_outlined,
                         size: 32,
@@ -1436,7 +1445,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 filterPhones.isEmpty &&
                                 filterRoles.isEmpty &&
                                 filterStatus.isEmpty)
-                            ? SizedBox()
+                            ? const SizedBox()
                             : TextButton(
                                 onPressed: () {
                                   // Handle clear filter
@@ -1539,7 +1548,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   SizedBox(height: CustomSpacing.two),
                                   // Role Dropdown
                                   (_selectedScreen == Screens.corporateList)
-                                      ? SizedBox()
+                                      ? const SizedBox()
                                       : DropdownButtonFormField<
                                           roleModel.Roles>(
                                           decoration: InputDecoration(
@@ -1689,7 +1698,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                               horizontal: 22, vertical: 8),
                                         ),
                                         child: Text(
@@ -1781,19 +1790,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               children: [
                 Expanded(
                   flex: 7,
-                  child: TextField(
-                    controller: _corporateSearchController,
-                    onChanged: companySearchClient,
-                    decoration: InputDecoration(
-                      hintText: LanguageService.getTranslated(context,
-                          'usermanagement_search_field_lable_name_email_mobile'),
-                      label: Text(
-                          LanguageService.getTranslated(
-                              context, 'usermanagement_search_field_lable'),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 50,
+                    child: TextField(
+                      controller: _corporateSearchController,
+                      onChanged: companySearchClient,
+                      decoration: InputDecoration(
+                        hintText: LanguageService.getTranslated(context,
+                            'usermanagement_search_field_lable_name_email_mobile'),
+                        label: Text(
+                            LanguageService.getTranslated(
+                                context, 'usermanagement_search_field_lable'),
+                            style: CustomTypography.Body1),
+                        hintStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -1806,7 +1818,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     //Show end drawer
                     Scaffold.of(context).openEndDrawer();
                   },
-                  child: Icon(
+                  child: const Icon(
                     Icons.filter_list,
                     size: 30,
                   ),
@@ -1840,9 +1852,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             LanguageService.getTranslated(context,
                                 "usermanagement_app_corporate_management_select_all_text"),
                             style: CustomTypography.Body1),
-                        Spacer(),
+                        const Spacer(),
                         IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: const Icon(Icons.delete),
                           onPressed: () {
                             // Handle delete selected companies
                             showDialog(
@@ -1909,14 +1921,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       ],
                     );
                   })
-                : SizedBox(),
+                : const SizedBox(),
 
             // Add Company List
             Expanded(
               child: Consumer<CompanyProvider>(
                 builder: (context, companyProvider, child) {
                   return companyProvider.isLoading
-                      ? Center(
+                      ? const Center(
                           child: CircularProgressIndicator(),
                         )
                       : companyProvider.companies.isEmpty
@@ -1936,7 +1948,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   // Reached the end of the current list, load more data
                                   companyProvider.getAllCompanies(context, "",
                                       "", ""); // Adjust parameters as needed
-                                  return SizedBox(
+                                  return const SizedBox(
                                     height:
                                         50, // Placeholder for loading indicator
                                     child: Center(
@@ -1962,7 +1974,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Builder(builder: (context) {
       return Container(
-        margin: EdgeInsets.only(top: 0.0, bottom: 8),
+        margin: const EdgeInsets.only(top: 0.0, bottom: 8),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onLongPress: !showDeleteCorporate
@@ -1993,7 +2005,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       width: CustomSpacing.four,
                     ),
                     !showDeleteCorporate
-                        ? SizedBox()
+                        ? const SizedBox()
                         : showCheckbox
                             ? Checkbox(
                                 value: companyProvider
@@ -2009,7 +2021,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   });
                                 },
                               )
-                            : SizedBox(),
+                            : const SizedBox(),
                     CircleAvatar(
                       child: companyProvider.companies[index].companyImageUrl !=
                                   null &&
@@ -2090,12 +2102,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       width: CustomSpacing.two,
                     ),
                     !showEnableDisableCorporate
-                        ? SizedBox()
+                        ? const SizedBox()
                         : companyProvider.isStatusLoading &&
                                 selectedCompanyListIndex == index
-                            ? Padding(
+                            ? const Padding(
                                 padding:
-                                    const EdgeInsets.only(top: 8.0, right: 8.0),
+                                    EdgeInsets.only(top: 8.0, right: 8.0),
                                 child:
                                     Center(child: CircularProgressIndicator()),
                               )
@@ -2169,7 +2181,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceVariant,
                     // bottom left and right corners curved
-                    borderRadius: BorderRadius.only(
+                    borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(8),
                       bottomRight: Radius.circular(8),
                     ),
@@ -2204,7 +2216,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     clearFilters();
                                   });
                                 },
-                                icon: Icon(Icons.people),
+                                icon: const Icon(Icons.people),
                                 label: Text('View Employees',
                                     style: CustomTypography.Caption.copyWith(
                                         color: Theme.of(context).brightness ==
@@ -2213,11 +2225,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             : AppColors.black)),
                               );
                             })
-                          : SizedBox(),
-                      Spacer(),
+                          : const SizedBox(),
+                      const Spacer(),
                       showEditCorporate
                           ? IconButton(
-                              icon: Icon(Icons.edit),
+                              icon: const Icon(Icons.edit),
                               color: AppColors.primaryMain,
                               onPressed: () async {
                                 /// Handle edit company
@@ -2287,6 +2299,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 _enableDomainCheck =
                                     companyProvider.company.enableDomainCheck ??
                                         false;
+                                _selectedCorporateCountryName = companyProvider.company.countryName??"United States";
                                 // Set screen to edit
 
                                 setState(() {
@@ -2295,20 +2308,20 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 });
                               },
                             )
-                          : SizedBox(),
+                          : const SizedBox(),
                       !showDeleteCorporate
-                          ? SizedBox()
+                          ? const SizedBox()
                           : companyProvider.isDeleteLoading &&
                                   selectedCompanyListIndex == index
                               ? Center(
                                   child: Container(
                                       height: 20,
                                       width: 20,
-                                      margin: EdgeInsets.only(right: 8),
-                                      child: CircularProgressIndicator()),
+                                      margin: const EdgeInsets.only(right: 8),
+                                      child: const CircularProgressIndicator()),
                                 )
                               : IconButton(
-                                  icon: Icon(Icons.delete),
+                                  icon: const Icon(Icons.delete),
                                   color: AppColors.primaryMain,
                                   onPressed: () {
                                     selectedCompanyListIndex = index;
@@ -2318,7 +2331,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       builder: (context) {
                                         // delete company name
                                         return AlertDialog(
-                                          title: Text('Delete Company',
+                                          title: const Text('Delete Company',
                                               style: CustomTypography.H6),
                                           content: Text(
                                               'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
@@ -2328,7 +2341,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               onPressed: () {
                                                 Navigator.pop(context);
                                               },
-                                              child: Text('Cancel'),
+                                              child: const Text('Cancel'),
                                             ),
                                             TextButton(
                                               onPressed: () {
@@ -2353,7 +2366,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   }
                                                 });
                                               },
-                                              child: Text('Delete'),
+                                              child: const Text('Delete'),
                                             ),
                                           ],
                                         );
@@ -2390,19 +2403,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               children: [
                 Expanded(
                   flex: 7,
-                  child: TextField(
-                    controller: _corporateEmployeeSearchController,
-                    onChanged: corporateEmployeeSearchClient,
-                    decoration: InputDecoration(
-                      hintText: LanguageService.getTranslated(context,
-                          'usermanagement_search_field_lable_name_email_mobile'),
-                      label: Text(
-                          LanguageService.getTranslated(
-                              context, "usermanagement_search_field_lable"),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 50,
+                    child: TextField(
+                      controller: _corporateEmployeeSearchController,
+                      onChanged: corporateEmployeeSearchClient,
+                      decoration: InputDecoration(
+                        hintText: LanguageService.getTranslated(context,
+                            'usermanagement_search_field_lable_name_email_mobile'),
+                        label: Text(
+                            LanguageService.getTranslated(
+                                context, "usermanagement_search_field_lable"),
+                            style: CustomTypography.Body1),
+                        hintStyle: CustomTypography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -2416,7 +2432,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                     Scaffold.of(context).openEndDrawer();
                   },
-                  child: Icon(
+                  child: const Icon(
                     Icons.filter_list,
                     size: 30,
                   ),
@@ -2448,9 +2464,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             LanguageService.getTranslated(context,
                                 "usermanagement_app_corporate_employee_management_select_all_text"),
                             style: CustomTypography.Body1),
-                        Spacer(),
+                        const Spacer(),
                         IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: const Icon(Icons.delete),
                           onPressed: () {
                             // Handle delete selected companies
                             showDialog(
@@ -2519,7 +2535,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       ],
                     );
                   })
-                : SizedBox(),
+                : const SizedBox(),
             // Add Company List
             SizedBox(
               height: CustomSpacing.four,
@@ -2528,7 +2544,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               child: Consumer<CorporateProvider>(
                   builder: (context, corporateProvider, child) {
                 return corporateProvider.isLoading
-                    ? Center(
+                    ? const Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
@@ -2536,7 +2552,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ),
                       )
                     : (corporateProvider.employeeList ?? []).isEmpty
-                        ? Center(
+                        ? const Center(
                             child: Text('No employees',
                                 style: CustomTypography.Body1),
                           )
@@ -2551,7 +2567,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 // Reached the end of the current list, load more data
                                 corporateProvider.getCorporateUserList(context,
                                     companyId: selectedCorporateId);
-                                return SizedBox(
+                                return const SizedBox(
                                   height:
                                       50, // Placeholder for loading indicator
                                   child: Center(
@@ -2576,17 +2592,17 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     // Add Company
     return SingleChildScrollView(
       child: Container(
-        margin: EdgeInsets.only(top: 8),
+        margin: const EdgeInsets.only(top: 8),
         child: Card(
           child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.only(
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       topRight: Radius.circular(8),
                     ),
@@ -2620,7 +2636,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2637,7 +2653,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           children: [
                             // If company image is not uploaded, show default image
                             companyImageUrl == null || companyImageUrl == ''
-                                ? CircleAvatar(
+                                ? const CircleAvatar(
                                     backgroundImage: AssetImage(
                                         'assets/images/loginImage.png'),
                                     radius: 40,
@@ -2681,7 +2697,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 Consumer<CompanyProvider>(
                                     builder: (_, companyProvider, child) {
                                   return companyProvider.isImageUploadLoading
-                                      ? Center(
+                                      ? const Center(
                                           child: CircularProgressIndicator(),
                                         )
                                       : CustomButton(
@@ -2729,6 +2745,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Form(
                           key: _createCompanyFormKey,
                           child: Column(children: [
+                            // Corporate Country just show flag and country name
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: CountryPickerFlagName(onCountryChange: (country) {
+                                    setState(() {
+                                      _selectedCorporateCountryName = country.name;
+                                    });
+                                  }, initialValue: country_picker.Country(phoneCode: '1', countryCode: getCountryCodeFromName(_selectedCorporateCountryName)??"", e164Sc: 1, geographic: true, level: 1, name: _selectedCorporateCountryName, example: '', displayName: '', displayNameNoCountryCode: '', e164Key: '', ),),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: CustomSpacing.eight),
                             // Company Type
                             Consumer<CompanyProvider>(
                                 builder: (_, companyProvider, child) {
@@ -2779,7 +2810,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                             // Switch for Enable/Disable Domain
                             Container(
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
                                 border: Border.all(
@@ -2841,7 +2872,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       SizedBox(height: CustomSpacing.four),
                                     ],
                                   )
-                                : SizedBox(),
+                                : const SizedBox(),
                             // Company Legal Name
                             TextFormField(
                               controller: _companyLegalNameController,
@@ -2928,8 +2959,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 context,
                                                 'usermanagement_roles_label'),
                                         //hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
-                                        border: OutlineInputBorder(),
-                                        suffixIcon: Icon(Icons
+                                        border: const OutlineInputBorder(),
+                                        suffixIcon: const Icon(Icons
                                             .arrow_drop_down), // Remove onPressed handler
                                       ),
                                     ),
@@ -2952,7 +2983,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     child: Chip(
                                                       label: Text(
                                                           value.name ?? ''),
-                                                      deleteIcon: Icon(Icons
+                                                      deleteIcon: const Icon(Icons
                                                           .cancel), // Remove onDeleted handler
                                                     ),
                                                   ),
@@ -3026,7 +3057,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       border: const OutlineInputBorder(),
                                       counterText: '',
                                     ),
-                                    countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                                    countrySelectorNavigator: const CountrySelectorNavigator.dialog(
                                       showSearchInput: true,
                                       searchInputDecoration: InputDecoration(
                                         hintText: 'Search Country',
@@ -3036,16 +3067,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     flagShape: BoxShape.circle,
                                     flagSize: 35,
                                     onChanged: (PhoneNumber? p) {
-                                      if(p==null)
+                                      if(p==null) {
                                         return;
+                                      }
                                       setState(() {
                                         _selectedCountryCode = p.countryCode;
                                       });
                                       print('changed ${p.countryCode}');
                                     },
                                     onSaved: (PhoneNumber? p) {
-                                      if(p==null)
+                                      if(p==null) {
                                         return;
+                                      }
                                       setState(() {
                                         _selectedCountryCode = p.countryCode;
                                       });
@@ -3089,7 +3122,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     children: [
                                       Expanded(
                                         child: companyProvider.isLoading
-                                            ? Center(
+                                            ? const Center(
                                                 child: SizedBox(
                                                 width: 20,
                                                 height: 20,
@@ -3112,7 +3145,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       selectedCompanyType ==
                                                           null ||
                                                       selectedCorporateTypeRole
-                                                          .isEmpty) {
+                                                          .isEmpty || _selectedCorporateCountryName.isEmpty) {
                                                     // Show snackbar with name of field empty
                                                     if (_adminNameController
                                                         .text.isEmpty) {
@@ -3195,6 +3228,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       .Body1),
                                                         ),
                                                       );
+                                                    } else if (_selectedCorporateCountryName.isEmpty) {
+                                                      ScaffoldMessenger.of(
+                                                          context)
+                                                          .showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(
+                                                              LanguageService
+                                                                  .getTranslated(
+                                                                  context,
+                                                                  'usermanagement_app_corporate_create_company_country_invalid_error_text'),
+                                                              style:
+                                                              CustomTypography
+                                                                  .Body1),
+                                                        ),
+                                                      );
                                                     }
                                                     return;
                                                   }
@@ -3249,6 +3297,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       "isIndividual": false,
                                                       "display_image_url":
                                                           companyImageUrl,
+                                                      "country": _selectedCorporateCountryName,
                                                     }
                                                   };
                                                   companyProvider
@@ -3326,7 +3375,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
-                                            padding: EdgeInsets.symmetric(
+                                            padding: const EdgeInsets.symmetric(
                                                 horizontal: 22, vertical: 8),
                                           ),
                                           child: Text(
@@ -3356,19 +3405,19 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     // Add Company
     return Consumer<CompanyProvider>(
       builder: (context, companyProvider, child) {
-        return companyProvider.isLoading?Center(child: SizedBox(width: 25, height: 25, child: CircularProgressIndicator())):SingleChildScrollView(
+        return companyProvider.isLoading?const Center(child: SizedBox(width: 25, height: 25, child: CircularProgressIndicator())):SingleChildScrollView(
           child: Container(
-            margin: EdgeInsets.only(top: 8),
+            margin: const EdgeInsets.only(top: 8),
             child: Card(
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.only(
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
@@ -3414,7 +3463,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3431,7 +3480,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               children: [
                                 // If company image is not uploaded, show default image
                                 companyImageUrl == null || companyImageUrl == ''
-                                    ? CircleAvatar(
+                                    ? const CircleAvatar(
                                         backgroundImage: AssetImage(
                                             'assets/images/loginImage.png'),
                                         radius: 40,
@@ -3444,7 +3493,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 SizedBox(
                                   width: CustomSpacing.four,
                                 ),
-                                !showEditCorporate?SizedBox():Column(
+                                !showEditCorporate?const SizedBox():Column(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -3460,7 +3509,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     SizedBox(
                                       height: CustomSpacing.two,
                                     ),
-                                    Text(
+                                    const Text(
                                       "Min 400x400px\nPNG or JPEG",
                                       style: CustomTypography
                                           .BottomNavigationActiveLabel,
@@ -3473,7 +3522,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     Consumer<CompanyProvider>(
                                         builder: (_, companyProvider, child) {
                                       return companyProvider.isImageUploadLoading
-                                          ? Center(
+                                          ? const Center(
                                               child: CircularProgressIndicator(),
                                             )
                                           : CustomButton(
@@ -3502,7 +3551,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   }
                                                 });
                                               },
-                                              child: Text(
+                                              child: const Text(
                                                 "Upload Image",
                                                 style: CustomTypography.ButtonLarge,
                                                 textAlign: TextAlign.center,
@@ -3519,6 +3568,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Form(
                               key: _createCompanyFormKey,
                               child: Column(children: [
+
+                                // Corporate Country just show flag and country name
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: CountryPickerFlagName(onCountryChange: null/*isView?null:(country) {
+                                        setState(() {
+                                          _selectedCorporateCountryName = country.name;
+                                        });
+                                      }*/, initialValue: country_picker.Country(phoneCode: '1', countryCode: getCountryCodeFromName(_selectedCorporateCountryName)??"", e164Sc: 1, geographic: true, level: 1, name: _selectedCorporateCountryName, example: '', displayName: '', displayNameNoCountryCode: '', e164Key: '', ),),
+                                    ),
+                                  ],
+                                ),
                                 // Company Type
                                 Consumer<CompanyProvider>(
                                     builder: (_, companyProvider, child) {
@@ -3557,7 +3621,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                                 // Switch for Enable/Disable Domain
                                 Container(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
                                     border: Border.all(
@@ -3621,10 +3685,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           SizedBox(height: CustomSpacing.four),
                                         ],
                                       )
-                                    : SizedBox(),
+                                    : const SizedBox(),
                                 // Company Legal Name
                                 TextFormField(
-                                  readOnly: !showEditCorporate,
+                                  readOnly: true,
                                   controller: _companyLegalNameController,
                                   decoration: InputDecoration(
                                     labelText: LanguageService.getTranslated(
@@ -3713,8 +3777,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           /*hintText: _selectedRoles.isEmpty
                                               ? 'Select Roles'
                                               : "",*/
-                                          border: OutlineInputBorder(),
-                                          suffixIcon: IconButton(
+                                          border: const OutlineInputBorder(),
+                                          suffixIcon: const IconButton(
                                             icon: Icon(Icons.arrow_drop_down),
                                             onPressed: null,
                                           ),
@@ -3740,7 +3804,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                         label:
                                                             Text(value.name ?? ''),
                                                         deleteIcon:
-                                                            Icon(Icons.cancel),
+                                                            const Icon(Icons.cancel),
                                                         onDeleted: null,
                                                       ),
                                                     ),
@@ -3817,7 +3881,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           border: const OutlineInputBorder(),
                                           counterText: '',
                                         ),
-                                        countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                                        countrySelectorNavigator: const CountrySelectorNavigator.dialog(
                                           showSearchInput: true,
                                           searchInputDecoration: InputDecoration(
                                             hintText: 'Search Country',
@@ -3827,16 +3891,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         flagShape: BoxShape.circle,
                                         flagSize: 35,
                                         onChanged: (PhoneNumber? p) {
-                                          if(p==null)
+                                          if(p==null) {
                                             return;
+                                          }
                                           setState(() {
                                             _selectedCountryCode = p.countryCode;
                                           });
                                           print('changed ${p.countryCode}');
                                         },
                                         onSaved: (PhoneNumber? p) {
-                                          if(p==null)
+                                          if(p==null) {
                                             return;
+                                          }
                                           setState(() {
                                             _selectedCountryCode = p.countryCode;
                                           });
@@ -3873,7 +3939,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 ),
                                 SizedBox(height: CustomSpacing.four),
                                 // Cancel and Submit Buttons
-                                !showEditCorporate?SizedBox():Consumer<CompanyProvider>(
+                                !showEditCorporate?const SizedBox():Consumer<CompanyProvider>(
                                     builder: (_, companyProvider, child) {
                                   return Column(
                                     children: [
@@ -3881,7 +3947,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         children: [
                                           Expanded(
                                             child: companyProvider.isLoading
-                                                ? Center(
+                                                ? const Center(
                                                     child: SizedBox(
                                                     width: 20,
                                                     height: 20,
@@ -3916,7 +3982,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
-                                                                  SnackBar(
+                                                                  const SnackBar(
                                                                     content: Text(
                                                                         'User Name cannot be empty',
                                                                         style: CustomTypography
@@ -3930,7 +3996,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
-                                                                  SnackBar(
+                                                                  const SnackBar(
                                                                     content: Text(
                                                                         'User Email cannot be empty',
                                                                         style: CustomTypography
@@ -3943,7 +4009,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
-                                                                  SnackBar(
+                                                                  const SnackBar(
                                                                     content: Text(
                                                                         'Company Legal Name cannot be empty',
                                                                         style: CustomTypography
@@ -3955,7 +4021,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
-                                                                  SnackBar(
+                                                                  const SnackBar(
                                                                     content: Text(
                                                                         'Company Type cannot be empty',
                                                                         style: CustomTypography
@@ -3967,7 +4033,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
-                                                                  SnackBar(
+                                                                  const SnackBar(
                                                                     content: Text(
                                                                         'Role(s) cannot be empty',
                                                                         style: CustomTypography
@@ -4051,7 +4117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                                                                   Navigator.of(
                                                                       context)
-                                                                      .pushReplacement( MaterialPageRoute(builder: (context) => UserManagementScreen()));
+                                                                      .pushReplacement( MaterialPageRoute(builder: (context) => const UserManagementScreen()));
                                                                 });
                                                               }
                                                             });
@@ -4085,7 +4151,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),
-                                                padding: EdgeInsets.symmetric(
+                                                padding: const EdgeInsets.symmetric(
                                                     horizontal: 22, vertical: 8),
                                               ),
                                               child: Text(
@@ -4119,7 +4185,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         builder: (context, companyProvider, child) {
       return SingleChildScrollView(
         child: Container(
-          margin: EdgeInsets.only(top: 8),
+          margin: const EdgeInsets.only(top: 8),
           child: companyProvider.isLoading
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -4128,7 +4194,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       child: Container(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(),
+                        child: const CircularProgressIndicator(),
                       ),
                     ),
                   ],
@@ -4139,10 +4205,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.only(
+                            borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(8),
                               topRight: Radius.circular(8),
                             ),
@@ -4178,7 +4244,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4196,7 +4262,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     // If company image is not uploaded, show default image
                                     companyImageUrl == null ||
                                             companyImageUrl == ''
-                                        ? CircleAvatar(
+                                        ? const CircleAvatar(
                                             backgroundImage: AssetImage(
                                                 'assets/images/loginImage.png'),
                                             radius: 40,
@@ -4259,7 +4325,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                                     // Switch for Enable/Disable Domain
                                     Container(
-                                      padding: EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
                                       decoration: BoxDecoration(
                                         border: Border.all(
@@ -4328,7 +4394,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   height: CustomSpacing.four),
                                             ],
                                           )
-                                        : SizedBox(),
+                                        : const SizedBox(),
                                     // Company Legal Name
                                     TextFormField(
                                       controller: _companyLegalNameController,
@@ -4428,8 +4494,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               hintText: _selectedRoles.isEmpty
                                                   ? 'Select Roles'
                                                   : "",
-                                              border: OutlineInputBorder(),
-                                              suffixIcon: IconButton(
+                                              border: const OutlineInputBorder(),
+                                              suffixIcon: const IconButton(
                                                 icon:
                                                     Icon(Icons.arrow_drop_down),
                                                 onPressed: null,
@@ -4461,7 +4527,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                     value.name ??
                                                                         ''),
                                                                 deleteIcon:
-                                                                    Icon(Icons
+                                                                    const Icon(Icons
                                                                         .cancel),
                                                                 onDeleted: null,
                                                               ),
@@ -4542,7 +4608,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             ),
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 16.0),
-                                            child: Center(
+                                            child: const Center(
                                               child: CountryListPicker(
                                                 initialCountry:
                                                     Countries.United_States,
@@ -4658,7 +4724,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _corporateUserList(int index, CorporateProvider corporateProvider) {
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onLongPress: () {
@@ -4700,7 +4766,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             });
                           },
                         )
-                      : SizedBox(),
+                      : const SizedBox(),
                   CircleAvatar(
                     child: corporateProvider
                                     .employeeList?[index].displayImageUrl !=
@@ -4712,7 +4778,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             child: Image.network(
                               corporateProvider
                                   .employeeList![index].displayImageUrl!,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.fill,
                             ),
                           )
                         : Text(
@@ -4759,12 +4825,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     width: CustomSpacing.two,
                   ),
                   !showEnableDisableUser
-                      ? SizedBox()
+                      ? const SizedBox()
                       : corporateProvider.isStatusLoading &&
                               selectedCompanyEmployeeListIndex == index
-                          ? Padding(
+                          ? const Padding(
                               padding:
-                                  const EdgeInsets.only(top: 8.0, right: 8.0),
+                                  EdgeInsets.only(top: 8.0, right: 8.0),
                               child: Center(child: CircularProgressIndicator()),
                             )
                           : Switch(
@@ -4832,7 +4898,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceVariant,
                   // bottom left and right corners curved
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(8),
                     bottomRight: Radius.circular(8),
                   ),
@@ -4855,7 +4921,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             '',
                                       )));
                             },
-                            icon: Icon(Icons.people),
+                            icon: const Icon(Icons.people),
                             label: Text('View Connections',
                                 style: CustomTypography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
@@ -4863,20 +4929,20 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ? AppColors.white
                                         : AppColors.black)),
                           ),
-                    Spacer(),
+                    const Spacer(),
                     !showEditUser
-                        ? SizedBox()
+                        ? const SizedBox()
                         : corporateProvider.isEditViewEmployeeLoading &&
                                 selectedCompanyEmployeeListIndex == index
                             ? Center(
                                 child: Container(
                                     height: 20,
                                     width: 20,
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: CircularProgressIndicator()),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: const CircularProgressIndicator()),
                               )
                             : IconButton(
-                                icon: Icon(Icons.edit),
+                                icon: const Icon(Icons.edit),
                                 color: AppColors.primaryMain,
                                 onPressed: () async {
                                   selectedCompanyEmployeeListIndex = index;
@@ -4902,18 +4968,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 },
                               ),
                     !showDeleteUser
-                        ? SizedBox()
+                        ? const SizedBox()
                         : corporateProvider.isDeleteLoading &&
                                 selectedCompanyEmployeeListIndex == index
                             ? Center(
                                 child: Container(
                                     height: 20,
                                     width: 20,
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: CircularProgressIndicator()),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: const CircularProgressIndicator()),
                               )
                             : IconButton(
-                                icon: Icon(Icons.delete),
+                                icon: const Icon(Icons.delete),
                                 color: AppColors.primaryMain,
                                 onPressed: () {
                                   selectedCompanyEmployeeListIndex = index;
@@ -4923,7 +4989,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     builder: (context) {
                                       // delete company name
                                       return AlertDialog(
-                                        title: Text('Delete Employee',
+                                        title: const Text('Delete Employee',
                                             style: CustomTypography.H6),
                                         content: Text(
                                             'Are you sure you want to delete '
@@ -4934,7 +5000,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             onPressed: () {
                                               Navigator.pop(context);
                                             },
-                                            child: Text('Cancel'),
+                                            child: const Text('Cancel'),
                                           ),
                                           TextButton(
                                             onPressed: () {
@@ -4964,7 +5030,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 }
                                               });
                                             },
-                                            child: Text('Delete'),
+                                            child: const Text('Delete'),
                                           ),
                                         ],
                                       );
@@ -4996,10 +5062,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     topRight: Radius.circular(8),
                   ),
@@ -5037,8 +5103,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // If company image is not uploaded, show default image
-                    employeeImageUrl == null || employeeImageUrl == ''
-                        ? CircleAvatar(
+                    employeeImageUrl == ''
+                        ? const CircleAvatar(
                             backgroundImage:
                                 AssetImage('assets/images/loginImage.png'),
                             radius: 40,
@@ -5074,7 +5140,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Consumer<EmployeeProvider>(
                             builder: (_, employeeProvider, child) {
                           return employeeProvider.isImageUploadLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : CustomButton(
@@ -5195,9 +5261,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   context, 'usermanagement_cuser_roles_label'),
                               hintText:
                                   _selectedRoles.isEmpty ? 'Select Roles' : "",
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
-                                icon: Icon(Icons.arrow_drop_down),
+                                icon: const Icon(Icons.arrow_drop_down),
                                 onPressed: () {
                                   showModalBottomSheet(
                                     context: context,
@@ -5255,7 +5321,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               const EdgeInsets.only(right: 8.0),
                                           child: Chip(
                                             label: Text(value.name ?? ''),
-                                            deleteIcon: Icon(Icons.cancel),
+                                            deleteIcon: const Icon(Icons.cancel),
                                             onDeleted: () =>
                                                 _removeCorporateChip(value),
                                           ),
@@ -5313,7 +5379,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               border: const OutlineInputBorder(),
                               counterText: '',
                             ),
-                            countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                            countrySelectorNavigator: const CountrySelectorNavigator.dialog(
                               showSearchInput: true,
                               searchInputDecoration: InputDecoration(
                                 hintText: 'Search Country',
@@ -5323,20 +5389,26 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             flagShape: BoxShape.circle,
                             flagSize: 35,
                             onChanged: (PhoneNumber? p) {
-                              if(p==null)
+                              if(p==null) {
                                 return;
+                              }
                               setState(() {
                                 _selectedCountryCode = p.countryCode;
                               });
-                              print('changed ${p.countryCode}');
+                              if (kDebugMode) {
+                                print('changed ${p.countryCode}');
+                              }
                             },
                             onSaved: (PhoneNumber? p) {
-                              if(p==null)
+                              if(p==null) {
                                 return;
+                              }
                               setState(() {
                                 _selectedCountryCode = p.countryCode;
                               });
-                              print('changed ${p.countryCode}');
+                              if (kDebugMode) {
+                                print('changed ${p.countryCode}');
+                              }
                             },
                           ),
                         ),
@@ -5356,7 +5428,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Container(
                                           height: 20,
                                           width: 20,
-                                          child: CircularProgressIndicator(),
+                                          child: const CircularProgressIndicator(),
                                         ),
                                       )
                                     : CustomButton(
@@ -5370,7 +5442,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           }
                                           if (_selectedScreen ==
                                               Screens.corporateAdd) {
-                                            print("ASDF");
+                                            if (kDebugMode) {
+                                              print("ASDF");
+                                            }
                                             var body = {
                                               "user_id": employeeProvider
                                                   .employees.userId,
@@ -5528,7 +5602,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       horizontal: 22, vertical: 8),
                                 ),
                                 child: Text(
@@ -5555,9 +5629,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       future: corporateProvider.viewCorporateUserEmployee(context, employeeId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text("Error loading user data"));
+          return const Center(child: Text("Error loading user data"));
         } else if (snapshot.hasData) {
           UsersCorporate currentUser = snapshot.data!;
           TextEditingController _employeeNameController =
@@ -5600,10 +5674,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.only(
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
@@ -5642,7 +5716,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         children: [
                           // If company image is not uploaded, show default image
                           employeeImageUrl == null || employeeImageUrl == ''
-                              ? CircleAvatar(
+                              ? const CircleAvatar(
                                   backgroundImage: AssetImage(
                                       'assets/images/loginImage.png'),
                                   radius: 40,
@@ -5681,7 +5755,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   builder: (_, corporateProvider, child) {
                                 return corporateProvider
                                         .isEditViewEmployeeLoading
-                                    ? Center(
+                                    ? const Center(
                                         child: CircularProgressIndicator(),
                                       )
                                     : CustomButton(
@@ -5791,9 +5865,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ? LanguageService.getTranslated(context,
                                             'usermanagement_cuser_roles_hint')
                                         : "",
-                                    border: OutlineInputBorder(),
+                                    border: const OutlineInputBorder(),
                                     suffixIcon: IconButton(
-                                      icon: Icon(Icons.arrow_drop_down),
+                                      icon: const Icon(Icons.arrow_drop_down),
                                       onPressed: () {
                                         showModalBottomSheet(
                                           context: context,
@@ -5834,7 +5908,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 child: Chip(
                                                   label: Text(value.name ?? ''),
                                                   deleteIcon:
-                                                      Icon(Icons.cancel),
+                                                      const Icon(Icons.cancel),
                                                   onDeleted: () =>
                                                       _removeCorporateChip(
                                                           value),
@@ -5894,7 +5968,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     child: CountryListPicker(
                                       initialCountry: Countries.Australia,
                                       border: InputBorder.none,
-                                      flagSize: Size(35, 30),
+                                      flagSize: const Size(35, 30),
                                       onChanged: (code) {
                                         setState(() {
                                           _selectedCountryCode = code;
@@ -5902,7 +5976,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       },
                                       diallingCodeStyle: CustomTypography.Body1,
                                       isShowInputField: false,
-                                      dialogTheme: DialogThemeData(
+                                      dialogTheme: const DialogThemeData(
                                         style: CustomTypography.Body1,
                                         isShowFloatButton: false,
                                       ),
@@ -5970,7 +6044,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: 20,
                                                 width: 20,
                                                 child:
-                                                    CircularProgressIndicator(),
+                                                    const CircularProgressIndicator(),
                                               ),
                                             )
                                           : CustomButton(
@@ -6083,7 +6157,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
-                                        padding: EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                             horizontal: 22, vertical: 8),
                                       ),
                                       child: Text(
@@ -6102,7 +6176,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           );
         } else {
-          return Center(child: Text("No user data available"));
+          return const Center(child: Text("No user data available"));
         }
       },
     );
@@ -6186,19 +6260,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Expanded(
                 flex: 7,
-                child: TextField(
-                  controller: _nonCorporateSearchController,
-                  onChanged: nonCorporateSearchClient,
-                  decoration: InputDecoration(
-                    hintText: LanguageService.getTranslated(context,
-                        'usermanagement_search_field_lable_name_email_mobile'),
-                    label: Text(
-                        LanguageService.getTranslated(
-                            context, "usermanagement_search_field_lable"),
-                        style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 50,
+                  child: TextField(
+                    controller: _nonCorporateSearchController,
+                    onChanged: nonCorporateSearchClient,
+                    decoration: InputDecoration(
+                      hintText: LanguageService.getTranslated(context,
+                          'usermanagement_search_field_lable_name_email_mobile'),
+                      label: Text(
+                          LanguageService.getTranslated(
+                              context, "usermanagement_search_field_lable"),
+                          style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -6211,7 +6288,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   // Open bottom sheet here
                   Scaffold.of(context).openEndDrawer();
                 },
-                child: Icon(
+                child: const Icon(
                   Icons.filter_list,
                   size: 30,
                 ),
@@ -6247,7 +6324,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       height: 25,
                       width: 35,
                       child: Chip(
-                        labelPadding: EdgeInsets.all(0),
+                        labelPadding: const EdgeInsets.all(0),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           noncorporateProvider.allCount,
@@ -6282,7 +6359,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       height: 25,
                       width: 35,
                       child: Chip(
-                        labelPadding: EdgeInsets.all(0),
+                        labelPadding: const EdgeInsets.all(0),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           noncorporateProvider.activeCount,
@@ -6297,7 +6374,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ],
           ),
           !showDeleteNonCorporate
-              ? SizedBox()
+              ? const SizedBox()
               : showCheckbox
                   ? Consumer<NonCorporateProvider>(
                       builder: (_, nonCorporateProvider, child) {
@@ -6322,9 +6399,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               LanguageService.getTranslated(context,
                                   "usermanagement_individual_users_select_all"),
                               style: CustomTypography.Body1),
-                          Spacer(),
+                          const Spacer(),
                           IconButton(
-                            icon: Icon(Icons.delete),
+                            icon: const Icon(Icons.delete),
                             onPressed: () {
                               // Handle delete selected companies
                               showDialog(
@@ -6398,7 +6475,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ],
                       );
                     })
-                  : SizedBox(),
+                  : const SizedBox(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -6417,7 +6494,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Consumer<NonCorporateProvider>(
                             builder: (context, noncorporateProvider, child) {
                           return noncorporateProvider.isLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : noncorporateProvider.employeeList!.isEmpty
@@ -6447,7 +6524,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               roleFilter: "",
                                               isSearch: false,
                                             );
-                                            return SizedBox(
+                                            return const SizedBox(
                                               height: 50,
                                               // Placeholder for loading indicator
                                               child: Center(
@@ -6467,7 +6544,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Consumer<NonCorporateProvider>(
                             builder: (context, noncorporateProvider, child) {
                           return noncorporateProvider.isLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : noncorporateProvider.employeeList!.isEmpty
@@ -6496,7 +6573,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             roleFilter: "",
                                             isSearch: false,
                                           );
-                                          return SizedBox(
+                                          return const SizedBox(
                                             height: 50,
                                             // Placeholder for loading indicator
                                             child: Center(
@@ -6533,7 +6610,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _nonCorporateListItem(int index, NonCorporateProvider nonCorporateProvider) {
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onLongPress: !showDeleteNonCorporate
@@ -6564,7 +6641,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     width: CustomSpacing.four,
                   ),
                   !showDeleteNonCorporate
-                      ? SizedBox()
+                      ? const SizedBox()
                       : showCheckbox
                           ? Checkbox(
                               value: nonCorporateProvider
@@ -6580,7 +6657,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 });
                               },
                             )
-                          : SizedBox(),
+                          : const SizedBox(),
                   CircleAvatar(
                     child: nonCorporateProvider
                                     .employeeList![index].displayImageUrl !=
@@ -6672,12 +6749,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     width: CustomSpacing.two,
                   ),
                   !showEnableDisableNonCorporate
-                      ? SizedBox()
+                      ? const SizedBox()
                       : nonCorporateProvider.isStatusLoading &&
                               selectedNonCorporateListIndex == index
-                          ? Padding(
+                          ? const Padding(
                               padding:
-                                  const EdgeInsets.only(top: 8.0, right: 8.0),
+                                  EdgeInsets.only(top: 8.0, right: 8.0),
                               child: Center(child: CircularProgressIndicator()),
                             )
                           : Switch(
@@ -6767,7 +6844,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceVariant,
                   // bottom left and right corners curved
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(8),
                     bottomRight: Radius.circular(8),
                   ),
@@ -6776,7 +6853,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   children: [
                     // Icon with text
                     !showNonCorporateConnectionList
-                        ? SizedBox()
+                        ? const SizedBox()
                         : TextButton.icon(
                             onPressed: () {
                               // Handle view connections
@@ -6791,7 +6868,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             '',
                                       )));
                             },
-                            icon: Icon(Icons.people),
+                            icon: const Icon(Icons.people),
                             label: Text('View Connections',
                                 style: CustomTypography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
@@ -6799,20 +6876,20 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ? AppColors.white
                                         : AppColors.black)),
                           ),
-                    Spacer(),
+                    const Spacer(),
                     !showEditNonCorporate
-                        ? SizedBox()
+                        ? const SizedBox()
                         : nonCorporateProvider.isEditViewEmployeeLoading &&
                                 selectedNonCorporateListIndex == index
                             ? Center(
                                 child: Container(
                                     height: 20,
                                     width: 20,
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: CircularProgressIndicator()),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: const CircularProgressIndicator()),
                               )
                             : IconButton(
-                                icon: Icon(Icons.edit),
+                                icon: const Icon(Icons.edit),
                                 color: AppColors.primaryMain,
                                 onPressed: () async {
                                   /// Handle edit company
@@ -6878,11 +6955,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             child: Container(
                                 height: 20,
                                 width: 20,
-                                margin: EdgeInsets.only(right: 8),
-                                child: CircularProgressIndicator()),
+                                margin: const EdgeInsets.only(right: 8),
+                                child: const CircularProgressIndicator()),
                           )
                         : IconButton(
-                            icon: Icon(Icons.delete),
+                            icon: const Icon(Icons.delete),
                             color: AppColors.primaryMain,
                             onPressed: () {
                               selectedCompanyListIndex = index;
@@ -6892,7 +6969,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 builder: (context) {
                                   // delete company name
                                   return AlertDialog(
-                                    title: Text('Delete Company',
+                                    title: const Text('Delete Company',
                                         style: CustomTypography.H6),
                                     content: Text(
                                         'Are you sure you want to delete ${nonCorporateProvider.employeeList![index].displayName}?',
@@ -6902,7 +6979,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         onPressed: () {
                                           Navigator.pop(context);
                                         },
-                                        child: Text('Cancel'),
+                                        child: const Text('Cancel'),
                                       ),
                                       TextButton(
                                         onPressed: () {
@@ -6926,7 +7003,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             }
                                           });
                                         },
-                                        child: Text('Delete'),
+                                        child: const Text('Delete'),
                                       ),
                                     ],
                                   );
@@ -6951,7 +7028,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       future: nonCorporateProvider.viewNonCorporateUser(context, userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(
               child: Text(LanguageService.getTranslated(
@@ -6998,10 +7075,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.only(
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
@@ -7040,7 +7117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         children: [
                           // If company image is not uploaded, show default image
                           employeeImageUrl == null || employeeImageUrl == ''
-                              ? CircleAvatar(
+                              ? const CircleAvatar(
                                   backgroundImage: AssetImage(
                                       'assets/images/loginImage.png'),
                                   radius: 40,
@@ -7079,7 +7156,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   builder: (_, corporateProvider, child) {
                                 return corporateProvider
                                         .isEditViewEmployeeLoading
-                                    ? Center(
+                                    ? const Center(
                                         child: CircularProgressIndicator(),
                                       )
                                     : CustomButton(
@@ -7189,9 +7266,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     hintText: _selectedRoles.isEmpty
                                         ? 'Select Roles'
                                         : "",
-                                    border: OutlineInputBorder(),
+                                    border: const OutlineInputBorder(),
                                     suffixIcon: IconButton(
-                                      icon: Icon(Icons.arrow_drop_down),
+                                      icon: const Icon(Icons.arrow_drop_down),
                                       onPressed: () {
                                         showModalBottomSheet(
                                           context: context,
@@ -7233,7 +7310,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     label: Text(
                                                         value.name ?? values!),
                                                     deleteIcon:
-                                                        Icon(Icons.cancel),
+                                                        const Icon(Icons.cancel),
                                                     onDeleted: () {
                                                       print(
                                                           'Removing chip: ${value.name}');
@@ -7307,7 +7384,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       initialCountry: Countries.Australia,
                                       // Ensure this is correctly set or dynamically assigned
                                       border: InputBorder.none,
-                                      flagSize: Size(35, 30),
+                                      flagSize: const Size(35, 30),
                                       onChanged: (code) {
                                         // This is typically triggered when a new selection is made in the picker
                                         setState(() {
@@ -7319,7 +7396,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       },
                                       diallingCodeStyle: CustomTypography.Body1,
                                       isShowInputField: false,
-                                      dialogTheme: DialogThemeData(
+                                      dialogTheme: const DialogThemeData(
                                         style: CustomTypography.Body1,
                                         isShowFloatButton: false,
                                       ),
@@ -7389,7 +7466,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: 20,
                                                 width: 20,
                                                 child:
-                                                    CircularProgressIndicator(),
+                                                    const CircularProgressIndicator(),
                                               ),
                                             )
                                           : CustomButton(
@@ -7503,7 +7580,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
-                                        padding: EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                             horizontal: 22, vertical: 8),
                                       ),
                                       child: Text(
@@ -7522,7 +7599,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           );
         } else {
-          return Center(child: Text("No user data available"));
+          return const Center(child: Text("No user data available"));
         }
       },
     );
@@ -7570,19 +7647,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Expanded(
                 flex: 7,
-                child: TextField(
-                  controller: _employeeSearchController,
-                  onChanged: employeeSearchClient,
-                  decoration: InputDecoration(
-                    hintText: LanguageService.getTranslated(context,
-                        'usermanagement_app_employee_management_phone_hint'),
-                    label: Text(
-                        LanguageService.getTranslated(context,
-                            'usermanagement_app_employee_management_search_text'),
-                        style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 50,
+                  child: TextField(
+                    controller: _employeeSearchController,
+                    onChanged: employeeSearchClient,
+                    decoration: InputDecoration(
+                      hintText: LanguageService.getTranslated(context,
+                          'usermanagement_app_employee_management_phone_hint'),
+                      label: Text(
+                          LanguageService.getTranslated(context,
+                              'usermanagement_app_employee_management_search_text'),
+                          style: CustomTypography.Body1),
+                      hintStyle: CustomTypography.Body1,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -7595,7 +7675,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   // Open bottom sheet here
                   Scaffold.of(context).openEndDrawer();
                 },
-                child: Icon(
+                child: const Icon(
                   Icons.filter_list,
                   size: 30,
                 ),
@@ -7627,7 +7707,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       height: 25,
                       width: 35,
                       child: Chip(
-                        labelPadding: EdgeInsets.all(0),
+                        labelPadding: const EdgeInsets.all(0),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           employeeProvider.allCount.toString(),
@@ -7658,7 +7738,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       height: 25,
                       width: 35,
                       child: Chip(
-                        labelPadding: EdgeInsets.all(0),
+                        labelPadding: const EdgeInsets.all(0),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           employeeProvider.activeCount.toString(),
@@ -7673,7 +7753,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ],
           ),
           !showDeleteEmployee
-              ? SizedBox()
+              ? const SizedBox()
               : showCheckbox
                   ? Consumer<EmployeeProvider>(
                       builder: (_, employeeProvider, child) {
@@ -7698,9 +7778,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               LanguageService.getTranslated(context,
                                   "usermanagement_app_employee_management_select_all_text"),
                               style: CustomTypography.Body1),
-                          Spacer(),
+                          const Spacer(),
                           IconButton(
-                            icon: Icon(Icons.delete),
+                            icon: const Icon(Icons.delete),
                             onPressed: () {
                               // Handle delete selected companies
                               showDialog(
@@ -7773,7 +7853,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ],
                       );
                     })
-                  : SizedBox(),
+                  : const SizedBox(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -7793,11 +7873,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         children: [
                           // All Tab
                           employeeProvider.isLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : employeeProvider.employeeList!.isEmpty
-                                  ? Center(
+                                  ? const Center(
                                       child: Text('No employees found',
                                           style: CustomTypography.Body1),
                                     )
@@ -7824,7 +7904,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               isSearch: false,
                                             );
                                           }
-                                          return SizedBox(
+                                          return const SizedBox(
                                             height: 50,
                                             // Placeholder for loading indicator
                                             child: Center(
@@ -7841,11 +7921,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
                           // Active Tab
                           employeeProvider.isLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : employeeProvider.employeeList!.isEmpty
-                                  ? Center(
+                                  ? const Center(
                                       child: Text('No employees found',
                                           style: CustomTypography.Body1),
                                     )
@@ -7872,7 +7952,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               isSearch: false,
                                             );
                                           }
-                                          return SizedBox(
+                                          return const SizedBox(
                                             height: 50,
                                             // Placeholder for loading indicator
                                             child: Center(
@@ -7902,7 +7982,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _employeeManagementListItem(int index, EmployeeProvider employeeProvider) {
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onLongPress: !showDeleteEmployee
@@ -7933,7 +8013,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     width: CustomSpacing.four,
                   ),
                   !showDeleteEmployee
-                      ? SizedBox()
+                      ? const SizedBox()
                       : showCheckbox
                           ? Checkbox(
                               value: employeeProvider
@@ -7949,7 +8029,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 });
                               },
                             )
-                          : SizedBox(),
+                          : const SizedBox(),
                   CircleAvatar(
                     child:
                         employeeProvider.employeeList?[index].displayImageUrl !=
@@ -8005,12 +8085,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     width: CustomSpacing.two,
                   ),
                   !showEnableDisableEmployee
-                      ? SizedBox()
+                      ? const SizedBox()
                       : employeeProvider.isStatusLoading &&
                               selectedEmployeeListIndex == index
-                          ? Padding(
+                          ? const Padding(
                               padding:
-                                  const EdgeInsets.only(top: 8.0, right: 8.0),
+                                  EdgeInsets.only(top: 8.0, right: 8.0),
                               child: Center(child: CircularProgressIndicator()),
                             )
                           : Switch(
@@ -8070,7 +8150,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceVariant,
                   // bottom left and right corners curved
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(8),
                     bottomRight: Radius.circular(8),
                   ),
@@ -8079,7 +8159,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   children: [
                     // Icon with text
                     !showConnectionListEmployee
-                        ? SizedBox()
+                        ? const SizedBox()
                         : TextButton.icon(
                             onPressed: () {
                               // Handle view employees
@@ -8093,7 +8173,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             "",
                                       )));
                             },
-                            icon: Icon(Icons.people),
+                            icon: const Icon(Icons.people),
                             label: Text('View Connections',
                                 style: CustomTypography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
@@ -8101,21 +8181,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ? AppColors.white
                                         : AppColors.black)),
                           ),
-                    Spacer(),
+                    const Spacer(),
                     !showEditEmployee
-                        ? SizedBox()
+                        ? const SizedBox()
                         : employeeProvider.isEditViewEmployeeLoading &&
                                 selectedEmployeeListIndex == index
                             ? Center(
                                 child: Container(
-                                  margin: EdgeInsets.only(right: 8),
+                                  margin: const EdgeInsets.only(right: 8),
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(),
+                                  child: const CircularProgressIndicator(),
                                 ),
                               )
                             : IconButton(
-                                icon: Icon(Icons.edit),
+                                icon: const Icon(Icons.edit),
                                 color: AppColors.primaryMain,
                                 onPressed: () async {
                                   /// Handle edit company
@@ -8169,11 +8249,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             child: Container(
                                 height: 20,
                                 width: 20,
-                                margin: EdgeInsets.only(right: 8),
-                                child: CircularProgressIndicator()),
+                                margin: const EdgeInsets.only(right: 8),
+                                child: const CircularProgressIndicator()),
                           )
                         : IconButton(
-                            icon: Icon(Icons.delete),
+                            icon: const Icon(Icons.delete),
                             color: AppColors.primaryMain,
                             onPressed: () {
                               selectedEmployeeListIndex = index;
@@ -8183,7 +8263,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 builder: (context) {
                                   // delete company name
                                   return AlertDialog(
-                                    title: Text('Delete Employee',
+                                    title: const Text('Delete Employee',
                                         style: CustomTypography.H6),
                                     content: Text(
                                         'Are you sure you want to delete ${employeeProvider.employeeList?[index].name}?',
@@ -8193,7 +8273,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         onPressed: () {
                                           Navigator.pop(context);
                                         },
-                                        child: Text('Cancel'),
+                                        child: const Text('Cancel'),
                                       ),
                                       TextButton(
                                         onPressed: () {
@@ -8215,7 +8295,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             }
                                           });
                                         },
-                                        child: Text('Delete'),
+                                        child: const Text('Delete'),
                                       ),
                                     ],
                                   );
@@ -8247,10 +8327,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     topRight: Radius.circular(8),
                   ),
@@ -8289,7 +8369,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   children: [
                     // If company image is not uploaded, show default image
                     employeeImageUrl == null || employeeImageUrl == ''
-                        ? CircleAvatar(
+                        ? const CircleAvatar(
                             backgroundImage:
                                 AssetImage('assets/images/loginImage.png'),
                             radius: 40,
@@ -8325,7 +8405,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Consumer<EmployeeProvider>(
                             builder: (_, employeeProvider, child) {
                           return employeeProvider.isImageUploadLoading
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(),
                                 )
                               : CustomButton(
@@ -8428,9 +8508,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   context, 'usermanagement_roles_label'),
                               hintText:
                                   _selectedRoles.isEmpty ? 'Select Roles' : "",
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
-                                icon: Icon(Icons.arrow_drop_down),
+                                icon: const Icon(Icons.arrow_drop_down),
                                 onPressed: () {
                                   showModalBottomSheet(
                                     context: context,
@@ -8469,7 +8549,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               const EdgeInsets.only(right: 8.0),
                                           child: Chip(
                                             label: Text(value.name ?? ''),
-                                            deleteIcon: Icon(Icons.cancel),
+                                            deleteIcon: const Icon(Icons.cancel),
                                             onDeleted: () =>
                                                 _removeCorporateChip(value),
                                           ),
@@ -8526,7 +8606,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               child: CountryListPicker(
                                 initialCountry: Countries.United_States,
                                 border: InputBorder.none,
-                                flagSize: Size(35, 30),
+                                flagSize: const Size(35, 30),
                                 onChanged: (code) {
                                   setState(() {
                                     _selectedCountryCode = code;
@@ -8534,7 +8614,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 },
                                 diallingCodeStyle: CustomTypography.Body1,
                                 isShowInputField: false,
-                                dialogTheme: DialogThemeData(
+                                dialogTheme: const DialogThemeData(
                                   style: CustomTypography.Body1,
                                   isShowFloatButton: false,
                                 ),
@@ -8596,7 +8676,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Container(
                                           height: 20,
                                           width: 20,
-                                          child: CircularProgressIndicator(),
+                                          child: const CircularProgressIndicator(),
                                         ),
                                       )
                                     : CustomButton(
@@ -8784,7 +8864,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       horizontal: 22, vertical: 8),
                                 ),
                                 child: Text(
@@ -8816,11 +8896,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           SizedBox(
             height: CustomSpacing.five,
           ),
-          Text('Verification Requests', style: CustomTypography.H7),
+          const Text('Verification Requests', style: CustomTypography.H7),
           SizedBox(
             height: CustomSpacing.three,
           ),
-          Text('Manage all accounts request from this panel',
+          const Text('Manage all accounts request from this panel',
               style: CustomTypography.Body2),
           SizedBox(
             height: CustomSpacing.two,
@@ -8856,7 +8936,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     child: Container(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(),
+                                      child: const CircularProgressIndicator(),
                                     ),
                                   )
                                 : verificationProvider.corporateRequests.isEmpty
@@ -8870,7 +8950,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       .size
                                                       .height *
                                                   0.6,
-                                              child: Center(
+                                              child: const Center(
                                                 child: Text(
                                                   "No Requests",
                                                   style: CustomTypography.Body1,
@@ -8913,7 +8993,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     child: Container(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(),
+                                      child: const CircularProgressIndicator(),
                                     ),
                                   )
                                 : verificationProvider.userRequests.isEmpty
@@ -8963,7 +9043,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _verificationCorporateRequestsListItem(
       int index, VerificationProvider verificationProvider) {
     return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: Card(
         child: Column(
           children: [
@@ -8989,7 +9069,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        TextSpan(
+                        const TextSpan(
                           text:
                               ' has requested to create new corporate account for company name ',
                           style: CustomTypography.Body1_5,
@@ -9037,7 +9117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     "",
                                 style: CustomTypography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
-                        CustomChip(
+                        const CustomChip(
                             label: Text('Admin',
                                 style: CustomTypography.InputLabel)),
                       ],
@@ -9050,22 +9130,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 // bottom left and right corners curved
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
                 ),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
                 children: [
                   verificationProvider.isCorporateAcceptLoading &&
                           selectedCorporateVerificationAcceptListIndex == index
                       ? Center(
                           child: Container(
-                            margin: EdgeInsets.only(left: 24),
+                            margin: const EdgeInsets.only(left: 24),
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           ),
                         )
                       : CustomButton(
@@ -9100,10 +9180,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           selectedCorporateVerificationRejectListIndex == index
                       ? Center(
                           child: Container(
-                            margin: EdgeInsets.only(left: 16),
+                            margin: const EdgeInsets.only(left: 16),
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           ),
                         )
                       : CustomButton(
@@ -9133,11 +9213,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   CustomTypography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
-                  Spacer(),
+                  const Spacer(),
                   //date
                   Row(
                     children: [
-                      Icon(Icons.calendar_today),
+                      const Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
                       Text(formatCreatedAt(verificationProvider
                               .corporateRequests[index]),
@@ -9162,7 +9242,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _verificationUserRequestsListItem(
       int index, VerificationProvider verificationProvider) {
     return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
+      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: Card(
         child: Column(
           children: [
@@ -9225,7 +9305,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 context: context,
                                 builder: (context) {
                                   return AlertDialog(
-                                    title: Text('Select Role',
+                                    title: const Text('Select Role',
                                         style: CustomTypography.H6),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -9273,7 +9353,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       // Handle save role
                                                       Navigator.pop(context);
                                                     },
-                                                    child: Text('Save',
+                                                    child: const Text('Save',
                                                         style: CustomTypography
                                                             .BottomNavigationActiveLabel),
                                                   ),
@@ -9322,22 +9402,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 // bottom left and right corners curved
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
                 ),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
                 children: [
                   verificationProvider.isCorporateAcceptLoading &&
                           selectedUserVerificationAcceptListIndex == index
                       ? Center(
                           child: Container(
-                            margin: EdgeInsets.only(left: 24),
+                            margin: const EdgeInsets.only(left: 24),
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           ),
                         )
                       : CustomButton(
@@ -9371,10 +9451,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           selectedUserVerificationRejectListIndex == index
                       ? Center(
                           child: Container(
-                            margin: EdgeInsets.only(left: 16),
+                            margin: const EdgeInsets.only(left: 16),
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(),
+                            child: const CircularProgressIndicator(),
                           ),
                         )
                       : CustomButton(
@@ -9401,13 +9481,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   CustomTypography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
-                  Spacer(),
+                  const Spacer(),
                   //date
                   Row(
                     children: [
-                      Icon(Icons.calendar_today),
+                      const Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
-                      Text('Mar 7, 2024 23:26',
+                      const Text('Mar 7, 2024 23:26',
                           style: CustomTypography.Caption),
                     ],
                   ),
@@ -9425,9 +9505,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       DropdownMenuItem(
         child: Row(
           children: [
-            Icon(Icons.apartment),
+            const Icon(Icons.apartment),
             SizedBox(width: CustomSpacing.two),
-            Text(
+            const Text(
               'Corporate Management',
               style: CustomTypography.BottomNavigationActiveLabel,
             ),
@@ -9436,7 +9516,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         value: 'Corporate',
       ),
       showCorporateList
-          ? DropdownMenuItem(
+          ? const DropdownMenuItem(
               child: Text(
                 'Companies',
                 style: CustomTypography.BottomNavigationActiveLabel,
@@ -9445,7 +9525,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             )
           : Container(
               height: 0,
-              child: DropdownMenuItem(
+              child: const DropdownMenuItem(
                 child: Text(
                   'Companies',
                   style: CustomTypography.BottomNavigationActiveLabel,
@@ -9454,32 +9534,36 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               ),
             ),
       showCorporateUserListDropdown
-          ? DropdownMenuItem(
+          ? const DropdownMenuItem(
               child: Text(
                 'Users',
                 style: CustomTypography.BottomNavigationActiveLabel,
               ),
               value: 'Users',
             )
-          : SizedBox(),
+          : const SizedBox(),
       showViewCorporate
-          ? DropdownMenuItem(
+          ? const DropdownMenuItem(
               child: Text(
                 'Company Profiles',
                 style: CustomTypography.BottomNavigationActiveLabel,
               ),
               value: 'Company Profiles',
             )
-          : SizedBox(),
+          : const SizedBox(),
       showCorporateVerificationTab || showUserVerificationTab
-          ? DropdownMenuItem(
+          ? const DropdownMenuItem(
               child: Text(
                 'Verification Requests',
                 style: CustomTypography.BottomNavigationActiveLabel,
               ),
               value: 'Verification Requests',
             )
-          : SizedBox(),
+          : const SizedBox(),
     ];
+  }
+
+  String? getCountryCodeFromName(String countryName) {
+    return countryNameToCodeMap[countryName];
   }
 }

@@ -15,23 +15,27 @@ class _RolesDropdownState extends State<RolesDropdown> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+     /* padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey), // Outline border color
         borderRadius: BorderRadius.circular(8), // Rounded corners
-      ),
+      ),*/
       child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(4.0),
+          Expanded(
             child: DropdownButton<String>(
               underline: SizedBox(),
               value: _selectedItem,
-              isDense: true,
+              isDense: false,
+              isExpanded: true,
               items: _items.map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
-                  child: Text(value, style: CustomTypography.Body2),
+                  child: Row(
+                    children: [
+                      Text(value, style: CustomTypography.Body1),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (String? value) {
@@ -43,7 +47,7 @@ class _RolesDropdownState extends State<RolesDropdown> {
                 children: [
                   Icon(Icons.switch_account),
                   SizedBox(width: 8),
-                  Text('Risk Manager', style: CustomTypography.Body2),
+                  Text('Risk Manager', style: CustomTypography.Body1),
                 ],
               ),
               icon: Icon(Icons.arrow_drop_down),

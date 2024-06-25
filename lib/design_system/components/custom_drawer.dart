@@ -2,20 +2,79 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/settings/settings.dart';
 import 'package:green/screens/userManagement/user_management.dart';
+import 'package:green/service/language_service.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
-import '../../providers/theme_provider.dart';
 import '../../screens/listings/account_list.dart';
 import '../../screens/onboarding/splash_screen.dart';
+import '../../service/shared_preference_service.dart';
 
-class CustomDrawer extends StatelessWidget {
+class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<CustomDrawer> createState() => _CustomDrawerState();
+}
+
+class _CustomDrawerState extends State<CustomDrawer> {
+  bool showCorporateManagementTab = true;
+
+  bool showNonCorporateManagementTab = true;
+
+  bool showEmployeeManagementTab = true;
+
+  bool showCorporateList = true;
+
+  bool showCorporateUserListDropdown = true;
+
+  bool showCorporateVerificationTab = true;
+
+  bool showCorporateProfile = true;
+
+  @override
+  void initState() {
+    _getClaims();
+    super.initState();
+  }
+
+  _getClaims() async {
+    showNonCorporateManagementTab = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.NCMUL) ??
+        false;
+    showEmployeeManagementTab = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.EMPUL) ??
+        false;
+
+    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCL) ??
+        false;
+
+    showCorporateUserListDropdown =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCUM) ??
+            false;
+    showCorporateVerificationTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMLL) ??
+            false;
+
+    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+        SharedPreferenceService.CAMCUL) ??
+        false;
+
+
+    showCorporateManagementTab = showCorporateList ||
+        showCorporateUserListDropdown ||
+        showCorporateVerificationTab ||
+        showCorporateProfile;
+
+
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,12 +119,12 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/homeIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_dashboard"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
 
                       ),
-                      title: const Text('Dashboard'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_dashboard")),
                       onTap: () {
                         //Navigator.pop(context);
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen()));
@@ -77,31 +136,32 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/listingsIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_listings"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Listings'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_listings"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Location(s) List'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_locations_list"), style: CustomTypography.Body1,),
                           onTap: () {
-                            //Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
-                            //Show coming soon snackbar 
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                            //Show coming soon snackbar
+                            /*ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Coming Soon!', style: CustomTypography.Body1,),
                               ),
-                            );
+                            );*/
                           },
                         ),
                         ListTile(
-                          title: const Text('Location(s) Map'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_locations_map"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -114,29 +174,31 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/portfolioIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_portfolio_sovs"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Portfolio/SOVs'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_portfolio_sovs"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Risk Manager List'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_risk_manager_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Manage insurers List'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_manage_insurers_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -149,39 +211,31 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/locationIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_locations"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Locations'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_locations"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Upload Locations'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_upload_locations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Add A Location'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_location"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Create A Campus'),
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -194,69 +248,75 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/newsfeedIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_news_feed"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('News Feed'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_news_feed"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Improved Locations'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_improve_locations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Cat Modellers And Risk Engineers Work'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_cat_modelers_risk_engineer_work"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('See Vendor Activity'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_vendor_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Real Time Weather Activity'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_weather_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Broker Activity'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_broker_activity"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Insights'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_insights"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -269,69 +329,75 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/insightsIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_insights"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Insights'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_insights"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('See Data Quality'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_data_quality"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('See Hazard Scores'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_hazard_scores"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('See Vendor Results'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_vendor_results"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('See Vendor Recommendations'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_verndor_recommendations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('See Data Improvement Recommendations'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_data_improvement_recommendations"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Comparison Data'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_comparison_data"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -344,39 +410,42 @@ class CustomDrawer extends StatelessWidget {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/connectionsIcon.svg',
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_connections"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Connections'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_connections"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Add Vendor'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_broker"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Add Broker'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_broker"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Add Freelancer'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_freelancer"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -390,19 +459,20 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/trainingDataIcon.svg',
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_training_data"),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Training Data'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_training_data"), style: CustomTypography.Body1,),
                       children: <Widget>[
 
                         ListTile(
-                          title: const Text('Get Paid To Create Tags On Phrases'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_create_tags_on_phrases"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -416,28 +486,30 @@ class CustomDrawer extends StatelessWidget {
                         child: SvgPicture.asset(
                           'assets/images/trainingDataIcon.svg',
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: 'Dashboard',
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_leads"),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Leads'),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_leads"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: const Text('Leads List'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_list"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
                         ),
                         ListTile(
-                          title: const Text('Leads Map'),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_map"), style: CustomTypography.Body1,),
                           onTap: () {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
+                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
                               ),
                             );
                           },
@@ -450,60 +522,48 @@ class CustomDrawer extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  /*IconButton(
-                    icon: Icon(Icons.settings),
-                    onPressed: () {
-                      // Navigate to Settings Screen
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsScreen()));
-                    },
-                  ),*/
-                  /*IconButton(
-                    icon: Icon(Icons.brightness_7_rounded),
-                    onPressed: () {
-                      // Change Theme
-                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-                    },
-                  ),*/
                   Consumer<AuthNotifier>(
                       builder: (context, authNotifier, child) {
-                      return IconButton(
-                        icon: Icon(Icons.logout_rounded),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text('Logout'),
-                                content: Text('Are you sure you want to logout?'),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      authNotifier.signOut();
-                                      Navigator.pushAndRemoveUntil(
-                                          context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
-                                    },
-                                    child: Text('Logout'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      );
-                    }
+                        return IconButton(
+                          icon: Icon(Icons.logout_rounded),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
+                                  content: Text(LanguageService.getTranslated(context, "drawer_menu_logout_confirmation"), style: CustomTypography.Body1),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text(LanguageService.getTranslated(context, "drawer_menu_cancel"), style: CustomTypography.Body1,),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        authNotifier.signOut();
+                                        Navigator.pushAndRemoveUntil(
+                                            context, MaterialPageRoute(builder: (_) => SplashScreen()), (route) => false);
+                                      },
+                                      child: Text(LanguageService.getTranslated(context, "drawer_menu_logout"), style: CustomTypography.Body1,),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
                   ),
-                  IconButton(
+                  (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
+                      ? IconButton(
                     icon: Icon(Icons.person),
                     onPressed: () {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserManagementScreen()));
                     },
-                  ),
+                  )
+                      : SizedBox()
                 ],
               ),
             ],

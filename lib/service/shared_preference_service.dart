@@ -1,3 +1,4 @@
+import 'package:green/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
@@ -48,8 +49,11 @@ class SharedPreferenceService {
   static const String SETFE = 'SETFE'; // Placeholder for future use
   static const String SETEM = 'SETEM'; // Placeholder for future use
   static const String SETROL = 'SETROL'; // Placeholder for future use
+  static const String NCMMT = 'NCMMT'; // My Teams for NCM
+  static const String EMPMT = 'EMPMT'; // My Teams for EMP
 
   static Future<void> setClaims(Map<String, dynamic> claims) async {
+    await AuthNotifier().getAllClaims();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // Set all keys to false
     prefs.setBool(CAMCL, false);
@@ -99,6 +103,8 @@ class SharedPreferenceService {
     prefs.setBool(SETFE, false);
     prefs.setBool(SETEM, false);
     prefs.setBool(SETROL, false);
+    prefs.setBool(NCMMT, false);
+    prefs.setBool(EMPMT, false);
 
     claims.forEach((key, value) {
       switch (key) {
@@ -149,6 +155,9 @@ class SharedPreferenceService {
         case SETFE:
         case SETEM:
         case SETROL:
+        case NCMMT:
+        case EMPMT:
+
           prefs.setBool(key, value);
           print('Claim $key set to $value');
           break;
@@ -160,6 +169,7 @@ class SharedPreferenceService {
   }
 
   static Future<Map<String, dynamic>> getAllClaims() async {
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, dynamic> claims = {};
     List<String> staticStrings = [

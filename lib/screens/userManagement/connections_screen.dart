@@ -2060,15 +2060,18 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         Row(
           children: [
             Expanded(
-              child: TextField(
-                onChanged: searchNetworks,
-                decoration: InputDecoration(
-                  hintText: LanguageService.getTranslated(context,
-                      'usermanagement_search_field_lable_name_email_mobile'),
-                  label: Text('Search', style: CustomTypography.Body1),
-                  hintStyle: CustomTypography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 50,
+                child: TextField(
+                  onChanged: searchNetworks,
+                  decoration: InputDecoration(
+                    hintText: LanguageService.getTranslated(context,
+                        'usermanagement_search_field_lable_name_email_mobile'),
+                    label: Text('Search', style: CustomTypography.Body1),
+                    hintStyle: CustomTypography.Body1,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),

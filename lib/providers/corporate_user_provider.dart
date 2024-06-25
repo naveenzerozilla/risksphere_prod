@@ -258,7 +258,17 @@ class CorporateProvider with ChangeNotifier {
         });
       }
       return true;
-    } catch (e, stackTrace) {
+    } on BackendException catch (e, stackTrace) {
+
+      // Catch any errors that occur during the process
+      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+      log('Error: ${e.message}'); // Log the error
+      // Show a generic error message to the user
+      if (context.mounted) CustomToast.error(context, e.toString());
+      isDeleteLoading = false;
+      return false; // Return false in case of error
+    }
+    catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
@@ -608,6 +618,7 @@ class CorporateProvider with ChangeNotifier {
         CustomToast.success(context, response['message']);
         // getAllEmployees(context, '', '');
       } else {
+        isLoading = false;
         Future.delayed(Duration(seconds: 1), () {
           if (context.mounted)
             CustomToast.success(context, response['message']);
@@ -620,6 +631,7 @@ class CorporateProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
+      isLoading = false;
       if (context.mounted) CustomToast.error(context, e.toString());
       return false;
     }

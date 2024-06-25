@@ -1,26 +1,22 @@
-/*
 import 'dart:async';
 
-import 'package:country_list_picker/country_list_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/custom_button.dart';
+import 'package:green/design_system/components/rating_slider.dart';
 import 'package:green/providers/connections_provider.dart';
+import 'package:green/screens/listings/add_location_screen.dart';
+import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/rating_bar.dart';
-import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../design_system/repo/constants.dart';
-import '../../models/initial_data_model.dart';
-import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
@@ -48,12 +44,7 @@ class _LocationListState extends State<LocationList>
   TabController? _tabController;
   Screens _selectedScreen = Screens.connectionList;
   TextEditingController _locationSearchController = TextEditingController();
-  List<Categories> _selectedRoles = [];
-  TextEditingController _textEditingController = TextEditingController();
-  SignUpOptions? _selectedOption;
-  String _selectedCountryCode = '+1';
   TextEditingController mobileController = TextEditingController();
-  TextEditingController _messageController = TextEditingController();
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -62,10 +53,6 @@ class _LocationListState extends State<LocationList>
   int requestActionIndex = 0;
 
   List<roleModel.Roles> filterRoleList = [];
-  TextEditingController _filterNameController = TextEditingController();
-  TextEditingController _filterEmailController = TextEditingController();
-  TextEditingController _filterPhoneController = TextEditingController();
-  TextEditingController _filterCompanyController = TextEditingController();
 
   List<roleModel.Roles> filterRoles = [];
   List<String> filterNames = [];
@@ -75,6 +62,8 @@ class _LocationListState extends State<LocationList>
   List<String> filterStatus = [];
   roleModel.Roles? selectedRoleForFilter;
   String selectedStatus = '';
+
+  bool showSelectAll = false;
 
   Timer? deBouncer;
 
@@ -118,13 +107,11 @@ class _LocationListState extends State<LocationList>
           'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
 
       // If no filters and search is empty call api with isSearch false
-      */
-/*bool isSearch = searchText.isNotEmpty ||
+bool isSearch = searchText.isNotEmpty ||
             filterCompanies.isNotEmpty ||
-            filterRoles.isNotEmpty;*//*
+            filterRoles.isNotEmpty;
 
 
-      bool isSearch = true;
       await Provider.of<ConnectionsProvider>(context, listen: false)
           .getAllConnections(context, widget.userId,
           searchText: searchText,
@@ -134,81 +121,19 @@ class _LocationListState extends State<LocationList>
     });
   }
 
-  addFilter(String filter, String type) {
-    removeAllFilters();
-    setState(() {
-      if (type == 'role') {
-        filterRoles.add(roleModel.Roles(name: filter));
-      } else if (type == 'name') {
-        filterNames.add(filter);
-      } else if (type == 'email') {
-        filterEmails.add(filter);
-      } else if (type == 'phone') {
-        filterPhones.add(filter);
-      } else if (type == 'company') {
-        filterCompanies.add(filter);
-      } else if (type == 'status') {
-        filterStatus.add(filter);
-      }
-    });
-  }
-
-  removeFilter(String filter, String type) {
-    setState(() {
-      if (type == 'role') {
-        filterRoles.removeWhere((element) => element.name == filter);
-      } else if (type == 'name') {
-        filterNames.remove(filter);
-      } else if (type == 'email') {
-        filterEmails.remove(filter);
-      } else if (type == 'phone') {
-        filterPhones.remove(filter);
-      } else if (type == 'company') {
-        filterCompanies.remove(filter);
-      } else if (type == 'status') {
-        filterStatus.remove(filter);
-      }
-    });
-  }
-
-  removeAllFilters() {
-    setState(() {
-      filterRoles.clear();
-      filterNames.clear();
-      filterEmails.clear();
-      filterPhones.clear();
-      filterCompanies.clear();
-      filterStatus.clear();
-    });
-  }
 
   @override
   void initState() {
     super.initState();
     print('User ID: ${widget.userId}');
     print('User Name: ${widget.companyName}');
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
-        setState(() {
-          _selectedScreen = Screens.connectionList;
-        });
+        // Call API
+
       } else if (_tabController?.index == 1) {
-        setState(() {
-          _selectedScreen = Screens.requestList;
-        });
-      } else if (_tabController?.index == 2) {
-        setState(() {
-          _selectedScreen = Screens.chatList;
-        });
-      } else if (_tabController?.index == 3) {
-        setState(() {
-          _selectedScreen = Screens.networkList;
-        });
-      } else if (_tabController?.index == 4) {
-        setState(() {
-          _selectedScreen = Screens.blockedList;
-        });
+        // Call API
       }
       print(
           'Tab Index: ${_tabController?.index} Selected Screen: $_selectedScreen');
@@ -237,21 +162,13 @@ class _LocationListState extends State<LocationList>
 
   _getData() async {
     // Fetch data from API
-    Provider.of<ConnectionsProvider>(context, listen: false).nextPageToken =
-    null;
-    Provider.of<ConnectionsProvider>(context, listen: false).nextPageExists = true;
-    Provider.of<ConnectionsProvider>(context, listen: false)
-        .getAllConnections(context, widget.userId);
-    Provider.of<ConnectionsProvider>(context, listen: false)
-        .getAllRequests(context, widget.userId);
-    filterRoleList = await Provider.of<RoleProvider>(context, listen: false)
-        .getAllRoles(context);
+
   }
 
   void searchNetworks(String query) async => debounce(() async {
     if (!mounted) return;
-    await Provider.of<ConnectionsProvider>(context, listen: false)
-        .getUserSuggestions(context, query);
+    /*await Provider.of<ConnectionsProvider>(context, listen: false)
+        .getUserSuggestions(context, query);*/
   });
 
   @override
@@ -276,55 +193,48 @@ class _LocationListState extends State<LocationList>
               },
             ),
             drawer: CustomDrawer(),
-            floatingActionButton: _selectedScreen == Screens.connectionList ||
-                _selectedScreen == Screens.corporateConnectionList ||
-                _selectedScreen == Screens.nonCorporateConnectionList
-                ? Builder(builder: (contextLocal) {
+            floatingActionButton: Builder(builder: (contextLocal) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  FloatingActionButton(
+                  !showSelectAll?SizedBox():FloatingActionButton(
                     onPressed: () {
-                      // Open bottom sheet of filters
-                      print(
-                          'Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
-                      _showFiltersBottomSheet(contextLocal);
                     },
-                    child: Icon(Icons.filter_alt_outlined),
+                    child: Icon(Icons.upload_rounded),
                   ),
-                  SizedBox(
+                  !showSelectAll?SizedBox():SizedBox(
                     height: CustomSpacing.two,
                   ),
                   FloatingActionButton(
                     onPressed: () {
-                      _tabController?.animateTo(3);
-                      _selectedScreen = Screens.networkList;
+                      _selectedScreen = Screens.addLocation;
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddLocationScreen()));
                     },
                     child: Icon(Icons.add),
                   ),
                 ],
               );
-            })
-                : SizedBox(),
+            }),
             body: Stack(
               children: [
-                // Background image
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/mesh.png',
                     fit: BoxFit.cover,
                   ),
                 ),
-                Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin:
-                        EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+
+                      automaticallyImplyLeading: false,
+                      forceMaterialTransparency: true,
+                      pinned: true,
+                      expandedHeight: 250.0,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: Column(
                           children: [
-                            // logo
+                            SizedBox(height: CustomSpacing.two),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -336,36 +246,59 @@ class _LocationListState extends State<LocationList>
                               ],
                             ),
                             SizedBox(height: CustomSpacing.two),
-                            // title
                             Row(
                               children: [
-                                Text(
-                                  widget.companyName == ''
-                                      ? LanguageService.getTranslated(context,
-                                      "connections_user_connection_connections_tab")
-                                      : '${LanguageService.getTranslated(context, "connections_user_connection_connections_tab")} ${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
-                                  style: CustomTypography.H5_Regular,
+                                Flexible(
+                                  child: Text(
+                                    widget.companyName == ''
+                                        ? ""
+                                        : '${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
+                                    style: CustomTypography.H5_Regular,
+                                  ),
                                 ),
                                 SizedBox(width: CustomSpacing.two),
                                 RatingBar(
                                   rating: 4,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
-                               Tooltip(
-                                 // message is pointwise
-                                  message: "• JP Morgan has a total of 6,234 locations.\n• 90% of the locations have above 3-star ratings.\n• 3,231 locations have a 5-star rating overall.\n• 4,820 locations have rooftop geocoding.",
-                                  textStyle: CustomTypography.Subtitle1,
-                                  child: Icon(
-                                    Icons.info,
+                                TooltipTheme(
+                                  data: TooltipThemeData(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    textStyle: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                      fontSize: 14,
+                                    ),
+                                    padding: EdgeInsets.all(8),
+                                    verticalOffset: 20,
+                                    preferBelow: false,
+                                  ),
+                                  child: Tooltip(
+                                    showDuration: Duration(seconds: 5),
+                                    triggerMode: TooltipTriggerMode.tap,
+                                    preferBelow: true,
+                                    richMessage: TextSpan(
+                                      children: [
+                                        TextSpan(text: '• JP Morgan has a total of 6,234 locations.\n'),
+                                        TextSpan(text: '• 90% of the locations have above 3-star ratings.\n'),
+                                        TextSpan(text: '• 3,231 locations have a 5-star rating overall.\n'),
+                                        TextSpan(text: '• 4,820 locations have rooftop geocoding.'),
+                                      ],
+                                      style: CustomTypography.Subtitle1,
+                                    ),
+                                    child: Icon(
+                                      Icons.info,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             SizedBox(height: CustomSpacing.two),
-                            // description
-                            RichText(text:
-                              TextSpan(
-                                text: '• ',
+                            RichText(
+                              text: TextSpan(
+                                text: '',
                                 style: CustomTypography.Subtitle1,
                                 children: [
                                   TextSpan(
@@ -373,7 +306,7 @@ class _LocationListState extends State<LocationList>
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
-                                    text: widget.companyName == ''?"":'${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
+                                    text: widget.companyName == '' ? "" : '${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
@@ -383,25 +316,49 @@ class _LocationListState extends State<LocationList>
                                 ],
                               ),
                             ),
-                            SizedBox(height: CustomSpacing.two),
-                            // search bar
+                          ],
+                        ),
+                      ),
+                      bottom: PreferredSize(
+                        preferredSize: Size.fromHeight(60.0),
+                        child: Column(
+                          children: [
+                            showSelectAll ?
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Checkbox(
+                                  value: false,
+                                  onChanged: (value) {
+                                    // Select all from model or deselect all from model
+                                  },
+                                ),
+                                Text(
+                                  LanguageService.getTranslated(context, "locationlist_app_select_all"),
+                                  style: CustomTypography.Body1,
+                                ),
+                              ],
+                            )
+                                :
                             Row(
                               children: [
                                 Expanded(
-                                  flex: 7,
-                                  child: TextField(
-                                    controller: _locationSearchController,
-                                    onChanged: locationSearchClient,
-                                    decoration: InputDecoration(
-                                      hintText: LanguageService.getTranslated(context,
-                                          'locationlist_search_field_hint_text'),
-                                      label: Text(
-                                          LanguageService.getTranslated(
-                                              context, 'usermanagement_search_field_lable'),
-                                          style: CustomTypography.Body1),
-                                      hintStyle: CustomTypography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    height: 50,
+                                    child: TextField(
+                                      controller: _locationSearchController,
+                                      onChanged: locationSearchClient,
+                                      decoration: InputDecoration(
+                                        hintText: LanguageService.getTranslated(context,
+                                            'locationlist_search_field_hint_text'),
+                                        label: Text(
+                                            LanguageService.getTranslated(
+                                                context, 'usermanagement_search_field_lable'),
+                                            style: CustomTypography.Body1),
+                                        hintStyle: CustomTypography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -409,110 +366,107 @@ class _LocationListState extends State<LocationList>
                                 SizedBox(
                                   width: CustomSpacing.four,
                                 ),
-                                GestureDetector(
+                                Builder(
+                                  builder: (context) {
+                                    return InkWell(
+                                      onTap: () {
+                                        //Show end drawer
+                                        Scaffold.of(context).openEndDrawer();
+                                      },
+                                      child: Icon(
+                                        Icons.filter_list,
+                                        size: 28,
+                                      ),
+                                    );
+                                  }
+                                ),
+                                SizedBox(
+                                  width: CustomSpacing.four,
+                                ),
+                              ],
+                            ),
+                            TabBar(
+                              controller: _tabController,
+                              labelStyle: CustomTypography.BottomNavigationActiveLabel,
+                              tabs: [
+                                Tab(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _tabController?.animateTo(0);
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Tab(
+                                          text: LanguageService.getTranslated(
+                                              context,
+                                              "locationlist_app_connections_tab_all"),
+                                        ),
+                                        SizedBox(width: CustomSpacing.two),
+                                        SizedBox(
+                                          height: 25,
+                                          width: 35,
+                                          child: Chip(
+                                            labelPadding: EdgeInsets.all(0),
+                                            materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                            label: Text(
+                                              "15",
+                                              style: CustomTypography
+                                                  .BottomNavigationActiveLabel
+                                                  .copyWith(height: -0.6),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
                                   onTap: () {
-                                    //Show end drawer
-                                    Scaffold.of(context).openEndDrawer();
+                                    _tabController?.animateTo(1);
                                   },
-                                  child: Icon(
-                                    Icons.filter_list,
-                                    size: 28,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Tab(
+                                        text: LanguageService.getTranslated(
+                                            context,
+                                            "locationlist_app_connections_tab_certified"),
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                      SizedBox(
+                                        height: 25,
+                                        width: 35,
+                                        child: Chip(
+                                          labelPadding: EdgeInsets.all(0),
+                                          materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                          label: Text(
+                                            "5",
+                                            style: CustomTypography
+                                                .BottomNavigationActiveLabel
+                                                .copyWith(height: -0.6),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            Consumer<ConnectionsProvider>(
-                              builder: (context, connectionsProvider, child) {
-                                return TabBar(
-                                  isScrollable: true,
-                                  controller: _tabController,
-                                  labelStyle: CustomTypography
-                                      .BottomNavigationActiveLabel,
-                                  tabs: [
-                                    Tab(
-                                      child: InkWell(
-                                        onTap: () {
-                                          _tabController?.animateTo(0);
-                                        },
-                                        child:  Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                          children: [
-                                            Tab(
-                                              text: LanguageService.getTranslated(
-                                                  context,
-                                                  "locationlist_app_connections_tab_all"),
-                                            ),
-                                            SizedBox(width: CustomSpacing.two),
-                                            SizedBox(
-                                              height: 25,
-                                              width: 35,
-                                              child: Chip(
-                                                labelPadding: EdgeInsets.all(0),
-                                                materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                                label: Text(
-                                                  "15",
-                                                  style: CustomTypography
-                                                      .BottomNavigationActiveLabel
-                                                      .copyWith(height: -0.6),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    InkWell(
-                                      onTap: () {
-                                        _tabController?.animateTo(1);
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                        children: [
-                                          Tab(
-                                            text: LanguageService.getTranslated(
-                                                context,
-                                                "locationlist_app_connections_tab_certified"),
-                                          ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            width: 35,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize:
-                                              MaterialTapTargetSize
-                                                  .shrinkWrap,
-                                              label: Text(
-                                                connectionsProvider
-                                                    .requestReceivedCount,
-                                                style: CustomTypography
-                                                    .BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            Expanded(
-                              child: TabBarView(
-                                controller: _tabController,
-                                children: [
-                                  _getLocationListAllUI(),
-                                  _getlocationListCertifiedUI(),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: true,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _getLocationListAllUI(),
+                          _getLocationListCertifiedUI(),
+                        ],
                       ),
                     ),
                   ],
@@ -521,155 +475,228 @@ class _LocationListState extends State<LocationList>
             ),
             endDrawer: Drawer(
               child: SafeArea(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                      // Circular elevated icon for filter
-                      Center(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Icon(
-                                Icons.filter_alt_outlined,
-                                size: 32,
-                              ),
-                            ),
-                          )),
-                      SizedBox(height: CustomSpacing.four),
-                      // Search bar for filters, Eg items: Expandable container for Geographical, child items will be Country and State auto complete
-                      // Search bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          controller: _filterNameController,
-                          onChanged: (value) {
-                            addFilter(value, 'name');
-                          },
-                          decoration: InputDecoration(
-                            hintText: LanguageService.getTranslated(context,
-                                'locationlist_search_field_hint_text'),
-                            label: Text(
-                                LanguageService.getTranslated(
-                                    context, 'usermanagement_search_field_lable'),
-                                style: CustomTypography.Body1),
-                            hintStyle: CustomTypography.Body1,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Example of the Geographical filter
-                      // Country
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CountryListPick(
-                          appBar: AppBar(
-                            title: Text('Select Country', style: CustomTypography.Body1,),
-                          ),
-                          theme: CountryTheme(
-                            isShowFlag: true,
-                            isShowTitle: true,
-                            isShowCode: true,
-                            isDownIcon: true,
-                            showEnglishName: true,
-                          ),
-                          initialSelection: '+1',
-                          onChanged: (CountryCode? code) {
-                            print('Country Code: ${code?.name}');
-                            _selectedCountryCode = code?.phoneCode ?? '+1';
-                          },
-                        ),
-                      ),
-                      // State
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          controller: _filterEmailController,
-                          onChanged: (value) {
-                            addFilter(value, 'email');
-                          },
-                          decoration: InputDecoration(
-                            hintText: LanguageService.getTranslated(context,
-                                'locationlist_search_field_hint_text'),
-                            label: Text(
-                                LanguageService.getTranslated(
-                                    context, 'usermanagement_search_field_lable'),
-                                style: CustomTypography.Body1),
-                            hintStyle: CustomTypography.Body1,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: ListingsFilterScreen(),
               ),
             ),
           );
         });
   }
 
-  void _showFiltersBottomSheet(BuildContext context) {
-    // show modal bottom sheet using scaffold key
-    */
-/*showAdaptiveDialog(
-      *//*
- */
-/*shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),*//*
- */
-/*
-      context: context,
-      builder: (context) {
-        return ;
+
+  _getLocationListAllUI() {
+    return ListView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: 10,
+      itemBuilder: (context, index) {
+        return index == 0?Column(
+          children: [
+            SizedBox(height: CustomSpacing.six),
+            locationListCard(index)
+          ],
+        ):
+        locationListCard(index);
       },
-    );*//*
-
-    Scaffold.of(context).openEndDrawer();
+    );
   }
 
+  Widget locationListCard(int index) {
+    return InkWell(
+      onLongPress: () {
+        setState(() {
+          showSelectAll = !showSelectAll;
+        });
+      },
+      child: Card(
+          margin: EdgeInsets.only(bottom: 16),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            child: ExpansionTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.paperElavation25,
+                child: Text(
+                  'JP',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              title: Row(
+                children: [
+                  Text('RS/0000$index'),
+                  Spacer(),
 
-  void _addChip(Categories value) {
-    setState(() {
-      _selectedRoles.add(value);
-      _textEditingController.clear();
-    });
+                  SvgPicture.asset(
+                    'assets/images/certified.svg',
+                    semanticsLabel: 'Verified',
+                    height: 35,
+                  ),
+                  SizedBox(width: CustomSpacing.four),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        height: 40,
+                        width: 40,
+                        child: CircularProgressIndicator(
+                          value: 0.5,
+                          backgroundColor: Color(0x12FFFFFF),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryMain),
+                          strokeWidth: 4,
+                        ),
+                      ),
+                      Text(
+                          '50%',
+                          style: CustomTypography.Subtitle2.copyWith(
+                            color: AppColors.primaryMain,
+                            fontSize: 10,
+                          )
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              children: [
+                ListTile(
+                  title: Text('Geocoding'),
+                  subtitle:
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: CustomSpacing.four),
+                      RatingSlider(progress: 5, total: 5,
+                        width: MediaQuery.of(context).size.width * 0.79,
+                        progressColor: [
+                          Colors.red[800]!,
+                          Colors.orange[100]!,
+                          Colors.blue[200]!,
+                          Colors.green[200]!,
+                          Colors.yellow[100]!
+                        ][4],
+                        thumbColor: [
+                          Colors.red[800]!,
+                          Colors.orange[800]!,
+                          Colors.blue[700]!,
+                          Colors.green[800]!,
+                          Colors.yellow[700]!
+                        ][4],
+                        textColor: Colors.white,),
+                    ],
+                  ),
+
+
+                ),
+                ListTile(
+                  title: Text('Hazard'),
+                  subtitle:
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: CustomSpacing.four),
+                      RatingSlider(progress: 5, total: 5,
+                        width: MediaQuery.of(context).size.width * 0.79,
+                        progressColor: [
+                          Colors.red[800]!,
+                          Colors.orange[100]!,
+                          Colors.blue[200]!,
+                          Colors.green[200]!,
+                          Colors.yellow[100]!
+                        ][4],
+                        thumbColor: [
+                          Colors.red[800]!,
+                          Colors.orange[800]!,
+                          Colors.blue[700]!,
+                          Colors.green[800]!,
+                          Colors.yellow[700]!
+                        ][4],
+                        textColor: Colors.white,),
+                    ],
+                  ),
+
+
+                ),
+                ListTile(
+                  title: Text('Occupancy'),
+                  subtitle:
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: CustomSpacing.four),
+                      RatingSlider(progress: 5, total: 5,
+                        width: MediaQuery.of(context).size.width * 0.79,
+                        progressColor: [
+                          Colors.red[800]!,
+                          Colors.orange[100]!,
+                          Colors.blue[200]!,
+                          Colors.green[200]!,
+                          Colors.yellow[100]!
+                        ][4],
+                        thumbColor: [
+                          Colors.red[800]!,
+                          Colors.orange[800]!,
+                          Colors.blue[700]!,
+                          Colors.green[800]!,
+                          Colors.yellow[700]!
+                        ][4],
+                        textColor: Colors.white,),
+                    ],
+                  ),
+
+
+                ),
+                ListTile(
+                  title: Text('Construction'),
+                  subtitle:
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: CustomSpacing.four),
+                      RatingSlider(progress: 5, total: 5,
+                        width: MediaQuery.of(context).size.width * 0.79,
+                        progressColor: [
+                          Colors.red[800]!,
+                          Colors.orange[100]!,
+                          Colors.blue[200]!,
+                          Colors.green[200]!,
+                          Colors.yellow[100]!
+                        ][4],
+                        thumbColor: [
+                          Colors.red[800]!,
+                          Colors.orange[800]!,
+                          Colors.blue[700]!,
+                          Colors.green[800]!,
+                          Colors.yellow[700]!
+                        ][4],
+                        textColor: Colors.white,),
+                    ],
+                  ),
+
+
+                ),
+              ],
+            ),
+          ),
+        ),
+    );
   }
 
-  void _removeChip(Categories value) {
-    print('Removing chip: ${value.name}');
-    setState(() {
-      _selectedRoles.removeWhere((element) => element.name == value.name);
-    });
-    print(
-        'Selected roles: ${_selectedRoles.map((role) => role.name).toList()}');
-  }
-
-  void _removeAllChips() {
-    setState(() {
-      _selectedRoles.clear();
-    });
+  _getLocationListCertifiedUI() {
+    return ListView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: 10,
+      shrinkWrap: true,
+      itemBuilder: (context, index) {
+        return index == 0?Column(
+          children: [
+            SizedBox(height: CustomSpacing.six),
+            locationListCard(index)
+          ],
+        ):
+        locationListCard(index);
+      },
+    );
   }
 }
-*/

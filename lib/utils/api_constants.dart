@@ -1,4 +1,4 @@
-
+// region-projectid.cloudfunction.net/{function name}
 class AppConstant {
   /// R1 API URL
   // Url for corporate management
@@ -42,4 +42,13 @@ class AppConstant {
   static  const String NON_CORPORATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
   static const String CREATE_CORPORATE_EMPLOYEES = "https://new-company-user-create-nzc3rkheha-uc.a.run.app";
   static const String DELETE_CORPORATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
+
+  /// R2 APIS
+  static const String GET_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/mobile";
+  static const String RENAME_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String DUPLICATE_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String CHANGE_COLUMN_VISIBILITY = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String AUTO_COMPLETE_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String ADD_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String REQUEST_ACCESS = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
 }
