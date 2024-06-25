@@ -226,6 +226,7 @@ bool isSearch = searchText.isNotEmpty ||
                 CustomScrollView(
                   slivers: [
                     SliverAppBar(
+
                       automaticallyImplyLeading: false,
                       forceMaterialTransparency: true,
                       pinned: true,
@@ -342,7 +343,6 @@ bool isSearch = searchText.isNotEmpty ||
                             Row(
                               children: [
                                 Expanded(
-                                  flex: 7,
                                   child: SizedBox(
                                     height: 50,
                                     child: TextField(
@@ -366,15 +366,22 @@ bool isSearch = searchText.isNotEmpty ||
                                 SizedBox(
                                   width: CustomSpacing.four,
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    //Show end drawer
-                                    Scaffold.of(context).openEndDrawer();
-                                  },
-                                  child: Icon(
-                                    Icons.filter_list,
-                                    size: 28,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    return InkWell(
+                                      onTap: () {
+                                        //Show end drawer
+                                        Scaffold.of(context).openEndDrawer();
+                                      },
+                                      child: Icon(
+                                        Icons.filter_list,
+                                        size: 28,
+                                      ),
+                                    );
+                                  }
+                                ),
+                                SizedBox(
+                                  width: CustomSpacing.four,
                                 ),
                               ],
                             ),

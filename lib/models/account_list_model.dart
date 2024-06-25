@@ -1,49 +1,126 @@
 class AccountListModel {
-  String? data;
-  Accounts? accounts;
-  AccountListModel({this.data, this.accounts});
+  int? totalHits;
+  List<Accounts>? results;
+  int? totalPages;
+  Settings? settings;
+
+  AccountListModel({this.totalHits, this.results, this.totalPages, this.settings});
 
   AccountListModel.fromJson(Map<String, dynamic> json) {
-    data = json['data'];
-    accounts = json['accounts'] != null ? new Accounts.fromJson(json['accounts']) : null;
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['data'] = this.data;
-    if (accounts != null) {
-      data['accounts'] = accounts!.toJson();
+    totalHits = json['totalHits'];
+    if (json['results'] != null) {
+      results = <Accounts>[];
+      json['results'].forEach((v) {
+        results!.add(Accounts.fromJson(v));
+      });
     }
-    return data;
-  }
-
-}
-
-class Accounts {
-  String? name;
-  String? displayName;
-  String? id;
-  int? locationCount;
-  String? overAllScore;
-  bool? isChecked;
-
-  Accounts({this.name, this.displayName, this.id, this.locationCount, this.overAllScore, this.isChecked=false});
-
-  Accounts.fromJson(Map<String, dynamic> json) {
-    name = json['name']??"";
-    displayName = json['display_name']??"";
-    id = json['id']??"";
-    locationCount = json['location_count']??"";
-    overAllScore = json['over_all_score']??"";
+    totalPages = json['totalPages'];
+    settings = json['settings'] != null ? Settings.fromJson(json['settings']) : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['name'] = name;
-    data['display_name'] = displayName;
+    data['totalHits'] = totalHits;
+    if (results != null) {
+      data['results'] = results!.map((v) => v.toJson()).toList();
+    }
+    data['totalPages'] = totalPages;
+    if (settings != null) {
+      data['settings'] = settings!.toJson();
+    }
+    return data;
+  }
+}
+
+class Accounts {
+  String? accountName;
+  Owner? owner;
+  String? companyId;
+  String? accountId;
+  int? overallScore;
+  int? sovCount;
+  int? subAccountCount;
+  bool? isChecked;
+
+  Accounts({
+    this.accountName,
+    this.owner,
+    this.companyId,
+    this.accountId,
+    this.overallScore,
+    this.sovCount,
+    this.subAccountCount,
+    this.isChecked = false,
+  });
+
+  Accounts.fromJson(Map<String, dynamic> json) {
+    accountName = json['account_name']??"";
+    owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
+    companyId = json['company_id']??"";
+    accountId = json['account_id'];
+    overallScore = json['overall_score'];
+    sovCount = json['sov_count'];
+    subAccountCount = json['sub_account_count'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['account_name'] = accountName;
+    if (owner != null) {
+      data['owner'] = owner!.toJson();
+    }
+    data['company_id'] = companyId;
+    data['account_id'] = accountId;
+    data['overall_score'] = overallScore;
+    data['sov_count'] = sovCount;
+    data['sub_account_count'] = subAccountCount;
+    return data;
+  }
+}
+
+class Owner {
+  String? date;
+  String? id;
+  String? name;
+
+  Owner({this.date, this.id, this.name});
+
+  Owner.fromJson(Map<String, dynamic> json) {
+    date = json['date'];
+    id = json['id'];
+    name = json['name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['date'] = date;
     data['id'] = id;
-    data['location_count'] = locationCount;
-    data['over_all_score'] = overAllScore;
+    data['name'] = name;
+    return data;
+  }
+}
+
+class Settings {
+  bool? subAccountCount;
+  bool? sovCount;
+  bool? owner;
+  bool? overallScore;
+
+  Settings({this.subAccountCount, this.sovCount, this.owner, this.overallScore});
+
+  Settings.fromJson(Map<String, dynamic> json) {
+    subAccountCount = json['sub_account_count'];
+    sovCount = json['sov_count'];
+    owner = json['owner'];
+    overallScore = json['overall_score'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['sub_account_count'] = subAccountCount;
+    data['sov_count'] = sovCount;
+    data['owner'] = owner;
+    data['overall_score'] = overallScore;
     return data;
   }
 }
