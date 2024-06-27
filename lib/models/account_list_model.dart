@@ -76,6 +76,11 @@ class Accounts {
     data['sub_account_count'] = subAccountCount;
     return data;
   }
+
+  @override
+  String toString() {
+    return 'Accounts(accountId: $accountId, accountName: $accountName)';
+  }
 }
 
 class Owner {

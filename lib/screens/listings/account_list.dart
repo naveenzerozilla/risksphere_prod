@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:country_list_picker/country_list_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -30,6 +31,7 @@ import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
 import '../../service/language_service.dart';
+import 'widgets/auto_complete_options.dart';
 
 class AccountListScreen extends StatefulWidget {
   const AccountListScreen({
@@ -103,11 +105,22 @@ class _AccountListScreenState extends State<AccountListScreen>
     autoCompleteDeBouncer = Timer(duration, callback);
   }
 
-  void autoCompleteAccountsSearchClient(String query) async {
+  Future<void> autoCompleteAccountsSearchClient(String query) async {
+    if (query.isEmpty) {
+      return;
+    }
+    print("autoCompleteAccountsSearchClient called with query: $query");
     autoCompleteDebounce(() async {
       if (!mounted) return;
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       await provider.fetchAutoCompleteAccountList(context, query);
+
+      // Force UI update after API call
+      if (mounted) {
+        setState(() {
+          print("setState called after fetchAutoCompleteAccountList");
+        });
+      }
     });
   }
 
@@ -175,180 +188,14 @@ class _AccountListScreenState extends State<AccountListScreen>
                     );
                   })
                 : FloatingActionButton(
-                    onPressed: () {
-                      // Add account dialog with autocomplete from api and create account
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (context) {
-                          return StatefulBuilder(
-                            builder: (context, setState) {
-                              return Material(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
-                                    child:  Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          LanguageService.getTranslated(context, "account_list_app_add_account_title"),
-                                          style: CustomTypography.H5_Regular,
-                                        ),
-                                        SizedBox(height: 16.0),
-                                    Consumer<AccountListProvider>(
-                                      builder: (context, accountListProvider, child) {
-                                        return Autocomplete<Accounts>(
-                                          optionsBuilder: (TextEditingValue textEditingValue) {
-                                            print("AutoComplete: ${accountListProvider.autoCompleteAccountList}");
-                                            if (textEditingValue.text.isEmpty || accountListProvider.autoCompleteAccountList.isEmpty) {
-                                              print("No options to return");
-                                              print("Checking conditions: ${textEditingValue.text.isEmpty} || ${accountListProvider.autoCompleteAccountList.isEmpty}");
-                                              return const Iterable<Accounts>.empty();
-                                            }
-                                            var filteredOptions;
-                                           try {
-                                             filteredOptions = accountListProvider.autoCompleteAccountList.where((Accounts option) {
-                                               final accountName = option.accountName;
-                                               if (accountName != null) {
-                                                 return accountName.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                                               }
-                                               return false;
-                                             }).toList();
+          onPressed: () {
+            // Add account dialog with autocomplete from api and create account
+            _showAddAccountDialog(context);
 
-                                             print("Filtered options to return: $filteredOptions");
-                                           } catch (e, stack) {
-                                              print("Error: $e, Stack: $stack");
-                                           }
-                                            print("Filtered options to return: $filteredOptions");
-                                            return filteredOptions;
-                                          },
-                                          optionsViewBuilder: (context, onSelected, options) {
-                                            print("Options in ViewBuilder: $options");
-                                            return Container(
-                                              height: 52.0 * options.length,
-                                              width: MediaQuery.of(context).size.width - 32, // Adjust the width
-                                              child: ListView.builder(
-                                                padding: EdgeInsets.zero,
-                                                itemCount: options.length,
-                                                physics: ClampingScrollPhysics(),
-                                                shrinkWrap: false,
-                                                itemBuilder: (BuildContext context, int index) {
-                                                  final option = options.elementAt(index);
-                                                  return GestureDetector(
-                                                    onTap: () => onSelected(option),
-                                                    child: Padding(
-                                                      padding: const EdgeInsets.all(16.0),
-                                                      child: Text('${option.accountName}', style: CustomTypography.Subtitle1),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            );
-                                          },
-                                          onSelected: (Accounts selection) {
-                                            setState(() {
-                                              _accountAlreadyExists = true;
-                                              _selectedAccount = selection;
-                                            });
-                                          },
-                                          displayStringForOption: (Accounts option) => option.accountName ?? "",
-                                          fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-                                            return TextFormField(
-                                              controller: textEditingController,
-                                              focusNode: focusNode,
-                                              onFieldSubmitted: (_) {},
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _accountAlreadyExists = false;
-                                                  _selectedAccount = null;
-                                                });
-                                                accountListProvider.autoCompleteAccountList.clear();
-                                                _autocompleteText = value;
-                                                accountListProvider.fetchAutoCompleteAccountList(context, value);
-                                              },
-                                              decoration: InputDecoration(
-                                                labelText: LanguageService.getTranslated(context, "register_corporate_legalname_field_label"),
-                                                hintText: LanguageService.getTranslated(context, "register_corporate_legalname_filed_placeholder"),
-                                                border: const OutlineInputBorder(),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+          },
+          child: Icon(Icons.add),
+        )
 
-                                    SizedBox(height: CustomSpacing.six),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: CustomButton(
-                                                onPressed: () {
-                                                  // Cancel
-                                                  Navigator.pop(context);
-                                                },
-                                                child: Text(
-                                                  LanguageService.getTranslated(context, "account_list_app_cancel_text"),
-                                                  style: CustomTypography.ButtonLarge,
-                                                ),
-                                                type: ButtonType.text,
-                                              ),
-                                            ),
-                                            Consumer<AccountListProvider>(builder: (context, accountListProvider, _) {
-                                              return accountListProvider.isAddAccountLoading
-                                                  ? const Expanded(
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
-                                                  ],
-                                                ),
-                                              )
-                                                  : Expanded(
-                                                child: CustomButton(
-                                                  onPressed: () async {
-                                                    if(_autocompleteText.isEmpty){
-                                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "account_list_app_add_account_empty_text_error"), style: CustomTypography.Body1,)));
-                                                      return;
-                                                    }
-
-                                                    if (!_accountAlreadyExists) {
-                                                      // Add account
-                                                      await accountListProvider.addAccount(context, _autocompleteText);
-                                                      return;
-                                                    } else {
-                                                      // Request access
-                                                      await accountListProvider.requestAccess(context, _selectedAccount?.accountId ?? "", _messageController.text);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Text(
-                                                    LanguageService.getTranslated(context, "account_list_app_add_text"),
-                                                    style: CustomTypography.ButtonLarge,
-                                                  ),
-                                                  type: ButtonType.elevated,
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-
-                                  ),
-                                ),
-                              );
-                            }
-                          );
-                        },
-                      );
-
-
-                    },
-                    child: Icon(Icons.add),
-                  )
             : SizedBox(),
         body: PopScope(
           canPop: /*_selectedScreen == Screens.connectionList ||
@@ -473,8 +320,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               ),
                                             );
                                           } else if (accountListProvider.page >=
-                                              accountListProvider.totalPages) {
+                                              accountListProvider.totalPages&&accountListProvider.accountList.isNotEmpty) {
                                             // Display end of list message
+                                            print("account list: ${accountListProvider.accountList}");
                                             return Padding(
                                               padding:
                                                   const EdgeInsets.all(8.0),
@@ -1192,4 +1040,152 @@ class _AccountListScreenState extends State<AccountListScreen>
       },
     );
   }
+
+  Future<void> _showAddAccountDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      LanguageService.getTranslated(context, "account_list_app_add_account_title"),
+                      style: CustomTypography.H5_Regular,
+                    ),
+                    SizedBox(height: 16.0),
+                    Consumer<AccountListProvider>(
+                      builder: (context, accountListProvider, child) {
+                        return Column(
+                          children: [
+                            TextField(
+                              controller: _textEditingController,
+                              focusNode: FocusNode(),
+                              onChanged: (value) async {
+                                setState(() {
+                                  _accountAlreadyExists = false;
+                                  _selectedAccount = null;
+                                  // Clear the autocomplete list when user starts typing
+                                  accountListProvider.clearAutoCompleteList();
+                                });
+                                _autocompleteText = value;
+                                await autoCompleteAccountsSearchClient(_autocompleteText);
+                              },
+                              decoration: InputDecoration(
+                                labelText: LanguageService.getTranslated(context, "register_corporate_legalname_field_label"),
+                                hintText: LanguageService.getTranslated(context, "register_corporate_legalname_filed_placeholder"),
+                                border: const OutlineInputBorder(),
+                              ),
+                            ),
+                            if (_textEditingController.text.isNotEmpty && !_accountAlreadyExists)
+                              AutocompleteOptions(
+                                options: accountListProvider.autoCompleteAccountList,
+                                onSelected: (Accounts selection) {
+                                  setState(() {
+                                    _accountAlreadyExists = true;
+                                    _selectedAccount = selection;
+                                    _textEditingController.text = selection.accountName!;
+                                    // Clear the autocomplete list when an option is selected
+                                    accountListProvider.clearAutoCompleteList();
+                                  });
+                                },
+                                isLoading: accountListProvider.isAutoCompleteLoading,
+                              ),
+                            if (_accountAlreadyExists)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16.0),
+                                child: TextField(
+                                  controller: _messageController,
+                                  decoration: InputDecoration(
+                                    labelText: LanguageService.getTranslated(context, "account_list_app_comment_text"),
+                                    hintText: LanguageService.getTranslated(context, "account_list_app_comment_placeholder"),
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  maxLines: 3,
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    SizedBox(height: CustomSpacing.six),
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Consumer<AccountListProvider>(builder: (context, accountListProvider, _) {
+                                return accountListProvider.isAddAccountLoading
+                                    ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
+                                  ],
+                                )
+                                    : CustomButton(
+                                  onPressed: () async {
+                                    if (_autocompleteText.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "account_list_app_add_account_empty_text_error"), style: CustomTypography.Body1,)));
+                                      return;
+                                    }
+
+                                    if (!_accountAlreadyExists) {
+                                      // Add account
+                                      await accountListProvider.addAccount(context, _autocompleteText);
+                                    } else {
+                                      // Request access
+                                      if (_messageController.text.isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "account_list_app_comment_empty_text_error"), style: CustomTypography.Body1,)));
+                                        return;
+                                      }
+                                      await accountListProvider.requestAccess(context, _selectedAccount?.accountId ?? "", _messageController.text);
+                                    }
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text(
+                                    _accountAlreadyExists
+                                        ? LanguageService.getTranslated(context, "account_list_app_request_access_text")
+                                        : LanguageService.getTranslated(context, "account_list_app_submit_text"),
+                                    style: CustomTypography.ButtonLarge,
+                                  ),
+                                  type: ButtonType.elevated,
+                                );
+                              }),
+                            ),
+                          ],
+                        ),
+                        CustomButton(
+                          onPressed: () {
+                            // Cancel
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            LanguageService.getTranslated(context, "account_list_app_cancel_text"),
+                            style: CustomTypography.ButtonLarge,
+                          ),
+                          type: ButtonType.text,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Clear the autocomplete list when the dialog is dismissed
+      Provider.of<AccountListProvider>(context, listen: false).clearAutoCompleteList();
+      _textEditingController.clear();
+      _messageController.clear();
+      _accountAlreadyExists = false;
+    });
+  }
+
+
+
 }

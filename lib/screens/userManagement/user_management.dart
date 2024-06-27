@@ -161,6 +161,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   bool showMainLoading = true;
   int visibleTabCount = 0;
 
+  PhoneController createEmployeePhoneController = PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
+
   UserManagementCorporateDropdownMenuService corporateDropdownMenuService =
       UserManagementCorporateDropdownMenuService();
   VerificationTabsService verificationTabsService = VerificationTabsService();
@@ -3583,6 +3585,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     ),
                                   ],
                                 ),
+                                SizedBox(height: CustomSpacing.six),
                                 // Company Type
                                 Consumer<CompanyProvider>(
                                     builder: (_, companyProvider, child) {
@@ -4177,539 +4180,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         );
       }
     );
-  }
-
-  _viewCompany() {
-    // Add Company
-    return Consumer<CompanyProvider>(
-        builder: (context, companyProvider, child) {
-      return SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.only(top: 8),
-          child: companyProvider.isLoading
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Center(
-                      child: Container(
-                        height: 20,
-                        width: 20,
-                        child: const CircularProgressIndicator(),
-                      ),
-                    ),
-                  ],
-                )
-              : Card(
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                              topRight: Radius.circular(8),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                height: CustomSpacing.four,
-                              ),
-                              Text('View corporate account',
-                                  style: CustomTypography.H7.copyWith(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? AppColors.white
-                                          : AppColors.black)),
-                              SizedBox(
-                                height: CustomSpacing.four,
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                      LanguageService.getTranslated(context,
-                                          'usermanagement_app_corporate_view_company_description_text'),
-                                      style: CustomTypography.Body2),
-                                ],
-                              ),
-                              SizedBox(
-                                height: CustomSpacing.three,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                height: CustomSpacing.one,
-                              ),
-                              // Add Company Form
-                              // Profile Pic
-                              Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // If company image is not uploaded, show default image
-                                    companyImageUrl == null ||
-                                            companyImageUrl == ''
-                                        ? const CircleAvatar(
-                                            backgroundImage: AssetImage(
-                                                'assets/images/loginImage.png'),
-                                            radius: 40,
-                                          )
-                                        : CircleAvatar(
-                                            backgroundImage:
-                                                NetworkImage(companyImageUrl!),
-                                            radius: 40,
-                                          ),
-                                    SizedBox(
-                                      width: CustomSpacing.eight,
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(height: CustomSpacing.four),
-                              Form(
-                                  key: _createCompanyFormKey,
-                                  child: Column(children: [
-                                    // Company Type
-                                    Consumer<CompanyProvider>(
-                                        builder: (_, companyProvider, child) {
-                                      return Row(
-                                        children: [
-                                          Expanded(
-                                            child: DropdownButtonFormField(
-                                              value: selectedCompanyType?.type,
-                                              decoration: InputDecoration(
-                                                labelText: LanguageService
-                                                    .getTranslated(context,
-                                                        'usermanagement_company type_label'),
-                                                labelStyle:
-                                                    CustomTypography.Body1,
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              items: [
-                                                DropdownMenuItem(
-                                                  child: Text(
-                                                    selectedCompanyType?.name ??
-                                                        "",
-                                                    style:
-                                                        CustomTypography.Body1,
-                                                  ),
-                                                  value:
-                                                      selectedCompanyType?.type,
-                                                ),
-                                              ],
-                                              onChanged: null,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-
-                                    SizedBox(height: CustomSpacing.four),
-
-                                    // Switch for Enable/Disable Domain
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                'usermanagement_domain_check'),
-                                            style: CustomTypography.Body1,
-                                          ),
-                                          Switch(
-                                            value: _enableDomainCheck,
-                                            onChanged: (value) {
-                                              // Handle switch value change
-                                              setState(() {
-                                                _enableDomainCheck = value;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Domain List
-                                    _enableDomainCheck
-                                        ? Column(
-                                            children: [
-                                              TextFormField(
-                                                controller:
-                                                    _domainListController,
-                                                decoration: InputDecoration(
-                                                  labelText: LanguageService
-                                                      .getTranslated(context,
-                                                          'usermanagement_domainname_list'),
-                                                  labelStyle:
-                                                      CustomTypography.Body1,
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                ),
-                                                maxLines: 3,
-                                                validator: (value) {
-                                                  if (value == "" ||
-                                                      !RegExp(r'@(?:[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)(?:,@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)*')
-                                                          .hasMatch(value!)) {
-                                                    return LanguageService
-                                                        .getTranslated(context,
-                                                            'usermanagement_domainname_list_error');
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                              SizedBox(
-                                                  height: CustomSpacing.four),
-                                            ],
-                                          )
-                                        : const SizedBox(),
-                                    // Company Legal Name
-                                    TextFormField(
-                                      controller: _companyLegalNameController,
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            'usermanagement_company_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == "") {
-                                          return LanguageService.getTranslated(
-                                              context,
-                                              'usermanagement_company_name_field_label_error');
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Company Display Name
-                                    TextFormField(
-                                      controller: _companyDisplayNameController,
-                                      decoration: InputDecoration(
-                                        labelText:
-                                            LanguageService.getTranslated(
-                                                context,
-                                                'usermanagement_display_label'),
-                                        labelStyle: CustomTypography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        // can be empty but if not empty, should not have digits
-                                        if (value != null &&
-                                            value != "" &&
-                                            RegExp(r'[0-9]').hasMatch(value)) {
-                                          return LanguageService.getTranslated(
-                                              context,
-                                              'usermanagement_app_corporate_display_name_validator');
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // User & Role(s) divider
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          LanguageService.getTranslated(context,
-                                              'usermanagement_users&roles_field_label'),
-                                          style: CustomTypography.Subtitle1
-                                              .copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface),
-                                        ),
-                                        SizedBox(width: CustomSpacing.three),
-                                        Expanded(
-                                          child: Divider(
-                                            thickness: 1,
-                                            color: Colors.white.withOpacity(
-                                                0.11999999731779099),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Role Dropdown
-                                    Consumer<CompanyProvider>(
-                                        builder: (_, companyProvider, child) {
-                                      print(
-                                          'Selected Company Type: $selectedCorporateTypeRole');
-                                      return Stack(
-                                        children: [
-                                          TextField(
-                                            readOnly: true,
-                                            onTap: null,
-                                            onChanged: (value) {
-                                              // Handle input changes
-                                            },
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      'usermanagement_roles_label'),
-                                              hintText: _selectedRoles.isEmpty
-                                                  ? 'Select Roles'
-                                                  : "",
-                                              border: const OutlineInputBorder(),
-                                              suffixIcon: const IconButton(
-                                                icon:
-                                                    Icon(Icons.arrow_drop_down),
-                                                onPressed: null,
-                                              ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 10.0,
-                                            left: 10.0,
-                                            right: 10.0,
-                                            child: Container(
-                                              margin: const EdgeInsets.only(
-                                                  right: 32.0),
-                                              child: SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                child: Row(
-                                                  children:
-                                                      selectedCorporateTypeRole
-                                                          .map(
-                                                            (value) => Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      right:
-                                                                          8.0),
-                                                              child: Chip(
-                                                                label: Text(
-                                                                    value.name ??
-                                                                        ''),
-                                                                deleteIcon:
-                                                                    const Icon(Icons
-                                                                        .cancel),
-                                                                onDeleted: null,
-                                                              ),
-                                                            ),
-                                                          )
-                                                          .toList(),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Name
-                                    TextFormField(
-                                      readOnly: true,
-                                      controller: _adminNameController,
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            'usermanagement_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == "") {
-                                          return LanguageService.getTranslated(
-                                              context,
-                                              'usermanagement_name_field_label_error');
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Display Name
-                                    TextFormField(
-                                      readOnly: true,
-                                      controller: _adminDisplayNameController,
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            'usermanagement_display_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        // can be empty but if not empty, should not have digits
-                                        if (value != null &&
-                                            value != "" &&
-                                            RegExp(r'[0-9]').hasMatch(value)) {
-                                          return LanguageService.getTranslated(
-                                              context,
-                                              'usermanagement_app_corporate_display_name_validator');
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Phone
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 4,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.white
-                                                      .withOpacity(0.5)),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 16.0),
-                                            child: const Center(
-                                              child: CountryListPicker(
-                                                initialCountry:
-                                                    Countries.United_States,
-                                                border: InputBorder.none,
-                                                flagSize: Size(35, 30),
-                                                onChanged: null,
-                                                diallingCodeStyle:
-                                                    CustomTypography.Body1,
-                                                isShowInputField: false,
-                                                dialogTheme: DialogThemeData(
-                                                  style: CustomTypography.Body1,
-                                                  isShowFloatButton: false,
-                                                ),
-                                                countryNameStyle:
-                                                    CustomTypography.Body1,
-                                                isShowCountryName: false,
-                                                onCountryChanged: null,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: CustomSpacing.four),
-
-                                        // Mobile Number TextFormField
-                                        Expanded(
-                                          flex: 7,
-                                          child: TextFormField(
-                                            readOnly: true,
-                                            keyboardType: TextInputType.number,
-                                            maxLength: 10,
-                                            // Numeric keyboard
-                                            inputFormatters: <TextInputFormatter>[
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly
-                                              // Only allows digits
-                                            ],
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      'usermanagement_app_corporate_create_mobile_label'),
-                                              hintText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      'usermanagement_app_corporate_create_mobile_placeholder'),
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              counterText: '',
-                                            ),
-                                            validator: (value) {
-                                              if (!RegExp(r'^[0-9]+$')
-                                                  .hasMatch(value!)) {
-                                                return LanguageService
-                                                    .getTranslated(context,
-                                                        'usermanagement_app_corporate_create_mobile_validator');
-                                              }
-                                              return null;
-                                            },
-                                            controller: _adminMobileController,
-                                          ),
-                                        ),
-                                        // Dropdown Icon Suffix
-                                      ],
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                    // Email
-                                    TextFormField(
-                                      readOnly: true,
-                                      controller: _adminEmailController,
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            'usermanagement_email_field_label'),
-                                        labelStyle: CustomTypography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.isEmpty ||
-                                            regextest(value) == false) {
-                                          return LanguageService.getTranslated(
-                                              context,
-                                              'usermanagement_email_placeholder');
-                                        }
-                                        // You can add more specific email validation here if needed
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: CustomSpacing.four),
-                                  ]))
-                            ],
-                          ),
-                        ),
-                      ]),
-                ),
-        ),
-      );
-    });
   }
 
   void clearFilters() {
@@ -5642,6 +5112,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               TextEditingController(text: currentUser.phone);
           TextEditingController _employeeCountryCodeController =
               TextEditingController(text: currentUser.countryCode);
+          _selectedCountryCode = currentUser.countryCode??'+1';
           String employeeImageUrl = currentUser.displayImageUrl ?? '';
           print(currentUser.role?[0].name.toString());
           print(currentUser.countryCode.toString());
@@ -5956,42 +5427,59 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             children: [
                               Expanded(
                                 flex: 4,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.5)),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
-                                  child: Center(
-                                    child: CountryListPicker(
-                                      initialCountry: Countries.Australia,
-                                      border: InputBorder.none,
-                                      flagSize: const Size(35, 30),
-                                      onChanged: (code) {
-                                        setState(() {
-                                          _selectedCountryCode = code;
-                                        });
-                                      },
-                                      diallingCodeStyle: CustomTypography.Body1,
-                                      isShowInputField: false,
-                                      dialogTheme: const DialogThemeData(
-                                        style: CustomTypography.Body1,
-                                        isShowFloatButton: false,
+                                child: PhoneInput(
+                                  key: const Key('phone-field-1'),
+                                  controller: createEmployeePhoneController,
+                                  shouldFormat: true,
+                                  // set _selectedCountryCode to your country code if not null
+                                  defaultCountry: IsoCode.US,
+                                  decoration: InputDecoration(
+                                    labelText: LanguageService.getTranslated(
+                                        context,
+                                        'usermanagement_cuser_trow_ph_number'),
+
+                                    labelStyle: CustomTypography.Body1,
+                                    disabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium
+                                        !.color!,
                                       ),
-                                      countryNameStyle: CustomTypography.Body1,
-                                      isShowCountryName: false,
-                                      onCountryChanged: (country) {
-                                        print(
-                                            'This is the country code: $country');
-                                        setState(() {
-                                          _selectedCountryCode =
-                                              country.dialing_code;
-                                        });
-                                      },
+                                    ),
+                                    hintText: LanguageService.getTranslated(
+                                        context,
+                                        'usermanagement_cuser_trow_ph_number_placeholder'),
+
+                                    border: const OutlineInputBorder(),
+                                    counterText: '',
+                                  ),
+                                  countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                                    showSearchInput: true,
+                                    searchInputDecoration: InputDecoration(
+                                      hintText: 'Search Country',
                                     ),
                                   ),
+                                  showFlagInInput: true,
+                                  flagShape: BoxShape.circle,
+                                  flagSize: 35,
+                                  onChanged: (PhoneNumber? p) {
+                                    if(p==null)
+                                      return;
+                                    setState(() {
+                                      _selectedCountryCode = p.countryCode;
+                                    });
+                                    print('changed ${p.countryCode}');
+                                  },
+                                  onSaved: (PhoneNumber? p) {
+                                    if(p==null)
+                                      return;
+                                    setState(() {
+                                      _selectedCountryCode = p.countryCode;
+                                    });
+                                    print('changed ${p.countryCode}');
+                                  },
                                 ),
                               ),
                               SizedBox(width: CustomSpacing.two),
@@ -6003,28 +5491,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   keyboardType: TextInputType.number,
                                   maxLength: 10,
                                   // Numeric keyboard
-                                  inputFormatters: <TextInputFormatter>[
-                                    FilteringTextInputFormatter.digitsOnly
-                                    // Only allows digits
-                                  ],
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(
-                                        context,
-                                        'usermanagement_cuser_trow_ph_number'),
-                                    hintText: LanguageService.getTranslated(
-                                        context,
-                                        'usermanagement_cuser_trow_ph_number_placeholder'),
-                                    border: const OutlineInputBorder(),
-                                    counterText: '',
-                                  ),
-                                  validator: (value) {
-                                    if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                      return LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_cuser_trow_ph_number_error');
-                                    }
-                                    return null;
-                                  },
+
+
+
                                 ),
                               ),
                             ],
@@ -6068,8 +5537,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                         _employeeEmailController
                                                             .text,
                                                     "phone":
-                                                        _employeeMobileController
-                                                            .text,
+                                                        createEmployeePhoneController.value?.nsn??"",
                                                     "roles":
                                                         selectedCorporateTypeRole
                                                             .map((role) => {
@@ -6085,7 +5553,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                             .toList(),
                                                     "displayName": "",
                                                     "country_code":
-                                                        _selectedCountryCode,
+                                                        createEmployeePhoneController.value?.countryCode??"+1",
                                                     "isIndividual": false
                                                   }
                                                 };

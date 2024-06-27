@@ -89,6 +89,15 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isAutoCompleteLoading = false;
+  bool get isAutoCompleteLoading => _isAutoCompleteLoading;
+  set isAutoCompleteLoading(bool value) {
+    _isAutoCompleteLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   // Pagination
   int _page = 1;
   int get page => _page;
@@ -129,6 +138,9 @@ class AccountListProvider extends ChangeNotifier {
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+  void clearAutoCompleteList() {
+    autoCompleteAccountList = [];
   }
 
   /// Fetch account list with pagination and search query
@@ -300,6 +312,9 @@ class AccountListProvider extends ChangeNotifier {
   /// Fetch autocomplete account list
   Future<void> fetchAutoCompleteAccountList(BuildContext context, String searchQuery) async {
     try {
+      isAutoCompleteLoading = true;
+
+      print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
       String url = '?account_name=$searchQuery';
       var response = await apiService.get(url);
@@ -309,16 +324,19 @@ class AccountListProvider extends ChangeNotifier {
 
       autoCompleteAccountList = accountListModel.results ?? [];
       log(autoCompleteAccountList.toString());
+      print("Updated autoCompleteAccountList: $autoCompleteAccountList");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
-        backgroundColor: Colors.red,
+
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: CustomTypography.Body1,),
-        backgroundColor: Colors.red,
+
       ));
+    } finally {
+      isAutoCompleteLoading = false;
     }
   }
 

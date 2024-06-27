@@ -621,6 +621,11 @@
     "account_list_app_cancel_text": "Cancel",
     "account_list_app_add_text": "Add",
     "account_list_app_add_account_empty_text_error": "Account name cannot be empty",
+    "account_list_app_submit_text": "Submit",
+    "account_list_app_request_access_text": "Request Access",
+    "account_list_app_comment_text": "Comment",
+    "account_list_app_comment_empty_text_error": "Comment cannot be empty",
+    "account_list_app_comment_placeholder": "Explain why do you want access",
 
     "coming_soon": "Coming Soon!",
     "drawer_menu_dashboard": "Dashboard",
