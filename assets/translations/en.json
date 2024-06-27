@@ -621,6 +621,15 @@
     "account_list_app_cancel_text": "Cancel",
     "account_list_app_add_text": "Add",
     "account_list_app_add_account_empty_text_error": "Account name cannot be empty",
+    "account_list_app_account_upload_sov": "Upload SOV",
+    "account_list_app_account_adding_sov_account": "Adding SOV to \"IBM\" Account",
+    "account_list_app_account_upload_drag_and_drop": "Click to upload or drag and drop",
+    "account_list_app_account_sov_name": "SOV Name: IBM/Mobile/",
+    "account_list_app_sov_name": "SOV Name",
+    "account_list_app_account_name_of_sov": "Name of the SOV",
+
+
+
     "account_list_app_submit_text": "Submit",
     "account_list_app_request_access_text": "Request Access",
     "account_list_app_comment_text": "Comment",

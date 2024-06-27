@@ -13,12 +13,14 @@ class ApiService {
 
   /// Sends a GET request to the specified [url] with optional [additionalParams].
   /// Returns a Future containing the decoded JSON response.
-  Future<Map<String, dynamic>> get([String? additionalParams, bool? isList]) async {
+  Future<Map<String, dynamic>> get(
+      [String? additionalParams, bool? isList]) async {
     var headers = await CommonHeaders.createHeaders();
     log("Headers: $headers");
     log("URL: $url${additionalParams ?? ''}");
-    final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'), headers: headers);
-    if(isList != null && isList) {
+    final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'),
+        headers: headers);
+    if (isList != null && isList) {
       return _handleResponse(response, isList);
     }
     return _handleResponse(response);
@@ -26,13 +28,14 @@ class ApiService {
 
   /// Sends a POST request to the specified [url] with the provided [body].
   /// Returns a Future containing the decoded JSON response.
-  Future<Map<String, dynamic>> post(Map<String, dynamic> body, [String? additionalParams]) async {
+  Future<Map<String, dynamic>> post(Map<String, dynamic> body,
+      [String? additionalParams]) async {
     var headers = await CommonHeaders.createHeaders();
     log("Headers: $headers");
     log("URL: $url");
     log("Body: ${json.encode(body)}");
     final response = await http.post(
-      Uri.parse('$url${additionalParams??""}'),
+      Uri.parse('$url${additionalParams ?? ""}'),
       body: json.encode(body),
       headers: headers,
     );
@@ -59,7 +62,8 @@ class ApiService {
     log("Headers: $headers");
     log("URL: $url");
     log("Body: $body");
-    final response = await http.delete(Uri.parse(url), body: json.encode(body), headers: headers);
+    final response = await http.delete(Uri.parse(url),
+        body: json.encode(body), headers: headers);
     log("Response: ${response.body}");
     return _handleResponse(response);
   }
@@ -85,12 +89,11 @@ class ApiService {
   /// The [body] should contain the file in the 'file' key and other form data in the 'data' key.
   Future<Map<String, dynamic>> postMultiPart(String filePath) async {
     var headers = await CommonHeaders.createMultiPartHeaders();
-    log("Headers: $headers");
-    log("URL: $url");
+    print("Headers: $headers");
+    print("URL: $url");
 
-
-
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
+    var request =
+        http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
     // Add headers to the request
     headers.forEach((key, value) {
@@ -100,15 +103,42 @@ class ApiService {
     // Send the request
     http.StreamedResponse response = await request.send();
 
-
     // Get response
     var responseData = await response.stream.bytesToString();
-    log("Response: $responseData");
+    print("Response: $responseData");
 
     // Handle response
     return _handleResponse(http.Response(responseData, response.statusCode));
   }
 
+  /// Sends a MultiPart POST request to the specified [url] with the provided SOV.
+  /// Returns a Future containing the decoded JSON response.
+  /// The [body] should contain the file in the 'file' key and other form data in the 'data' key.
+  Future<Map<String, dynamic>> postMultiPartSOV(File filePath,String accountId) async {
+    var headers = await CommonHeaders.createMultiPartHeadersSOV();
+    print("Headers: $headers");
+    print("URL: $url");
+
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.SOV));
+    request.fields['id'] = accountId;
+    request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
+    // Add the id to the request body
+    // request.files.add(await http('file', filePath));
+    // Add headers to the request
+    headers.forEach((key, value) {
+      request.headers[key] = value;
+    });
+
+    // Send the request
+    http.StreamedResponse response = await request.send();
+
+    // Get response
+    var responseData = await response.stream.bytesToString();
+    print("Response: $responseData");
+
+    // Handle response
+    return _handleResponse(http.Response(responseData, response.statusCode));
+  }
 
   /// Handles the HTTP response by checking the status code.
   /// If the status code is in the success range (200-299), decodes and returns the response body.
@@ -138,7 +168,6 @@ class ApiService {
       throw BackendException(_extractErrorMessage(body), statusCode);
     }
   }
-
 
   /// Extracts the error message from the response body.
   /// Returns the error message if available, otherwise returns a default error message.
