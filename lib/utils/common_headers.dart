@@ -47,4 +47,22 @@ class CommonHeaders {
 
     return headers;
   }
+  static Future<Map<String, String>> createMultiPartHeadersSOV() async {
+
+    Map<String, String> headers = {
+      'Content-Type': 'multipart/form-data',
+    };
+
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+      IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+      Map<String, dynamic>? claims = token?.claims ?? {};
+
+      headers['Authorization'] = 'Bearer ${token?.token??""}';
+    } catch (e) {
+      print("Error while creating headers: $e");
+    }
+
+    return headers;
+  }
 }

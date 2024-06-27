@@ -51,4 +51,5 @@ class AppConstant {
   static const String AUTO_COMPLETE_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String ADD_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String REQUEST_ACCESS = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
 }
