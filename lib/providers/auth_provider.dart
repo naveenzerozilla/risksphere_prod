@@ -9,8 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:green/constants/enums.dart';
+import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/main.dart';
 import 'package:green/service/api_service.dart';
+import 'package:green/service/language_service.dart';
 
 import '../design_system/primitives/custom_typography.dart';
 import '../design_system/primitives/utilities/custom_spacing.dart';
@@ -45,6 +48,15 @@ class AuthNotifier extends ChangeNotifier {
   bool _isResettingPassword = false;
 
   bool get isResettingPassword => _isResettingPassword;
+
+  bool _isRemindLoading = false;
+  bool get isRemindLoading => _isRemindLoading;
+  set isRemindLoading(bool value) {
+    _isRemindLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
 // Private variables to hold role list, company list, and company type list
   List<Role>? _roleList;
@@ -100,7 +112,6 @@ class AuthNotifier extends ChangeNotifier {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
-
   }
 
   /// Splash Screen
@@ -126,12 +137,64 @@ class AuthNotifier extends ChangeNotifier {
       Map<String, dynamic>? claims = token.claims ?? {};
       log("Claims: $claims");
 
+
+      String isAdminVerified = await getAllClaims();
+
+      if(isAdminVerified.toLowerCase() == "false"){
+        _isSigningIn = false;
+        // Show dialog with reminder to verify email for admin
+        // ignore: use_build_context_synchronously
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(
+                LanguageService.getTranslated(context, "login_admin_not_verified_dialog_title"),
+                style: CustomTypography.H6.copyWith(color: Colors.white),
+              ),
+              content: Text(
+                LanguageService.getTranslated(context, "login_admin_not_verified_dialog_description"),
+                style: CustomTypography.Body1.copyWith(color: Colors.white),
+              ),
+              actions: [
+                // Remind and cancel in column
+                Column(
+                  children: [
+                    CustomButton(type: ButtonType.elevated, onPressed: () async {
+                      // todo: add remind api
+                      await _auth.signOut();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        notifyListeners();
+                      });
+                    }, child: isRemindLoading ? Center(child: CircularProgressIndicator()) :
+                    Text(LanguageService.getTranslated(context, "login_admin_not_verified_remind_button"), style: CustomTypography.Body1,)),
+                    SizedBox(height: CustomSpacing.eight),
+                    CustomButton(type: ButtonType.text, onPressed: () async {
+                      await _auth.signOut();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        notifyListeners();
+                      });
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => SplashScreen()), (route) => false);
+                    }, child: Text(LanguageService.getTranslated(context, "login_admin_not_verified_cancel_button"), style: CustomTypography.Body1,)),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+
+
+        return;
+      }
+
+
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-                Text('Please verify your email address before signing in.'),
+                Text(LanguageService.getTranslated(context, "login_email_not_verified_error"), style: CustomTypography.Body1,),
           ),
         );
 
@@ -150,9 +213,9 @@ class AuthNotifier extends ChangeNotifier {
       });
     } catch (e) {
       _isSigningIn = false;
-      ScaffoldMessenger.of(context!).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid email or password'),
+          content: Text(LanguageService.getTranslated(context, "login_invaild_email_password_error"), style: CustomTypography.Body1,),
         ),
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -909,21 +972,22 @@ class AuthNotifier extends ChangeNotifier {
     return '$localPart@$domainPart';
   }
 
-  Future<void> getAllClaims() async {
+  Future<String> getAllClaims() async {
     try {
       final HttpsCallable callable =
       FirebaseFunctions.instance.httpsCallable('assignClaims');
       String? token = await _auth.currentUser!.getIdToken(true);
       log("Old: $token");
-      await callable.call(<String, dynamic>{
+      HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
+      print("update claims response: ${response.data["is_user_exists"]}");
       String? newToken  =await _auth.currentUser!.getIdTokenResult(true).then((value) => value.token);
       log("New: $newToken");
-
-
+      return response.data["is_user_exists"];
     } catch (e) {
       print('Error getting all claims: $e');
+      return "";
     }
   }
 }

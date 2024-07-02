@@ -254,6 +254,9 @@ class Companies {
     noOfUsers = json['no_of_users'];
     admins = [];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
+    print("display name: $displayName");
+    print("company id: $id");
+    print("admins: $admins");
     countryName = json['country']??"";
 
   }

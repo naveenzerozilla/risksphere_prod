@@ -61,7 +61,7 @@ dependencies:
   cloud_firestore: ^4.15.8
   country_picker: ^2.0.26
   location: ^6.0.2
-  file_picker: ^8.0.5
+  file_picker: ^8.0.0+1
 
 dev_dependencies:
   flutter_test:

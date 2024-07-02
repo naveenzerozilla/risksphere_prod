@@ -17,6 +17,8 @@ import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
+import 'package:green/screens/listings/sub_account_list.dart';
+import 'package:green/screens/listings/widgets/auto_complete_options.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -58,10 +60,7 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   final TextEditingController _filePathController = TextEditingController();
 
-  bool showOwner = true;
-  bool showSovCount = true;
-  bool showSubAccountCount = true;
-  bool showOverallScore = true;
+
   String? _uploadedFileName;
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -103,8 +102,8 @@ class _AccountListScreenState extends State<AccountListScreen>
       _accountQuery = query;
       print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
-      provider.page = 1;
-      await provider.fetchAccountList(context, _accountQuery, provider.page, 2);
+      provider.page = 0;
+      await provider.fetchAccountList(context, _accountQuery, provider.page, 10);
     });
   }
 
@@ -152,9 +151,9 @@ class _AccountListScreenState extends State<AccountListScreen>
   _getData() async {
     // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AccountListProvider>(context, listen: false).page = 1;
+      Provider.of<AccountListProvider>(context, listen: false).page = 0;
       Provider.of<AccountListProvider>(context, listen: false)
-          .fetchAccountList(context, "", 1, 2);
+          .fetchAccountList(context, "", 0, 10);
     });
   }
 
@@ -214,275 +213,6 @@ class _AccountListScreenState extends State<AccountListScreen>
           },
           child: Icon(Icons.add),
         )
-
-                    onPressed: () {
-                      // Add account dialog with autocomplete from api and create account
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (context) {
-                          return StatefulBuilder(builder: (context, setState) {
-                            return Material(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  bottom:
-                                      MediaQuery.of(context).viewInsets.bottom,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      16.0, 16.0, 16.0, 0.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_add_account_title"),
-                                        style: CustomTypography.H5_Regular,
-                                      ),
-                                      SizedBox(height: 16.0),
-                                      Consumer<AccountListProvider>(
-                                        builder: (context, accountListProvider,
-                                            child) {
-                                          return Autocomplete<Accounts>(
-                                            optionsBuilder: (TextEditingValue
-                                                textEditingValue) {
-                                              print(
-                                                  "AutoComplete: ${accountListProvider.autoCompleteAccountList}");
-                                              if (textEditingValue
-                                                      .text.isEmpty ||
-                                                  accountListProvider
-                                                      .autoCompleteAccountList
-                                                      .isEmpty) {
-                                                print("No options to return");
-                                                print(
-                                                    "Checking conditions: ${textEditingValue.text.isEmpty} || ${accountListProvider.autoCompleteAccountList.isEmpty}");
-                                                return const Iterable<
-                                                    Accounts>.empty();
-                                              }
-                                              var filteredOptions;
-                                              try {
-                                                filteredOptions =
-                                                    accountListProvider
-                                                        .autoCompleteAccountList
-                                                        .where(
-                                                            (Accounts option) {
-                                                  final accountName =
-                                                      option.accountName;
-                                                  if (accountName != null) {
-                                                    return accountName
-                                                        .toLowerCase()
-                                                        .contains(
-                                                            textEditingValue
-                                                                .text
-                                                                .toLowerCase());
-                                                  }
-                                                  return false;
-                                                }).toList();
-
-                                                print(
-                                                    "Filtered options to return: $filteredOptions");
-                                              } catch (e, stack) {
-                                                print(
-                                                    "Error: $e, Stack: $stack");
-                                              }
-                                              print(
-                                                  "Filtered options to return: $filteredOptions");
-                                              return filteredOptions;
-                                            },
-                                            optionsViewBuilder:
-                                                (context, onSelected, options) {
-                                              print(
-                                                  "Options in ViewBuilder: $options");
-                                              return Container(
-                                                height: 52.0 * options.length,
-                                                width: MediaQuery.of(context)
-                                                        .size
-                                                        .width -
-                                                    32,
-                                                // Adjust the width
-                                                child: ListView.builder(
-                                                  padding: EdgeInsets.zero,
-                                                  itemCount: options.length,
-                                                  physics:
-                                                      ClampingScrollPhysics(),
-                                                  shrinkWrap: false,
-                                                  itemBuilder:
-                                                      (BuildContext context,
-                                                          int index) {
-                                                    final option = options
-                                                        .elementAt(index);
-                                                    return GestureDetector(
-                                                      onTap: () =>
-                                                          onSelected(option),
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(16.0),
-                                                        child: Text(
-                                                            '${option.accountName}',
-                                                            style:
-                                                                CustomTypography
-                                                                    .Subtitle1),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              );
-                                            },
-                                            onSelected: (Accounts selection) {
-                                              setState(() {
-                                                _accountAlreadyExists = true;
-                                                _selectedAccount = selection;
-                                              });
-                                            },
-                                            displayStringForOption:
-                                                (Accounts option) =>
-                                                    option.accountName ?? "",
-                                            fieldViewBuilder: (BuildContext
-                                                    context,
-                                                TextEditingController
-                                                    textEditingController,
-                                                FocusNode focusNode,
-                                                VoidCallback onFieldSubmitted) {
-                                              return TextFormField(
-                                                controller:
-                                                    textEditingController,
-                                                focusNode: focusNode,
-                                                onFieldSubmitted: (_) {},
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    _accountAlreadyExists =
-                                                        false;
-                                                    _selectedAccount = null;
-                                                  });
-                                                  accountListProvider
-                                                      .autoCompleteAccountList
-                                                      .clear();
-                                                  _autocompleteText = value;
-                                                  accountListProvider
-                                                      .fetchAutoCompleteAccountList(
-                                                          context, value);
-                                                },
-                                                decoration: InputDecoration(
-                                                  labelText: LanguageService
-                                                      .getTranslated(context,
-                                                          "register_corporate_legalname_field_label"),
-                                                  hintText: LanguageService
-                                                      .getTranslated(context,
-                                                          "register_corporate_legalname_filed_placeholder"),
-                                                  border:
-                                                      const OutlineInputBorder(),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(height: CustomSpacing.six),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: CustomButton(
-                                              onPressed: () {
-                                                // Cancel
-                                                Navigator.pop(context);
-                                              },
-                                              child: Text(
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_cancel_text"),
-                                                style: CustomTypography
-                                                    .ButtonLarge,
-                                              ),
-                                              type: ButtonType.text,
-                                            ),
-                                          ),
-                                          Consumer<AccountListProvider>(builder:
-                                              (context, accountListProvider,
-                                                  _) {
-                                            return accountListProvider
-                                                    .isAddAccountLoading
-                                                ? const Expanded(
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        SizedBox(
-                                                            width: 25,
-                                                            height: 25,
-                                                            child:
-                                                                CircularProgressIndicator()),
-                                                      ],
-                                                    ),
-                                                  )
-                                                : Expanded(
-                                                    child: CustomButton(
-                                                      onPressed: () async {
-                                                        if (_autocompleteText
-                                                            .isEmpty) {
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                                  SnackBar(
-                                                                      content:
-                                                                          Text(
-                                                            LanguageService
-                                                                .getTranslated(
-                                                                    context,
-                                                                    "account_list_app_add_account_empty_text_error"),
-                                                            style:
-                                                                CustomTypography
-                                                                    .Body1,
-                                                          )));
-                                                          return;
-                                                        }
-
-                                                        if (!_accountAlreadyExists) {
-                                                          // Add account
-                                                          await accountListProvider
-                                                              .addAccount(
-                                                                  context,
-                                                                  _autocompleteText);
-                                                          return;
-                                                        } else {
-                                                          // Request access
-                                                          await accountListProvider
-                                                              .requestAccess(
-                                                                  context,
-                                                                  _selectedAccount
-                                                                          ?.accountId ??
-                                                                      "",
-                                                                  _messageController
-                                                                      .text);
-                                                        }
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: Text(
-                                                        LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "account_list_app_add_text"),
-                                                        style: CustomTypography
-                                                            .ButtonLarge,
-                                                      ),
-                                                      type: ButtonType.elevated,
-                                                    ),
-                                                  );
-                                          }),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          });
-                        },
-                      );
-                    },
-                    child: Icon(Icons.add),
-                  )
             : SizedBox(),
         body: PopScope(
           canPop: /*_selectedScreen == Screens.connectionList ||
@@ -606,21 +336,29 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     CircularProgressIndicator(),
                                               ),
                                             );
-                                          } else if (accountListProvider.page >=
+                                          }
+                                          else if (accountListProvider.page >=
                                               accountListProvider.totalPages&&accountListProvider.accountList.isNotEmpty) {
                                             // Display end of list message
                                             print("account list: ${accountListProvider.accountList}");
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Center(
-                                                child: Text(LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_end_of_list_text"),
-                                                  style: CustomTypography.Body1,
-                                              ),
-                                            ), );
-                                          } else {
+                                            return Column(
+                                              children: [
+                                                _buildAccountCard(
+                                                    index, accountListProvider),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Center(
+                                                    child: Text(LanguageService.getTranslated(
+                                                        context,
+                                                        "account_list_app_end_of_list_text"),
+                                                      style: CustomTypography.Body1,
+                                                  ),
+                                                ), ),
+                                              ],
+                                            );
+                                          }
+                                          else {
                                             // Trigger fetching the next page
                                             accountListProvider.page =
                                                 accountListProvider.page + 1;
@@ -634,75 +372,17 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               _accountQuery,
                                               // Pass the search query if any
                                               accountListProvider.page,
-                                              2, // Page size
+                                              10, // Page size
                                             );
                                             return SizedBox();
                                           }
                                         }
-                                      : ListView.builder(
-                                          itemCount: accountListProvider
-                                              .accountList.length,
-                                          itemBuilder: (context, index) {
-                                            print("Query1: $_accountQuery");
-                                            if (index ==
-                                                accountListProvider
-                                                        .accountList.length -
-                                                    1) {
-                                              // Check if it's the last item
-                                              if (accountListProvider
-                                                  .isNextPageLoading) {
-                                                // Display loading indicator
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Center(
-                                                    child:
-                                                        CircularProgressIndicator(),
-                                                  ),
-                                                );
-                                              } else if (accountListProvider
-                                                      .page >=
-                                                  accountListProvider
-                                                      .totalPages) {
-                                                // Display end of list message
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Center(
-                                                    child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "account_list_app_end_of_list_text"),
-                                                      style: CustomTypography
-                                                          .Body1,
-                                                    ),
-                                                  ),
-                                                );
-                                              } else {
-                                                // Trigger fetching the next page
-                                                accountListProvider.page =
-                                                    accountListProvider.page +
-                                                        1;
-                                                print(
-                                                    "Fetching page ${accountListProvider.page}");
-                                                print(
-                                                    "Query: $_accountQuery, Page: ${accountListProvider.page}");
-                                                accountListProvider
-                                                    .fetchAccountList(
-                                                  context,
-                                                  _accountQuery,
-                                                  // Pass the search query if any
-                                                  accountListProvider.page,
-                                                  2, // Page size
-                                                );
-                                                return SizedBox();
-                                              }
-                                            }
+                                        else {
+                                          return _buildAccountCard(
+                                              index, accountListProvider);
+                                        }
+                                      });
 
-                                            return _buildAccountCard(
-                                                index, accountListProvider);
-                                          },
-                                        );
                             }),
                           ),
                         ],
@@ -754,16 +434,17 @@ class _AccountListScreenState extends State<AccountListScreen>
                 showCheckbox = false;
               });
             });
+
+
           }
           Navigator.push(context, MaterialPageRoute(builder: (context) {
             return /* LocationProfile(
               account: accountListProvider.accountList[index],
             );*/
-                LocationList(
-              userId: accountListProvider.accountList[index].accountId ?? "",
-              companyName:
-                  accountListProvider.accountList[index].accountName ?? "",
-            );
+               SubAccountListScreen(
+                 accountId: accountListProvider.accountList[index].accountId??"",
+                  accountName: accountListProvider.accountList[index].accountName??"",
+               );
           }));
         },
         child: Row(
@@ -1000,7 +681,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                       ),
                                     ],
                                   ),
-                                  !showSubAccountCount
+                                  !accountListProvider.showSubAccountCount
                                       ? SizedBox()
                                       : Row(
                                           children: [
@@ -1043,7 +724,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     CustomTypography.Caption),
                                           ],
                                         ),
-                                  !showSovCount
+                                  !accountListProvider.showSOVCount
                                       ? SizedBox()
                                       : Row(
                                           children: [
@@ -1086,7 +767,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     CustomTypography.Caption),
                                           ],
                                         ),
-                                  !showOwner
+                                  !accountListProvider.showOwner
                                       ? SizedBox()
                                       : Row(
                                           children: [
@@ -1114,7 +795,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 ],
                               ),
                             ),
-                            !showOverallScore
+                            !accountListProvider.showOverallScore
                                 ? SizedBox()
                                 : Padding(
                                     padding:
@@ -1318,20 +999,20 @@ class _AccountListScreenState extends State<AccountListScreen>
                         child: SizedBox(width:25, height:25,child: CircularProgressIndicator()),
                       )
                           :Checkbox(
-                        value: showOwner,
+                        value: accountListProvider.showOwner,
                         onChanged: (value) async {
-                          bool result = await accountListProvider.changeColumnVisibility(context, showOwner: value??false, showSOVCount: showSovCount, showSubAccountCount: showSubAccountCount, showOverallScore: showOverallScore, type: 'owner');
+                          bool result = await accountListProvider.changeColumnVisibility(context, showOwner: value??false, showSOVCount: accountListProvider.showSOVCount, showSubAccountCount: accountListProvider.showSubAccountCount, showOverallScore: accountListProvider.showOverallScore, type: 'owner');
 
                               if (result) {
                                 setModalState(() {
-                                  showOwner = value ?? false;
+                                  accountListProvider.showOwner = value ?? false;
                                 });
                                 setState(() {
-                                  showOwner = value ?? false;
+                                  accountListProvider.showOwner = value ?? false;
                                 });
                                 // Update account list
                                 accountListProvider.fetchAccountList(context,
-                                    _accountQuery, accountListProvider.page, 2);
+                                    _accountQuery, accountListProvider.page, 10);
                               }
                             },
                           ),
@@ -1352,26 +1033,26 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 child: CircularProgressIndicator()),
                           )
                         : Checkbox(
-                            value: showSovCount,
+                            value: accountListProvider.showSOVCount,
                             onChanged: (value) async {
                               bool result = await accountListProvider
                                   .changeColumnVisibility(context,
                                       showOwner: value ?? false,
-                                      showSOVCount: showSovCount,
-                                      showSubAccountCount: showSubAccountCount,
-                                      showOverallScore: showOverallScore,
+                                      showSOVCount: accountListProvider.showSOVCount,
+                                      showSubAccountCount: accountListProvider.showSubAccountCount,
+                                      showOverallScore: accountListProvider.showOverallScore,
                                       type: 'sov_count');
 
                               if (result) {
                                 setModalState(() {
-                                  showSovCount = value ?? false;
+                                  accountListProvider.showSOVCount = value ?? false;
                                 });
                                 setState(() {
-                                  showSovCount = value ?? false;
+                                  accountListProvider.showSOVCount = value ?? false;
                                 });
                                 // Update account list
                                 accountListProvider.fetchAccountList(context,
-                                    _accountQuery, accountListProvider.page, 2);
+                                    _accountQuery, accountListProvider.page, 10);
                               }
                             },
                           ),
@@ -1392,25 +1073,25 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 child: CircularProgressIndicator()),
                           )
                         : Checkbox(
-                            value: showSubAccountCount,
+                            value: accountListProvider.showSubAccountCount,
                             onChanged: (value) async {
                               bool result = await accountListProvider
                                   .changeColumnVisibility(context,
-                                      showOwner: showOwner,
-                                      showSOVCount: showSovCount,
+                                      showOwner: accountListProvider.showOwner,
+                                      showSOVCount: accountListProvider.showSOVCount,
                                       showSubAccountCount: value ?? false,
-                                      showOverallScore: showOverallScore,
+                                      showOverallScore: accountListProvider.showOverallScore,
                                       type: 'sub_account_count');
                               if (result) {
                                 setModalState(() {
-                                  showSubAccountCount = value ?? false;
+                                  accountListProvider.showSubAccountCount = value ?? false;
                                 });
                                 setState(() {
-                                  showSubAccountCount = value ?? false;
+                                  accountListProvider.showSubAccountCount = value ?? false;
                                 });
                                 // Update account list
                                 accountListProvider.fetchAccountList(context,
-                                    _accountQuery, accountListProvider.page, 2);
+                                    _accountQuery, accountListProvider.page, 10);
                               }
                             },
                           ),
@@ -1431,25 +1112,25 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 child: CircularProgressIndicator()),
                           )
                         : Checkbox(
-                            value: showOverallScore,
+                            value: accountListProvider.showOverallScore,
                             onChanged: (value) async {
                               bool result = await accountListProvider
                                   .changeColumnVisibility(context,
-                                      showOwner: showOwner,
-                                      showSOVCount: showSovCount,
-                                      showSubAccountCount: showSubAccountCount,
+                                      showOwner: accountListProvider.showOwner,
+                                      showSOVCount: accountListProvider.showSOVCount,
+                                      showSubAccountCount: accountListProvider.showSubAccountCount,
                                       showOverallScore: value ?? false,
                                       type: 'overall_score');
                               if (result) {
                                 setModalState(() {
-                                  showOverallScore = value ?? false;
+                                  accountListProvider.showOverallScore = value ?? false;
                                 });
                                 setState(() {
-                                  showOverallScore = value ?? false;
+                                  accountListProvider.showOverallScore = value ?? false;
                                 });
                                 // Update account list
                                 accountListProvider.fetchAccountList(context,
-                                    _accountQuery, accountListProvider.page, 2);
+                                    _accountQuery, accountListProvider.page, 10);
                               }
                             },
                           ),
@@ -1636,7 +1317,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     AccountListProvider>(
                                                 context,
                                                 listen: false)
-                                            .uploadImage(context, files,accountId));
+                                            .uploadImage(context, files, accountId));
                                       },
                                       type: ButtonType.filled,
                                       child: Text(

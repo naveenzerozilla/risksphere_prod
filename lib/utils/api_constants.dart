@@ -44,6 +44,7 @@ class AppConstant {
   static const String DELETE_CORPORATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
 
   /// R2 APIS
+  // Accounts
   static const String GET_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/mobile";
   static const String RENAME_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String DUPLICATE_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
@@ -51,5 +52,21 @@ class AppConstant {
   static const String AUTO_COMPLETE_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String ADD_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String REQUEST_ACCESS = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  // Sub Accounts
+  static const String GET_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String RENAME_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String DUPLICATE_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String AUTO_COMPLETE_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String ADD_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String REQUEST_ACCESS_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
+  // Sov
+  static const String GET_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String RENAME_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String DUPLICATE_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String CHANGE_COLUMN_VISIBILITY_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String AUTO_COMPLETE_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String ADD_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String REQUEST_ACCESS_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
 }

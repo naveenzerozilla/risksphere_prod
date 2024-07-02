@@ -2,6 +2,9 @@ import 'package:green/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
+
+
+
   static const String CAMCL = 'CAMCL'; // Corporate-List
   static const String CAMUL = 'CAMUL'; // User-List
   static const String CAMCC = 'CAMCC'; // Create-Corporate

@@ -42,6 +42,8 @@ enum Screens {
   generalInfo,
   securityScreen,
   teamsScreen,
+  subAccountList,
+  sovList,
 }
 
 enum EmailOptions {

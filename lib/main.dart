@@ -11,6 +11,8 @@ import 'package:green/providers/email_provider.dart';
 import 'package:green/providers/employee_provider.dart';
 import 'package:green/providers/feature_provider.dart';
 import 'package:green/providers/non_corporate_user_Provider.dart';
+import 'package:green/providers/sov_list_provider.dart';
+import 'package:green/providers/sub_account_list_provider.dart';
 import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/providers/verification_provider.dart';
 import 'package:provider/provider.dart';
@@ -52,6 +54,8 @@ void main() async {
           ChangeNotifierProvider(create: (_) => CorporateProvider()),
           ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
           ChangeNotifierProvider(create: (_) => AccountListProvider()),
+          ChangeNotifierProvider(create: (_) => SubAccountListProvider()),
+          ChangeNotifierProvider(create: (_) => SOVListProvider()),
         ],
         child: const MyApp(),
       ),

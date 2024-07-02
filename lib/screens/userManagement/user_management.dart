@@ -859,7 +859,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               )
             : const SizedBox(),
         body: PopScope(
-          canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
+         /* canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
               _selectedScreen == Screens.defaultScreen,
           onPopInvoked: (canPop) {
             print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
@@ -1029,7 +1029,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 clearFilters();
               });
             }
-          },
+          },*/
           child: Stack(
             children: [
               // Background image
@@ -3302,6 +3302,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       "country": _selectedCorporateCountryName,
                                                     }
                                                   };
+                                                  print(body);
                                                   companyProvider
                                                       .createCompany(
                                                           context, body)
@@ -4519,7 +4520,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _createCorporateUser() {
-    // Add Company
+    // Add Corporate User
     return SingleChildScrollView(
       child: Container(
         decoration: BoxDecoration(
@@ -4839,7 +4840,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       children: [
                         Expanded(
                           child: PhoneInput(
-                            key: const Key('phone-field'),
+                            key: const Key('phone-field-employee'),
                             controller: corporateEmployeeMobileController,
                             shouldFormat: true,
                             defaultCountry: IsoCode.US,
@@ -4963,7 +4964,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     .addPostFrameCallback((_) {
                                                   setState(() {
                                                     _selectedScreen =
-                                                        Screens.employeeList;
+                                                        Screens.corporateEmployeeList;
                                                     clearFilters();
                                                   });
                                                   //Clear all fields
@@ -5480,20 +5481,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     });
                                     print('changed ${p.countryCode}');
                                   },
-                                ),
-                              ),
-                              SizedBox(width: CustomSpacing.two),
-                              // Mobile Number TextFormField
-                              Expanded(
-                                flex: 7,
-                                child: TextFormField(
-                                  controller: _employeeMobileController,
-                                  keyboardType: TextInputType.number,
-                                  maxLength: 10,
-                                  // Numeric keyboard
-
-
-
                                 ),
                               ),
                             ],

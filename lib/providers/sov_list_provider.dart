@@ -1,14 +1,13 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/account_list_model.dart';
+import 'package:green/models/sov_list_model.dart';
 import 'package:green/service/api_service.dart';
-import 'package:green/service/language_service.dart';
 import 'package:green/utils/api_constants.dart';
 
-class AccountListProvider extends ChangeNotifier {
+class SOVListProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -46,28 +45,12 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
-  bool _isOwnerLoading = false;
-  bool get isOwnerLoading => _isOwnerLoading;
-  set isOwnerLoading(bool value) {
-    _isOwnerLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
 
-  bool _showSOVCountLoading = false;
-  bool get showSOVCountLoading => _showSOVCountLoading;
-  set showSOVCountLoading(bool value) {
-    _showSOVCountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
 
-  bool _showSubAccountCountLoading = false;
-  bool get showSubAccountCountLoading => _showSubAccountCountLoading;
-  set showSubAccountCountLoading(bool value) {
-    _showSubAccountCountLoading = value;
+  bool _showLocationCountLoading = false;
+  bool get showLocationCountLoading => _showLocationCountLoading;
+  set showLocationCountLoading(bool value) {
+    _showLocationCountLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -100,38 +83,11 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
-  bool _isImageUploadLoading = false;
-  bool get isImageUploadLoading => _isImageUploadLoading;
-  set isImageUploadLoading(bool value) {
-    _isImageUploadLoading = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
-
-  // Column Visibility
-  bool _showOwner = true;
-  bool get showOwner => _showOwner;
-  set showOwner(bool value) {
-    _showOwner = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
-
-  bool _showSOVCount = true;
-  bool get showSOVCount => _showSOVCount;
-  set showSOVCount(bool value) {
-    _showSOVCount = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
-
-  bool _showSubAccountCount = true;
-  bool get showSubAccountCount => _showSubAccountCount;
-  set showSubAccountCount(bool value) {
-    _showSubAccountCount = value;
+  // columns
+  bool _showLocationCount = true;
+  bool get showLocationCount => _showLocationCount;
+  set showLocationCount(bool value) {
+    _showLocationCount = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -147,7 +103,7 @@ class AccountListProvider extends ChangeNotifier {
   }
 
   // Pagination
-  int _page = 0;
+  int _page = 1;
   int get page => _page;
   set page(int value) {
     _page = value;
@@ -155,6 +111,7 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   int _totalPages = 1;
   int get totalPages => _totalPages;
   set totalPages(int value) {
@@ -164,35 +121,35 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
-  List<Accounts> _accountList = [];
-  List<Accounts> get accountList => _accountList;
-  set accountList(List<Accounts> value) {
+  List<SovAccount> _accountList = [];
+  List<SovAccount> get sovList => _accountList;
+  set sovList(List<SovAccount> value) {
     _accountList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
-  void addToAccountList(List<Accounts> newAccounts) {
+  void addToAccountList(List<SovAccount> newAccounts) {
     _accountList.addAll(newAccounts);
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
-  List<Accounts> _autoCompleteAccountList = [];
-  List<Accounts> get autoCompleteAccountList => _autoCompleteAccountList;
-  set autoCompleteAccountList(List<Accounts> value) {
-    _autoCompleteAccountList = value;
+  List<SovAccount> _autoCompleteSovList = [];
+  List<SovAccount> get autoCompleteSovList => _autoCompleteSovList;
+  set autoCompleteSovList(List<SovAccount> value) {
+    _autoCompleteSovList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
   void clearAutoCompleteList() {
-    autoCompleteAccountList = [];
+    autoCompleteSovList = [];
   }
 
-  /// Fetch account list with pagination and search query
-  Future<void> fetchAccountList(BuildContext context, String searchQuery, int page, int pageSize) async {
+  /// Fetch sov list with pagination and search query
+  Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
     try {
       if (page == 0) {
         isLoading = true;
@@ -200,7 +157,7 @@ class AccountListProvider extends ChangeNotifier {
         isNextPageLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST+"/$selectedAccountId/subaccount/$selectedSubAccountId/sov/mobile");
       String url = '?page=$page&pageSize=$pageSize';
       if (searchQuery.isNotEmpty) {
         url += '?search=$searchQuery';
@@ -209,19 +166,17 @@ class AccountListProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
 
-      AccountListModel accountListModel = AccountListModel.fromJson(response);
+      SovListModel sovListModel = SovListModel.fromJson(response);
 
-      showOwner = accountListModel.settings?.owner ?? true;
-      showSOVCount = accountListModel.settings?.sovCount ?? true;
-      showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
-      showOverallScore = accountListModel.settings?.overallScore ?? true;
-      totalPages = accountListModel.totalPages??1;
+      showLocationCount = sovListModel.settings?.locationCount ?? true;
+      showOverallScore = sovListModel.settings?.overAllScore ?? true;
+      totalPages = sovListModel.totalPages??1;
       if (page == 0) {
-        accountList = accountListModel.results ?? [];
+        sovList = sovListModel.results ?? [];
       } else {
-        addToAccountList(accountListModel.results ?? []);
+        addToAccountList(sovListModel.results ?? []);
       }
-      log(accountList.toString());
+      log(sovList.toString());
       log(totalPages.toString());
       log(page.toString());
       isLoading = false;
@@ -243,22 +198,22 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  /// Rename account
-  Future<void> renameAccount(BuildContext context, String accountId, String newName) async {
+  /// Rename sov
+  Future<void> renameSov(BuildContext context, String accountId, String subAccountId, String sovId, String newName) async {
     try {
       isRenameLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
-      var response = await apiService.post({'data':{
-        'account_id': accountId,
-        'account_name': newName,
+      ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
+      var response = await apiService.patch({'data': {
+        'sov_id': sovId,  // Updated field
+        'name': newName,  // Updated field
       }});
       log(response.toString());
 
       // Update account name in the list
-      int index = accountList.indexWhere((element) => element.accountId == accountId);
+      int index = sovList.indexWhere((element) => element.accountId == accountId);
       if (index != -1) {
-        accountList[index].accountName = newName;
+        sovList[index].name = newName;
       }
 
       isRenameLoading = false;
@@ -266,32 +221,30 @@ class AccountListProvider extends ChangeNotifier {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
-
       ));
     } catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: CustomTypography.Body1,),
-
       ));
     }
   }
 
-  /// Duplicate account
-  Future<void> duplicateAccount(BuildContext context, String accountId) async {
+  /// Duplicate sub account
+  Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId) async {
     try {
       isDuplicateLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_ACCOUNT);
-      var response = await apiService.post({'data':{
-        'account_id': accountId,
+      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT);  // Updated URL
+      var response = await apiService.post({'data': {
+        'sub_account_id': accountId,  // Updated field
         'duplicate': true,
       }});
       log(response.toString());
 
-      // Update account name in the list
-      page = 1;
-      fetchAccountList(context, '', 0, 10);
+      // Refresh the sub accounts list
+      page = 0;
+      fetchSovList(context, accountId, subAccountId, '', 0, 10);
 
       isDuplicateLoading = false;
     } on BackendException catch (e) {
@@ -310,102 +263,85 @@ class AccountListProvider extends ChangeNotifier {
   }
 
   /// Change column visibility
-  Future<bool> changeColumnVisibility(BuildContext context, {required bool showOwner, required bool showSOVCount, required bool showSubAccountCount, required bool showOverallScore, required String type}) async {
+  Future<bool> changeColumnVisibility(BuildContext context, String accountId, String subAccountId, {required bool showLocationCount, required bool showOverallScore, required String type}) async {
     try {
-
-      if (type == 'owner') {
-        isOwnerLoading = true;
-      } else if (type == 'sov_count') {
-        showSOVCountLoading = true;
-      } else if (type == 'sub_account_count') {
-        showSubAccountCountLoading = true;
+    if (type == 'location_count') {
+        showLocationCountLoading = true;
       } else if (type == 'overall_score') {
         showOverallScoreLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.CHANGE_COLUMN_VISIBILITY);
+      ApiService apiService = ApiService(AppConstant.CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
 
-      var response = await apiService.patch({'data':{
+      var response = await apiService.patch({'data': {
         'table_setting': true,
-        'owner': showOwner,
-        'sov_count': showSOVCount,
-        'sub_account_count': showSubAccountCount,
+        'location_count': showLocationCount,
         'overall_score': showOverallScore,
       }});
       log(response.toString());
-      isOwnerLoading = false;
-      showSOVCountLoading = false;
-      showSubAccountCountLoading = false;
+      showLocationCountLoading = false;
       showOverallScoreLoading = false;
       return true;
     } on BackendException catch (e) {
-      isOwnerLoading = false;
-      showSOVCountLoading = false;
-      showSubAccountCountLoading = false;
+      showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
-
       ));
       return false;
     } catch (e) {
-      isOwnerLoading = false;
-      showSOVCountLoading = false;
-      showSubAccountCountLoading = false;
+      showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: CustomTypography.Body1,),
-
       ));
       return false;
     }
   }
 
-  /// Fetch autocomplete account list
-  Future<void> fetchAutoCompleteAccountList(BuildContext context, String searchQuery) async {
+  /// Fetch autocomplete sub account list
+  Future<void> fetchAutoCompleteSubAccountList(BuildContext context, String searchQuery) async {
     try {
       isAutoCompleteLoading = true;
 
       print("Fetching autocomplete list for query: $searchQuery");
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      String url = '?account_name=$searchQuery';
+      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST);
+      String url = '?sub_account_name=$searchQuery';  // Updated field
       var response = await apiService.get(url);
       log(response.toString());
 
-      AccountListModel accountListModel = AccountListModel.fromJson(response);
+      SovListModel accountListModel = SovListModel.fromJson(response);
 
-      autoCompleteAccountList = accountListModel.results ?? [];
-      log(autoCompleteAccountList.toString());
-      print("Updated autoCompleteAccountList: $autoCompleteAccountList");
+      autoCompleteSovList = accountListModel.results ?? [];
+      log(autoCompleteSovList.toString());
+      print("Updated autoCompleteAccountList: $autoCompleteSovList");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
-
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: CustomTypography.Body1,),
-
       ));
     } finally {
       isAutoCompleteLoading = false;
     }
   }
 
-  /// Add account
-  Future<void> addAccount(BuildContext context, String accountName) async {
+  /// Add sub account
+  Future<void> addSubAccount(BuildContext context, String accountId, String subAccountId, String accountName) async {
     try {
       isAddAccountLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.ADD_ACCOUNT);
-      var response = await apiService.post({'data':{
-        'account_name': accountName,
+      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT);  // Updated URL
+      var response = await apiService.post({'data': {
+        'sub_account_name': accountName,  // Updated field
       }});
       log(response.toString());
 
-      // Update account name in the list
-      page = 1;
-      fetchAccountList(context, '', 0, 10);
+      // Refresh the sub accounts list
+      page = 0;
+      fetchSovList(context, accountId, subAccountId, '', 0, 10);
 
       isAddAccountLoading = false;
     } on BackendException catch (e) {
@@ -422,6 +358,7 @@ class AccountListProvider extends ChangeNotifier {
       ));
     }
   }
+
 
   // Request access with message
   Future<void> requestAccess(BuildContext context, String accountId, String message) async {
@@ -446,52 +383,6 @@ class AccountListProvider extends ChangeNotifier {
         content: Text(e.toString(), style: CustomTypography.Body1,),
 
       ));
-    }
-  }
-
-  Future<String> uploadImage(BuildContext context, File sovFile,String accountId) async {
-    try {
-      isImageUploadLoading = true;
-      ApiService apiService = ApiService(AppConstant.SOV + '/upload');
-      print(apiService);
-      // Send a POST request to the API to upload the image
-      Map<String, dynamic> response = await apiService.postMultiPartSOV(sovFile, accountId);
-      // print(response!.message.toString());
-      isImageUploadLoading = false;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          response['message']??LanguageService.getTranslated(context, "account_list_app_sov_upload_success"),
-          style: CustomTypography.Body1,
-        ),
-      ));
-      return '';
-    } on BackendException catch (e) {
-      isImageUploadLoading = false;
-      Navigator.pop(context);
-      // Handle custom backend exceptions (if any)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.message,
-            style: CustomTypography.Body1,
-          ),
-        ),
-      );
-      return ''; // Return empty string or handle the error as needed
-    } catch (e) {
-      // Handle other unexpected exceptions
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${e.toString()}',
-            style: CustomTypography.Body1,
-          ),
-        ),
-      );
-      isImageUploadLoading = false;
-      return ''; // Return empty string or handle the error as needed
     }
   }
 }
