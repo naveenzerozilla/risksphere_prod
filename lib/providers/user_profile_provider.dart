@@ -135,7 +135,15 @@ class UserProfileProvider with ChangeNotifier {
       }
       isLoading = false;
       return userDataLocal;
-    } catch (e, stackTrace) {
+    } on BackendException catch (e) {
+      // Catch any errors that occur during the process
+      print('Error: $e'); // Log the error
+      // Show a generic error message to the user
+      if (context.mounted) CustomToast.error(context, e.message);
+      isLoading = false;
+      return null; // Return an empty list in case of error
+    }
+    catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error

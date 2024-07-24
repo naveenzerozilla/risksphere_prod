@@ -52,6 +52,7 @@ class AppConstant {
   static const String AUTO_COMPLETE_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String ADD_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String REQUEST_ACCESS = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String UPLOAD_SOV_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
   // Sub Accounts
   static const String GET_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String RENAME_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
@@ -60,7 +61,8 @@ class AppConstant {
   static const String AUTO_COMPLETE_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String ADD_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String REQUEST_ACCESS_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
+  static const String UPLOAD_SOV_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
+
   // Sov
   static const String GET_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String RENAME_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
@@ -69,4 +71,9 @@ class AppConstant {
   static const String AUTO_COMPLETE_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String ADD_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
   static const String REQUEST_ACCESS_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  // Location
+  static const String GET_LOCATION_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static const String ADD_LOCATION = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  // Location Profile
+  static const String GET_LOCATION_PROFILE = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
 }

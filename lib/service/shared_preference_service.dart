@@ -161,8 +161,16 @@ class SharedPreferenceService {
         case NCMMT:
         case EMPMT:
 
-          prefs.setBool(key, value);
-          print('Claim $key set to $value');
+          if(value.runtimeType == int) {
+            if(value == 1) {
+              prefs.setBool(key, true);
+              print('Claim $key set to true');
+            } else {
+              prefs.setBool(key, false);
+              print('Claim $key set to false');
+            }
+            break;
+          }
           break;
         default:
           print('Ignoring unknown claim: $key');

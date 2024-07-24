@@ -44,6 +44,9 @@ enum Screens {
   teamsScreen,
   subAccountList,
   sovList,
+
+
+  certifiedLocationList,
 }
 
 enum EmailOptions {
@@ -66,6 +69,8 @@ const Map<String, String> abbreviationMap = {
   'ltd': 'Limited',
   'pvt': 'Private',
 };
+
+enum ExportType { Profile, Table }
 
 
 const Map<String, String> countryPlaceholders = {

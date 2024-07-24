@@ -130,43 +130,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen()));
                       },
                     ),
-                    ExpansionTile(
+                    ListTile(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                      },
+
                       leading: Container(
                         height: 20,
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/listingsIcon.svg',
-                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_listings"),
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_accounts"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: Text(LanguageService.getTranslated(context, "drawer_menu_listings"), style: CustomTypography.Body1,),
-                      children: <Widget>[
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_locations_list"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
-                            //Show coming soon snackbar
-                            /*ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Coming Soon!', style: CustomTypography.Body1,),
-                              ),
-                            );*/
-                          },
-                        ),
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_locations_map"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_accounts"), style: CustomTypography.Body1,),
+                      trailing: SizedBox(),
                     ),
                     ExpansionTile(
                       leading: Container(
@@ -174,12 +154,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         width: 20,
                         child: SvgPicture.asset(
                           'assets/images/portfolioIcon.svg',
-                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_portfolio_sovs"),
+                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_sovs"),
                           colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
                         ),
                       ),
                       childrenPadding: const EdgeInsets.only(left: 40),
-                      title: Text(LanguageService.getTranslated(context, "drawer_menu_portfolio_sovs"), style: CustomTypography.Body1,),
+                      title: Text(LanguageService.getTranslated(context, "drawer_menu_sovs"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_risk_manager_list"), style: CustomTypography.Body1,),
@@ -194,43 +174,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ),
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_manage_insurers_list"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/locationIcon.svg',
-                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_locations"),
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: Text(LanguageService.getTranslated(context, "drawer_menu_locations"), style: CustomTypography.Body1,),
-                      children: <Widget>[
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_upload_locations"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_location"), style: CustomTypography.Body1,),
                           onTap: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -418,7 +361,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       title: Text(LanguageService.getTranslated(context, "drawer_menu_connections"), style: CustomTypography.Body1,),
                       children: <Widget>[
                         ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_broker"), style: CustomTypography.Body1,),
+                          title: Text(LanguageService.getTranslated(context, "drawer_menu_add_vendor"), style: CustomTypography.Body1,),
                           onTap: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -441,70 +384,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ),
                         ListTile(
                           title: Text(LanguageService.getTranslated(context, "drawer_menu_add_freelancer"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/trainingDataIcon.svg',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_training_data"),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: Text(LanguageService.getTranslated(context, "drawer_menu_training_data"), style: CustomTypography.Body1,),
-                      children: <Widget>[
-
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_create_tags_on_phrases"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/trainingDataIcon.svg',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: LanguageService.getTranslated(context, "drawer_menu_leads"),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: Text(LanguageService.getTranslated(context, "drawer_menu_leads"), style: CustomTypography.Body1,),
-                      children: <Widget>[
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_list"), style: CustomTypography.Body1,),
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LanguageService.getTranslated(context, "coming_soon"), style: CustomTypography.Body1,),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          title: Text(LanguageService.getTranslated(context, "drawer_menu_leads_map"), style: CustomTypography.Body1,),
                           onTap: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(

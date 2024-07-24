@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class RatingSlider extends StatelessWidget {
+class RatingSlider extends StatefulWidget {
   final int progress;
   final int total;
   final Color thumbColor;
@@ -8,6 +8,7 @@ class RatingSlider extends StatelessWidget {
   final double progressHeight;
   final Color textColor;
   final double width;
+  final bool isDisabled;
 
   const RatingSlider({
     Key? key,
@@ -18,49 +19,100 @@ class RatingSlider extends StatelessWidget {
     this.progressHeight = 8.0,
     this.textColor = Colors.black,
     this.width = 250.0,
+    this.isDisabled = false,
   }) : super(key: key);
 
   @override
+  _RatingSliderState createState() => _RatingSliderState();
+}
+
+class _RatingSliderState extends State<RatingSlider> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    print("Rating: ${widget.progress} / ${widget.total}");
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(begin: 0, end: widget.progress / widget.total).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    if (!widget.isDisabled) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(RatingSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.progress != widget.progress || oldWidget.total != widget.total) {
+      _animation = Tween<double>(begin: 0, end: widget.progress / widget.total).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      );
+      if (!widget.isDisabled) {
+        _controller.forward(from: 0.0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    double progressPercentage = (progress / total) * 100;
     return Container(
-      width: width,
+      width: widget.width,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           Container(
-            height: progressHeight,
+            height: widget.progressHeight,
+            width: widget.width,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               borderRadius: BorderRadius.circular(5),
             ),
           ),
-          Positioned(
-            left: 0,
-            child: Container(
-              height: progressHeight,
-              width: width * (progressPercentage / 100),
-              decoration: BoxDecoration(
-                color: progressColor,
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  height: widget.progressHeight,
+                  width: widget.isDisabled ? widget.width * (widget.progress / widget.total) : widget.width * _animation.value,
+                  decoration: BoxDecoration(
+                    color: widget.isDisabled ?
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.1)
+                        : widget.progressColor,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              );
+            },
           ),
-          Positioned(
-            top: -10,
-            left: (width / 2)-10, // Center the thumb
+          Center(
             child: Container(
               height: 30,
               width: 30,
               decoration: BoxDecoration(
-                color: thumbColor,
+                color: widget.isDisabled ? Colors.grey : widget.thumbColor,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
-                  '$progress/$total',
-                  style: TextStyle(color: textColor, fontSize: 12),
+                  '${widget.progress}/${widget.total}',
+                  style: TextStyle(color: widget.textColor, fontSize: 12),
                 ),
               ),
             ),
@@ -70,4 +122,3 @@ class RatingSlider extends StatelessWidget {
     );
   }
 }
-

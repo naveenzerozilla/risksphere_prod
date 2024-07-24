@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Helper class for creating common HTTP headers.
@@ -59,6 +61,31 @@ class CommonHeaders {
       Map<String, dynamic>? claims = token?.claims ?? {};
 
       headers['Authorization'] = 'Bearer ${token?.token??""}';
+      print("Headers: $headers");
+    } catch (e) {
+      print("Error while creating headers: $e");
+    }
+
+    return headers;
+  }
+
+  static Future<Map<String, String>> createDownloadHeaders() async {
+    Map<String, String> headers = {};
+
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+      IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+
+      headers['Authorization'] = 'Bearer ${token?.token??""}';
+      headers['Content-Type'] = 'application/json';
+      headers['Accept'] = '*/*'; // Header for binary data
+      headers['Accept-Encoding'] = 'gzip, deflate, br'; // Header for binary data
+      headers['Connection'] = 'keep-alive'; // Header for binary data
+       headers['Cache-Control'] = 'no-cache'; // Header for binary data
+      headers['Pragma'] = 'no-cache'; // Header for binary data
+      headers['Expires'] = '0'; // Header for binary data
+
+
     } catch (e) {
       print("Error while creating headers: $e");
     }

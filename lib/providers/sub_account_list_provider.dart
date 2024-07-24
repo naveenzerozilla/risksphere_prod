@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
@@ -6,6 +7,8 @@ import 'package:green/models/account_list_model.dart';
 import 'package:green/models/sub_account_list_model.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
+
+import '../service/language_service.dart';
 
 class SubAccountListProvider extends ChangeNotifier {
 
@@ -95,6 +98,15 @@ class SubAccountListProvider extends ChangeNotifier {
   set isAutoCompleteLoading(bool value) {
     _isAutoCompleteLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isImageUploadLoading = false;
+  bool get isImageUploadLoading => _isImageUploadLoading;
+  set isImageUploadLoading(bool value) {
+    _isImageUploadLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -368,19 +380,21 @@ class SubAccountListProvider extends ChangeNotifier {
   }
 
   /// Add sub account
-  Future<void> addSubAccount(BuildContext context, String subAccountId, String accountName, String accountId) async {
+  Future<void> addSubAccount(BuildContext context, String accountName, String accountId) async {
     try {
       isAddSubAccountLoading = true;
 
       ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount");  // Updated URL
       var response = await apiService.post({'data': {
-        'sub_account_name': accountName,  // Updated field
+        'name': accountName,  // Updated field
       }});
       log(response.toString());
 
       // Refresh the sub accounts list
       page = 0;
-      fetchSubAccountList(context, accountId, '', 0, 10);
+      await Future.delayed(Duration(seconds: 4), () {
+        fetchSubAccountList(context, accountId, '', 0, 10);
+      });
 
       isAddSubAccountLoading = false;
     } on BackendException catch (e) {
@@ -421,6 +435,53 @@ class SubAccountListProvider extends ChangeNotifier {
         content: Text(e.toString(), style: CustomTypography.Body1,),
 
       ));
+    }
+  }
+
+  /// Upload SOV
+  Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String subAccountId, String name) async {
+    try {
+      isImageUploadLoading = true;
+      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
+      print(apiService);
+      // Send a POST request to the API to upload the image
+      Map<String, dynamic> response = await apiService.postMultiPartSOVSubAccounts(sovFile, accountId, subAccountId, name);
+      // print(response!.message.toString());
+      isImageUploadLoading = false;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          response['message']??LanguageService.getTranslated(context, "sub_account_list_app_sov_upload_success"),
+          style: CustomTypography.Body1,
+        ),
+      ));
+      return response['temp_id']??'';
+    } on BackendException catch (e) {
+      isImageUploadLoading = false;
+      Navigator.pop(context);
+      // Handle custom backend exceptions (if any)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message,
+            style: CustomTypography.Body1,
+          ),
+        ),
+      );
+      return ''; // Return empty string or handle the error as needed
+    } catch (e) {
+      // Handle other unexpected exceptions
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${e.toString()}',
+            style: CustomTypography.Body1,
+          ),
+        ),
+      );
+      isImageUploadLoading = false;
+      return ''; // Return empty string or handle the error as needed
     }
   }
 }

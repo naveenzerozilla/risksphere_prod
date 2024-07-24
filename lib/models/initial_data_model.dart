@@ -257,7 +257,11 @@ class Companies {
     print("display name: $displayName");
     print("company id: $id");
     print("admins: $admins");
-    countryName = json['country']??"";
+    if(json["country"].runtimeType == String) {
+      countryName = json['country']??"";
+    } else {
+      countryName = json['country']['name']??"";
+    }
 
   }
 

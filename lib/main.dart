@@ -10,9 +10,12 @@ import 'package:green/providers/dashboard_provider.dart';
 import 'package:green/providers/email_provider.dart';
 import 'package:green/providers/employee_provider.dart';
 import 'package:green/providers/feature_provider.dart';
+import 'package:green/providers/location_list_provider.dart';
+import 'package:green/providers/location_profile_provider.dart';
 import 'package:green/providers/non_corporate_user_Provider.dart';
 import 'package:green/providers/sov_list_provider.dart';
 import 'package:green/providers/sub_account_list_provider.dart';
+import 'package:green/providers/upload_sov_provider.dart';
 import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/providers/verification_provider.dart';
 import 'package:provider/provider.dart';
@@ -56,6 +59,9 @@ void main() async {
           ChangeNotifierProvider(create: (_) => AccountListProvider()),
           ChangeNotifierProvider(create: (_) => SubAccountListProvider()),
           ChangeNotifierProvider(create: (_) => SOVListProvider()),
+          ChangeNotifierProvider(create: (_) => LocationListProvider()),
+          ChangeNotifierProvider(create: (_) => LocationProfileProvider()),
+          ChangeNotifierProvider(create: (_) => UploadSovProvider()),
         ],
         child: const MyApp(),
       ),

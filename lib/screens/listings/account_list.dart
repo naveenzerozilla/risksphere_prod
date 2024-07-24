@@ -13,12 +13,15 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/roles_dropdown.dart';
 import 'package:green/models/account_list_model.dart';
+import 'package:green/models/upload_sov_model.dart';
 import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/connections_provider.dart';
+import 'package:green/providers/upload_sov_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sub_account_list.dart';
 import 'package:green/screens/listings/widgets/auto_complete_options.dart';
+import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -295,7 +298,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             child: Consumer<AccountListProvider>(
                                 builder: (context, accountListProvider, _) {
                               return accountListProvider.isLoading
-                                  ? Column(
+                                  ? Stack(
+                                alignment: Alignment.center,
                                       children: [
                                         SizedBox(
                                           height: 100,
@@ -863,7 +867,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             });
                             _showUploadDialog(accountListProvider.accountList[index].accountId.toString());
                           },
-                          tooltip: 'Export',
+                          tooltip: LanguageService.getTranslated(
+                              context, "account_list_app_export_tooltip_text"),
                         ),
                         IconButton(
                           icon: const Icon(Icons.file_copy_rounded),
@@ -1037,8 +1042,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             onChanged: (value) async {
                               bool result = await accountListProvider
                                   .changeColumnVisibility(context,
-                                      showOwner: value ?? false,
-                                      showSOVCount: accountListProvider.showSOVCount,
+                                      showOwner: accountListProvider.showOwner,
+                                      showSOVCount: value ?? false,
                                       showSubAccountCount: accountListProvider.showSubAccountCount,
                                       showOverallScore: accountListProvider.showOverallScore,
                                       type: 'sov_count');
@@ -1169,12 +1174,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                               context, "account_list_app_account_upload_sov"),
                           textAlign: TextAlign.start,
                           style: CustomTypography.Body1),
-                      SizedBox(height: 5),
-                      Text(
-                          LanguageService.getTranslated(context,
-                              "account_list_app_account_adding_sov_account"),
-                          textAlign: TextAlign.start,
-                          style: CustomTypography.Body1),
                       SizedBox(height: 20),
                       _uploadedFileName == null
                           ? GestureDetector(
@@ -1273,16 +1272,27 @@ class _AccountListScreenState extends State<AccountListScreen>
                               ),
                             ),
                       SizedBox(height: 15),
-                      Text(
-                          LanguageService.getTranslated(
-                              context, "account_list_app_account_sov_name"),
-                          textAlign: TextAlign.start,
-                          style: CustomTypography.Body1),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_1"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_2"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                        ],
+                      ),
                       SizedBox(height: 10),
                       TextField(
                         controller: _sovNameController,
                         readOnly: _uploadedFileName != null,
                         style: TextStyle(color: Colors.white),
+
                         decoration: InputDecoration(
                           labelText: LanguageService.getTranslated(
                               context, "account_list_app_sov_name"),
@@ -1296,6 +1306,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                           hintText: LanguageService.getTranslated(
                               context, "account_list_app_account_name_of_sov"),
                           hintStyle: TextStyle(color: Colors.white54),
+
                         ),
                       ),
                       SizedBox(height: 20),
@@ -1313,11 +1324,17 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         MediaQuery.of(context).size.width / 1.2,
                                     child: CustomButton(
                                       onPressed: () async {
+
                                         String success = (await Provider.of<
                                                     AccountListProvider>(
                                                 context,
                                                 listen: false)
-                                            .uploadImage(context, files, accountId));
+                                            .uploadSovAccount(context, files, accountId, _sovNameController.text));
+                                        if(success.isNotEmpty) {
+
+                                            Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success,)));
+
+                                        }
                                       },
                                       type: ButtonType.filled,
                                       child: Text(

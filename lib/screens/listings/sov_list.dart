@@ -15,6 +15,7 @@ import 'package:green/providers/sov_list_provider.dart';
 import 'package:green/providers/sub_account_list_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
+import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -33,10 +34,10 @@ import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
 import '../../service/language_service.dart';
+import 'add_location_screen.dart';
 import 'widgets/auto_complete_options.dart';
 
 class SovListScreen extends StatefulWidget {
-
   final String accountId;
   final String accountName;
   final String subAccountId;
@@ -54,8 +55,7 @@ class SovListScreen extends StatefulWidget {
   State<SovListScreen> createState() => _SovListScreenState();
 }
 
-class _SovListScreenState extends State<SovListScreen>
-    with TickerProviderStateMixin {
+class _SovListScreenState extends State<SovListScreen> with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   TabController? _tabController;
@@ -81,10 +81,7 @@ class _SovListScreenState extends State<SovListScreen>
 
   Timer? autoCompleteDeBouncer;
 
-  void debounce(
-      VoidCallback callback, {
-        Duration duration = const Duration(seconds: 1),
-      }) {
+  void debounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
       deBouncer!.cancel();
     }
@@ -95,17 +92,13 @@ class _SovListScreenState extends State<SovListScreen>
     debounce(() async {
       if (!mounted) return;
       _sovQuery = query;
-      print("Query set to: $_sovQuery");
       var provider = Provider.of<SOVListProvider>(context, listen: false);
       provider.page = 0;
-      await provider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, provider.page, 2);
+      await provider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, provider.page, 10);
     });
   }
 
-  void autoCompleteDebounce(
-      VoidCallback callback, {
-        Duration duration = const Duration(seconds: 1),
-      }) {
+  void autoCompleteDebounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (autoCompleteDeBouncer != null) {
       autoCompleteDeBouncer!.cancel();
     }
@@ -116,7 +109,6 @@ class _SovListScreenState extends State<SovListScreen>
     if (query.isEmpty) {
       return;
     }
-    print("autoCompleteSubAccountsSearchClient called with query: $query");
     autoCompleteDebounce(() async {
       if (!mounted) return;
       var provider = Provider.of<SubAccountListProvider>(context, listen: false);
@@ -124,9 +116,7 @@ class _SovListScreenState extends State<SovListScreen>
 
       // Force UI update after API call
       if (mounted) {
-        setState(() {
-          print("setState called after fetchAutoCompleteAccountList");
-        });
+        setState(() {});
       }
     });
   }
@@ -142,280 +132,237 @@ class _SovListScreenState extends State<SovListScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SOVListProvider>(context, listen: false).page = 0;
       Provider.of<SOVListProvider>(context, listen: false)
-          .fetchSovList(context, widget.accountId, widget.subAccountId, "", 0, 2);
+          .fetchSovList(context, widget.accountId, widget.subAccountId, "", 0, 10);
     });
   }
 
   @override
   Widget build(BuildContext context1) {
-    return Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
-          return Scaffold(
-            key: _scaffoldKey,
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
-            appBar: CustomAppBar(
-              isExpanded: _isExpanded,
-              showDropdown: true,
-              showNotificationDot: _showNotificationDot,
-              onExpandPressed: (isExpanded) {
-                setState(() {
-                  _isExpanded = isExpanded;
-                });
-              },
-              onSearchPressed: () {
-                setState(() {
-                  _isExpanded = !_isExpanded;
-                });
-              },
-            ),
-            drawer: CustomDrawer(),
-            floatingActionButton: _selectedScreen == Screens.subAccountList
-                ? showCheckbox
-                ? Builder(builder: (contextLocal) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
+    return Consumer<ThemeProvider>(builder: (buildContext, themeProvider, child) {
+      return Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: themeProvider.getTheme.colorScheme.background,
+        appBar: CustomAppBar(
+          isExpanded: _isExpanded,
+          showDropdown: true,
+          showNotificationDot: _showNotificationDot,
+          onExpandPressed: (isExpanded) {
+            setState(() {
+              _isExpanded = isExpanded;
+            });
+          },
+          onSearchPressed: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+        ),
+        drawer: CustomDrawer(),
+        floatingActionButton: Builder(builder: (contextLocal) {
+          return FloatingActionButton(
+            onPressed: () {
+              // On export button click
+              List<String> selectedSovIds = Provider.of<SOVListProvider>(context, listen: false)
+                  .sovList
+                  .where((sov) => sov.isChecked ?? false)
+                  .map((sov) => sov.id!)
+                  .toList();
+
+              if (selectedSovIds.isNotEmpty) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return ExportDialog(
+                      accountId: widget.accountId,
+                      subAccountId: widget.subAccountId,
+                      sovId: selectedSovIds,
+                    );
+                  },
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(
+                    LanguageService.getTranslated(context, "no_items_selected_error"),
+                    style: CustomTypography.Body1,
+                  ),
+                ));
+              }
+            },
+            child: Icon(CupertinoIcons.tray_arrow_down),
+          );
+        }),
+        body: PopScope(
+          canPop: true,
+          onPopInvoked: (canPop) {},
+          child: Stack(
+            children: [
+              // Background image
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/mesh.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Column(
                 children: [
-                  FloatingActionButton(
-                    onPressed: () {
-                      // On export button click
-                    },
-                    child: Icon(CupertinoIcons.tray_arrow_down),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  FloatingActionButton(
-                    onPressed: () {
-                      _tabController?.animateTo(3);
-                      _selectedScreen = Screens.networkList;
-                    },
-                    child: Icon(Icons.add),
-                  ),
-                ],
-              );
-            })
-                : FloatingActionButton(
-              onPressed: () {
-                // Add sub account dialog with autocomplete from api and create account
-                _showAddSubAccountDialog(context);
-
-              },
-              child: Icon(Icons.add),
-            )
-
-                : SizedBox(),
-            body: PopScope(
-              canPop: /*_selectedScreen == Screens.connectionList ||
-                  _selectedScreen == Screens.corporateConnectionList,*/
-              true,
-              onPopInvoked: (canPop) {
-                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateConnectionList;
-                  });
-                } else if (_selectedScreen == Screens.requestList) {
-                  setState(() {
-                    _tabController?.animateTo(0);
-                    _selectedScreen = Screens.corporateConnectionList;
-                  });
-                }*/
-              },
-              child: Stack(
-                children: [
-                  // Background image
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/mesh.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              /*     Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      RolesDropdown(),
-                                    ],
-                                  ),
-                                ],
-                              ),*/
-                              Text(
-                                '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
-                                style: CustomTypography.H5_Regular,
-                              ),
-                              Text(
-                                LanguageService.getTranslated(
-                                    context, "sov_list_app_subtitle"),
-                                style: CustomTypography.Body2,
-                              ),
-                              SizedBox(height: CustomSpacing.four),
-                              // Search
-                              SizedBox(
-                                height: 50,
-                                child: TextField(
-                                  controller: _textEditingController,
-                                  onChanged: (query) {
-                                    sovSearchClient(query);
-                                  },
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    hintText: LanguageService.getTranslated(
-                                        context, "sov_list_search_hint"),
-                                    hintStyle: CustomTypography.Body2,
-                                    prefixIcon: Icon(Icons.search),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: CustomSpacing.four),
-                              // List of accounts
-                              Expanded(
-                                child: Consumer<SOVListProvider>(
-                                    builder: (context, sovListProvider, _) {
-                                      return sovListProvider.isLoading
-                                          ? Column(
-                                        children: [
-                                          SizedBox(
-                                            height: 100,
-                                          ),
-                                          Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        ],
-                                      )
-                                          : sovListProvider.sovList.isEmpty
-                                          ? Center(
-                                        child: Text(
-                                          LanguageService.getTranslated(
-                                              context,
-                                              "sov_list_app_no_sov_text"),
-                                          style: CustomTypography.Body1,
-                                        ),
-                                      )
-                                          :
-                                      ListView.builder(
-                                        itemCount: sovListProvider
-                                            .sovList.length,
-                                        itemBuilder: (context, index) {
-                                          print("Query1: $_sovQuery");
-                                          if (index ==
-                                              sovListProvider
-                                                  .sovList.length -
-                                                  1) {
-                                            // Check if it's the last item
-                                            if (sovListProvider
-                                                .isNextPageLoading) {
-                                              // Display loading indicator
-                                              return Padding(
-                                                padding:
-                                                const EdgeInsets.all(8.0),
-                                                child: Center(
-                                                  child:
-                                                  CircularProgressIndicator(),
-                                                ),
-                                              );
-                                            } else if (sovListProvider.page >=
-                                                sovListProvider.totalPages&&sovListProvider.sovList.isNotEmpty) {
-                                              // Display end of list message
-                                              print("sov list: ${sovListProvider.sovList}");
-                                              return Column(
-                                                children: [
-                                                  _buildSovCard(
-                                                      index, sovListProvider),
-                                                  Padding(
-                                                    padding:
-                                                    const EdgeInsets.all(8.0),
-                                                    child: Center(
-                                                      child: Text(LanguageService.getTranslated(
-                                                          context,
-                                                          "sov_list_app_end_of_list_text"),
-                                                        style: CustomTypography.Body1,
-                                                      ),
-                                                    ), ),
-                                                ],
-                                              );
-                                            } else {
-                                              // Trigger fetching the next page
-                                              sovListProvider.page =
-                                                  sovListProvider.page + 1;
-                                              print(
-                                                  "Fetching page ${sovListProvider.page}");
-                                              print(
-                                                  "Query: $_sovQuery, Page: ${sovListProvider.page}");
-                                              sovListProvider
-                                                  .fetchSovList(
-                                                context,
-                                                widget.accountId,
-                                                widget.subAccountId,
-                                                _sovQuery,
-                                                // Pass the search query if any
-                                                sovListProvider.page,
-                                                2, // Page size
-                                              );
-                                              return SizedBox();
-                                            }
-                                          }
-
-                                          return _buildSovCard(
-                                              index, sovListProvider);
-                                        },
-                                      );
-                                    }),
-                              ),
-                            ],
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
+                            style: CustomTypography.H5_Regular,
                           ),
-                        ),
+                          Text(
+                            LanguageService.getTranslated(
+                                context, "sov_list_app_subtitle"),
+                            style: CustomTypography.Body2,
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // Search
+                          SizedBox(
+                            height: 50,
+                            child: TextField(
+                              controller: _textEditingController,
+                              onChanged: (query) {
+                                sovSearchClient(query);
+                              },
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                hintText: LanguageService.getTranslated(
+                                    context, "sov_list_search_hint"),
+                                hintStyle: CustomTypography.Body2,
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // List of accounts
+                          Expanded(
+                            child: Consumer<SOVListProvider>(
+                                builder: (context, sovListProvider, _) {
+                                  return sovListProvider.isLoading
+                                      ? Column(
+                                    children: [
+                                      SizedBox(
+                                        height: 100,
+                                      ),
+                                      Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ],
+                                  )
+                                      : sovListProvider.sovList.isEmpty
+                                      ? Center(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context,
+                                          "sov_list_app_no_sov_text"),
+                                      style: CustomTypography.Body1,
+                                    ),
+                                  )
+                                      : ListView.builder(
+                                    itemCount: sovListProvider
+                                        .sovList.length,
+                                    itemBuilder: (context, index) {
+                                      if (index ==
+                                          sovListProvider
+                                              .sovList.length -
+                                              1) {
+                                        // Check if it's the last item
+                                        if (sovListProvider
+                                            .isNextPageLoading) {
+                                          // Display loading indicator
+                                          return Padding(
+                                            padding:
+                                            const EdgeInsets.all(8.0),
+                                            child: Center(
+                                              child:
+                                              CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        } else if (sovListProvider.page >=
+                                            sovListProvider
+                                                .totalPages &&
+                                            sovListProvider
+                                                .sovList.isNotEmpty) {
+                                          // Display end of list message
+                                          return Column(
+                                            children: [
+                                              _buildSovCard(
+                                                  index,
+                                                  sovListProvider),
+                                              Padding(
+                                                padding:
+                                                const EdgeInsets.all(
+                                                    8.0),
+                                                child: Center(
+                                                  child: Text(
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "sov_list_app_end_of_list_text"),
+                                                    style:
+                                                    CustomTypography
+                                                        .Body1,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        } else {
+                                          // Trigger fetching the next page
+                                          sovListProvider.page =
+                                              sovListProvider.page + 1;
+                                          sovListProvider.fetchSovList(
+                                            context,
+                                            widget.accountId,
+                                            widget.subAccountId,
+                                            _sovQuery,
+                                            sovListProvider.page,
+                                            10, // Page size
+                                          );
+                                          return SizedBox();
+                                        }
+                                      }
+
+                                      return _buildSovCard(
+                                          index, sovListProvider);
+                                    },
+                                  );
+                                }),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          );
-        });
+            ],
+          ),
+        ),
+      );
+    });
   }
 
-  Widget _buildSovCard(int index, SOVListProvider subAccountListProvider) {
+  Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        /*onLongPress: () {
-          // Show checkbox
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              showCheckbox = !showCheckbox;
-            });
-          });
-          setState(() {
-            accountListProvider.accountList[index].isChecked =
-            !(accountListProvider.accountList[index].isChecked??false);
-          });
-
-        },*/
         onTap: () {
           // On tap of card
-
           if (showCheckbox) {
             setState(() {
-              subAccountListProvider.sovList[index].isChecked =
-              !(subAccountListProvider.sovList[index].isChecked ?? false);
+              sOVListProvider.sovList[index].isChecked =
+              !(sOVListProvider.sovList[index].isChecked ?? false);
             });
           }
           // if all are unselected then hide checkbox
-          if (subAccountListProvider.sovList
+          if (sOVListProvider.sovList
               .every((element) => element.isChecked == false)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
@@ -424,34 +371,31 @@ class _SovListScreenState extends State<SovListScreen>
             });
           }
           Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return /* LocationProfile(
-              account: accountListProvider.accountList[index],
-            );*/
-              LocationList(
-                userId: subAccountListProvider.sovList[index].accountId ?? "",
-                companyName:
-                subAccountListProvider.sovList[index].name ?? "",
-              );
+            return LocationList(
+              userId: sOVListProvider.sovList[index].accountId ?? "",
+              companyName: widget.accountName,
+              accountId: widget.accountId,
+              subAccountId: widget.subAccountId,
+              sovId: sOVListProvider.sovList[index].id ?? "",
+              sovName: sOVListProvider.sovList[index].name ?? "",
+              subAccountName: widget.subAccountName,
+              rating: sOVListProvider.sovList[index].overAllScore?.toString() ??
+                  "0",
+            );
           }));
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /*showCheckbox
-                ? Checkbox(
-              value: accountListProvider.accountList[index].isChecked??false,
+            // Add Checkbox here
+            Checkbox(
+              value: sOVListProvider.sovList[index].isChecked ?? false,
               onChanged: (value) {
-                // Handle checkbox value change
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) {
-                  setState(() {
-                    accountListProvider.accountList[index].isChecked = value;
-                  });
+                setState(() {
+                  sOVListProvider.sovList[index].isChecked = value??false;
                 });
               },
-            )
-                : */
-            SizedBox(),
+            ),
             SizedBox(
               width: CustomSpacing.two,
             ),
@@ -488,25 +432,21 @@ class _SovListScreenState extends State<SovListScreen>
                                     children: [
                                       Flexible(
                                         child: Text(
-                                          (subAccountListProvider
-                                              .sovList[index]
-                                              .name ??
+                                          (sOVListProvider.sovList[index].name ??
                                               "")
                                               .isNotEmpty
-                                              ? subAccountListProvider
-                                              .sovList[index]
+                                              ? sOVListProvider.sovList[index]
                                               .name!
                                               .substring(0, 1)
                                               .toUpperCase() +
-                                              subAccountListProvider
-                                                  .sovList[index]
+                                              sOVListProvider.sovList[index]
                                                   .name!
                                                   .substring(1)
                                               : "",
                                           style:
                                           CustomTypography.Body2.copyWith(
-                                            color:
-                                            Theme.of(context).brightness ==
+                                            color: Theme.of(context)
+                                                .brightness ==
                                                 Brightness.dark
                                                 ? AppColors.white
                                                 : AppColors.black,
@@ -521,17 +461,17 @@ class _SovListScreenState extends State<SovListScreen>
                                       InkWell(
                                         onTap: () {
                                           _sovEditNameController.text =
-                                          (subAccountListProvider
+                                          (sOVListProvider
                                               .sovList[index]
                                               .name ??
                                               "")
                                               .isNotEmpty
-                                              ? subAccountListProvider
+                                              ? sOVListProvider
                                               .sovList[index]
                                               .name!
                                               .substring(0, 1)
                                               .toUpperCase() +
-                                              subAccountListProvider
+                                              sOVListProvider
                                                   .sovList[index]
                                                   .name!
                                                   .substring(1)
@@ -545,8 +485,8 @@ class _SovListScreenState extends State<SovListScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       "sov_list_app_edit_sov_title"),
-                                                  style: CustomTypography
-                                                      .H5_Regular,
+                                                  style:
+                                                  CustomTypography.H5_Regular,
                                                 ),
                                                 content: Column(
                                                   mainAxisSize:
@@ -554,11 +494,14 @@ class _SovListScreenState extends State<SovListScreen>
                                                   children: [
                                                     Column(
                                                       children: [
-                                                        // add a chip with text then / then text field
                                                         Chip(
                                                           label: Text(
-                                                           widget.accountName+" / "+widget.subAccountName,
-                                                            style: CustomTypography
+                                                            widget.accountName +
+                                                                " / " +
+                                                                widget
+                                                                    .subAccountName,
+                                                            style:
+                                                            CustomTypography
                                                                 .Body1,
                                                           ),
                                                         ),
@@ -568,7 +511,6 @@ class _SovListScreenState extends State<SovListScreen>
                                                         TextField(
                                                           controller:
                                                           _sovEditNameController,
-
                                                           decoration:
                                                           InputDecoration(
                                                             border:
@@ -610,48 +552,66 @@ class _SovListScreenState extends State<SovListScreen>
                                                                   .getTranslated(
                                                                   context,
                                                                   "sov_list_app_edit_cancel_text"),
-                                                              style: CustomTypography
+                                                              style:
+                                                              CustomTypography
                                                                   .ButtonLarge,
                                                             ),
-                                                            type:
-                                                            ButtonType.text,
+                                                            type: ButtonType.text,
                                                           ),
                                                         ),
                                                         Consumer<SOVListProvider>(
-                                                            builder: (context, sovListProvider, _) {
-                                                              return sovListProvider.isRenameLoading?
-                                                              const Expanded(
-                                                                child:  Row(
-                                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                                  children: [
-                                                                    SizedBox(width:25, height:25,child: CircularProgressIndicator()),
-                                                                  ],
-                                                                ),
-                                                              )
-                                                                  :Expanded(
-                                                                child: CustomButton(
-                                                                  onPressed: () async {
-                                                                    if(_sovEditNameController.text.isEmpty){
-                                                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_rename_sub_account_empty_text_error"), style: CustomTypography.Body1,)));
+                                                            builder: (context,
+                                                                sovListProvider,
+                                                                _) {
+                                                              return sovListProvider
+                                                                  .isRenameLoading
+                                                                  ? const Expanded(
+                                                                  child: Row(
+                                                                    mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .center,
+                                                                    children: [
+                                                                      SizedBox(
+                                                                          width: 25,
+                                                                          height: 25,
+                                                                          child:
+                                                                          CircularProgressIndicator()),
+                                                                    ],
+                                                                  ))
+                                                                  : Expanded(
+                                                                child:
+                                                                CustomButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    if (_sovEditNameController
+                                                                        .text
+                                                                        .isEmpty) {
+                                                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                                          content: Text(
+                                                                            LanguageService.getTranslated(context, "sub_account_list_app_rename_sub_account_empty_text_error"),
+                                                                            style: CustomTypography.Body1,
+                                                                          )));
                                                                       return;
                                                                     }
                                                                     // Update account details
-                                                                    await sovListProvider
-                                                                        .renameSov(
+                                                                    await sovListProvider.renameSov(
                                                                         context,
-                                                                        widget.accountId,
-                                                                        widget.subAccountId,
+                                                                        widget
+                                                                            .accountId,
+                                                                        widget
+                                                                            .subAccountId,
                                                                         sovListProvider
                                                                             .sovList[
                                                                         index]
-                                                                            .id??"",
+                                                                            .id ??
+                                                                            "",
                                                                         _sovEditNameController
                                                                             .text);
-                                                                    Navigator.pop(context);
+                                                                    Navigator.pop(
+                                                                        context);
                                                                   },
                                                                   child: Text(
-                                                                    LanguageService
-                                                                        .getTranslated(
+                                                                    LanguageService.getTranslated(
                                                                         context,
                                                                         "sov_list_app_edit_update_text"),
                                                                     style: CustomTypography
@@ -661,8 +621,7 @@ class _SovListScreenState extends State<SovListScreen>
                                                                       .elevated,
                                                                 ),
                                                               );
-                                                            }
-                                                        ),
+                                                            }),
                                                       ],
                                                     ),
                                                   ],
@@ -678,29 +637,66 @@ class _SovListScreenState extends State<SovListScreen>
                                       ),
                                     ],
                                   ),
-                                  /// todo: add location count
+                                  !sOVListProvider.showLocationCount
+                                      ? SizedBox()
+                                      : Row(
+                                    children: [
+                                      Text(
+                                          sOVListProvider
+                                              .sovList[index]
+                                              .locationCount !=
+                                              null &&
+                                              sOVListProvider
+                                                  .sovList[index]
+                                                  .locationCount ==
+                                                  1
+                                              ? LanguageService.getTranslated(
+                                              context,
+                                              "sov_list_app_column_location_count_text")
+                                              : sOVListProvider
+                                              .sovList[index]
+                                              .locationCount ==
+                                              null
+                                              ? ""
+                                              : LanguageService
+                                              .getTranslated(
+                                              context,
+                                              "sov_list_app_column_location_count_text"),
+                                          style: CustomTypography.Caption),
+                                      SizedBox(
+                                        width: CustomSpacing.two,
+                                      ),
+                                      Text(
+                                          sOVListProvider.sovList[index]
+                                              .locationCount
+                                              ?.toString() ??
+                                              "",
+                                          style: CustomTypography.Caption),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
-                            !subAccountListProvider.showOverallScore
+                            !sOVListProvider.showOverallScore
                                 ? SizedBox()
                                 : Padding(
                               padding:
                               EdgeInsets.only(top: CustomSpacing.one),
                               child: CustomGradientCircularProgressBar(
                                 radius: 23,
-                                value: double.parse(subAccountListProvider
-                                    .sovList[index].overAllScore
-                                    ?.toString() ??
-                                    "0"),
+                                value: double.parse(
+                                    sOVListProvider.sovList[index]
+                                        .overAllScore
+                                        ?.toString() ??
+                                        "0"),
                                 strokeWidth: 6,
                                 showText: true,
                                 textColor: Theme.of(context).brightness ==
                                     Brightness.dark
                                     ? AppColors.white
                                     : AppColors.black,
-                                text: subAccountListProvider
-                                    .sovList[index].overAllScore
+                                text: sOVListProvider.sovList[index]
+                                    .overAllScore
                                     ?.toString() ??
                                     "0",
                               ),
@@ -727,26 +723,8 @@ class _SovListScreenState extends State<SovListScreen>
                     ),
                     child: Row(
                       children: [
-                        // Icon with text
-                        /*TextButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.history),
-                          label: Text('View History',
-                              style: CustomTypography.Caption.copyWith(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? AppColors.white
-                                      : AppColors.black)),
-                        ),*/
                         SizedBox(),
                         const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.upload_rounded),
-                          color: AppColors.primaryMain,
-                          onPressed: () async {},
-                          tooltip: LanguageService.getTranslated(
-                              context, "sov_list_app_export_tooltip_text"),
-                        ),
                         IconButton(
                           icon: const Icon(Icons.file_copy_rounded),
                           color: AppColors.primaryMain,
@@ -757,8 +735,8 @@ class _SovListScreenState extends State<SovListScreen>
                               builder: (context) {
                                 return AlertDialog(
                                   title: Text(
-                                    LanguageService.getTranslated(
-                                        context, "sov_list_app_duplicate_title"),
+                                    LanguageService.getTranslated(context,
+                                        "sov_list_app_duplicate_title"),
                                     style: CustomTypography.H5_Regular,
                                   ),
                                   content: Column(
@@ -783,38 +761,47 @@ class _SovListScreenState extends State<SovListScreen>
                                               },
                                               child: Text(
                                                 LanguageService.getTranslated(
-                                                    context, "sov_list_app_duplicate_cancel"),
-                                                style: CustomTypography.ButtonLarge,
+                                                    context,
+                                                    "sov_list_app_duplicate_cancel"),
+                                                style:
+                                                CustomTypography.ButtonLarge,
                                               ),
                                               type: ButtonType.text,
                                             ),
                                           ),
-                                          subAccountListProvider.isDuplicateLoading?
-                                          const Expanded(
-                                            child:  Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                SizedBox(width:25, height:25,child: CircularProgressIndicator()),
-                                              ],
-                                            ),
-                                          )
-                                              :
-                                          Expanded(
+                                          sOVListProvider.isDuplicateLoading
+                                              ? const Expanded(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                                children: [
+                                                  SizedBox(
+                                                      width: 25,
+                                                      height: 25,
+                                                      child:
+                                                      CircularProgressIndicator()),
+                                                ],
+                                              ))
+                                              : Expanded(
                                             child: CustomButton(
                                               onPressed: () async {
                                                 // Duplicate
-                                                await subAccountListProvider.duplicateSubAccount(
+                                                await sOVListProvider
+                                                    .duplicateSubAccount(
                                                     context,
                                                     widget.accountId,
-                                                    subAccountListProvider
+                                                    widget.subAccountId,
+                                                    sOVListProvider
                                                         .sovList[index]
                                                         .accountId!);
                                                 Navigator.pop(context);
                                               },
                                               child: Text(
                                                 LanguageService.getTranslated(
-                                                    context, "sov_list_app_duplicate_duplicate"),
-                                                style: CustomTypography.ButtonLarge,
+                                                    context,
+                                                    "sov_list_app_duplicate_duplicate"),
+                                                style: CustomTypography
+                                                    .ButtonLarge,
                                               ),
                                               type: ButtonType.elevated,
                                             ),
@@ -868,210 +855,108 @@ class _SovListScreenState extends State<SovListScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       ListTile(
-                        leading: sovListProvider.showLocationCount?
-                        Padding(
-                          padding: EdgeInsets.only(left: CustomSpacing.three, right: CustomSpacing.three),
-                          child: SizedBox(width:25, height:25,child: CircularProgressIndicator()),
+                        leading: sovListProvider.showLocationCountLoading
+                            ? Padding(
+                          padding: EdgeInsets.only(
+                              left: CustomSpacing.three,
+                              right: CustomSpacing.three),
+                          child: SizedBox(
+                              width: 25,
+                              height: 25,
+                              child: CircularProgressIndicator()),
                         )
-                            :Checkbox(
+                            : Checkbox(
                           value: sovListProvider.showLocationCount,
                           onChanged: (value) async {
-                            bool result = await sovListProvider.changeColumnVisibility(context, widget.accountId, widget.subAccountId,showLocationCount: value??false, showOverallScore: sovListProvider.showOverallScore, type: 'location_count');
+                            bool result = await sovListProvider
+                                .changeColumnVisibility(
+                                context,
+                                widget.accountId,
+                                widget.subAccountId,
+                                showLocationCount: value ?? false,
+                                showOverallScore:
+                                sovListProvider.showOverallScore,
+                                type: 'location_count');
 
-                            if(result){
+                            if (result) {
                               setModalState(() {
-                                sovListProvider.showLocationCount = value ?? false;
+                                sovListProvider.showLocationCount =
+                                    value ?? false;
                               });
                               setState(() {
-                                sovListProvider.showLocationCount = value ?? false;
+                                sovListProvider.showLocationCount =
+                                    value ?? false;
                               });
                               // Update account list
-                              sovListProvider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, sovListProvider.page, 10);
+                              sovListProvider.fetchSovList(
+                                  context,
+                                  widget.accountId,
+                                  widget.subAccountId,
+                                  _sovQuery,
+                                  sovListProvider.page,
+                                  10);
                             }
                           },
                         ),
-                        title: Text(LanguageService.getTranslated(context, "sov_list_app_column_location_count_text"), style: CustomTypography.Body1),
+                        title: Text(
+                            LanguageService.getTranslated(context,
+                                "sov_list_app_column_location_count_text"),
+                            style: CustomTypography.Body1),
                       ),
                       ListTile(
-                        leading:   sovListProvider.showOverallScoreLoading?
-                        Padding(
-                          padding: EdgeInsets.only(left: CustomSpacing.three, right: CustomSpacing.three),
-                          child: SizedBox(width:25, height:25,child: CircularProgressIndicator()),
+                        leading: sovListProvider.showOverallScoreLoading
+                            ? Padding(
+                          padding: EdgeInsets.only(
+                              left: CustomSpacing.three,
+                              right: CustomSpacing.three),
+                          child: SizedBox(
+                              width: 25,
+                              height: 25,
+                              child: CircularProgressIndicator()),
                         )
-                            :Checkbox(
+                            : Checkbox(
                           value: sovListProvider.showOverallScore,
                           onChanged: (value) async {
-
-                            bool result = await  sovListProvider.changeColumnVisibility(context, widget.accountId, widget.subAccountId, showLocationCount: sovListProvider.showLocationCount, showOverallScore: value??false, type: 'overall_score');
-                            if(result){
+                            bool result =
+                            await sovListProvider.changeColumnVisibility(
+                                context,
+                                widget.accountId,
+                                widget.subAccountId,
+                                showLocationCount:
+                                sovListProvider.showLocationCount,
+                                showOverallScore: value ?? false,
+                                type: 'over_all_score');
+                            if (result) {
                               setModalState(() {
-                                sovListProvider.showOverallScore = value ?? false;
+                                sovListProvider.showOverallScore =
+                                    value ?? false;
                               });
                               setState(() {
-                                sovListProvider.showOverallScore = value ?? false;
+                                sovListProvider.showOverallScore =
+                                    value ?? false;
                               });
                               // Update account list
-                              sovListProvider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, sovListProvider.page, 10);
+                              sovListProvider.fetchSovList(
+                                  context,
+                                  widget.accountId,
+                                  widget.subAccountId,
+                                  _sovQuery,
+                                  sovListProvider.page,
+                                  10);
                             }
                           },
                         ),
-                        title: Text(LanguageService.getTranslated(context, "sov_list_app_column_overall_score_text"), style: CustomTypography.Body1),
+                        title: Text(
+                            LanguageService.getTranslated(context,
+                                "sov_list_app_column_overall_score_text"),
+                            style: CustomTypography.Body1),
                       ),
                     ],
                   );
-                }
-            );
+                });
           },
         );
       },
     );
   }
-
-  Future<void> _showAddSubAccountDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      LanguageService.getTranslated(context, "account_list_app_add_account_title"),
-                      style: CustomTypography.H5_Regular,
-                    ),
-                    SizedBox(height: 16.0),
-                    Consumer<AccountListProvider>(
-                      builder: (context, accountListProvider, child) {
-                        return Column(
-                          children: [
-                            TextField(
-                              controller: _textEditingController,
-                              focusNode: FocusNode(),
-                              onChanged: (value) async {
-                                setState(() {
-                                  _sovAlreadyExists = false;
-                                  _selectedSov = null;
-                                  // Clear the autocomplete list when user starts typing
-                                  accountListProvider.clearAutoCompleteList();
-                                });
-                                _autocompleteText = value;
-                                await autoCompleteAccountsSearchClient(_autocompleteText);
-                              },
-                              decoration: InputDecoration(
-                                labelText: LanguageService.getTranslated(context, "register_corporate_legalname_field_label"),
-                                hintText: LanguageService.getTranslated(context, "register_corporate_legalname_filed_placeholder"),
-                                border: const OutlineInputBorder(),
-                              ),
-                            ),
-                            if (_textEditingController.text.isNotEmpty && !_sovAlreadyExists)
-                              AutocompleteOptions(
-                                options: accountListProvider.autoCompleteAccountList,
-                                onSelected: (Accounts selection) {
-                                  setState(() {
-                                    _sovAlreadyExists = true;
-                                    _selectedSov = selection;
-                                    _textEditingController.text = selection.accountName!;
-                                    // Clear the autocomplete list when an option is selected
-                                    accountListProvider.clearAutoCompleteList();
-                                  });
-                                },
-                                isLoading: accountListProvider.isAutoCompleteLoading,
-                              ),
-                            if (_sovAlreadyExists)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16.0),
-                                child: TextField(
-                                  controller: _messageController,
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(context, "sub_account_list_app_comment_text"),
-                                    hintText: LanguageService.getTranslated(context, "sub_account_list_app_comment_placeholder"),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  maxLines: 3,
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                    SizedBox(height: CustomSpacing.six),
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Consumer<AccountListProvider>(builder: (context, accountListProvider, _) {
-                                return accountListProvider.isAddAccountLoading
-                                    ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
-                                  ],
-                                )
-                                    : CustomButton(
-                                  onPressed: () async {
-                                    if (_autocompleteText.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_add_sub_account_empty_text_error"), style: CustomTypography.Body1,)));
-                                      return;
-                                    }
-
-                                    if (!_sovAlreadyExists) {
-                                      // Add account
-                                      await accountListProvider.addAccount(context, _autocompleteText);
-                                    } else {
-                                      // Request access
-                                      if (_messageController.text.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_comment_empty_text_error"), style: CustomTypography.Body1,)));
-                                        return;
-                                      }
-                                      await accountListProvider.requestAccess(context, _selectedSov?.accountId ?? "", _messageController.text);
-                                    }
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text(
-                                    _sovAlreadyExists
-                                        ? LanguageService.getTranslated(context, "sub_account_list_app_request_access_text")
-                                        : LanguageService.getTranslated(context, "sub_account_list_app_submit_text"),
-                                    style: CustomTypography.ButtonLarge,
-                                  ),
-                                  type: ButtonType.elevated,
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                        CustomButton(
-                          onPressed: () {
-                            // Cancel
-                            Navigator.pop(context);
-                          },
-                          child: Text(
-                            LanguageService.getTranslated(context, "sub_account_list_app_cancel_text"),
-                            style: CustomTypography.ButtonLarge,
-                          ),
-                          type: ButtonType.text,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ).then((_) {
-      // Clear the autocomplete list when the dialog is dismissed
-      Provider.of<AccountListProvider>(context, listen: false).clearAutoCompleteList();
-      _textEditingController.clear();
-      _messageController.clear();
-      _sovAlreadyExists = false;
-    });
-  }
-
-
-
 }

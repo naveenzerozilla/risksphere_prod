@@ -116,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if(value.claims!['isIndividual'] == true) {
           showMyTeams = showNonCorporateMyTeams;
           print('isIndividual: $showMyTeams');
-        } else if(value.claims!['isInternal'] == true) {
+        } else if(value.claims!['internal'] == true) {
           showMyTeams = showEmployeeMyTeams;
           print('isInternal: $showMyTeams');
       } else {
@@ -1693,7 +1693,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     style: CustomTypography.Body1,
                   ),
                 ),
-                !showAddDelegate?SizedBox():Builder(
+                !showAddDelegate?SizedBox():userProfileProvider.myReportee.isEmpty?SizedBox(
+                  height: 40,
+                ):Builder(
                   builder: (context) {
                     return Row(
                       mainAxisSize: MainAxisSize.min,

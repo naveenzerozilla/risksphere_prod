@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,12 +11,15 @@ import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/roles_dropdown.dart';
 import 'package:green/models/account_list_model.dart';
+import 'package:green/models/sub_account_list_model.dart';
 import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/sub_account_list_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sov_list.dart';
+import 'package:green/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
+import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -60,6 +65,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   TextEditingController mobileController = TextEditingController();
   TextEditingController _messageController = TextEditingController();
 
+  String? _uploadedFileName;
+  TextEditingController _sovNameController = TextEditingController();
+
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool showCheckbox = false;
@@ -70,9 +78,11 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   int _selectedAccountIndex = 0;
 
+  late File files;
+
   String _subAccountQuery = "";
   bool _subAccountAlreadyExists = false;
-  Accounts? _selectedSubAccount;
+  SubAccounts? _selectedSubAccount;
   String _autocompleteText = "";
 
   Timer? autoCompleteDeBouncer;
@@ -763,7 +773,13 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                         IconButton(
                           icon: const Icon(Icons.upload_rounded),
                           color: AppColors.primaryMain,
-                          onPressed: () async {},
+                          onPressed: () async {
+                            setState(() {
+                              _uploadedFileName = null;
+                              _sovNameController.clear();
+                            });
+                            _showUploadDialog(subAccountListProvider.subAccountList[index].accountId.toString(), subAccountListProvider.subAccountList[index].subAccountId.toString());
+                          },
                           tooltip: LanguageService.getTranslated(
                               context, "sub_account_list_app_export_tooltip_text"),
                         ),
@@ -938,31 +954,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                       ),
                       title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_sov_count_text"), style: CustomTypography.Body1),
                     ),
-                    ListTile(
-                      leading:   subAccountListProvider.showOverallScoreLoading?
-                      Padding(
-                        padding: EdgeInsets.only(left: CustomSpacing.three, right: CustomSpacing.three),
-                        child: SizedBox(width:25, height:25,child: CircularProgressIndicator()),
-                      )
-                          :Checkbox(
-                        value: subAccountListProvider.showOverallScore,
-                        onChanged: (value) async {
-
-                          bool result = await  subAccountListProvider.changeColumnVisibility(context,accountId: widget.accountId, showOwner: subAccountListProvider.showOwner, showSOVCount: subAccountListProvider.showSovCount, showOverallScore: value??false, type: 'overall_score');
-                          if(result){
-                            setModalState(() {
-                              subAccountListProvider.showOverallScore = value ?? false;
-                            });
-                            setState(() {
-                              subAccountListProvider.showOverallScore = value ?? false;
-                            });
-                            // Update account list
-                            subAccountListProvider.fetchSubAccountList(context, widget.accountId, _subAccountQuery, subAccountListProvider.page, 2);
-                          }
-                        },
-                      ),
-                      title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_overall_score_text"), style: CustomTypography.Body1),
-                    ),
                   ],
                 );
               }
@@ -985,14 +976,22 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      LanguageService.getTranslated(context, "account_list_app_add_account_title"),
+                      LanguageService.getTranslated(context, "sub_account_list_app_add_account_title"),
                       style: CustomTypography.H5_Regular,
                     ),
-                    SizedBox(height: 16.0),
-                    Consumer<AccountListProvider>(
-                      builder: (context, accountListProvider, child) {
+                    SizedBox(height: 8.0),
+                    Consumer<SubAccountListProvider>(
+                      builder: (context, subAccountListProvider, child) {
                         return Column(
                           children: [
+                            // Chip with Account Name
+                            Chip(
+                              label: Text(
+                                widget.accountName ?? "",
+                                style: CustomTypography.Body1,
+                              ),
+                            ),
+                            SizedBox(height: 8,),
                             TextField(
                               controller: _textEditingController,
                               focusNode: FocusNode(),
@@ -1001,30 +1000,30 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   _subAccountAlreadyExists = false;
                                   _selectedSubAccount = null;
                                   // Clear the autocomplete list when user starts typing
-                                  accountListProvider.clearAutoCompleteList();
+                                  subAccountListProvider.clearAutoCompleteList();
                                 });
                                 _autocompleteText = value;
                                 await autoCompleteAccountsSearchClient(_autocompleteText);
                               },
                               decoration: InputDecoration(
-                                labelText: LanguageService.getTranslated(context, "register_corporate_legalname_field_label"),
-                                hintText: LanguageService.getTranslated(context, "register_corporate_legalname_filed_placeholder"),
+                                labelText: LanguageService.getTranslated(context, "sub_account_list_app_account_name_field_label"),
+                                hintText: LanguageService.getTranslated(context, "sub_account_list_app_account_name_field_hint"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),
                             if (_textEditingController.text.isNotEmpty && !_subAccountAlreadyExists)
-                              AutocompleteOptions(
-                                options: accountListProvider.autoCompleteAccountList,
-                                onSelected: (Accounts selection) {
+                              AutocompleteOptionsSubAccount(
+                                options: subAccountListProvider.autoCompleteSubAccountList,
+                                onSelected: (SubAccounts selection) {
                                   setState(() {
                                     _subAccountAlreadyExists = true;
                                     _selectedSubAccount = selection;
-                                    _textEditingController.text = selection.accountName!;
+                                    _textEditingController.text = selection.name!;
                                     // Clear the autocomplete list when an option is selected
-                                    accountListProvider.clearAutoCompleteList();
+                                    subAccountListProvider.clearAutoCompleteList();
                                   });
                                 },
-                                isLoading: accountListProvider.isAutoCompleteLoading,
+                                isLoading: subAccountListProvider.isAutoCompleteLoading,
                               ),
                             if (_subAccountAlreadyExists)
                               Padding(
@@ -1049,8 +1048,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                         Row(
                           children: [
                             Expanded(
-                              child: Consumer<AccountListProvider>(builder: (context, accountListProvider, _) {
-                                return accountListProvider.isAddAccountLoading
+                              child: Consumer<SubAccountListProvider>(builder: (context, subAccountListProvider, _) {
+                                return subAccountListProvider.isAddSubAccountLoading
                                     ? Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -1066,14 +1065,14 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
                                     if (!_subAccountAlreadyExists) {
                                       // Add account
-                                      await accountListProvider.addAccount(context, _autocompleteText);
+                                      await subAccountListProvider.addSubAccount(context, (widget.accountName??"")+'/'+_autocompleteText, widget.accountId);
                                     } else {
                                       // Request access
                                       if (_messageController.text.isEmpty) {
                                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_comment_empty_text_error"), style: CustomTypography.Body1,)));
                                         return;
                                       }
-                                      await accountListProvider.requestAccess(context, _selectedSubAccount?.accountId ?? "", _messageController.text);
+                                      await subAccountListProvider.requestAccess(context, _selectedSubAccount?.subAccountId ?? "", _messageController.text, widget.accountId);
                                     }
                                     Navigator.pop(context);
                                   },
@@ -1118,6 +1117,230 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     });
   }
 
+  void _showUploadDialog(String accountId, String subAccountId) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, StateSetter setState) {
+            return WillPopScope(
+              onWillPop: () async {
+                return false; // Disable the back button
+              },
+              child: AlertDialog(
+                backgroundColor: Colors.black87,
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                          LanguageService.getTranslated(
+                              context, "account_list_app_account_upload_sov"),
+                          textAlign: TextAlign.start,
+                          style: CustomTypography.Body1),
+                      SizedBox(height: 20),
+                      _uploadedFileName == null
+                          ? GestureDetector(
+                        onTap: () async {
+                          FilePickerResult? result =
+                          await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['xls', 'xlsx'],
+                          );
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            setState(() {
+                              files = file;
+                              String fileNameWithExtension = file.path.split('/').last;
+                              _uploadedFileName = fileNameWithExtension.split('.').first;
+                              _sovNameController.text = _uploadedFileName!;
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 150,
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined,
+                                    color: Colors.white),
+                                SizedBox(height: 10),
+                                Text(
+                                  LanguageService.getTranslated(context,
+                                      "account_list_app_account_upload_drag_and_drop"),
+                                  style: CustomTypography.Body1,
+                                ),
+                                SizedBox(height: 5),
+                                Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        color: Colors.white54),
+                                    SizedBox(width: 3),
+                                    Text('Max file size is 200 MB',
+                                        style: CustomTypography.Body1),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                          : Container(
+                        height: 150,
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.description, size: 25),
+                            SizedBox(height: 10),
+                            Text(
+                              _sovNameController.text,
+                              style: CustomTypography.Body1,
+                            ),
+                            SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                              },
+                              child: Text(
+                                LanguageService.getTranslated(context,
+                                    "account_list_app_cancel_text"),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .error,
+                                    fontSize: 14),
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_1"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                          Flexible(
+                            child: Center(
+                              child: Text(
+                                  widget.accountName ?? "",
+                                  textAlign: TextAlign.start,
+                                  style: CustomTypography.Body1),
+                            ),
+                          ),
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_2"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        controller: _sovNameController,
+                        readOnly: false,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(
+                              context, "account_list_app_sov_name"),
+                          labelStyle: TextStyle(color: Colors.white),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue),
+                          ),
+                          hintText: LanguageService.getTranslated(
+                              context, "account_list_app_account_name_of_sov"),
+                          hintStyle: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Consumer<SubAccountListProvider>(
+                              builder: (_, subAccountProvider, child) {
+                                return subAccountProvider.isImageUploadLoading
+                                    ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                                    : Container(
+                                  width:
+                                  MediaQuery.of(context).size.width / 1.2,
+                                  child: CustomButton(
+                                    onPressed: () async {
+                                      String success = (await Provider.of<
+                                          SubAccountListProvider>(
+                                          context,
+                                          listen: false)
+                                          .uploadSovAccount(context, files, accountId, subAccountId, _sovNameController.text));
+
+                                      if(success.isNotEmpty) {
+
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountId, accountName: widget.accountName??"",)));
+
+                                      }
+                                    },
+                                    type: ButtonType.filled,
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "login_submit_button"),
+                                      style: CustomTypography.ButtonLarge,
+                                    ),
+                                  ),
+                                );
+                              }),
+                          Container(
+                            width: MediaQuery.of(context).size.width / 1.2,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                  LanguageService.getTranslated(
+                                      context, "account_list_app_cancel_text"),
+                                  style: CustomTypography.Body1),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          });
+        });
+  }
 
 
 }

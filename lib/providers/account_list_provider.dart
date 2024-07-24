@@ -199,15 +199,15 @@ class AccountListProvider extends ChangeNotifier {
       } else {
         isNextPageLoading = true;
       }
-
       ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
       String url = '?page=$page&pageSize=$pageSize';
       if (searchQuery.isNotEmpty) {
-        url += '?search=$searchQuery';
+        url += '&search=$searchQuery'; // Change ? to & here
       }
 
       var response = await apiService.get(url);
       log(response.toString());
+
 
       AccountListModel accountListModel = AccountListModel.fromJson(response);
 
@@ -291,7 +291,9 @@ class AccountListProvider extends ChangeNotifier {
 
       // Update account name in the list
       page = 1;
-      fetchAccountList(context, '', 0, 10);
+      await Future.delayed(Duration(seconds: 4), () {
+        fetchAccountList(context, '', 0, 10);
+      });
 
       isDuplicateLoading = false;
     } on BackendException catch (e) {
@@ -405,7 +407,9 @@ class AccountListProvider extends ChangeNotifier {
 
       // Update account name in the list
       page = 1;
-      fetchAccountList(context, '', 0, 10);
+      await Future.delayed(Duration(seconds: 4), () {
+        fetchAccountList(context, '', 0, 10);
+      });
 
       isAddAccountLoading = false;
     } on BackendException catch (e) {
@@ -449,13 +453,13 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  Future<String> uploadImage(BuildContext context, File sovFile,String accountId) async {
+  Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String name) async {
     try {
       isImageUploadLoading = true;
-      ApiService apiService = ApiService(AppConstant.SOV + '/upload');
+      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
       print(apiService);
       // Send a POST request to the API to upload the image
-      Map<String, dynamic> response = await apiService.postMultiPartSOV(sovFile, accountId);
+      Map<String, dynamic> response = await apiService.postMultiPartSOVAccounts(sovFile, accountId, name);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);
@@ -465,7 +469,7 @@ class AccountListProvider extends ChangeNotifier {
           style: CustomTypography.Body1,
         ),
       ));
-      return '';
+      return response['temp_id']??'';
     } on BackendException catch (e) {
       isImageUploadLoading = false;
       Navigator.pop(context);

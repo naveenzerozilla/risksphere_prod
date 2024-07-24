@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
 import '../../../design_system/components/custom_button.dart';
 import '../../../design_system/components/rating_slider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
+import '../../../providers/location_list_provider.dart';
 
 class ListingsFilterScreen extends StatefulWidget {
+  final String accountId;
+  final String subAccountId;
+  final String sovId;
+  final String? searchQuery;
+
+  ListingsFilterScreen({super.key, required this.accountId, required this.subAccountId, required this.sovId, required this.searchQuery});
   @override
   _ListingsFilterScreenState createState() => _ListingsFilterScreenState();
 }
@@ -114,6 +122,158 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     });
   }
 
+  void removeFilter(String filterCategory, String filterValue) {
+    setState(() {
+      switch (filterCategory) {
+        case 'Geographical':
+          if (filterValue == selectedCountry) selectedCountry = null;
+          if (filterValue == selectedState) selectedState = null;
+          break;
+        case 'Ratings':
+          int ratingIndex = int.parse(filterValue.split(' ').last) - 1;
+          ratings[ratingIndex] = false;
+          break;
+        case 'Property Type':
+          propertyTypes[filterValue] = false;
+          break;
+        case 'Construction Type':
+          constructionTypes[filterValue] = false;
+          break;
+        case 'Certifications':
+          certifications[filterValue] = false;
+          break;
+        case 'Hazard':
+          hazards[filterValue] = false;
+          break;
+      }
+    });
+  }
+
+  void clearAllFilters() {
+    setState(() {
+      selectedCountry = null;
+      selectedState = null;
+      ratings = [false, false, false, false, false];
+      propertyTypes.updateAll((key, value) => false);
+      constructionTypes.updateAll((key, value) => false);
+      certifications.updateAll((key, value) => false);
+      hazards.updateAll((key, value) => false);
+    });
+  }
+
+  void applyFilters(BuildContext context) {
+    List<String> selectedCountries = selectedCountry != null ? [selectedCountry!] : [];
+    List<String> selectedStates = selectedState != null ? [selectedState!] : [];
+    List<int> selectedRatings = [];
+    for (int i = 0; i < ratings.length; i++) {
+      if (ratings[i]) selectedRatings.add(i + 1);
+    }
+
+    Map<String, bool> selectedPropertyTypes = {};
+    propertyTypes.forEach((key, value) {
+      if (value) selectedPropertyTypes[key] = true;
+    });
+
+    Map<String, bool> selectedConstructionTypes = {};
+    constructionTypes.forEach((key, value) {
+      if (value) selectedConstructionTypes[key] = true;
+    });
+
+    Map<String, bool> selectedCertifications = {};
+    certifications.forEach((key, value) {
+      if (value) selectedCertifications[key] = true;
+    });
+
+    Map<String, bool> selectedHazards = {};
+    hazards.forEach((key, value) {
+      if (value) selectedHazards[key] = true;
+    });
+
+    Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
+      context,
+      widget.accountId,
+      widget.subAccountId,
+      widget.sovId,
+      widget.searchQuery ?? "",
+      0, // Reset page to 0
+      40, // Page size
+      countries: selectedCountries,
+      state: selectedState ?? "",
+      propertyType: selectedPropertyTypes.keys.toList(),
+      constructionType: selectedConstructionTypes.keys.toList(),
+      certifications: selectedCertifications.keys.toList(),
+      hazard: selectedHazards.keys.toList(),
+      rating: selectedRatings,
+    );
+
+    Navigator.of(context).pop(); // Close the drawer
+  }
+
+  List<Widget> getFilterChips() {
+    List<Widget> chips = [];
+
+    if (selectedCountry != null) {
+      chips.add(Chip(
+        label: Text(selectedCountry!),
+        onDeleted: () => removeFilter('Geographical', selectedCountry!),
+      ));
+    }
+
+    if (selectedState != null) {
+      chips.add(Chip(
+        label: Text(selectedState!),
+        onDeleted: () => removeFilter('Geographical', selectedState!),
+      ));
+    }
+
+    for (int i = 0; i < ratings.length; i++) {
+      if (ratings[i]) {
+        chips.add(Chip(
+          label: Text('Rating ${i + 1}'),
+          onDeleted: () => removeFilter('Ratings', 'Rating ${i + 1}'),
+        ));
+      }
+    }
+
+    propertyTypes.forEach((key, value) {
+      if (value) {
+        chips.add(Chip(
+          label: Text(key),
+          onDeleted: () => removeFilter('Property Type', key),
+        ));
+      }
+    });
+
+    constructionTypes.forEach((key, value) {
+      if (value) {
+        chips.add(Chip(
+          label: Text(key),
+          onDeleted: () => removeFilter('Construction Type', key),
+        ));
+      }
+    });
+
+    certifications.forEach((key, value) {
+      if (value) {
+        chips.add(Chip(
+          label: Text(key),
+          onDeleted: () => removeFilter('Certifications', key),
+        ));
+      }
+    });
+
+    hazards.forEach((key, value) {
+      if (value) {
+        chips.add(Chip(
+          label: Text(key),
+          onDeleted: () => removeFilter('Hazard', key),
+        ));
+      }
+    });
+
+    return chips;
+  }
+
   @override
   Widget build(BuildContext context) {
     List<String> filteredTitles = expansionTitles.where((title) {
@@ -145,6 +305,15 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
             ),
             style: CustomTypography.Body1,
             onChanged: updateSearchQuery,
+          ),
+        ),
+        SizedBox(height: CustomSpacing.two),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
+          child: Wrap(
+            spacing: 8.0,
+            runSpacing: 4.0,
+            children: getFilterChips(),
           ),
         ),
         SizedBox(height: CustomSpacing.two),
@@ -337,25 +506,15 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               CustomButton(
                 type: ButtonType.elevated,
                 onPressed: () {
-                  // Apply filters logic
+                  applyFilters(context);
                 },
                 child: Text('Apply', style: CustomTypography.ButtonLarge),
               ),
               ElevatedButton(
                 onPressed: () {
-                  // Clear filters logic
-                  setState(() {
-                    searchQuery = "";
-                    selectedCountry = null;
-                    selectedState = null;
-                    ratings = [false, false, false, false, false];
-                    propertyTypes.updateAll((key, value) => false);
-                    constructionTypes.updateAll((key, value) => false);
-                    certifications.updateAll((key, value) => false);
-                    hazards.updateAll((key, value) => false);
-                  });
+                  clearAllFilters();
                 },
-                child: Text('Cancel', style: CustomTypography.ButtonLarge),
+                child: Text('Clear All', style: CustomTypography.ButtonLarge),
               ),
             ],
           ),

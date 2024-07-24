@@ -21,11 +21,11 @@ import '../models/initial_data_model.dart';
 import '../screens/onboarding/create_account_screen.dart';
 import '../screens/onboarding/splash_screen.dart';
 import '../service/shared_preference_service.dart';
+import 'package:http/http.dart' as http;
 
 class AuthNotifier extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-
 
   bool isNewUser = false;
 
@@ -50,7 +50,9 @@ class AuthNotifier extends ChangeNotifier {
   bool get isResettingPassword => _isResettingPassword;
 
   bool _isRemindLoading = false;
+
   bool get isRemindLoading => _isRemindLoading;
+
   set isRemindLoading(bool value) {
     _isRemindLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -137,46 +139,92 @@ class AuthNotifier extends ChangeNotifier {
       Map<String, dynamic>? claims = token.claims ?? {};
       log("Claims: $claims");
 
-
       String isAdminVerified = await getAllClaims();
 
-      if(isAdminVerified.toLowerCase() == "false"){
+      if (isAdminVerified.toLowerCase() == "false") {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
-        showDialog(
+        await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text(
-                LanguageService.getTranslated(context, "login_admin_not_verified_dialog_title"),
+                LanguageService.getTranslated(
+                    context, "login_admin_not_verified_dialog_title"),
                 style: CustomTypography.H6.copyWith(color: Colors.white),
               ),
               content: Text(
-                LanguageService.getTranslated(context, "login_admin_not_verified_dialog_description"),
+                LanguageService.getTranslated(
+                    context, "login_admin_not_verified_dialog_description"),
                 style: CustomTypography.Body1.copyWith(color: Colors.white),
               ),
               actions: [
                 // Remind and cancel in column
                 Column(
                   children: [
-                    CustomButton(type: ButtonType.elevated, onPressed: () async {
-                      // todo: add remind api
-                      await _auth.signOut();
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        notifyListeners();
-                      });
-                    }, child: isRemindLoading ? Center(child: CircularProgressIndicator()) :
-                    Text(LanguageService.getTranslated(context, "login_admin_not_verified_remind_button"), style: CustomTypography.Body1,)),
-                    SizedBox(height: CustomSpacing.eight),
-                    CustomButton(type: ButtonType.text, onPressed: () async {
-                      await _auth.signOut();
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        notifyListeners();
-                      });
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => SplashScreen()), (route) => false);
-                    }, child: Text(LanguageService.getTranslated(context, "login_admin_not_verified_cancel_button"), style: CustomTypography.Body1,)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                              type: ButtonType.elevated,
+                              onPressed: () async {
+                                isRemindLoading = true;
+                                print("Remind user: ${_user?.email}");
+                                bool result = await remindUser();
+                                isRemindLoading = false;
+                                if (result) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        LanguageService.getTranslated(context,
+                                            "login_admin_not_verified_remind_success"),
+                                        style: CustomTypography.Body1,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                await _auth.signOut();
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  notifyListeners();
+                                });
+                              },
+                              child: isRemindLoading
+                                  ? Center(child: CircularProgressIndicator())
+                                  : Text(
+                                      LanguageService.getTranslated(context,
+                                          "login_admin_not_verified_remind_button"),
+                                      style: CustomTypography.Body1,
+                                    )),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: CustomSpacing.four),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                              type: ButtonType.text,
+                              onPressed: () async {
+                                await _auth.signOut();
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  notifyListeners();
+                                });
+                                Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => SplashScreen()),
+                                    (route) => false);
+                              },
+                              child: Text(
+                                LanguageService.getTranslated(context,
+                                    "login_admin_not_verified_cancel_button"),
+                                style: CustomTypography.Body1,
+                              )),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -184,17 +232,18 @@ class AuthNotifier extends ChangeNotifier {
           },
         );
 
-
         return;
       }
-
 
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(LanguageService.getTranslated(context, "login_email_not_verified_error"), style: CustomTypography.Body1,),
+            content: Text(
+              LanguageService.getTranslated(
+                  context, "login_email_not_verified_error"),
+              style: CustomTypography.Body1,
+            ),
           ),
         );
 
@@ -215,7 +264,11 @@ class AuthNotifier extends ChangeNotifier {
       _isSigningIn = false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(LanguageService.getTranslated(context, "login_invaild_email_password_error"), style: CustomTypography.Body1,),
+          content: Text(
+            LanguageService.getTranslated(
+                context, "login_invaild_email_password_error"),
+            style: CustomTypography.Body1,
+          ),
         ),
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -395,7 +448,7 @@ class AuthNotifier extends ChangeNotifier {
       if (isUserRegistered) {
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
 // and another things...
-        await _auth.sendPasswordResetEmail(email: email);
+        //await _auth.sendPasswordResetEmail(email: email);
         // Reset password email sent successfully
         _isResettingPassword = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -753,11 +806,13 @@ class AuthNotifier extends ChangeNotifier {
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(
-                  'Check your inbox',
+                  LanguageService.getTranslated(
+                      context, "login_check_your_inbox_dialog_title"),
                   style: CustomTypography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
-                  'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.',
+                  LanguageService.getTranslated(
+                      context, "login_check_your_inbox_dialog_description"),
                   style: CustomTypography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
@@ -772,7 +827,13 @@ class AuthNotifier extends ChangeNotifier {
                       children: [
                         Icon(Icons.arrow_back),
                         SizedBox(width: CustomSpacing.four),
-                        Text('Back to Login'),
+                        Text(
+                          LanguageService.getTranslated(
+                            context,
+                            "login_check_your_inbox_dialog_back_button_text",
+                          ),
+                          style: CustomTypography.Body1,
+                        ),
                       ],
                     ),
                   ),
@@ -789,11 +850,13 @@ class AuthNotifier extends ChangeNotifier {
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(
-                  'Registration request submitted',
+                  LanguageService.getTranslated(
+                      context, "login_registration_request_dialog_title"),
                   style: CustomTypography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
-                  'Great news! Your registration request has been successfully submitted to your Corporate Admin, Amit at ${obscureEmail(adminEmail)}. Just a friendly reminder that your registration is currently pending approval. You should have received an email to verify your email address. Thank you for your cooperation!',
+                  LanguageService.getTranslated(
+                      context, "login_registration_request_dialog_description"),
                   style: CustomTypography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
@@ -808,7 +871,11 @@ class AuthNotifier extends ChangeNotifier {
                       children: [
                         Icon(Icons.arrow_back),
                         SizedBox(width: CustomSpacing.four),
-                        Text('Back to Login'),
+                        Text(
+                          LanguageService.getTranslated(context,
+                              "login_registration_request_dialog_back_button_text"),
+                          style: CustomTypography.Body1,
+                        ),
                       ],
                     ),
                   ),
@@ -823,11 +890,16 @@ class AuthNotifier extends ChangeNotifier {
             builder: (BuildContext context) {
               return AlertDialog(
                 title: Text(
-                  'Check your inbox',
+                  LanguageService.getTranslated(
+                      context, "login_check_your_inbox_dialog_title"),
                   style: CustomTypography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
-                  'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(adminEmail)}" to complete the process.',
+                  LanguageService.getTranslated(context,
+                          "login_registration_request_dialog_description_part_1") +
+                      "${obscureEmail(adminEmail)}" +
+                      LanguageService.getTranslated(context,
+                          "login_registration_request_dialog_description_part_2"),
                   style: CustomTypography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
@@ -842,7 +914,11 @@ class AuthNotifier extends ChangeNotifier {
                       children: [
                         Icon(Icons.arrow_back),
                         SizedBox(width: CustomSpacing.four),
-                        Text('Back to Login'),
+                        Text(
+                          LanguageService.getTranslated(context,
+                              "login_check_your_inbox_dialog_back_button_text"),
+                          style: CustomTypography.Body1,
+                        ),
                       ],
                     ),
                   ),
@@ -975,19 +1051,71 @@ class AuthNotifier extends ChangeNotifier {
   Future<String> getAllClaims() async {
     try {
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('assignClaims');
+          FirebaseFunctions.instance.httpsCallable('assignClaims');
       String? token = await _auth.currentUser!.getIdToken(true);
       log("Old: $token");
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
       print("update claims response: ${response.data["is_user_exists"]}");
-      String? newToken  =await _auth.currentUser!.getIdTokenResult(true).then((value) => value.token);
+      String? newToken = await _auth.currentUser!
+          .getIdTokenResult(true)
+          .then((value) => value.token);
       log("New: $newToken");
-      return response.data["is_user_exists"];
-    } catch (e) {
+      print("is_user_exists: ${response.data["is_user_exists"]}");
+      return response.data["is_user_exists"].toString();
+    } catch (e, stack) {
+      print(stack);
       print('Error getting all claims: $e');
       return "";
+    }
+  }
+
+  /// Remind API
+  Future<bool> remindUser() async {
+    try {
+      // Get the current user
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("No user is signed in");
+      }
+
+      // Get the ID token of the current user
+      String? idToken = await user.getIdToken();
+
+      // Define the Cloud Function URL
+      final url = 'https://us-central1-project-green-f4d78.cloudfunctions.net/sendEmail_to_client';
+
+      // Set the headers including the Authorization header with the token
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $idToken',
+      };
+
+      // Define the request body
+      final body = json.encode({
+        'type': 'remind',
+      });
+
+      print('Sending reminder to user: ${user.email}');
+      print('Headers: $headers');
+      print('Body: $body');
+      print('URL: $url');
+      // Make the POST request
+      final response = await http.post(Uri.parse(url), headers: headers, body: body);
+
+      // Handle the response
+      if (response.statusCode == 200) {
+        print('Cloud Function result: ${response.body}');
+        return true;
+      } else {
+        print('Error: ${response.statusCode} - ${response.reasonPhrase}');
+        return false;
+      }
+    } catch (e) {
+      // Handle error
+      print('Error reminding user: $e');
+      return false;
     }
   }
 }
@@ -1042,6 +1170,4 @@ extension UserCredentialExtension on UserCredential {
               : null,
     };
   }
-
-
 }

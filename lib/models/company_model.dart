@@ -90,7 +90,14 @@ class Companies {
     status = json['status'];
     id = json['id'];
     enableDomainCheck = json['enable_domain_check'];
-    countryName = json['country'];
+    if(json['country'] == null) {
+      countryName = "";
+    } else
+    if(json['country'].runtimeType == String) {
+      countryName = json['country'];
+    } else {
+      countryName = json['country']['name'];
+    }
   }
 
   Map<String, dynamic> toJson() {

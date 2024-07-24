@@ -1,11 +1,20 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/account_list_model.dart';
 import 'package:green/models/sov_list_model.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+
+import '../service/language_service.dart';
+import '../utils/common_headers.dart';
 
 class SOVListProvider extends ChangeNotifier {
 
@@ -78,6 +87,15 @@ class SOVListProvider extends ChangeNotifier {
   bool get isAutoCompleteLoading => _isAutoCompleteLoading;
   set isAutoCompleteLoading(bool value) {
     _isAutoCompleteLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isExportLoading = false;
+  bool get isExportLoading => _isExportLoading;
+  set isExportLoading(bool value) {
+    _isExportLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -231,13 +249,13 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Duplicate sub account
-  Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId) async {
+  Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId, String sovId) async {
     try {
       isDuplicateLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT);  // Updated URL
+      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
       var response = await apiService.post({'data': {
-        'sub_account_id': accountId,  // Updated field
+        'sov_id': sovId,  // Updated field
         'duplicate': true,
       }});
       log(response.toString());
@@ -267,7 +285,7 @@ class SOVListProvider extends ChangeNotifier {
     try {
     if (type == 'location_count') {
         showLocationCountLoading = true;
-      } else if (type == 'overall_score') {
+      } else if (type == 'over_all_score') {
         showOverallScoreLoading = true;
       }
 
@@ -276,7 +294,7 @@ class SOVListProvider extends ChangeNotifier {
       var response = await apiService.patch({'data': {
         'table_setting': true,
         'location_count': showLocationCount,
-        'overall_score': showOverallScore,
+        'over_all_score': showOverallScore,
       }});
       log(response.toString());
       showLocationCountLoading = false;
@@ -385,4 +403,116 @@ class SOVListProvider extends ChangeNotifier {
       ));
     }
   }
+
+  Future<void> exportData(BuildContext context, String accountId, String subAccountId, Map<String, dynamic> exportData) async {
+    try {
+      _isExportLoading = true;
+      notifyListeners();
+
+      print('Starting export data process...');
+      print('Account ID: $accountId');
+      print('SubAccount ID: $subAccountId');
+      print('Export Data: $exportData');
+
+      final URL = '${AppConstant.GET_SOV_LIST}/$accountId/subaccount/$subAccountId/sov/download';
+      print('Request URL: $URL');
+
+      final dio = Dio();
+      dio.options.headers = await CommonHeaders.createDownloadHeaders();
+
+      log('Headers: ${dio.options.headers}');
+      dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            print('REQUEST[${options.method}] => PATH: ${options.path}');
+            return handler.next(options);
+          },
+          onResponse: (response, handler) {
+            print('RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
+            return handler.next(response);
+          },
+          onError: (DioError e, handler) {
+            print('ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
+            return handler.next(e);
+          }
+      ));
+
+      // Log the payload
+      print('Request Payload: ${json.encode(exportData)}');
+
+      final response = await dio.post(
+        URL,
+        data: {"data": exportData},
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: false,
+          validateStatus: (status) {
+            return status! < 500;
+          },
+        ),
+      );
+
+      print('Response received.');
+      print('Response headers: ${response.headers}');
+
+      if (response.statusCode != 200) {
+        print('Error: received status code ${response.statusCode}');
+        print('Response data: ${utf8.decode(response.data)}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error during export data process: ${response.statusCode}')),
+        );
+        return;
+      }
+
+      final contentDisposition = response.headers.value('content-disposition');
+      var filename = 'downloaded_file.docx';
+      if (contentDisposition != null) {
+        final filenameMatch = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
+        if (filenameMatch != null) {
+          filename = filenameMatch.group(1)!;
+        }
+      }
+
+      print('Filename extracted: $filename');
+
+      final bytes = response.data;
+      print('Bytes received: ${bytes.length}');
+
+      final tempDir = await getTemporaryDirectory();
+      print('Temporary directory path: ${tempDir.path}');
+
+      final filePath = path.join(tempDir.path, filename);
+      print('File path: $filePath');
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes);
+      print('File written to disk.');
+
+      await OpenFile.open(filePath);
+      print('File opened.');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$filePath ${LanguageService.getTranslated(context, "export_sov_modal_success_message")}')),
+      );
+    } catch (e) {
+      if (e is DioException) {
+        print('Dio error!');
+        print('STATUS: ${e.response?.statusCode}');
+        print('DATA: ${e.response?.data}');
+        print('HEADERS: ${e.response?.headers}');
+      } else {
+        print('Error: $e');
+      }
+      print('Error during export data process: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(LanguageService.getTranslated(context, "export_sov_modal_failure_message"))),
+      );
+    } finally {
+      _isExportLoading = false;
+      notifyListeners();
+      print('Export data process completed.');
+    }
+  }
+
+
+
 }
