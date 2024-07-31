@@ -27,7 +27,8 @@ class AddLocationScreen extends StatefulWidget {
   final String sovName;
   final String locationId;
   final String locationName;
-  const AddLocationScreen({super.key, required this.accountId, required this.subAccountId, required this.sovId, this.locationId = "", this.accountName = "", this.subAccountName = "", this.sovName = "", this.locationName = ""});
+  final String locationIdForRef;
+  const AddLocationScreen({super.key, required this.accountId, required this.subAccountId, required this.sovId, this.locationId = "", this.accountName = "", this.subAccountName = "", this.sovName = "", this.locationName = "", this.locationIdForRef = ""});
 
   @override
   State<AddLocationScreen> createState() => _AddLocationScreenState();
@@ -135,15 +136,15 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: Text(
-                            LanguageService.getTranslated(
-                                context, "addlocation_app_title"),
+                            widget.locationId.isEmpty?LanguageService.getTranslated(
+                                context, "addlocation_app_title"):"Edit Location",
                             style: CustomTypography.H5_Regular),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: Text(
-                          LanguageService.getTranslated(
-                              context, "addlocation_app_subtitle"),
+                          widget.locationId.isEmpty?LanguageService.getTranslated(
+                              context, "addlocation_app_subtitle"):"Please provide the necessary information to update the location details",
                           style: CustomTypography.Subtitle1,
                         ),
                       ),
@@ -414,14 +415,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                               .subAccountId, widget
                                                               .sovId, widget.locationId, body);
                                                           if(success) {
-                                                            Navigator.push(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: widget.accountId, accountName: widget.accountName, subAccountId: widget.subAccountId, subAccountName: widget.subAccountName, sovId: widget.sovId, sovName: widget.sovName, locationId: widget.locationId, locationName: widget.locationName,)));
+                                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: widget.accountId, accountName: widget.accountName, subAccountId: widget.subAccountId, subAccountName: widget.subAccountName, sovId: widget.sovId, sovName: widget.sovName, locationId: widget.locationId, locationName: widget.locationName, locationIdForRef: widget.locationIdForRef)));
                                                           }
                                                         }
                                                       }
 
                                                     },
                                                     child: locationListProvider.isAddLocationLoading||locationProfileProvider.isLoading? Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator())) :
-                                                    Text(LanguageService.getTranslated(context, "addlocation_create_button_text"), style: CustomTypography.ButtonLarge),
+                                                    Text(widget.locationId.isEmpty?LanguageService.getTranslated(context, "addlocation_create_button_text"):"Update", style: CustomTypography.ButtonLarge),
                                                   ),
                                                 ),
                                               ],

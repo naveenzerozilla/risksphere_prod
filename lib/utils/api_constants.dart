@@ -1,79 +1,85 @@
-// region-projectid.cloudfunction.net/{function name}
+import '../constants/configuration.dart';
+
 class AppConstant {
-  /// R1 API URL
-  // Url for corporate management
-  static const String CORPORATE_MANAGEMENT_URL = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CREATE_CORPORATE_URL = "https://new-user-create-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_CORPORATE_URL = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String UPLOAD_FILE = "https://upload-file-nzc3rkheha-uc.a.run.app";
-  static const String GET_CORPORATE_ROLES = "https://support-nzc3rkheha-uc.a.run.app?corporate_type=true";
-  static const String GET_FEATURE_LIST = "https://feature-settings-nzc3rkheha-uc.a.run.app";
-  static const String ADD_FEATURE = "https://feature-settings-nzc3rkheha-uc.a.run.app";
-  static const String GET_ROLES = "https://support-nzc3rkheha-uc.a.run.app?role=true";
-  static const String GET_EMAILS = "https://support-nzc3rkheha-uc.a.run.app?emails=true";
-  static const String ADD_EMAILS = "https://support-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_STATUS = "https://support-nzc3rkheha-uc.a.run.app";
-  static const String GET_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app?employees_list=true";
-  static const String GET_ROLES_FOR_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=internal";
-  static const String GET__ROLES_FOR_CORPORATE_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=external";
-  static const String CREATE_EMPLOYEES = "https://new-user-create-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String VIEW_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String GET_CORPORATE_VERIFICATION_REQUESTS = "https://companies-nzc3rkheha-uc.a.run.app?leads=company";
-  static const String GET_USER_VERIFICATION_REQUESTS = "https://companies-nzc3rkheha-uc.a.run.app?leads=users";
-  static const String CHANGE_CORPORATE_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_USER_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_USER_ROLE = "https://companies-nzc3rkheha-uc.a.run.app";
-  static  const String GET_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String GET_AVATARS = "https://us-central1-project-green-f4d78.cloudfunctions.net/get_avatar";
-  static const String GET_DASHBOARD = "https://dashboard-data-nzc3rkheha-uc.a.run.app";
-  static const String GET_CONNECTIONS = "https://user-management-nzc3rkheha-uc.a.run.app?connections=true";
-  static const String GET_REQUESTS = "https://user-management-nzc3rkheha-uc.a.run.app?requests=true";
-  static const String ACCEPT_REJECT_REQUEST = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String GET_NETWORKING_USER_SUGGESTIONS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String SEND_NETWORKING_REQUEST = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String GET_USER_TEAMS = "https://user-management-nzc3rkheha-uc.a.run.app?my_team=true";
-  static const String DELETE_TEAM_MEMBER = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String ADD_TEAM_MEMBERS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static  const String GET_CORPORATE_USER = "https://companies-nzc3rkheha-uc.a.run.app";
+  static const String REGION = "us-central1";
 
-  static  const String UPDATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static  const String NON_CORPORATE_USER_STATUS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String CREATE_CORPORATE_EMPLOYEES = "https://new-company-user-create-nzc3rkheha-uc.a.run.app";
-  static const String DELETE_CORPORATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
+  static String get baseURL => 'https://${REGION}-${Configuration.projectId}.cloudfunctions.net';
 
-  /// R2 APIS
-  // Accounts
-  static const String GET_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/mobile";
-  static const String RENAME_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String DUPLICATE_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String CHANGE_COLUMN_VISIBILITY = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String AUTO_COMPLETE_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String ADD_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String REQUEST_ACCESS = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String UPLOAD_SOV_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
+  // R1 API URL
+  static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies';
+  static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create';
+  static String get UPDATE_CORPORATE_URL => '$baseURL/companies';
+  static String get UPLOAD_FILE => '$baseURL/upload_file';
+  static String get GET_CORPORATE_ROLES => '$baseURL/support?corporate_type=true';
+  static String get GET_FEATURE_LIST => '$baseURL/feature_settings';
+  static String get ADD_FEATURE => '$baseURL/feature_settings';
+  static String get GET_ROLES => '$baseURL/support?role=true';
+  static String get GET_EMAILS => '$baseURL/support?emails=true';
+  static String get ADD_EMAILS => '$baseURL/support';
+  static String get CHANGE_STATUS => '$baseURL/support';
+  static String get GET_EMPLOYEES => '$baseURL/user_management?employees_list=true';
+  static String get GET_ROLES_FOR_EMPLOYEES => '$baseURL/companies?role=internal';
+  static String get GET_ROLES_FOR_CORPORATE_EMPLOYEES => '$baseURL/companies?role=external';
+  static String get CREATE_EMPLOYEES => '$baseURL/new_user_create';
+  static String get UPDATE_EMPLOYEES => '$baseURL/user_management';
+  static String get VIEW_EMPLOYEES => '$baseURL/user_management';
+  static String get GET_CORPORATE_VERIFICATION_REQUESTS => '$baseURL/companies?leads=company';
+  static String get GET_USER_VERIFICATION_REQUESTS => '$baseURL/companies?leads=users';
+  static String get CHANGE_CORPORATE_STATUS => '$baseURL/companies';
+  static String get CHANGE_USER_STATUS => '$baseURL/companies';
+  static String get CHANGE_USER_ROLE => '$baseURL/companies';
+  static String get GET_USER_DETAILS => '$baseURL/user_management';
+  static String get UPDATE_USER_DETAILS => '$baseURL/user_management';
+  static String get GET_AVATARS => '$baseURL/get_avatar';
+  static String get GET_DASHBOARD => '$baseURL/dashboard_data';
+  static String get GET_CONNECTIONS => '$baseURL/user-management?connections=true';
+  static String get GET_REQUESTS => '$baseURL/user-management?requests=true';
+  static String get ACCEPT_REJECT_REQUEST => '$baseURL/companies';
+  static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management';
+  static String get SEND_NETWORKING_REQUEST => '$baseURL/user_management';
+  static String get GET_USER_TEAMS => '$baseURL/user_management?my_team=true';
+  static String get DELETE_TEAM_MEMBER => '$baseURL/user_management';
+  static String get ADD_TEAM_MEMBERS => '$baseURL/user_management';
+  static String get GET_CORPORATE_USER => '$baseURL/companies';
+
+  static String get UPDATE_USER_STATUS => '$baseURL/user_management';
+  static String get NON_CORPORATE_USER_STATUS => '$baseURL/user_management';
+  static String get CREATE_CORPORATE_EMPLOYEES => '$baseURL/new_company_user_create';
+  static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/user_management';
+
+  // R2 APIS
+  static String get GET_ACCOUNT_LIST => '$baseURL/accounts/mobile';
+  static String get RENAME_ACCOUNT => '$baseURL/accounts';
+  static String get DUPLICATE_ACCOUNT => '$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get ADD_ACCOUNT => '$baseURL/accounts';
+  static String get REQUEST_ACCESS => '$baseURL/accounts';
+  static String get UPLOAD_SOV_ACCOUNT => '$baseURL/sov';
+
   // Sub Accounts
-  static const String GET_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String RENAME_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String DUPLICATE_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String AUTO_COMPLETE_SUB_ACCOUNT_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String ADD_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String REQUEST_ACCESS_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String UPLOAD_SOV_SUB_ACCOUNT = "https://us-central1-project-green-f4d78.cloudfunctions.net/sov";
+  static String get GET_SUB_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get RENAME_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_SUB_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get ADD_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get REQUEST_ACCESS_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get UPLOAD_SOV_SUB_ACCOUNT => '$baseURL/sov';
 
   // Sov
-  static const String GET_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String RENAME_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String DUPLICATE_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String CHANGE_COLUMN_VISIBILITY_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String AUTO_COMPLETE_SOV_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String ADD_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String REQUEST_ACCESS_SOV = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static String get GET_SOV_LIST => '$baseURL/accounts';
+  static String get RENAME_SOV => '$baseURL/accounts';
+  static String get DUPLICATE_SOV => '$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY_SOV => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_SOV_LIST => '$baseURL/accounts';
+  static String get ADD_SOV => '$baseURL/accounts';
+  static String get REQUEST_ACCESS_SOV => '$baseURL/accounts';
+
   // Location
-  static const String GET_LOCATION_LIST = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
-  static const String ADD_LOCATION = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static String get GET_LOCATION_LIST => '$baseURL/accounts';
+  static String get ADD_LOCATION => '$baseURL/accounts';
+
   // Location Profile
-  static const String GET_LOCATION_PROFILE = "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts";
+  static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
 }

@@ -793,7 +793,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                                     widget.subAccountId,
                                                     sOVListProvider
                                                         .sovList[index]
-                                                        .accountId!);
+                                                        .id??"");
                                                 Navigator.pop(context);
                                               },
                                               child: Text(

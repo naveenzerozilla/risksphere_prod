@@ -33,7 +33,7 @@ class _ExportDialogState extends State<ExportDialog> {
     return Stack(
       children: [
         AlertDialog(
-          title: Text(LanguageService.getTranslated(context, "export_dialog_title"), style: CustomTypography.H6),
+          title: Text(LanguageService.getTranslated(context, "export_dialog_title"), style: CustomTypography.Body1),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -43,15 +43,15 @@ class _ExportDialogState extends State<ExportDialog> {
                 items: [
                   DropdownMenuItem(
                     value: 'doc',
-                    child: Text('Word(.doc)'),
+                    child: Text('Word(.doc)', style: CustomTypography.Body1),
                   ),
                   DropdownMenuItem(
                     value: 'excel',
-                    child: Text('Excel(.xls)'),
+                    child: Text('Excel(.xls)',style: CustomTypography.Body1),
                   ),
                   DropdownMenuItem(
                     value: 'pdf',
-                    child: Text('PDF'),
+                    child: Text('PDF', style: CustomTypography.Body1),
                   ),
                 ],
                 onChanged: (value) {

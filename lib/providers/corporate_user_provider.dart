@@ -547,7 +547,7 @@ class CorporateProvider with ChangeNotifier {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET__ROLES_FOR_CORPORATE_EMPLOYEES);
+      ApiService apiService = ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get();
       // Parse the response into a list of corporateType
@@ -582,7 +582,7 @@ class CorporateProvider with ChangeNotifier {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET__ROLES_FOR_CORPORATE_EMPLOYEES);
+      ApiService apiService = ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
       String params = companyId != ""? "&company_id=$companyId" : "";
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get(params);

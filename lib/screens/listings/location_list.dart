@@ -569,6 +569,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             sovName: widget.sovName,
             locationId: locationListProvider.locationList[index].locationId ?? "",
             locationName: locationListProvider.locationList[index].locationName ?? "",
+            locationIdForRef: locationListProvider.locationList[index].locationIdForRef ?? "",
           ),
         )).then((_) {
           // Call getData after pop

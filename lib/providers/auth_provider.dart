@@ -23,6 +23,8 @@ import '../screens/onboarding/splash_screen.dart';
 import '../service/shared_preference_service.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/api_constants.dart';
+
 class AuthNotifier extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -1084,7 +1086,7 @@ class AuthNotifier extends ChangeNotifier {
       String? idToken = await user.getIdToken();
 
       // Define the Cloud Function URL
-      final url = 'https://us-central1-project-green-f4d78.cloudfunctions.net/sendEmail_to_client';
+      final url = '${AppConstant.baseURL}/sendEmail_to_client';
 
       // Set the headers including the Authorization header with the token
       final headers = {

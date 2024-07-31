@@ -248,37 +248,38 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Duplicate sub account
+  /// Duplicate sov
   Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId, String sovId) async {
     try {
       isDuplicateLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
+      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");
       var response = await apiService.post({'data': {
-        'sov_id': sovId,  // Updated field
+        'sov_id': sovId,
         'duplicate': true,
       }});
       log(response.toString());
 
-      // Refresh the sub accounts list
-      page = 0;
-      fetchSovList(context, accountId, subAccountId, '', 0, 10);
+      // Parse the response to get the duplicated SOV account
+      SovAccount duplicatedSovAccount = SovAccount.fromJson(response['updated_record']);
+
+      // Prepend the duplicated SOV account to the beginning of the list
+      sovList = [duplicatedSovAccount, ...sovList];
 
       isDuplicateLoading = false;
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
-
+        content: Text(e.message, style: CustomTypography.Body1),
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
-
+        content: Text(e.toString(), style: CustomTypography.Body1),
       ));
     }
   }
+
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, String accountId, String subAccountId, {required bool showLocationCount, required bool showOverallScore, required String type}) async {
@@ -317,7 +318,7 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetch autocomplete sub account list
+  /// Fetch autocomplete sov list
   Future<void> fetchAutoCompleteSubAccountList(BuildContext context, String searchQuery) async {
     try {
       isAutoCompleteLoading = true;
@@ -346,36 +347,37 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Add sub account
+  /// Add sov
   Future<void> addSubAccount(BuildContext context, String accountId, String subAccountId, String accountName) async {
     try {
       isAddAccountLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT);  // Updated URL
+      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");
       var response = await apiService.post({'data': {
-        'sub_account_name': accountName,  // Updated field
+        'sub_account_name': accountName,
       }});
       log(response.toString());
 
-      // Refresh the sub accounts list
-      page = 0;
-      fetchSovList(context, accountId, subAccountId, '', 0, 10);
+      // Parse the response to get the newly added SOV account
+      SovAccount newSovAccount = SovAccount.fromJson(response['updated_record']);
+
+      // Prepend the new SOV account to the beginning of the list
+      sovList = [newSovAccount, ...sovList];
 
       isAddAccountLoading = false;
     } on BackendException catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
-
+        content: Text(e.message, style: CustomTypography.Body1),
       ));
     } catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
-
+        content: Text(e.toString(), style: CustomTypography.Body1),
       ));
     }
   }
+
 
 
   // Request access with message

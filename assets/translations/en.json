@@ -726,7 +726,7 @@
     "app_edit_mapping": "Edit Mapping",
     "app_revert_mapping": "Revert Mapping",
     "app_sov_upload_title": "SOV Upload - Auto & Manual Mapping",
-    "app_jp_morgan_sov": "JP Morgan SOV",
+    "app_jp_morgan_sov": "SOV",
     "app_select_columns_to_import": "Select the columns you'd like to import then map the target fields to your spreadsheet.",
     "app_search_target_name": "Search Target name",
     "app_all": "All",

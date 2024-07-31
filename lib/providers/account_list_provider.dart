@@ -41,9 +41,7 @@ class AccountListProvider extends ChangeNotifier {
   bool get isDuplicateLoading => _isDuplicateLoading;
   set isDuplicateLoading(bool value) {
     _isDuplicateLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners(); // This ensures the UI updates
   }
 
   bool _isOwnerLoading = false;
@@ -226,14 +224,16 @@ class AccountListProvider extends ChangeNotifier {
       log(page.toString());
       isLoading = false;
       isNextPageLoading = false;
-    } on BackendException catch (e) {
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
 
       ));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print(stackTrace);
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -289,11 +289,11 @@ class AccountListProvider extends ChangeNotifier {
       }});
       log(response.toString());
 
-      // Update account name in the list
-      page = 1;
-      await Future.delayed(Duration(seconds: 4), () {
-        fetchAccountList(context, '', 0, 10);
-      });
+      // Parse the response to get the duplicated account
+      Accounts duplicatedAccount = Accounts.fromJson(response['updated_record']);
+
+      // Prepend the duplicated account to the beginning of the list
+      accountList = [duplicatedAccount, ...accountList];
 
       isDuplicateLoading = false;
     } on BackendException catch (e) {
@@ -310,6 +310,7 @@ class AccountListProvider extends ChangeNotifier {
       ));
     }
   }
+
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, {required bool showOwner, required bool showSOVCount, required bool showSubAccountCount, required bool showOverallScore, required String type}) async {
@@ -379,12 +380,14 @@ class AccountListProvider extends ChangeNotifier {
       autoCompleteAccountList = accountListModel.results ?? [];
       log(autoCompleteAccountList.toString());
       print("Updated autoCompleteAccountList: $autoCompleteAccountList");
-    } on BackendException catch (e) {
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: CustomTypography.Body1,),
 
       ));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: CustomTypography.Body1,),
 
@@ -405,11 +408,11 @@ class AccountListProvider extends ChangeNotifier {
       }});
       log(response.toString());
 
-      // Update account name in the list
-      page = 1;
-      await Future.delayed(Duration(seconds: 4), () {
-        fetchAccountList(context, '', 0, 10);
-      });
+      // Parse the response to get the newly added account
+      Accounts newAccount = Accounts.fromJson(response['updated_record']);
+
+      // Prepend the new account to the beginning of the list
+      accountList = [newAccount, ...accountList];
 
       isAddAccountLoading = false;
     } on BackendException catch (e) {
@@ -426,6 +429,7 @@ class AccountListProvider extends ChangeNotifier {
       ));
     }
   }
+
 
   // Request access with message
   Future<void> requestAccess(BuildContext context, String accountId, String message) async {
@@ -457,6 +461,7 @@ class AccountListProvider extends ChangeNotifier {
     try {
       isImageUploadLoading = true;
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
+      print(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
       print(apiService);
       // Send a POST request to the API to upload the image
       Map<String, dynamic> response = await apiService.postMultiPartSOVAccounts(sovFile, accountId, name);

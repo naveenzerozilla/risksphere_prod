@@ -275,32 +275,33 @@ class SubAccountListProvider extends ChangeNotifier {
     try {
       isDuplicateLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount");  // Updated URL
+      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount");
       var response = await apiService.post({'data': {
-        'sub_account_id': subAccountId,  // Updated field
+        'sub_account_id': subAccountId,
         'duplicate': true,
       }});
       log(response.toString());
 
-      // Refresh the sub accounts list
-      page = 0;
-      fetchSubAccountList(context, accountId, '', 0, 10);
+      // Parse the response to get the duplicated sub-account
+      SubAccounts duplicatedSubAccount = SubAccounts.fromJson(response['updated_record']);
+
+      // Prepend the duplicated sub-account to the beginning of the list
+      subAccountList = [duplicatedSubAccount, ...subAccountList];
 
       isDuplicateLoading = false;
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
-
+        content: Text(e.message, style: CustomTypography.Body1),
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
-
+        content: Text(e.toString(), style: CustomTypography.Body1),
       ));
     }
   }
+
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, {required String accountId, required bool showOwner, required bool showSOVCount, required bool showOverallScore, required String type}) async {
@@ -357,6 +358,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
       print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST+"/$accountId/subaccount");
+
       String url = '?sub_account_name=$searchQuery';  // Updated field
       var response = await apiService.get(url);
       log(response.toString());
@@ -384,33 +386,34 @@ class SubAccountListProvider extends ChangeNotifier {
     try {
       isAddSubAccountLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount");  // Updated URL
+      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount");
       var response = await apiService.post({'data': {
-        'name': accountName,  // Updated field
+        'name': accountName,
       }});
       log(response.toString());
 
-      // Refresh the sub accounts list
-      page = 0;
-      await Future.delayed(Duration(seconds: 4), () {
-        fetchSubAccountList(context, accountId, '', 0, 10);
-      });
+      // Parse the response to get the newly added sub-account
+      SubAccounts newSubAccount = SubAccounts.fromJson(response['updated_record']);
+
+      // Prepend the new sub-account to the beginning of the list
+      subAccountList = [newSubAccount, ...subAccountList];
 
       isAddSubAccountLoading = false;
-    } on BackendException catch (e) {
+    } on BackendException catch (e, stackTrace) {
       isAddSubAccountLoading = false;
+      print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
-
+        content: Text(e.message, style: CustomTypography.Body1),
       ));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print(stackTrace);
       isAddSubAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
-
+        content: Text(e.toString(), style: CustomTypography.Body1),
       ));
     }
   }
+
 
   /// Request access with message
   Future<void> requestAccess(BuildContext context, String subAccountId, String message, String accountId) async {

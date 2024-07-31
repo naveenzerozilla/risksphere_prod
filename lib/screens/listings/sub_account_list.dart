@@ -1065,7 +1065,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
                                     if (!_subAccountAlreadyExists) {
                                       // Add account
-                                      await subAccountListProvider.addSubAccount(context, (widget.accountName??"")+'/'+_autocompleteText, widget.accountId);
+                                      await subAccountListProvider.addSubAccount(context, _autocompleteText, widget.accountId);
                                     } else {
                                       // Request access
                                       if (_messageController.text.isEmpty) {

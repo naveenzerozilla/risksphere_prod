@@ -54,8 +54,8 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator> w
       alignment: Alignment.center,
       children: [
         SizedBox(
-          height: 40,
-          width: 40,
+          height: 47,
+          width: 47,
           child: AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
@@ -72,7 +72,7 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator> w
           widget.percent + "%",
           style: CustomTypography.Subtitle2.copyWith(
             color: AppColors.primaryMain,
-            fontSize: 10,
+            fontSize: 9,
           ),
         ),
       ],

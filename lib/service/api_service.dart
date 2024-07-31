@@ -9,9 +9,11 @@ import 'package:http/http.dart' as http;
 import '../utils/common_headers.dart';
 
 class ApiService {
-  final String url;
+  final String endpoint;
 
-  ApiService(this.url);
+  ApiService(this.endpoint);
+
+  String get url => '$endpoint';
 
   /// Sends a GET request to the specified [url] with optional [additionalParams].
   /// Returns a Future containing the decoded JSON response.
@@ -95,7 +97,7 @@ class ApiService {
     print("URL: $url");
 
     var request =
-        http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
+    http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
     // Add headers to the request
     headers.forEach((key, value) {
@@ -123,7 +125,7 @@ class ApiService {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse('https://us-central1-project-green-f4d78.cloudfunctions.net/sov/upload'));
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
     request.fields.addAll({
       'sov_name': name,
       'account_id': accountId,
@@ -156,7 +158,7 @@ class ApiService {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse('https://us-central1-project-green-f4d78.cloudfunctions.net/sov/upload'));
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
     request.fields.addAll({
       'sov_name': name,
       'account_id': accountId,
@@ -222,9 +224,6 @@ class ApiService {
     request.headers.addAll(headers);
     return await request.send();
   }
-
-
-
 
   /// Handles the HTTP response by checking the status code.
   /// If the status code is in the success range (200-299), decodes and returns the response body.

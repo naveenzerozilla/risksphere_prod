@@ -37,7 +37,6 @@ class SubAccounts {
   String? name;
   int? sovCount;
   Owner? owner;
-  int? createdAt;
   String? accountId;
   String? subAccountId;
   int? lastModified;
@@ -49,7 +48,6 @@ class SubAccounts {
     this.name,
     this.sovCount,
     this.owner,
-    this.createdAt,
     this.accountId,
     this.subAccountId,
     this.lastModified,
@@ -61,7 +59,7 @@ class SubAccounts {
     name = json['name'];
     sovCount = json['sov_count'];
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
-    createdAt = json['created_at'];
+
     accountId = json['account_id'];
     subAccountId = json['sub_account_id'];
 
@@ -76,7 +74,6 @@ class SubAccounts {
     if (owner != null) {
       data['owner'] = owner!.toJson();
     }
-    data['created_at'] = createdAt;
     data['account_id'] = accountId;
     data['sub_account_id'] = subAccountId;
     data['objectID'] = objectID;

@@ -1407,8 +1407,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 await autoCompleteAccountsSearchClient(_autocompleteText);
                               },
                               decoration: InputDecoration(
-                                labelText: LanguageService.getTranslated(context, "register_corporate_legalname_field_label"),
-                                hintText: LanguageService.getTranslated(context, "register_corporate_legalname_filed_placeholder"),
+                                labelText: LanguageService.getTranslated(context, "account_list_app_add_account_title"),
+                                hintText: LanguageService.getTranslated(context, "account_list_app_add_account_title"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),

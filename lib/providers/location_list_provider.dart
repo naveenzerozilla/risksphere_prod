@@ -131,6 +131,7 @@ class LocationListProvider extends ChangeNotifier {
         "certifications": certifications,
         "hazard": hazard,
         "rating": rating,
+        "campus_id": [],
       }});
 
       log(body);
@@ -161,6 +162,7 @@ class LocationListProvider extends ChangeNotifier {
         log(totalPages.toString());
         log(page.toString());
       } else {
+        print(json.decode(response.body)["error"]);
         throw Exception('Failed to load data');
       }
       isLoading = false;
