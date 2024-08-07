@@ -42,6 +42,7 @@ class SubAccounts {
   int? lastModified;
   String? objectID;
   bool isChecked = false; // Local variable, not part of JSON serialization
+  bool disabled = false;
 
   SubAccounts({
     this.path,
@@ -52,6 +53,7 @@ class SubAccounts {
     this.subAccountId,
     this.lastModified,
     this.objectID,
+    this.disabled = false,
   });
 
   SubAccounts.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,7 @@ class SubAccounts {
     subAccountId = json['sub_account_id'];
 
     objectID = json['objectID'];
+    disabled = json['is_disabled'] ?? false;
   }
 
   Map<String, dynamic> toJson() {

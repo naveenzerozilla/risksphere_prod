@@ -48,6 +48,74 @@ class LocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isDeleteLocationLoading = false;
+  bool get isDeleteLocationLoading => _isDeleteLocationLoading;
+  set isDeleteLocationLoading(bool value) {
+    _isDeleteLocationLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
+  List<String> _countries = [];
+  String _state = '';
+  List<String> _propertyType = [];
+  List<String> _constructionType = [];
+  List<String> _certifications = [];
+  List<String> _hazard = [];
+  List<int> _rating = [];
+
+  // Getters for the filter values
+  List<String> get countries => _countries;
+  String get state => _state;
+  List<String> get propertyType => _propertyType;
+  List<String> get constructionType => _constructionType;
+  List<String> get certifications => _certifications;
+  List<String> get hazard => _hazard;
+  List<int> get rating => _rating;
+  String _zipcode = '';
+  String get zipcode => _zipcode;
+  set zipcode(String value) {
+    _zipcode = value;
+    notifyListeners();
+  }
+
+  // Setters for the filter values
+  set countries(List<String> value) {
+    _countries = value;
+    notifyListeners();
+  }
+
+  set state(String value) {
+    _state = value;
+    notifyListeners();
+  }
+
+  set propertyType(List<String> value) {
+    _propertyType = value;
+    notifyListeners();
+  }
+
+  set constructionType(List<String> value) {
+    _constructionType = value;
+    notifyListeners();
+  }
+
+  set certifications(List<String> value) {
+    _certifications = value;
+    notifyListeners();
+  }
+
+  set hazard(List<String> value) {
+    _hazard = value;
+    notifyListeners();
+  }
+
+  set rating(List<int> value) {
+    _rating = value;
+    notifyListeners();
+  }
+
   // Pagination
   int _page = 1;
   int get page => _page;
@@ -67,10 +135,28 @@ class LocationListProvider extends ChangeNotifier {
     });
   }
 
+  double mainSovRating = 0;
+
   List<Location> _locationList = [];
   List<Location> get locationList => _locationList;
   set locationList(List<Location> value) {
     _locationList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+  List<Location> _certifiedLocationList = [];
+  List<Location> get certifiedLocationList => _certifiedLocationList;
+  set certifiedLocationList(List<Location> value) {
+    _certifiedLocationList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  // Method to add to the certified location list
+  void addToCertifiedLocationList(List<Location> newLocations) {
+    _certifiedLocationList.addAll(newLocations);
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -92,10 +178,155 @@ class LocationListProvider extends ChangeNotifier {
     });
   }
 
+  List<String> _campusIds = [];
+  List<String> get campusIds => _campusIds;
+  set campusIds(List<String> value) {
+    _campusIds = value;
+    notifyListeners();
+  }
+
+  List<String> _selectedCampusIds = [];
+  List<String> get selectedCampusIds => _selectedCampusIds;
+  set selectedCampusIds(List<String> value) {
+    _selectedCampusIds = value;
+    notifyListeners();
+  }
+
   int locationHits = 0;
+  int certifiedLocationHits = 0;
+
+  Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
+    final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+
+    try {
+      var headers = await CommonHeaders.createHeaders();
+      final response = await http.get(url, headers: headers);
+      print(response.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body); // Parse as a Map
+        print(data);
+
+        // Extracting the list from the "result" field
+        campusIds = List<String>.from(data['result']);
+      } else {
+        print("Failed to load campus IDs");
+        print(response.body);
+        throw Exception("Failed to load campus IDs");
+      }
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: ${e.message}");
+    }
+    catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: $e");
+    }
+  }
 
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchLocationList(
+      BuildContext context,
+      String selectedAccountId,
+      String selectedSubAccountId,
+      String selectedSovId,
+      String searchQuery,
+      int page,
+      int pageSize, {
+        String type = "",
+        List<String> countries = const [],
+        String state = "",
+        List<String> propertyType = const [],
+        List<String> constructionType = const [],
+        List<String> certifications = const [],
+        List<String> hazard = const [],
+        List<int> rating = const [],
+  }) async {
+    try {
+      if (page == 0) {
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
+      }
+
+      var headers =  await CommonHeaders.createHeaders();
+
+      print("Rating for all tab: $_rating");
+      log(headers.toString());
+      var body = json.encode({
+        "data": {
+          "search": searchQuery,
+          "countryOptions": _countries,
+          "state": _state,
+          "propertyType": _propertyType,
+          "constructionType": _constructionType,
+          "certifications": _certifications,
+          "hazard": _hazard,
+          "rating": _rating,
+          "zipcode": zipcode,
+          "campus_id": _selectedCampusIds,
+        }
+      });
+
+      log(body);
+      var url = Uri.parse(AppConstant.GET_SOV_LIST +
+          "/$selectedAccountId/subaccount/$selectedSubAccountId/sov/$selectedSovId/location?page=$page&pageSize=$pageSize");
+      log(url.toString());
+
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+      log(response.body);
+      print(response.statusCode);
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        LocationListModel locationListModel = LocationListModel.fromJson(jsonResponse);
+        locationHits = locationListModel.totalHits ?? 0;
+        totalPages = locationListModel.totalPages ?? 1;
+        summaryList = locationListModel.summaryList ?? [];
+        mainSovRating = locationListModel.mainSovRating ?? 0.0;
+        if (page == 0) {
+          locationList = locationListModel.results ?? [];
+        } else {
+          addToLocationList(locationListModel.results ?? []);
+        }
+        log(locationList.toString());
+        print("totalPages: $totalPages");
+        log(page.toString());
+      } else {
+        print(json.decode(response.body)["error"]);
+        throw Exception('Failed to load data');
+      }
+      isLoading = false;
+      isNextPageLoading = false;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      isNextPageLoading = false;
+      print(stackTrace);
+      print(e.message);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.message,
+          style: CustomTypography.Body1,
+        ),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      isNextPageLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.toString(),
+          style: CustomTypography.Body1,
+        ),
+      ));
+    }
+  }
+
+  /// Fetch sov list with pagination, search query, and filters
+  Future<void> fetchCertifiedLocationList(
       BuildContext context,
       String selectedAccountId,
       String selectedSubAccountId,
@@ -122,17 +353,29 @@ class LocationListProvider extends ChangeNotifier {
       var headers =  await CommonHeaders.createHeaders();
 
       log(headers.toString());
-      var body = json.encode({"data":{
-        "search": searchQuery,
-        "countryOptions": countries,
-        "state": state,
-        "propertyType": propertyType,
-        "constructionType": constructionType,
-        "certifications": certifications,
-        "hazard": hazard,
-        "rating": rating,
-        "campus_id": [],
-      }});
+      var ratingLocal = _rating;
+      if (ratingLocal.isEmpty) {
+        ratingLocal = [5];
+      } else if (!ratingLocal.contains(5)) {
+        ratingLocal.add(5);
+      }
+      print(_countries);
+      print('Rating for certified tab: $ratingLocal');
+      var body = json.encode({
+        "data": {
+          "search": searchQuery,
+          "countryOptions": _countries,
+          "state": _state,
+          "propertyType": _propertyType,
+          "constructionType": _constructionType,
+          "certifications": _certifications,
+          "hazard": _hazard,
+          //if rating 5 not present, we add 5 as default
+          "rating": ratingLocal,
+          "zipcode": zipcode,
+          "campus_id": _selectedCampusIds,
+        }
+      });
 
       log(body);
       var url = Uri.parse(AppConstant.GET_SOV_LIST +
@@ -150,15 +393,15 @@ class LocationListProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
         LocationListModel locationListModel = LocationListModel.fromJson(jsonResponse);
-        locationHits = locationListModel.totalHits ?? 0;
+        certifiedLocationHits = locationListModel.totalHits ?? 0;
         totalPages = locationListModel.totalPages ?? 1;
         summaryList = locationListModel.summaryList ?? [];
         if (page == 0) {
-          locationList = locationListModel.results ?? [];
+          certifiedLocationList = locationListModel.results ?? [];
         } else {
-          addToLocationList(locationListModel.results ?? []);
+          addToCertifiedLocationList(locationListModel.results ?? []);
         }
-        log(locationList.toString());
+        log(certifiedLocationList.toString());
         log(totalPages.toString());
         log(page.toString());
       } else {
@@ -216,6 +459,68 @@ class LocationListProvider extends ChangeNotifier {
       isAddLocationLoading = false;
       CustomToast.error(context, e.toString());
       return false;
+    }
+  }
+
+  // Add this method for deleting locations
+  Future<void> deleteLocations(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      List<Map<String, String>> locationList,
+      ) async {
+    try {
+      isDeleteLocationLoading = true;
+      var headers = await CommonHeaders.createHeaders();
+      var body = json.encode({"data": {"location_list": locationList}});
+
+      var url = Uri.parse(AppConstant.ADD_ACCOUNT +
+          "?bulk_delete_location_list=true");
+      log(url.toString());
+
+      var response = await http.delete(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        log("Locations deleted successfully.");
+        CustomToast.success(context, jsonDecode(response.body)["message"]);
+        // remove the deleted locations from the list and update respective list counters
+        locationList.forEach((element) {
+          if (_locationList.any((location) => location.locationId == element["location_id"])) {
+            // only decrement if present in the location list
+            if (_locationList.any((location) => location.locationId == element["location_id"])) {
+              locationHits--;
+            }
+            _locationList.removeWhere((location) => location.locationId == element["location_id"]);
+            if (_certifiedLocationList.any((location) => location.locationId == element["location_id"])) {
+              certifiedLocationHits--;
+            }
+
+            _certifiedLocationList.removeWhere((location) => location.locationId == element["location_id"]);
+
+          }
+        });
+        notifyListeners();
+
+      } else {
+        log("Failed to delete locations: ${response.body}");
+        CustomToast.success(context, jsonDecode(response.body)["message"]);
+      }
+    } on BackendException catch (e) {
+      log("Error deleting locations: ${e.message}");
+      CustomToast.success(context, jsonDecode(e.message));
+      throw e;
+    }
+    catch (e) {
+      log("Error deleting locations: $e");
+      CustomToast.success(context, "Error deleting locations: $e");
+      throw e;
+    } finally {
+      isDeleteLocationLoading = false;
     }
   }
 }

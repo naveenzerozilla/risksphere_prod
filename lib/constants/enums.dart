@@ -6,6 +6,7 @@ enum ButtonType {
   text,
   filled,
   tonal,
+  danger
 }
 
 enum Screens {

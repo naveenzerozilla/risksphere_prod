@@ -1,10 +1,13 @@
+import 'location_profile_model.dart';
+
 class LocationListModel {
   int? totalHits;
   List<Location>? results;
+  double? mainSovRating;
   int? totalPages;
   List<String>? summaryList = [];
 
-  LocationListModel({this.totalHits, this.results, this.totalPages, this.summaryList});
+  LocationListModel({this.totalHits, this.results, this.totalPages, this.summaryList, this.mainSovRating = 0.0});
 
   LocationListModel.fromJson(Map<String, dynamic> json) {
     totalHits = json['totalHits'];
@@ -16,6 +19,7 @@ class LocationListModel {
     }
     totalPages = json['totalPages'];
     summaryList = json['summary'] != null ? List<String>.from(json['summary']) : [];
+    mainSovRating = json['main_sov_rating'] ?? 0.0;
   }
 
   Map<String, dynamic> toJson() {
@@ -26,6 +30,7 @@ class LocationListModel {
     }
     data['totalPages'] = totalPages;
     data['summary'] = summaryList;
+    data['main_sov_rating'] = mainSovRating;
     return data;
   }
 }
@@ -36,7 +41,7 @@ class Location {
   String? address;
   bool? autoCertified;
   String? city;
-  dynamic country;
+  String? country;
   String? description;
   List<String>? images;
   String? locationId;
@@ -57,6 +62,13 @@ class Location {
   bool isChecked = false; // Local variable, not part of JSON serialization
   String? percent;
   String? campusId;
+  List<Subdestination>? subdestinations;
+  List<Screenshots>? screenShots;
+  String? placeId;
+
+
+  double? latitude;
+  double? longitude;
 
   Location({
     this.path,
@@ -85,6 +97,11 @@ class Location {
     this.percent,
     this.isChecked = false,
     this.campusId,
+    this.subdestinations,
+    this.screenShots,
+    this.latitude,
+    this.longitude,
+    this.placeId,
   });
 
   Location.fromJson(Map<String, dynamic> json) {
@@ -115,6 +132,11 @@ class Location {
     objectID = json['objectID'];
     percent = json['percent'];
     campusId = json['campus_id'];
+    subdestinations = (json['subdestinations'] as List?)?.map((item) => Subdestination.fromJson(item)).toList();
+    screenShots = (json['screen_shots'] as List?)?.map((item) => Screenshots.fromJson(item)).toList();
+    latitude = json['latitude']?.toDouble();
+    longitude = json['longitude']?.toDouble();
+    placeId = json['place_id'];
   }
 
   Map<String, dynamic> toJson() {
@@ -150,6 +172,15 @@ class Location {
     data['objectID'] = objectID;
     data['percent'] = percent;
     data['campus_id'] = campusId;
+    if (subdestinations != null) {
+      data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
+    }
+    if (screenShots != null) {
+      data['screen_shots'] = screenShots!.map((v) => v.toJson()).toList();
+    }
+    data['latitude'] = latitude;
+    data['longitude'] = longitude;
+    data['place_id'] = placeId;
     return data;
   }
 

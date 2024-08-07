@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -107,6 +108,15 @@ class SubAccountListProvider extends ChangeNotifier {
   set isImageUploadLoading(bool value) {
     _isImageUploadLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isTransferLoading = false;
+  bool get isTransferLoading => _isTransferLoading;
+  set isTransferLoading(bool value) {
+    _isTransferLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -458,21 +468,57 @@ class SubAccountListProvider extends ChangeNotifier {
           style: CustomTypography.Body1,
         ),
       ));
+      print("total records: "+response['total_records'].toString());
+      if(response['total_records'] == 0){
+        print("total records: "+response['total_records'].toString());
+        String tempId = (response['temp_id']??'') + "+";
+        print("tempIdLocal: "+tempId);
+        return tempId;
+      }
       return response['temp_id']??'';
-    } on BackendException catch (e) {
+    }on BackendException catch (e) {
       isImageUploadLoading = false;
       Navigator.pop(context);
-      // Handle custom backend exceptions (if any)
+
+      print("Raw Backend Exception Message: ${e.message}");
+
+      // Initialize a variable to store the error message
+      String message = '';
+
+      try {
+        // Check if the message is a JSON string
+        if (e.message.trim().startsWith('{') && e.message.trim().endsWith('}')) {
+          // Attempt to parse the message as JSON
+          final Map<String, dynamic> errorJson = jsonDecode(e.message.trim());
+
+          // Extract the error message
+          message = errorJson['error'] ?? 'An unexpected error occurred';
+        } else {
+          // If it's not JSON, use the message as-is
+          message = e.message;
+        }
+      } catch (decodeError) {
+        // Handle any JSON parsing errors
+        print('JSON Decode Error: $decodeError');
+
+        // Fallback to the raw message or a generic error message
+        message = e.message ?? 'An unexpected error occurred. Please try again later.';
+      }
+
+      // Display the error message in a SnackBar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.message,
+            message,
             style: CustomTypography.Body1,
           ),
         ),
       );
-      return ''; // Return empty string or handle the error as needed
-    } catch (e) {
+
+      return ''; // Return an empty string or handle the error as needed
+    }
+
+    catch (e) {
       // Handle other unexpected exceptions
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -485,6 +531,39 @@ class SubAccountListProvider extends ChangeNotifier {
       );
       isImageUploadLoading = false;
       return ''; // Return empty string or handle the error as needed
+    }
+  }
+
+  /// Transfer sub account
+  Future<void> transferSubAccount(BuildContext context, String accountId, String? subAccountId, String newOwnerId) async {
+    try {
+      isTransferLoading = true;
+
+      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST+"/$accountId/subaccount");
+      var response = await apiService.post({
+        'data': {
+          'new_owner': newOwnerId,
+          'account_id': accountId,
+          'sub_account_id': subAccountId,
+        },
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(response['message'] ?? 'Sub Account transferred successfully'),
+      ));
+
+      // Update the account list UI
+      int index = subAccountList.indexWhere((element) => element.subAccountId == subAccountId);
+      if (index != -1) {
+        subAccountList[index].disabled = true;
+      }
+
+      isTransferLoading = false;
+    } catch (e) {
+      isTransferLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to transfer sub account: ${e.toString()}'),
+      ));
     }
   }
 }

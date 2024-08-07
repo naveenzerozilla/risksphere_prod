@@ -3,9 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:green/design_system/components/rating_half_stars.dart';
 import 'package:green/design_system/components/rating_slider.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/location_list_provider.dart';
+import 'package:green/providers/location_profile_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
@@ -14,11 +16,13 @@ import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
+import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/rating_bar.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
+import '../../models/location_list_model.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 import '../../service/language_service.dart';
@@ -76,8 +80,11 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   String locationQuery = '';
 
   bool showSelectAll = false;
+  bool isAllSelected = false; // State variable to manage "Select All"
 
   Timer? deBouncer;
+
+  List<Location> selectedLocations = [];
 
   void debounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
@@ -118,8 +125,28 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
         _selectedScreen = Screens.locationList;
+        Provider.of<LocationListProvider>(context, listen: false).page = 0;
+        Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
+          context,
+          widget.accountId,
+          widget.subAccountId,
+          widget.sovId,
+          locationQuery,
+          0,
+          40,
+        );
       } else {
         _selectedScreen = Screens.certifiedLocationList;
+        Provider.of<LocationListProvider>(context, listen: false).page = 0;
+        Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
+          context,
+          widget.accountId,
+          widget.subAccountId,
+          widget.sovId,
+          locationQuery,
+          0,
+          40,
+        );
       }
       setState(() {});
     });
@@ -144,7 +171,17 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
       certifications: [],
       hazard: [],
       rating: [],
+    ).then((value) => setState(() {}));
+    Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
+      context,
+      widget.accountId,
+      widget.subAccountId,
+      widget.sovId,
+      "",
+      0,
+      40,
     );
+    Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds(widget.accountId, widget.subAccountId, widget.sovId);
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -182,8 +219,20 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 !showSelectAll
                     ? SizedBox()
                     : FloatingActionButton(
-                  onPressed: () {},
-                  child: Icon(Icons.upload_rounded),
+                  onPressed: () {
+                    if (selectedLocations.isEmpty) {
+                      // Show a toast or snackbar message to select locations
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('No locations selected for deletion.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    showDeleteConfirmationDialog(context, _bulkDeleteLocations);
+                  }, // Trigger bulk delete
+                  child: Icon(Icons.delete), // Change icon to delete
                 ),
                 !showSelectAll ? SizedBox() : SizedBox(height: CustomSpacing.two),
                 FloatingActionButton(
@@ -238,8 +287,10 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                     ),
                                   ),
                                   SizedBox(width: CustomSpacing.two),
-                                  RatingBar(
-                                    rating: 0,
+                                  RatingHalfStars(
+                                    rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
+                                    maxRating: 5,
+                                    iconSize: 24,
                                   ),
                                   SizedBox(width: CustomSpacing.two),
                                   TooltipTheme(
@@ -262,9 +313,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                       preferBelow: true,
                                       richMessage: TextSpan(
                                         children: [
-                                          for (int i = 0; i < locationListProvider.summaryList.length; i++)
+                                          for (int i = 0;
+                                          i < locationListProvider.summaryList.length;
+                                          i++)
                                             TextSpan(
-                                              text: '• ${locationListProvider.summaryList[i]}\n',
+                                              text:
+                                              '• ${locationListProvider.summaryList[i]}\n',
                                               style: CustomTypography.Subtitle1,
                                             ),
                                         ],
@@ -277,8 +331,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                   ),
                                 ],
                               );
-                            }
-                        ),
+                            }),
                         SizedBox(height: CustomSpacing.two),
                         Wrap(
                           children: [
@@ -288,7 +341,8 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                 style: CustomTypography.Subtitle1,
                                 children: [
                                   TextSpan(
-                                    text: LanguageService.getTranslated(context, "locationlist_app_sub_title_description_pt_1"),
+                                    text: LanguageService.getTranslated(
+                                        context, "locationlist_app_sub_title_description_pt_1"),
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
@@ -298,7 +352,8 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                     style: CustomTypography.Subtitle1,
                                   ),
                                   TextSpan(
-                                    text: LanguageService.getTranslated(context, "locationlist_app_sub_title_description_pt_2"),
+                                    text: LanguageService.getTranslated(
+                                        context, "locationlist_app_sub_title_description_pt_2"),
                                     style: CustomTypography.Subtitle1,
                                   ),
                                 ],
@@ -312,13 +367,27 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Checkbox(
-                              value: false,
+                              value: isAllSelected,
                               onChanged: (value) {
-                                // Select all from model or deselect all from model
+                                setState(() {
+                                  isAllSelected = value ?? false;
+                                  if (isAllSelected) {
+                                    // Select all locations
+                                    selectedLocations =
+                                        List.from(Provider.of<LocationListProvider>(
+                                            context,
+                                            listen: false)
+                                            .locationList);
+                                  } else {
+                                    // Deselect all locations
+                                    selectedLocations.clear();
+                                  }
+                                });
                               },
                             ),
                             Text(
-                              LanguageService.getTranslated(context, "locationlist_app_select_all"),
+                              LanguageService.getTranslated(
+                                  context, "locationlist_app_select_all"),
                               style: CustomTypography.Body1,
                             ),
                           ],
@@ -383,7 +452,6 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                           SizedBox(width: CustomSpacing.two),
                                           SizedBox(
                                             height: 25,
-                                            width: 35,
                                             child: Chip(
                                               labelPadding: EdgeInsets.all(0),
                                               materialTapTargetSize:
@@ -413,13 +481,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                         SizedBox(width: CustomSpacing.two),
                                         SizedBox(
                                           height: 25,
-                                          width: 35,
                                           child: Chip(
                                             labelPadding: EdgeInsets.all(0),
                                             materialTapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
                                             label: Text(
-                                              "5",
+                                              locationListProvider.certifiedLocationHits.toString(),
                                               style: CustomTypography.BottomNavigationActiveLabel
                                                   .copyWith(height: -0.6),
                                             ),
@@ -504,10 +571,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                   locationListProvider.totalPages &&
                   locationListProvider.locationList.isNotEmpty) {
                 // Display end of list message
-                print("location list: ${locationListProvider.locationList}");
+                print(
+                    "location list: ${locationListProvider.locationList}");
                 return Column(
                   children: [
-                    locationListCard(index, locationListProvider),
+                    locationListCard(
+                        index, locationListProvider.locationList),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Center(
@@ -548,16 +617,19 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
               }
             }
 
-            return locationListCard(index, locationListProvider);
+            return locationListCard(
+                index, locationListProvider.locationList);
           },
         );
       },
     );
   }
 
-  Widget locationListCard(int index, LocationListProvider locationListProvider) {
+  Widget locationListCard(int index, List<Location> locationList) {
     return InkWell(
       onTap: () {
+        print('Going to page $index');
+        var locationListProvider = Provider.of<LocationListProvider>(context, listen: false);
         // Open location details screen
         Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => LocationProfile(
@@ -567,9 +639,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             subAccountName: widget.subAccountName,
             sovId: widget.sovId,
             sovName: widget.sovName,
-            locationId: locationListProvider.locationList[index].locationId ?? "",
-            locationName: locationListProvider.locationList[index].locationName ?? "",
-            locationIdForRef: locationListProvider.locationList[index].locationIdForRef ?? "",
+            searchQuery: locationQuery,
+            page: (index).toString(),
+            totalPages: locationListProvider.locationHits.toString(),
           ),
         )).then((_) {
           // Call getData after pop
@@ -590,42 +662,47 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             highlightColor: Colors.transparent,
           ),
           child: ExpansionTile(
-            /*leading: CircleAvatar(
-              backgroundColor: AppColors.paperElavation25,
-              backgroundImage: locationListProvider.locationList[index].images?[0] != null &&
-                  locationListProvider.locationList[index].images![0].isNotEmpty
-                  ? NetworkImage(locationListProvider.locationList[index].images![0])
-                  : null,
-              child: locationListProvider.locationList[index].images?[0] == null ||
-                  locationListProvider.locationList[index].images![0].isEmpty
-                  ? SvgPicture.asset(
-                'assets/images/locationDefaultIcon.svg', // Replace with your SVG asset path
-                height: 25,
-                fit: BoxFit.cover,
-              )
-                  : null,
-            ),*/
+            leading: showSelectAll
+                ? Checkbox(
+              value: selectedLocations.contains(locationList[index]),
+              onChanged: (isSelected) {
+                setState(() {
+                  if (isSelected == true) {
+                    selectedLocations.add(locationList[index]);
+                  } else {
+                    selectedLocations.remove(locationList[index]);
+                  }
+
+                  // Update the select all checkbox
+                  isAllSelected = selectedLocations.length ==
+                      locationList.length;
+                });
+              },
+            )
+                : null,
             title: Row(
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      locationListProvider.locationList[index].locationIdForRef ?? '',
+                      locationList[index].locationIdForRef ?? '',
                       style: CustomTypography.Body1,
                     ),
-                    locationListProvider.locationList[index].campusId!=null && locationListProvider.locationList[index].campusId!.isNotEmpty?
-                    Chip(
+                    locationList[index].campusId != null &&
+                        locationList[index].campusId!.isNotEmpty
+                        ? Chip(
                       padding: EdgeInsets.all(0),
                       label: Text(
-                        locationListProvider.locationList[index].campusId?? '',
+                        locationList[index].campusId ?? '',
                         style: CustomTypography.Subtitle2,
                       ),
-                    ): SizedBox(),
+                    )
+                        : SizedBox(),
                   ],
                 ),
                 Spacer(),
-                (locationListProvider.locationList[index].score ?? 0) == 5
+                (locationList[index].score ?? 0) == 5
                     ? SvgPicture.asset(
                   'assets/images/certified.svg',
                   semanticsLabel: 'Verified',
@@ -634,7 +711,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                     : SizedBox(),
                 SizedBox(width: CustomSpacing.four),
                 AnimatedProgressIndicator(
-                  percent: locationListProvider.locationList[index].percent ?? "0",
+                  percent: locationList[index].percent ?? "0",
                 ),
               ],
             ),
@@ -645,7 +722,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                   children: [
                     Text('Geocoding', style: CustomTypography.Body1),
                     RatingSlider(
-                      progress: locationListProvider.locationList[index].score ?? 0,
+                      progress: locationList[index].score ?? 0,
                       total: 5,
                       width: MediaQuery.of(context).size.width * 0.5,
                       progressColor: [
@@ -654,14 +731,14 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                         Colors.blue[200]!,
                         Colors.green[200]!,
                         Colors.yellow[100]!
-                      ][(locationListProvider.locationList[index].score ?? 1) - 1],
+                      ][(locationList[index].score ?? 1) - 1],
                       thumbColor: [
                         Colors.red[800]!,
                         Colors.orange[800]!,
                         Colors.blue[700]!,
                         Colors.green[800]!,
                         Colors.yellow[700]!
-                      ][(locationListProvider.locationList[index].score ?? 1) - 1],
+                      ][(locationList[index].score ?? 1) - 1],
                       textColor: Colors.white,
                     ),
                   ],
@@ -767,89 +844,160 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         return locationListProvider.isLoading
             ? Column(
           children: [
-            SizedBox(
-              height: 100,
-            ),
-            Center(
-              child: CircularProgressIndicator(),
-            ),
+            SizedBox(height: 100),
+            Center(child: CircularProgressIndicator()),
           ],
         )
-            : locationListProvider.locationList.isEmpty
+            : locationListProvider.certifiedLocationList.isEmpty
             ? Center(
           child: Text(
-            LanguageService.getTranslated(
-                context, "location_list_app_no_accounts_text"),
-            style: CustomTypography.Body1,
-          ),
+              LanguageService.getTranslated(
+                  context, "location_list_app_no_accounts_text"),
+              style: CustomTypography.Body1),
         )
             : ListView.builder(
           physics: ClampingScrollPhysics(),
           shrinkWrap: true,
-          itemCount: locationListProvider.locationList.length,
+          itemCount:
+          locationListProvider.certifiedLocationList.length,
           itemBuilder: (context, index) {
-            if (index == locationListProvider.locationList.length - 1) {
-              // Check if it's the last item
+            if (index ==
+                locationListProvider.certifiedLocationList.length -
+                    1) {
               if (locationListProvider.isNextPageLoading) {
-                // Display loading indicator
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: Center(child: CircularProgressIndicator()),
                 );
               } else if (locationListProvider.page >=
                   locationListProvider.totalPages &&
-                  locationListProvider.locationList.isNotEmpty) {
-                // Display end of list message
-                print("location list: ${locationListProvider.locationList}");
+                  locationListProvider.certifiedLocationList
+                      .isNotEmpty) {
                 return Column(
                   children: [
-                    locationListCard(index, locationListProvider),
+                    locationListCard(
+                        index,
+                        locationListProvider
+                            .certifiedLocationList),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Center(
-                        child: Text(
-                          LanguageService.getTranslated(
-                              context, "location_list_end_of_list"),
-                          style: CustomTypography.Body1,
-                        ),
-                      ),
+                          child: Text(
+                              LanguageService.getTranslated(context,
+                                  "location_list_end_of_list"),
+                              style: CustomTypography.Body1)),
                     ),
                   ],
                 );
               } else {
-                // Trigger fetching the next page
                 locationListProvider.page =
                     locationListProvider.page + 1;
-                print("Fetching page ${locationListProvider.page}");
-                print(
-                    "Query: $locationQuery, Page: ${locationListProvider.page}");
-                locationListProvider.fetchLocationList(
+                locationListProvider.fetchCertifiedLocationList(
                   context,
                   widget.accountId,
                   widget.subAccountId,
                   widget.sovId,
                   locationQuery,
-                  // Pass the search query if any
                   locationListProvider.page,
-                  40, // Page size
-                  countries: [], // Add your filter parameters here
-                  state: "",
-                  propertyType: [],
-                  constructionType: [],
-                  certifications: [],
-                  hazard: [],
-                  rating: [],
+                  40,
                 );
                 return SizedBox();
               }
             }
 
-            return locationListCard(index, locationListProvider);
+            return locationListCard(index,
+                locationListProvider.certifiedLocationList);
           },
         );
       },
     );
+  }
+
+  void showDeleteConfirmationDialog(BuildContext context, Function onDelete) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.paperElevation2, // Dark background
+          title: Text(
+            'Are you sure you want to delete specified locations?',
+            style: TextStyle(color: Colors.white), // White text
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.redAccent,
+                size: 50,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'This action is irreversible. Please proceed with caution.',
+                style: TextStyle(color: Colors.white70), // Light grey text
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white), // White text
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            Consumer<LocationListProvider>(
+              builder: (context, locationListProvider, child) {
+                return
+                locationListProvider.isDeleteLocationLoading
+                    ? CircularProgressIndicator()
+                    :
+                  CustomButton(
+                  type: ButtonType.danger,
+                  child: Text('Delete', style: CustomTypography.Body1.copyWith(fontWeight: FontWeight.w500)),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                    onDelete(); // Trigger the delete action
+                  },
+                );
+              }
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _bulkDeleteLocations() async {
+    try {
+      // Construct the list of location details for deletion
+      List<Map<String, String>> locationList = selectedLocations.map((location) {
+        return {
+          "location_id": location.locationId ?? '',
+          "owner_id": widget.userId, // Assuming owner_id is userId
+        };
+      }).toList();
+
+      // Make API call to delete locations
+      await Provider.of<LocationListProvider>(context, listen: false)
+          .deleteLocations(context, widget.accountId, widget.subAccountId,
+          widget.sovId, locationList);
+
+      // Clear selections
+      setState(() {
+        selectedLocations.clear();
+        showSelectAll = false;
+        isAllSelected = false;
+      });
+
+    } catch (e) {
+      // Error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete locations: ${e.toString()}')),
+      );
+    }
   }
 }

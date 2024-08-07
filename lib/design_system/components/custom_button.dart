@@ -115,6 +115,17 @@ class CustomButton extends StatelessWidget {
           ),
           child: buttonChild,
         );
+        case ButtonType.danger:
+        return ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            foregroundColor: colorScheme.onSurface, backgroundColor: Colors.redAccent, elevation: 2.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4.0),
+            ),
+          ),
+          child: buttonChild,
+        );
       default:
         throw Exception('Unsupported button type');
     }

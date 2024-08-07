@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -107,6 +108,15 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isTransferLoading = false;
+  bool get isTransferLoading => _isTransferLoading;
+  set isTransferLoading(bool value) {
+    _isTransferLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   // Column Visibility
   bool _showOwner = true;
   bool get showOwner => _showOwner;
@@ -192,6 +202,7 @@ class AccountListProvider extends ChangeNotifier {
   /// Fetch account list with pagination and search query
   Future<void> fetchAccountList(BuildContext context, String searchQuery, int page, int pageSize) async {
     try {
+      if(isLoading || isNextPageLoading) return;
       if (page == 0) {
         isLoading = true;
       } else {
@@ -474,21 +485,55 @@ class AccountListProvider extends ChangeNotifier {
           style: CustomTypography.Body1,
         ),
       ));
+      print("total records: "+response['total_records'].toString());
+      if(response['total_records'] == 0){
+        print("total records: "+response['total_records'].toString());
+        String tempId = (response['temp_id']??'') + "+";
+        print("tempIdLocal: "+tempId);
+        return tempId;
+      }
       return response['temp_id']??'';
     } on BackendException catch (e) {
       isImageUploadLoading = false;
       Navigator.pop(context);
-      // Handle custom backend exceptions (if any)
+
+      print("Raw Backend Exception Message: ${e.message}");
+
+      // Initialize a variable to store the error message
+      String message = '';
+
+      try {
+        // Check if the message is a JSON string
+        if (e.message.trim().startsWith('{') && e.message.trim().endsWith('}')) {
+          // Attempt to parse the message as JSON
+          final Map<String, dynamic> errorJson = jsonDecode(e.message.trim());
+
+          // Extract the error message
+          message = errorJson['error'] ?? 'An unexpected error occurred';
+        } else {
+          // If it's not JSON, use the message as-is
+          message = e.message;
+        }
+      } catch (decodeError) {
+        // Handle any JSON parsing errors
+        print('JSON Decode Error: $decodeError');
+
+        // Fallback to the raw message or a generic error message
+        message = e.message ?? 'An unexpected error occurred. Please try again later.';
+      }
+
+      // Display the error message in a SnackBar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.message,
+            message,
             style: CustomTypography.Body1,
           ),
         ),
       );
-      return ''; // Return empty string or handle the error as needed
-    } catch (e) {
+
+      return ''; // Return an empty string or handle the error as needed
+    }catch (e) {
       // Handle other unexpected exceptions
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -503,4 +548,36 @@ class AccountListProvider extends ChangeNotifier {
       return ''; // Return empty string or handle the error as needed
     }
   }
+
+  Future<void> transferAccount(BuildContext context, String accountId, String newOwnerId) async {
+    try {
+      isTransferLoading = true;
+
+      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+      var response = await apiService.post({
+        'data': {
+          'new_owner': newOwnerId,
+          'account_id': accountId,
+        },
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(response['message'] ?? 'Account transferred successfully'),
+      ));
+
+      // Update the account list UI
+      int index = accountList.indexWhere((element) => element.accountId == accountId);
+      if (index != -1) {
+        accountList[index].disabled = true;
+      }
+
+      isTransferLoading = false;
+    } catch (e) {
+      isTransferLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to transfer account: ${e.toString()}'),
+      ));
+    }
+  }
+
 }

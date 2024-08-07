@@ -44,6 +44,7 @@ class SovAccount {
   int? overAllScore;
   int? locationCount;
   bool isChecked = false; // Local variable, not part of JSON serialization
+  bool disabled = false;
 
   SovAccount({
     this.id,
@@ -56,6 +57,8 @@ class SovAccount {
     this.objectID,
     this.overAllScore,
     this.locationCount,
+    this.isChecked = false,
+    this.disabled = false,
   });
 
   SovAccount.fromJson(Map<String, dynamic> json) {
@@ -69,6 +72,7 @@ class SovAccount {
     objectID = json['objectID'];
     overAllScore = json['over_all_score'];
     locationCount = json['location_count'];
+    disabled = json['is_disabled'] ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -85,12 +89,13 @@ class SovAccount {
     data['overAllScore'] = overAllScore;
     data['locationCount'] = locationCount;
     data['sov_id'] = id;
+    data['is_disabled'] = disabled;
     return data;
   }
 
   @override
   String toString() {
-    return 'SovAccount(subAccountId: $subAccountId, name: $name, isChecked: $isChecked, path: $path, owner: $owner, createdAt: $createdAt, accountId: $accountId, objectID: $objectID, overAllScore: $overAllScore, locationCount: $locationCount)';
+    return 'SovAccount(subAccountId: $subAccountId, name: $name, isChecked: $isChecked, path: $path, owner: $owner, createdAt: $createdAt, accountId: $accountId, objectID: $objectID, overAllScore: $overAllScore, locationCount: $locationCount, disabled: $disabled)';
   }
 }
 

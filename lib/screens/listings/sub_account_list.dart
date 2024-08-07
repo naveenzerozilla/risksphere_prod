@@ -20,6 +20,7 @@ import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sov_list.dart';
 import 'package:green/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -33,11 +34,15 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
+import '../../models/transfer_autocomplete_model.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
+import '../../providers/upload_sov_provider.dart';
+import '../../service/api_service.dart';
 import '../../service/language_service.dart';
+import '../../utils/api_constants.dart';
 import 'widgets/auto_complete_options.dart';
 
 class SubAccountListScreen extends StatefulWidget {
@@ -338,7 +343,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             print("sub account list: ${subAccountListProvider.subAccountList}");
                                             return Column(
                                               children: [
-                                                _buildAccountCard(
+                                                _buildSubAccountCard(
                                                     index, subAccountListProvider),
                                                 Padding(
                                                   padding:
@@ -373,7 +378,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           }
                                         }
 
-                                        return _buildAccountCard(
+                                        return _buildSubAccountCard(
                                             index, subAccountListProvider);
                                       },
                                     );
@@ -392,7 +397,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     });
   }
 
-  Widget _buildAccountCard(int index, SubAccountListProvider subAccountListProvider) {
+  Widget _buildSubAccountCard(int index, SubAccountListProvider subAccountListProvider) {
+    bool isDisabled = subAccountListProvider.subAccountList[index].disabled;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
@@ -410,7 +416,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           });
 
         },*/
-        onTap: () {
+        onTap: isDisabled?null:() {
           // On tap of card
 
           if (showCheckbox) {
@@ -466,6 +472,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Card(
+                    color: isDisabled?
+                    Theme.of(context).colorScheme.scrim:
+                    Theme.of(context).colorScheme.surface,
                     margin: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.only(
@@ -524,7 +533,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       SizedBox(
                                         width: CustomSpacing.two,
                                       ),
-                                      InkWell(
+                                      isDisabled?SizedBox():InkWell(
                                         onTap: () {
                                           _subAccountEditNameController.text =
                                           (subAccountListProvider
@@ -746,7 +755,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                       ],
                     ),
                   ),
-                  Container(
+                  isDisabled?SizedBox():Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceVariant,
                       // bottom left and right corners curved
@@ -758,17 +767,21 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                     child: Row(
                       children: [
                         // Icon with text
-                        /*TextButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.history),
-                          label: Text('View History',
+                        TextButton.icon(
+                          onPressed: () {
+                            // Transfer account
+                            _showTransferDialog(context,
+                                subAccountListProvider.subAccountList[index]);
+                          },
+                          icon: const Icon(Symbols.share_windows),
+                          label: Text('Transfer',
                               style: CustomTypography.Caption.copyWith(
                                   color: Theme.of(context).brightness ==
-                                          Brightness.dark
+                                      Brightness.dark
                                       ? AppColors.white
                                       : AppColors.black)),
-                        ),*/
-                        SizedBox(),
+                        ),
+                        //SizedBox(),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.upload_rounded),
@@ -1299,7 +1312,85 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           listen: false)
                                           .uploadSovAccount(context, files, accountId, subAccountId, _sovNameController.text));
 
-                                      if(success.isNotEmpty) {
+                                      print('Success: $success');
+                                      // contain symbol +
+                                      if(success.isNotEmpty && success.contains('+')){
+                                        print('Inside + success: $success');
+                                        // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                        showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  /*LanguageService.getTranslated(
+                                                        context,
+                                                        "account_list_app_empty_sov_title")*/
+                                                  'Empty SOV',
+                                                  style: CustomTypography.H5_Regular,
+                                                ),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      /* LanguageService.getTranslated(
+                                                            context,
+                                                            "account_list_app_empty_sov_text"),*/
+                                                      'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                      style: CustomTypography.Body1,
+                                                    ),
+                                                    SizedBox(
+                                                      height: CustomSpacing.two,
+                                                    ),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                      children: [
+                                                        Consumer<UploadSovProvider>(
+                                                            builder: (context, uploadSovProvider, child) {
+                                                              return uploadSovProvider.isLoading?
+                                                              const Center(
+                                                                child: CircularProgressIndicator(),
+                                                              ):
+                                                              CustomButton(
+                                                                onPressed: () async {
+                                                                  // Create empty SOV
+                                                                  var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                  await provider.createEmptySov(context, success);
+                                                                  Navigator.pop(context);
+                                                                },
+                                                                child: Text(
+                                                                  /*LanguageService.getTranslated(
+                                                                      context,
+                                                                      "account_list_app_empty_sov_create"),*/
+                                                                  'Create',
+                                                                  style: CustomTypography.ButtonLarge,
+                                                                ),
+                                                                type: ButtonType.elevated,
+                                                              );
+                                                            }
+                                                        ),
+                                                        CustomButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(context);
+                                                          },
+                                                          child: Text(
+                                                            /*LanguageService.getTranslated(
+                                                                  context,
+                                                                  "account_list_app_empty_sov_abort")*/
+                                                            'Abort',
+                                                            style: CustomTypography.ButtonLarge,
+                                                          ),
+                                                          type: ButtonType.text,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            });
+                                      }
+                                      else if(success.isNotEmpty) {
 
                                         Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountId, accountName: widget.accountName??"",)));
 
@@ -1342,5 +1433,167 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         });
   }
 
+  Future<void> _showTransferDialog(BuildContext context, SubAccounts subAccount) async {
+    TextEditingController _userSearchController = TextEditingController();
+    TransferAutocompleteModel? _selectedUser;
+    List<TransferAutocompleteModel> _autocompleteUsersList = [];
+    bool _isTransferLoading = false;
+    bool _isSearching = false;
+    Timer? _debounce;
 
+    void _onSearchChanged(String query, StateSetter setState) {
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 500), () async {
+        if (query.isNotEmpty) {
+          setState(() {
+            _isSearching = true;
+          });
+
+          _autocompleteUsersList = await fetchAutocompleteUsers(query);
+
+          setState(() {
+            _isSearching = false;
+          });
+        } else {
+          setState(() {
+            _autocompleteUsersList.clear();
+            _isSearching = false;
+          });
+        }
+      });
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              child: Container(
+                width: 304,
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Transfer Sub-Account',
+                        style: CustomTypography.H5_Regular.copyWith(height: 1.2),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: _userSearchController,
+                        onChanged: (query) {
+                          setState(() {
+                            _selectedUser = null;
+                          });
+                          _onSearchChanged(query, setState);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search for a user to transfer sub-account',
+                          border: OutlineInputBorder(),
+                          suffixIcon: _isSearching
+                              ? Container(
+                              margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator())
+                              : null,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Flexible(
+                      child: _selectedUser == null
+                          ? ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _autocompleteUsersList.length,
+                        itemBuilder: (context, index) {
+                          final user = _autocompleteUsersList[index];
+                          return ListTile(
+                            leading: user.imageUrl.isNotEmpty
+                                ? CircleAvatar(
+                              backgroundImage: NetworkImage(user.imageUrl),
+                            )
+                                : CircleAvatar(
+                              child: Text(user.displayName[0].toUpperCase()),
+                            ),
+                            title: Text(user.displayName),
+                            subtitle: Text(user.email),
+                            onTap: () {
+                              setState(() {
+                                _selectedUser = user;
+                                _userSearchController.text = user.displayName;
+                              });
+                            },
+                          );
+                        },
+                      )
+                          : Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Selected User: ${_selectedUser!.displayName}'),
+                      ),
+                    ),
+                    ButtonBar(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: _selectedUser != null && !_isTransferLoading
+                              ? () async {
+                            setState(() {
+                              _isTransferLoading = true;
+                            });
+                            var provider = Provider.of<SubAccountListProvider>(context, listen: false);
+                            await provider.transferSubAccount(context, widget.accountId, subAccount.subAccountId!, _selectedUser!.id);
+                            setState(() {
+                              _isTransferLoading = false;
+                            });
+                            Navigator.pop(dialogContext);
+                          }
+                              : null,
+                          child: _isTransferLoading
+                              ? CircularProgressIndicator(strokeWidth: 2.0)
+                              : Text('Transfer'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+    });
+  }
+
+
+  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
+      String query) async {
+    try {
+      ApiService apiService = ApiService(AppConstant.ADD_TEAM_MEMBERS);
+      String url = '?search=$query&within_company=true';
+      var response = await apiService.get(url);
+
+      // Parse the response to extract user data
+      List<TransferAutocompleteModel> users = (response['users'] as List)
+          .map((user) => TransferAutocompleteModel.fromJson(user))
+          .toList();
+
+      return users;
+    } catch (e) {
+      print(e.toString());
+      return [];
+    }
+  }
 }

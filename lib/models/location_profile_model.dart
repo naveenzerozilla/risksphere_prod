@@ -76,6 +76,7 @@ class LocationProfileModel {
         : (json['place_types'] as List?)?.map((item) => item as String).toList();
     state = json['state'];
     placeId = json['place_id'];
+    print('locationIdForRef: $locationIdForRef, placeId: $placeId');
     longitude = json['longitude']?.toDouble();
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     zip = json['zip'];

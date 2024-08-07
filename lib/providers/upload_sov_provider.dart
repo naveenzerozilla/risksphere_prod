@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/upload_sov_model.dart';
 import 'package:green/screens/listings/sub_account_list.dart';
 import 'package:green/service/api_service.dart';
@@ -34,6 +35,48 @@ class UploadSovProvider extends ChangeNotifier {
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+
+  Future<void> createEmptySov(BuildContext context, String tempId) async {
+    try {
+       isLoading = true;
+
+       if(tempId.contains('+')) {
+         tempId = tempId.replaceAll('+', '');
+       }
+      final body = {
+        'data': {
+          'temp_id': tempId,
+          "create_empty_sov":true,
+        }
+      };
+
+      isLoading = true;
+      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT);
+      var response = await apiService.post(body);
+      log(response.toString());
+
+
+      if (response['message'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? "Empty SOV created", style: CustomTypography.Body1,),
+          ),
+        );
+      } else {
+        throw Exception(response['error'] ?? 'Failed to create empty SOV');
+      }
+    } catch (error, stackTrace) {
+      print(error);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Submission failed"),
+        ),
+      );
+    } finally {
+      isLoading = false;
+    }
   }
 
   Future<bool> fetchSovHeaders(BuildContext context, String tempProcessId) async {
@@ -108,12 +151,8 @@ class UploadSovProvider extends ChangeNotifier {
       var response = await apiService.post(body);
       log(response.toString());
 
+
       if (response['data'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Submission successful"),
-          ),
-        );
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => LocationDataScreen(
             response: response,
@@ -134,6 +173,7 @@ class UploadSovProvider extends ChangeNotifier {
       isLoading = false;
     }
   }
+
 
   Future<void> submitSovHeadersSubAccounts(BuildContext context, String tempId, String docUrl, List<Map<String, dynamic>> fields, String accountId, String accountName) async {
     try {
@@ -172,11 +212,6 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
 
       if (response['data'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Submission successful"),
-          ),
-        );
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => LocationDataScreen(
             response: response,
@@ -241,8 +276,9 @@ class UploadSovProvider extends ChangeNotifier {
       } else {
         throw Exception('Failed to submit data');
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
       log('Submission Error: $error');
+      log('Submission Error: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Submission failed"),
@@ -295,8 +331,9 @@ class UploadSovProvider extends ChangeNotifier {
       } else {
         throw Exception('Failed to submit data');
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
       log('Submission Error: $error');
+      log('Submission Error: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Submission failed"),

@@ -39,18 +39,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent,
       titleSpacing: 0,
       title: isExpanded
-          ? Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search...',
-                    hintStyle: CustomTypography.Subtitle1,
-                    border: InputBorder.none,
-                  ),
-                ),
+          ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                hintStyle: CustomTypography.Subtitle1,
+                border: InputBorder.none,
               ),
-            )
+            ),
+          )
           : GestureDetector(
               onTap: () {
                 onExpandPressed(!isExpanded);

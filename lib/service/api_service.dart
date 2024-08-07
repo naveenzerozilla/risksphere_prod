@@ -43,6 +43,8 @@ class ApiService {
       body: json.encode(body),
       headers: headers,
     );
+    print("Response: ${response.body}");
+    print("Response Code: ${response.statusCode}");
     log("Response: ${response.body}");
     return _handleResponse(response);
   }
@@ -146,8 +148,8 @@ class ApiService {
       return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
-      print(streamedResponse.reasonPhrase);
-      throw BackendException(streamedResponse.reasonPhrase ?? "An error occurred", streamedResponse.statusCode);
+      print(responseData);
+      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
@@ -159,12 +161,15 @@ class ApiService {
       'Content-Type': 'multipart/form-data',
     };
     var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
-    request.fields.addAll({
-      'sov_name': name,
-      'account_id': accountId,
-      'sub_account_id': subAccountId,
-      'device': 'mobile'
-    });
+    var body = {
+    //  'data': {
+        'sov_name': name,
+        'account_id': accountId,
+        'sub_account_id': subAccountId,
+        'device': 'mobile'
+   //   }
+    };
+    request.fields.addAll(body);
     print("Request Fields: ${request.fields}");
     print("Request Files path: ${filePath.path}");
     request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
@@ -174,14 +179,16 @@ class ApiService {
 
     http.StreamedResponse streamedResponse = await request.send();
 
+    print("Response Code: ${streamedResponse.statusCode}");
+    print("Response Reason: ${streamedResponse.reasonPhrase}");
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
       return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
-      print(streamedResponse.reasonPhrase);
-      throw BackendException(streamedResponse.reasonPhrase ?? "An error occurred", streamedResponse.statusCode);
+      print(responseData);
+      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
@@ -211,8 +218,8 @@ class ApiService {
       return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
-      print(streamedResponse.reasonPhrase);
-      throw BackendException(streamedResponse.reasonPhrase ?? "An error occurred", streamedResponse.statusCode);
+      print("Reason"+responseData);
+      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
@@ -250,7 +257,11 @@ class ApiService {
       }
     } else {
       // Server returned an error status code
+      if (statusCode == 422) {
+        throw BackendException(body, statusCode);
+      }
       throw BackendException(_extractErrorMessage(body), statusCode);
+
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/roles_dropdown.dart';
 import 'package:green/models/account_list_model.dart';
+import 'package:green/models/sov_list_model.dart';
 import 'package:green/providers/account_list_provider.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/sov_list_provider.dart';
@@ -16,6 +17,7 @@ import 'package:green/providers/sub_account_list_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -29,11 +31,14 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
+import '../../models/transfer_autocomplete_model.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
+import '../../service/api_service.dart';
 import '../../service/language_service.dart';
+import '../../utils/api_constants.dart';
 import 'add_location_screen.dart';
 import 'widgets/auto_complete_options.dart';
 
@@ -349,11 +354,14 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
   }
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
+    bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: () {
+        onTap: isDisabled
+            ? null
+            : () {
           // On tap of card
           if (showCheckbox) {
             setState(() {
@@ -390,7 +398,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
             // Add Checkbox here
             Checkbox(
               value: sOVListProvider.sovList[index].isChecked ?? false,
-              onChanged: (value) {
+              onChanged: isDisabled?null:(value) {
                 setState(() {
                   sOVListProvider.sovList[index].isChecked = value??false;
                 });
@@ -404,6 +412,9 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Card(
+                    color: isDisabled
+                        ? Theme.of(context).colorScheme.scrim
+                        : Theme.of(context).colorScheme.surface,
                     margin: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.only(
@@ -458,7 +469,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                       SizedBox(
                                         width: CustomSpacing.two,
                                       ),
-                                      InkWell(
+                                      isDisabled?SizedBox():InkWell(
                                         onTap: () {
                                           _sovEditNameController.text =
                                           (sOVListProvider
@@ -712,7 +723,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  Container(
+                  isDisabled?SizedBox():Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceVariant,
                       // bottom left and right corners curved
@@ -723,7 +734,20 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                     ),
                     child: Row(
                       children: [
-                        SizedBox(),
+                        TextButton.icon(
+                          onPressed: () {
+                            // Transfer account
+                            _showTransferDialog(context,
+                                sOVListProvider.sovList[index]);
+                          },
+                          icon: const Icon(Symbols.share_windows),
+                          label: Text('Transfer',
+                              style: CustomTypography.Caption.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black)),
+                        ),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.file_copy_rounded),
@@ -958,5 +982,168 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
         );
       },
     );
+  }
+
+  Future<void> _showTransferDialog(BuildContext context, SovAccount sov) async {
+    TextEditingController _userSearchController = TextEditingController();
+    TransferAutocompleteModel? _selectedUser;
+    List<TransferAutocompleteModel> _autocompleteUsersList = [];
+    bool _isTransferLoading = false;
+    bool _isSearching = false;
+    Timer? _debounce;
+
+    void _onSearchChanged(String query, StateSetter setState) {
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 500), () async {
+        if (query.isNotEmpty) {
+          setState(() {
+            _isSearching = true;
+          });
+
+          _autocompleteUsersList = await fetchAutocompleteUsers(query);
+
+          setState(() {
+            _isSearching = false;
+          });
+        } else {
+          setState(() {
+            _autocompleteUsersList.clear();
+            _isSearching = false;
+          });
+        }
+      });
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              child: Container(
+                width: 304,
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Transfer SOV',
+                        style: CustomTypography.H5_Regular.copyWith(height: 1.2),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: _userSearchController,
+                        onChanged: (query) {
+                          setState(() {
+                            _selectedUser = null;
+                          });
+                          _onSearchChanged(query, setState);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search for a user to transfer sov',
+                          border: OutlineInputBorder(),
+                          suffixIcon: _isSearching
+                              ? Container(
+                              margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator())
+                              : null,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Flexible(
+                      child: _selectedUser == null
+                          ? ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _autocompleteUsersList.length,
+                        itemBuilder: (context, index) {
+                          final user = _autocompleteUsersList[index];
+                          return ListTile(
+                            leading: user.imageUrl.isNotEmpty
+                                ? CircleAvatar(
+                              backgroundImage: NetworkImage(user.imageUrl),
+                            )
+                                : CircleAvatar(
+                              child: Text(user.displayName[0].toUpperCase()),
+                            ),
+                            title: Text(user.displayName),
+                            subtitle: Text(user.email),
+                            onTap: () {
+                              setState(() {
+                                _selectedUser = user;
+                                _userSearchController.text = user.displayName;
+                              });
+                            },
+                          );
+                        },
+                      )
+                          : Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Selected User: ${_selectedUser!.displayName}'),
+                      ),
+                    ),
+                    ButtonBar(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: _selectedUser != null && !_isTransferLoading
+                              ? () async {
+                            setState(() {
+                              _isTransferLoading = true;
+                            });
+                            var provider = Provider.of<SOVListProvider>(context, listen: false);
+                            await provider.transferSOV(context, widget.accountId, widget.subAccountId, sov.id, _selectedUser!.id);
+                            setState(() {
+                              _isTransferLoading = false;
+                            });
+                            Navigator.pop(dialogContext);
+                          }
+                              : null,
+                          child: _isTransferLoading
+                              ? CircularProgressIndicator(strokeWidth: 2.0)
+                              : Text('Transfer'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+    });
+  }
+
+  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
+      String query) async {
+    try {
+      ApiService apiService = ApiService(AppConstant.ADD_TEAM_MEMBERS);
+      String url = '?search=$query&within_company=true';
+      var response = await apiService.get(url);
+
+      // Parse the response to extract user data
+      List<TransferAutocompleteModel> users = (response['users'] as List)
+          .map((user) => TransferAutocompleteModel.fromJson(user))
+          .toList();
+
+      return users;
+    } catch (e) {
+      print(e.toString());
+      return [];
+    }
   }
 }

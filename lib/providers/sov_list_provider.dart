@@ -101,6 +101,15 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isTransferLoading = false;
+  bool get isTransferLoading => _isTransferLoading;
+  set isTransferLoading(bool value) {
+    _isTransferLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   // columns
   bool _showLocationCount = true;
   bool get showLocationCount => _showLocationCount;
@@ -516,5 +525,38 @@ class SOVListProvider extends ChangeNotifier {
   }
 
 
+  /// Transfer sov
+  Future<void> transferSOV(BuildContext context, String accountId, String? subAccountId, String? sovId, String newOwnerId) async {
+    try {
+      isTransferLoading = true;
+
+      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST+"/$accountId/subaccount/$subAccountId/sov");
+      var response = await apiService.post({
+        'data': {
+          'new_owner': newOwnerId,
+          'account_id': accountId,
+          'sub_account_id': subAccountId,
+          'sov_id': sovId,
+        },
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(response['message'] ?? 'Sov transferred successfully'),
+      ));
+
+      // Update the account list UI
+      int index = sovList.indexWhere((element) => element.subAccountId == subAccountId);
+      if (index != -1) {
+        sovList[index].disabled = true;
+      }
+
+      isTransferLoading = false;
+    } catch (e) {
+      isTransferLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to transfer sov: ${e.toString()}'),
+      ));
+    }
+  }
 
 }

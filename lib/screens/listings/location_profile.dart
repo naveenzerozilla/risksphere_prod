@@ -48,9 +48,9 @@ class LocationProfile extends StatefulWidget {
     required this.subAccountName,
     required this.sovId,
     required this.sovName,
-    required this.locationId,
-    required this.locationName,
-    required this.locationIdForRef,
+    required this.page,
+    required this.totalPages,
+    required this.searchQuery,
   });
 
   final String accountId;
@@ -59,9 +59,9 @@ class LocationProfile extends StatefulWidget {
   final String subAccountName;
   final String sovId;
   final String sovName;
-  final String locationId;
-  final String locationName;
-  final String locationIdForRef;
+  final String page;
+  final String totalPages;
+  final String searchQuery;
 
   @override
   State<LocationProfile> createState() => _LocationProfileState();
@@ -126,7 +126,7 @@ class _LocationProfileState extends State<LocationProfile>
     // Make API call to get the data
     await Provider.of<LocationProfileProvider>(context, listen: false)
         .fetchLocationDetails(context, widget.accountId, widget.subAccountId,
-            widget.sovId, widget.locationId);
+            widget.sovId, widget.searchQuery, widget.page, widget.totalPages);
     _addSubdestinationMarkers();
     _add();
   }
@@ -140,6 +140,7 @@ class _LocationProfileState extends State<LocationProfile>
     print(
         'Latitude: ${controller.result?.latitude}, Longitude: ${controller.result?.longitude}');
     final Marker marker = Marker(
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       markerId: markerId,
       position: LatLng(controller.result?.latitude ?? 123.432432,
           controller.result?.longitude ?? -111.889),
@@ -171,6 +172,7 @@ class _LocationProfileState extends State<LocationProfile>
       var markerId = MarkerId(subdestination.id!);
       var isAdded = (subdestination.status ?? "").toLowerCase() == "added";
       var marker = Marker(
+        zIndex: isAdded ? 5 : 0,
         markerId: markerId,
         position: LatLng(subdestination.lat!, subdestination.lng!),
         icon: BitmapDescriptor.defaultMarkerWithHue(
@@ -185,6 +187,7 @@ class _LocationProfileState extends State<LocationProfile>
       setState(() {
         markers[markerId] = marker;
       });
+      _add();
     }
   }
 
@@ -195,15 +198,23 @@ class _LocationProfileState extends State<LocationProfile>
     });
     // Make API call to upload the images
     for (var file in pickedFiles) {
-      await Provider.of<LocationProfileProvider>(context, listen: false)
-          .uploadImage(context, file.path, widget.accountId,
-              widget.subAccountId, widget.sovId, widget.locationId);
+      var provider =
+          Provider.of<LocationProfileProvider>(context, listen: false);
+      await provider.uploadImage(context, file.path, widget.accountId,
+          widget.subAccountId, widget.sovId, provider.result!.locationId ?? "");
     }
   }
 
   Future<void> _captureAndUploadMapScreenshot() async {
     // Request storage permission
-    PermissionStatus status = await Permission.storage.request();
+    // Log initial permission status
+    PermissionStatus initialStatus =
+        await Permission.manageExternalStorage.status;
+    print('Initial permission status: $initialStatus');
+
+    // Request storage permission
+    PermissionStatus status = await Permission.manageExternalStorage.request();
+    print('After request, permission status: $status');
 
     if (status.isGranted) {
       Uint8List? screenshot = await screenshotController.capture();
@@ -218,26 +229,35 @@ class _LocationProfileState extends State<LocationProfile>
           _images.add(file);
         });
 
-        await Provider.of<LocationProfileProvider>(context, listen: false)
-            .uploadImage(context, filePath, widget.accountId, widget.subAccountId,
-            widget.sovId, widget.locationId);
+        var provider =
+            Provider.of<LocationProfileProvider>(context, listen: false);
+        await provider.uploadImage(
+            context,
+            filePath,
+            widget.accountId,
+            widget.subAccountId,
+            widget.sovId,
+            provider.result!.locationId ?? "");
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to capture screenshot', style: CustomTypography.Body1),
+            content: Text('Failed to capture screenshot',
+                style: CustomTypography.Body1),
           ),
         );
       }
     } else if (status.isDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Storage permission denied', style: CustomTypography.Body1),
+          content:
+              Text('Storage permission denied', style: CustomTypography.Body1),
         ),
       );
     } else if (status.isPermanentlyDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Storage permission permanently denied', style: CustomTypography.Body1),
+          content: Text('Storage permission permanently denied',
+              style: CustomTypography.Body1),
           action: SnackBarAction(
             label: 'Settings',
             onPressed: () {
@@ -322,6 +342,69 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               },
                               onTap: _isAddingMarker ? _handleMapTap : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Consumer<LocationProfileProvider>(
+                          builder: (context, locationProfileProvider, child) {
+                        return Positioned(
+                          top: 16,
+                          left: 28,
+                          right: 0,
+                          child: (locationProfileProvider.result?.score ?? 0) ==
+                                      3 ||
+                                  (locationProfileProvider.result?.score ??
+                                          0) ==
+                                      4
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                        child: _buildGoogleSearchBar(context)),
+                                  ],
+                                )
+                              : SizedBox(),
+                        );
+                      }),
+                      // Left navigation button
+                      ((int.tryParse(widget.page)??0) <= 0)?
+                          SizedBox.shrink():
+                      Positioned(
+                        left: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FloatingActionButton(
+                            shape: CircleBorder(),
+                            mini: true,
+                            backgroundColor: AppColors.paperElavation25,
+                            onPressed: _navigateLeft,
+                            child: Icon(
+                              Icons.chevron_left,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Right navigation button
+                      ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1))?
+                          SizedBox.shrink():
+                      Positioned(
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: FloatingActionButton(
+                            mini: true,
+                            shape: CircleBorder(),
+                            backgroundColor: AppColors.paperElavation25,
+                            onPressed: _navigateRight,
+                            child: Icon(
+                              Icons.chevron_right,
+                              size: 30,
                             ),
                           ),
                         ),
@@ -432,6 +515,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                 0) ==
                                             2
                                     ? FloatingActionButton.small(
+                                        backgroundColor:
+                                            AppColors.paperElevation2,
                                         onPressed: _toggleAddMarkerMode,
                                         child: _isAddingMarker
                                             ? const Icon(Icons.cancel)
@@ -560,186 +645,193 @@ class _LocationProfileState extends State<LocationProfile>
   Widget _buildBottomSheet() {
     return Consumer<LocationProfileProvider>(
         builder: (context, locationProfileProvider, child) {
-          return AnimatedContainer(
-            duration: Duration(milliseconds: 300),
-            height: _isBottomSheetExpanded
-                ? MediaQuery.of(context).size.height * 0.5
-                : MediaQuery.of(context).size.height * 0.14,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
+      return AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        height: _isBottomSheetExpanded
+            ? MediaQuery.of(context).size.height * 0.5
+            : MediaQuery.of(context).size.height * 0.14,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    ListTile(
-                      title: Text(
-                        '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${widget.locationIdForRef}',
-                        style: CustomTypography.Subtitle1.copyWith(
-                            fontWeight: FontWeight.w500),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                      trailing: IconButton(
-                        icon: Icon(_isBottomSheetExpanded
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_up),
-                        onPressed: () {
-                          setState(() {
-                            _isBottomSheetExpanded = !_isBottomSheetExpanded;
-                          });
-                        },
-                      ),
-                    ),
-                    !_isBottomSheetExpanded?SizedBox():Positioned(
-                      top: -25,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: 1,
+                ListTile(
+                  title: Text(
+                    '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                    style: CustomTypography.Subtitle1.copyWith(
+                        fontWeight: FontWeight.w500),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                  trailing: IconButton(
+                    icon: Icon(_isBottomSheetExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up),
+                    onPressed: () {
+                      setState(() {
+                        _isBottomSheetExpanded = !_isBottomSheetExpanded;
+                      });
+                    },
+                  ),
+                ),
+                !_isBottomSheetExpanded
+                    ? SizedBox()
+                    : Positioned(
+                        top: -25,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                width: 1,
+                              ),
                             ),
-
-                          ),
-                          child: IconButton(
-                            icon: Icon(Icons.fullscreen),
-                            onPressed: () {
-                              setState(() {
-                                _isBottomSheetFullScreen = true;
-                              });
-                            },
+                            child: IconButton(
+                              icon: Icon(Icons.fullscreen),
+                              onPressed: () {
+                                setState(() {
+                                  _isBottomSheetFullScreen = true;
+                                });
+                              },
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                if (_isBottomSheetExpanded)
-                  Expanded(
-                    child: Scrollbar(
-                      thumbVisibility: true,
-                      child: ListView(
-                        children: [
-                          ListTile(
-                            title: Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    widget.locationName,
-                                    style:
+              ],
+            ),
+            if (_isBottomSheetExpanded)
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView(
+                    children: [
+                      ListTile(
+                        title: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                locationProfileProvider.result?.locationName ??
+                                    '',
+                                style:
                                     CustomTypography.H6.copyWith(height: 1.2),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.edit,
-                                      color: Theme.of(context).colorScheme.primary),
-                                  onPressed: () {
-                                    // Handle edit button press
-                                    _editName(locationProfileProvider);
-                                  },
-                                ),
-                              ],
-                            ),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                            trailing: TooltipTheme(
-                              data: TooltipThemeData(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                textStyle: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  fontSize: 14,
-                                ),
-                                padding: EdgeInsets.all(8),
-                                verticalOffset: 20,
-                                preferBelow: false,
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 12.0),
-                                child: Tooltip(
-                                  showDuration: Duration(seconds: 5),
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  preferBelow: true,
-                                  richMessage: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: 'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                        style: CustomTypography.Subtitle1,
-                                      ),
-                                      // Comma seperated
-                                      TextSpan(
-                                        text: 'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                        style: CustomTypography.Subtitle1,
-                                      ),
-                                    ],
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.edit,
+                                  color: Theme.of(context).colorScheme.primary),
+                              onPressed: () {
+                                // Handle edit button press
+                                _editName(locationProfileProvider);
+                              },
+                            ),
+                          ],
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        trailing: TooltipTheme(
+                          data: TooltipThemeData(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            textStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
+                            padding: EdgeInsets.all(8),
+                            verticalOffset: 20,
+                            preferBelow: false,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12.0),
+                            child: Tooltip(
+                              showDuration: Duration(seconds: 5),
+                              triggerMode: TooltipTriggerMode.tap,
+                              preferBelow: true,
+                              richMessage: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
                                     style: CustomTypography.Subtitle1,
                                   ),
-                                  child: Icon(
-                                    Icons.info,
+                                  // Comma seperated
+                                  TextSpan(
+                                    text:
+                                        'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
+                                    style: CustomTypography.Subtitle1,
                                   ),
-                                ),
+                                ],
+                                style: CustomTypography.Subtitle1,
+                              ),
+                              child: Icon(
+                                Icons.info,
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: EdgeInsets.only(left: 16, right: 24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                RatingSlider(
-                                  progress: context
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(left: 16, right: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            RatingSlider(
+                              progress: context
                                       .read<LocationProfileProvider>()
                                       .result
                                       ?.score ??
-                                      0,
-                                  total: 5,
-                                  width: MediaQuery.of(context).size.width * 0.5,
-                                  progressColor: Colors.amber,
-                                  thumbColor: Colors.amberAccent,
-                                  textColor: Colors.white,
-                                ),
-                                SvgPicture.asset('assets/images/certified.svg'),
-                              ],
+                                  0,
+                              total: 5,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              progressColor: Colors.amber,
+                              thumbColor: Colors.amberAccent,
+                              textColor: Colors.white,
                             ),
-                          ),
-                          Divider(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            SvgPicture.asset('assets/images/certified.svg'),
+                          ],
+                        ),
+                      ),
+                      Divider(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Address',
+                              style: CustomTypography.H6.copyWith(height: 1.2),
+                            ),
+                            Row(
                               children: [
-                                Text(
-                                  'Address',
-                                  style: CustomTypography.H6.copyWith(height: 1.2),
-                                ),
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.download),
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return ExportDialog(
-                                              accountId: widget.accountId,
-                                              subAccountId: widget.subAccountId,
-                                              sovId: [widget.sovId],
-                                              locationId: widget.locationId,
-                                            );
-                                          },
+                                IconButton(
+                                  icon: Icon(Icons.download),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return ExportDialog(
+                                          accountId: widget.accountId,
+                                          subAccountId: widget.subAccountId,
+                                          sovId: [widget.sovId],
+                                          locationId: locationProfileProvider
+                                                  .result?.locationId ??
+                                              '',
                                         );
                                       },
-                                    ),
-                                    IconButton(
+                                    );
+                                  },
+                                ),
+                                // Todo: Implement history feature
+                                /*IconButton(
                                       icon: Icon(Icons.history),
                                       onPressed: () {
                                         ScaffoldMessenger.of(context).showSnackBar(
@@ -749,290 +841,311 @@ class _LocationProfileState extends State<LocationProfile>
                                           ),
                                         );
                                       },
-                                    ),
-                                  ],
-                                ),
+                                    ),*/
                               ],
                             ),
-                          ),
-                          ListTile(
-                            title: Text(
-                              locationProfileProvider.result?.address ?? '',
-                              style: CustomTypography.Body1,
+                          ],
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          locationProfileProvider.result?.address ?? '',
+                          style: CustomTypography.Body1,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        trailing: IconButton(
+                          icon: Icon(Icons.edit,
+                              color: Theme.of(context).colorScheme.primary),
+                          onPressed: () =>
+                              _editAddress(locationProfileProvider),
+                        ),
+                      ),
+                      (locationProfileProvider.result?.score ?? 0) == 5
+                          ? SizedBox(height: 16)
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: CustomButton(
+                                type: ButtonType.outlined,
+                                onPressed: () {
+                                  // Handle edit location button press
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AddLocationScreen(
+                                        accountId: widget.accountId,
+                                        subAccountId: widget.subAccountId,
+                                        sovId: widget.sovId,
+                                        locationId: locationProfileProvider
+                                                .result?.locationId ??
+                                            '',
+                                        accountName: widget.accountName,
+                                        subAccountName: widget.subAccountName,
+                                        sovName: widget.sovName,
+                                        locationName: locationProfileProvider
+                                                .result?.locationName ??
+                                            '',
+                                        locationIdForRef:
+                                            locationProfileProvider.result
+                                                    ?.locationIdForRef ??
+                                                '',
+                                        searchQuery: widget.searchQuery,
+                                        page: widget.page,
+                                        totalPages: widget.totalPages,
+                                      ),
+                                    ), // Replace with your Edit Location screen
+                                  );
+                                },
+                                child: Text('Edit Location',
+                                    style: CustomTypography.Body1),
+                              ),
                             ),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                            trailing: IconButton(
-                              icon: Icon(Icons.edit,
-                                  color: Theme.of(context).colorScheme.primary),
-                              onPressed: () =>
-                                  _editAddress(locationProfileProvider),
-                            ),
-                          ),
-                          (locationProfileProvider.result?.score??0) == 5?
-                              SizedBox(height: 16):
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: CustomButton(
-                              type: ButtonType.outlined,
-                              onPressed: () {
-                                // Handle edit location button press
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => AddLocationScreen(accountId: widget.accountId, subAccountId: widget.subAccountId, sovId: widget.sovId, locationId: widget.locationId, accountName: widget.accountName, subAccountName: widget.subAccountName, sovName: widget.sovName, locationName: widget.locationName, locationIdForRef: widget.locationIdForRef,)), // Replace with your Edit Location screen
-                                );
-
-                              },
-                              child: Text('Edit Location',
-                                  style: CustomTypography.Body1),
-                            ),
-                          ),
-                          Divider(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    'Sub Destination Locations List',
-                                    style:
+                      Divider(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Sub Destination Locations List',
+                                style:
                                     CustomTypography.H6.copyWith(height: 1.2),
-                                  ),
-                                ),
-                                locationProfileProvider.result?.score != 5?
-                                    SizedBox():
-                                IconButton(
-                                  icon: Icon(Icons.add_location_alt),
-                                  onPressed: _handleSubDestinationTap,
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                          locationProfileProvider.subdestinations.isEmpty
-                              ? Center(
+                            locationProfileProvider.result?.score != 5
+                                ? SizedBox()
+                                : IconButton(
+                                    icon: Icon(Icons.add_location_alt),
+                                    onPressed: _handleSubDestinationTap,
+                                  ),
+                          ],
+                        ),
+                      ),
+                      locationProfileProvider.subdestinations.isEmpty
+                          ? Center(
                               child: Text('No Sub Destinations',
                                   style: CustomTypography.Body1))
-                              : Container(
-                            height: 200,
-                            child: PageView.builder(
-                              controller:
-                              PageController(viewportFraction: 0.9),
-                              itemCount: locationProfileProvider
-                                  .subdestinations.length,
-                              itemBuilder: (context, index) {
-                                var subdestination = locationProfileProvider
-                                    .subdestinations[index];
-                                return GestureDetector(
-                                  onTap: () =>
-                                      _focusOnSubdestination(subdestination),
-                                  child: Card(
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 8, horizontal: 16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                      children: [
-                                        ListTile(
-                                          title:
-                                          Text(subdestination.name ?? ''),
-                                          subtitle: Text(
-                                              subdestination.address ?? ''),
-                                          trailing: IconButton(
-                                            icon: Icon(Icons.map),
-                                            onPressed: () {
-                                              _focusOnSubdestination(
-                                                  subdestination);
-                                            },
+                          : Container(
+                              height: 200,
+                              child: PageView.builder(
+                                controller:
+                                    PageController(viewportFraction: 0.9),
+                                itemCount: locationProfileProvider
+                                    .subdestinations.length,
+                                itemBuilder: (context, index) {
+                                  var subdestination = locationProfileProvider
+                                      .subdestinations[index];
+                                  return GestureDetector(
+                                    onTap: () =>
+                                        _focusOnSubdestination(subdestination),
+                                    child: Card(
+                                      margin: EdgeInsets.symmetric(
+                                          vertical: 8, horizontal: 16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          ListTile(
+                                            title:
+                                                Text(subdestination.name ?? ''),
+                                            subtitle: Text(
+                                                subdestination.address ?? ''),
+                                            trailing: IconButton(
+                                              icon: Icon(Icons.map),
+                                              onPressed: () {
+                                                _focusOnSubdestination(
+                                                    subdestination);
+                                              },
+                                            ),
                                           ),
-                                        ),
-                                        Spacer(),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            Chip(
-                                              padding: EdgeInsets.all(12),
-                                              label: Text(
-                                                  subdestination.status ??
-                                                      "Not Added",
-                                                  style:
-                                                  CustomTypography.Body1),
-                                              backgroundColor: (subdestination
-                                                  .status ??
-                                                  "")
-                                                  .toLowerCase() ==
-                                                  'added'
-                                                  ? Colors.green
-                                                  : Theme.of(context)
-                                                  .colorScheme
-                                                  .surface,
-                                            ),
-                                            locationProfileProvider.isLoading
-                                                ? CircularProgressIndicator()
-                                                : (subdestination.status ??
-                                                "")
-                                                .toLowerCase() ==
-                                                'added'
-                                                ? CustomButton(
-                                              type: ButtonType
-                                                  .elevated,
-                                              onPressed: () =>
-                                                  _removeFromSOV(
-                                                      subdestination
-                                                          .id!),
-                                              child: Text(
-                                                  'Remove from SOV',
-                                                  style:
-                                                  CustomTypography
-                                                      .Body1),
-                                            )
-                                                : CustomButton(
-                                              type: ButtonType
-                                                  .elevated,
-                                              onPressed: () =>
-                                                  _addToSOV(
-                                                      subdestination
-                                                          .id!),
-                                              child: Text(
-                                                  'Add to SOV',
-                                                  style:
-                                                  CustomTypography
-                                                      .Body1),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 8),
-                                      ],
+                                          Spacer(),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              Chip(
+                                                padding: EdgeInsets.all(12),
+                                                label: Text(
+                                                    subdestination.status ??
+                                                        "Not Added",
+                                                    style:
+                                                        CustomTypography.Body1),
+                                                backgroundColor: (subdestination
+                                                                    .status ??
+                                                                "")
+                                                            .toLowerCase() ==
+                                                        'added'
+                                                    ? Colors.green
+                                                    : Theme.of(context)
+                                                        .colorScheme
+                                                        .surface,
+                                              ),
+                                              locationProfileProvider.isLoading
+                                                  ? CircularProgressIndicator()
+                                                  : (subdestination.status ??
+                                                                  "")
+                                                              .toLowerCase() ==
+                                                          'added'
+                                                      ? CustomButton(
+                                                          type: ButtonType
+                                                              .elevated,
+                                                          onPressed: () =>
+                                                              _removeFromSOV(
+                                                                  subdestination
+                                                                      .id!),
+                                                          child: Text(
+                                                              'Remove from SOV',
+                                                              style:
+                                                                  CustomTypography
+                                                                      .Body1),
+                                                        )
+                                                      : CustomButton(
+                                                          type: ButtonType
+                                                              .elevated,
+                                                          onPressed: () =>
+                                                              _addToSOV(
+                                                                  subdestination
+                                                                      .id!),
+                                                          child: Text(
+                                                              'Add to SOV',
+                                                              style:
+                                                                  CustomTypography
+                                                                      .Body1),
+                                                        ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 8),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              onPageChanged: (index) {
-                                var subdestination = locationProfileProvider
-                                    .subdestinations[index];
-                                _focusOnSubdestination(subdestination);
-                              },
-                            ),
-                          ),
-                          Divider(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Images',
-                                  style: CustomTypography.H6.copyWith(height: 1.2),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.upload),
-                                  onPressed: _pickImage,
-                                ),
-                              ],
-                            ),
-                          ),
-                          locationProfileProvider.isUploadingImage
-                              ? Center(child: CircularProgressIndicator())
-                              : _images.isNotEmpty ||
-                              locationProfileProvider
-                                  .result?.screenShots?.isNotEmpty ==
-                                  true
-                              ? Column(
-                            children: [
-                              Container(
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surface,
-                                ),
-                                child: PageView.builder(
-                                  controller: PageController(
-                                      viewportFraction: 0.9),
-                                  itemCount: _images.length +
-                                      (locationProfileProvider.result
-                                          ?.screenShots?.length ??
-                                          0),
-                                  itemBuilder: (BuildContext context,
-                                      int itemIndex) {
-                                    if (itemIndex < _images.length) {
-                                      return GestureDetector(
-                                        onTap: () => _showImagePreview(
-                                            _images[itemIndex]),
-                                        child: Stack(
-                                          children: [
-                                            Center(
-                                              child: Image.file(
-                                                _images[itemIndex],
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                            Positioned(
-                                              top: 8,
-                                              right: 8,
-                                              child: IconButton(
-                                                icon: Icon(Icons.delete,
-                                                    color: Colors.red),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _images.removeAt(
-                                                        itemIndex);
-                                                  });
-                                                },
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    } else {
-                                      final screenshotIndex =
-                                          itemIndex - _images.length;
-                                      final screenshot =
-                                      locationProfileProvider.result
-                                          ?.screenShots?[
-                                      screenshotIndex];
-                                      return GestureDetector(
-                                        onTap: () =>
-                                            _showImagePreviewFromUrl(
-                                                screenshot?.imageUrl ??
-                                                    ''),
-                                        child: Image.network(
-                                          screenshot?.imageUrl ?? '',
-                                          fit: BoxFit.cover,
-                                          width: 150,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                ),
+                                  );
+                                },
+                                onPageChanged: (index) {
+                                  var subdestination = locationProfileProvider
+                                      .subdestinations[index];
+                                  _focusOnSubdestination(subdestination);
+                                },
                               ),
-                              SizedBox(height: 16),
-                            ],
-                          )
-                              : Center(
-                              child: Text('No Images',
-                                  style: CustomTypography.Body1)),
-                          SizedBox(height: 24),
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 16),
-                            child: CustomButton(
-                              type: ButtonType.elevated,
-                              onPressed: _pickImage,
-                              child: Text('Upload relevant image(s)',
-                                  style: CustomTypography.Body1),
                             ),
-                          ),
-                          SizedBox(height: 16),
-                        ],
+                      Divider(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Images',
+                              style: CustomTypography.H6.copyWith(height: 1.2),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.upload),
+                              onPressed: _pickImage,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      locationProfileProvider.isUploadingImage
+                          ? Center(child: CircularProgressIndicator())
+                          : _images.isNotEmpty ||
+                                  locationProfileProvider
+                                          .result?.screenShots?.isNotEmpty ==
+                                      true
+                              ? Column(
+                                  children: [
+                                    Container(
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surface,
+                                      ),
+                                      child: PageView.builder(
+                                        controller: PageController(
+                                            viewportFraction: 0.9),
+                                        itemCount: _images.length +
+                                            (locationProfileProvider.result
+                                                    ?.screenShots?.length ??
+                                                0),
+                                        itemBuilder: (BuildContext context,
+                                            int itemIndex) {
+                                          if (itemIndex < _images.length) {
+                                            return GestureDetector(
+                                              onTap: () => _showImagePreview(
+                                                  _images[itemIndex]),
+                                              child: Stack(
+                                                children: [
+                                                  Center(
+                                                    child: Image.file(
+                                                      _images[itemIndex],
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    top: 8,
+                                                    right: 8,
+                                                    child: IconButton(
+                                                      icon: Icon(Icons.delete,
+                                                          color: Colors.red),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _images.removeAt(
+                                                              itemIndex);
+                                                        });
+                                                      },
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          } else {
+                                            final screenshotIndex =
+                                                itemIndex - _images.length;
+                                            final screenshot =
+                                                locationProfileProvider
+                                                        .result?.screenShots?[
+                                                    screenshotIndex];
+                                            return GestureDetector(
+                                              onTap: () =>
+                                                  _showImagePreviewFromUrl(
+                                                      screenshot?.imageUrl ??
+                                                          ''),
+                                              child: Image.network(
+                                                screenshot?.imageUrl ?? '',
+                                                fit: BoxFit.cover,
+                                                width: 150,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                  ],
+                                )
+                              : Center(
+                                  child: Text('No Images',
+                                      style: CustomTypography.Body1)),
+                      SizedBox(height: 24),
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: 16),
+                        child: CustomButton(
+                          type: ButtonType.elevated,
+                          onPressed: _pickImage,
+                          child: Text('Upload relevant image(s)',
+                              style: CustomTypography.Body1),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                    ],
                   ),
-              ],
-            ),
-          );
-        });
+                ),
+              ),
+          ],
+        ),
+      );
+    });
   }
-
 
   Widget _locationProfileBody() {
     return Consumer<LocationProfileProvider>(
@@ -1046,7 +1159,7 @@ class _LocationProfileState extends State<LocationProfile>
           children: [
             ListTile(
               title: Text(
-                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${widget.locationIdForRef}',
+                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
                 style: CustomTypography.H6.copyWith(height: 1.2),
               ),
               trailing: IconButton(
@@ -1067,7 +1180,7 @@ class _LocationProfileState extends State<LocationProfile>
                       children: [
                         Flexible(
                           child: Text(
-                            widget.locationName,
+                            locationProfileProvider.result?.locationName ?? '',
                             style: CustomTypography.H6.copyWith(height: 1.2),
                           ),
                         ),
@@ -1102,15 +1215,17 @@ class _LocationProfileState extends State<LocationProfile>
                           preferBelow: true,
                           richMessage: TextSpan(
                             children: [
-                                TextSpan(
-                                  text: 'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                  style: CustomTypography.Subtitle1,
-                                ),
-                                // Comma seperated
-                                TextSpan(
-                                  text: 'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                  style: CustomTypography.Subtitle1,
-                                ),
+                              TextSpan(
+                                text:
+                                    'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
+                                style: CustomTypography.Subtitle1,
+                              ),
+                              // Comma seperated
+                              TextSpan(
+                                text:
+                                    'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
+                                style: CustomTypography.Subtitle1,
+                              ),
                             ],
                             style: CustomTypography.Subtitle1,
                           ),
@@ -1162,13 +1277,16 @@ class _LocationProfileState extends State<LocationProfile>
                                       accountId: widget.accountId,
                                       subAccountId: widget.subAccountId,
                                       sovId: [widget.sovId],
-                                      locationId: widget.locationId,
+                                      locationId: locationProfileProvider
+                                              .result?.locationId ??
+                                          '',
                                     );
                                   },
                                 );
                               },
                             ),
-                            IconButton(
+                            // Todo: implement history feature
+                            /* IconButton(
                               icon: Icon(Icons.history),
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1178,7 +1296,7 @@ class _LocationProfileState extends State<LocationProfile>
                                   ),
                                 );
                               },
-                            ),
+                            ),*/
                           ],
                         ),
                       ],
@@ -1450,13 +1568,15 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _goToTheInitialPin() async {
-    final GoogleMapController? controller = await _controller.future.catchError((error) {
+    final GoogleMapController? controller =
+        await _controller.future.catchError((error) {
       print('Error initializing Google Map Controller: $error');
       return null;
     });
 
     if (controller != null) {
-      var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+      var provider =
+          Provider.of<LocationProfileProvider>(context, listen: false);
       var mainMarkerPosition = CameraPosition(
         target: LatLng(
           provider.result?.latitude ?? 0,
@@ -1464,12 +1584,12 @@ class _LocationProfileState extends State<LocationProfile>
         ),
         zoom: 16,
       );
-      await controller.animateCamera(CameraUpdate.newCameraPosition(mainMarkerPosition));
+      await controller
+          .animateCamera(CameraUpdate.newCameraPosition(mainMarkerPosition));
     } else {
       print('Google Map Controller is null');
     }
   }
-
 
   void _onMarkerTapped(MarkerId markerId) {
     var provider = Provider.of<LocationProfileProvider>(context, listen: false);
@@ -1588,6 +1708,7 @@ class _LocationProfileState extends State<LocationProfile>
     final MarkerId markerId = MarkerId(markerIdVal);
 
     final Marker marker = Marker(
+      zIndex: 6,
       markerId: markerId,
       position: latLng,
       infoWindow: InfoWindow(title: markerIdVal, snippet: '*'),
@@ -1603,6 +1724,8 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _handleSubDestinationTap() {
+    var locationProfileProvider =
+        Provider.of<LocationProfileProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1627,12 +1750,13 @@ class _LocationProfileState extends State<LocationProfile>
                   widget.accountId,
                   widget.subAccountId,
                   widget.sovId,
-                  widget.locationId,
+                  locationProfileProvider.result?.locationId ?? '',
                   provider.result?.latitude ?? 0,
                   provider.result?.longitude ?? 0,
                   provider.result?.placeId ?? '',
                 )
                     .then((value) {
+                      print('Subdestination created');
                   _getData();
                 });
                 Navigator.of(context).pop();
@@ -1687,7 +1811,7 @@ class _LocationProfileState extends State<LocationProfile>
                     widget.accountId,
                     widget.subAccountId,
                     widget.sovId,
-                    widget.locationId,
+                    locationProfileProvider.result?.locationId ?? '',
                     _nameController.text,
                   )
                       .then((value) {
@@ -1738,7 +1862,7 @@ class _LocationProfileState extends State<LocationProfile>
                     widget.accountId,
                     widget.subAccountId,
                     widget.sovId,
-                    widget.locationId,
+                    locationProfileProvider.result?.locationId ?? '',
                     _addressController.text,
                   )
                       .then((value) {
@@ -1856,7 +1980,6 @@ class _LocationProfileState extends State<LocationProfile>
       padding: EdgeInsets.only(right: 16, top: 16),
       margin: EdgeInsets.only(right: 16),
       child: TypeAheadField<Suggestion>(
-
         builder: (context, controller, focusNode) {
           return Container(
             decoration: BoxDecoration(
@@ -1911,73 +2034,52 @@ class _LocationProfileState extends State<LocationProfile>
         itemBuilder: (context, suggestion) {
           print('Suggestion: ${suggestion.description}');
           return ListTile(
-
             title: Text(suggestion.description, style: CustomTypography.Body1),
           );
         },
         onSelected: (suggestion) async {
+          final GoogleMapController controller = await _controller.future;
+
           var placeApiProvider = PlaceApiProvider(Uuid().v4());
           // Get full place details
           final placeDetails =
               await placeApiProvider.getPlaceDetails(suggestion.placeId);
           final geometry = placeDetails['geometry']['location'];
-          final addressComponents = placeDetails['address_components'];
 
-          // Extract required fields from address components
-          String city = '';
-          String state = '';
-          String zip = '';
-          String country = '';
+          // Create a temporary marker
+          final MarkerId markerId = MarkerId("temporary_marker");
+          final Marker marker = Marker(
+            markerId: markerId,
+            position: LatLng(geometry['lat'], geometry['lng']),
+            infoWindow: InfoWindow(
+              title: placeDetails['name'],
+              snippet: placeDetails['formatted_address'],
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor
+                .hueOrange), // Change the color to orange for temporary markers
+          );
 
-          for (var component in addressComponents) {
-            print('Component: $component');
-            final types = component['types'];
-            if (types.contains('locality')) {
-              city = component['long_name'];
-            } else if (types.contains('administrative_area_level_1')) {
-              state = component['short_name'];
-            } else if (types.contains('postal_code')) {
-              zip = component['long_name'];
-            } else if (types.contains('country')) {
-              country = component['long_name'];
-            }
-          }
+          setState(() {
+            markers[markerId] = marker;
+          });
 
-          // Create data payload
+          // Move the camera to the selected location
+          controller.animateCamera(CameraUpdate.newLatLng(
+            LatLng(geometry['lat'], geometry['lng']),
+          ));
 
-          final data = {
-            "data": {
-              "location_name": placeDetails['name'],
-              "location_type": placeDetails['types'],
-              "description": "",
-              "address": placeDetails['formatted_address'],
-              "city": city,
-              "state": state,
-              "zip": zip,
-              "country": country,
-              "latitude": geometry['lat'],
-              "longitude": geometry['lng'],
-              "by_search": true,
-              "location_id": widget.locationId,
-            }
-          };
-          bool result =
-              await Provider.of<LocationProfileProvider>(context, listen: false)
-                  .updateLocationDetails(
-                      context,
-                      widget.accountId,
-                      widget.subAccountId,
-                      widget.sovId,
-                      widget.locationId,
-                      data);
-          if (result) {
-            _getData();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Failed to update location details',
-                  style: CustomTypography.Body1),
-            ));
-          }
+          // Show confirmation bottom sheet
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return _buildConfirmationBottomSheet(
+                context,
+                placeDetails,
+                geometry['lat'],
+                geometry['lng'],
+              );
+            },
+          );
         },
       ),
     );
@@ -2094,7 +2196,7 @@ class _LocationProfileState extends State<LocationProfile>
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      widget.locationId,
+      provider.result?.locationId ?? '',
       checkedSubdestinations.map((sd) => sd.id!).toList(),
     );
 
@@ -2115,7 +2217,7 @@ class _LocationProfileState extends State<LocationProfile>
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      widget.locationId,
+      provider.result?.locationId ?? '',
       subdestinationId,
     )
         .then((value) {
@@ -2130,7 +2232,7 @@ class _LocationProfileState extends State<LocationProfile>
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      widget.locationId,
+      provider.result?.locationId ?? '',
       subdestinationId,
     );
   }
@@ -2208,5 +2310,195 @@ class _LocationProfileState extends State<LocationProfile>
         );
       });
     }
+  }
+
+  Widget _buildConfirmationBottomSheet(BuildContext context,
+      Map<String, dynamic> placeDetails, double lat, double lng) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 16),
+          Text(
+            placeDetails['name'] ?? 'Selected Location',
+            style: CustomTypography.H6,
+          ),
+          SizedBox(height: 8),
+          Text(
+            placeDetails['formatted_address'] ?? 'No address available',
+            style: CustomTypography.Body1,
+          ),
+          SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the bottom sheet
+
+                  // Remove the temporary marker
+                  setState(() {
+                    markers.remove(MarkerId("temporary_marker"));
+                  });
+                  _goToTheInitialPin();
+                },
+                child: Text('Cancel', style: CustomTypography.Body1),
+              ),
+              SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the bottom sheet
+
+                  // Remove the temporary marker and add a permanent one
+                  setState(() {
+                    markers.remove(MarkerId("temporary_marker"));
+
+                    // Add permanent marker
+                    final MarkerId permanentMarkerId =
+                        MarkerId(placeDetails['place_id']);
+                    final Marker permanentMarker = Marker(
+                      markerId: permanentMarkerId,
+                      position: LatLng(lat, lng),
+                      infoWindow: InfoWindow(
+                        title: placeDetails['name'],
+                        snippet: placeDetails['formatted_address'],
+                      ),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                          BitmapDescriptor
+                              .hueRed), // Change to a permanent color
+                    );
+
+                    markers[permanentMarkerId] = permanentMarker;
+                  });
+
+                  // Continue with existing functionality
+                  _confirmLocationSelection(placeDetails, lat, lng);
+                },
+                child: Text('OK', style: CustomTypography.Body1),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmLocationSelection(
+      Map<String, dynamic> placeDetails, double lat, double lng) async {
+    // Continue with the existing functionality to handle the selected location
+    // This could include updating the state, making API calls, etc.
+
+    // Example:
+    print('Confirmed Location: ${placeDetails['name']} at ($lat, $lng)');
+
+    final geometry = placeDetails['geometry']['location'];
+    final addressComponents = placeDetails['address_components'];
+
+    // Extract required fields from address components
+    String city = '';
+    String state = '';
+    String zip = '';
+    String country = '';
+
+    for (var component in addressComponents) {
+      print('Component: $component');
+      final types = component['types'];
+      if (types.contains('locality')) {
+        city = component['long_name'];
+      } else if (types.contains('administrative_area_level_1')) {
+        state = component['short_name'];
+      } else if (types.contains('postal_code')) {
+        zip = component['long_name'];
+      } else if (types.contains('country')) {
+        country = component['long_name'];
+      }
+    }
+
+    // Create data payload
+
+    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+    final data = {
+      "data": {
+        "location_name": placeDetails['name'],
+        "location_type": placeDetails['types'],
+        "description": "",
+        "address": placeDetails['formatted_address'],
+        "city": city,
+        "state": state,
+        "zip": zip,
+        "country": country,
+        "latitude": geometry['lat'],
+        "longitude": geometry['lng'],
+        "by_search": true,
+        "location_id": provider.result?.locationId ?? "",
+        "place_id": placeDetails['place_id'],
+      }
+    };
+    String result = await provider.updateLocationDetails(
+        context,
+        widget.accountId,
+        widget.subAccountId,
+        widget.sovId,
+        provider.result?.locationId ?? '',
+        data);
+    if (result.toLowerCase() == 'true') {
+
+      _getData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to update location details',
+            style: CustomTypography.Body1),
+      ));
+    }
+  }
+
+  void _navigateRight() {
+    if ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1)) {
+      return;
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationProfile(
+          accountId: widget.accountId,
+          subAccountId: widget.subAccountId,
+          sovId: widget.sovId,
+          accountName: widget.accountName,
+          subAccountName: widget.subAccountName,
+          sovName: widget.sovName,
+          searchQuery: widget.searchQuery,
+          page: ((int.tryParse(widget.page) ?? 0) + 1).toString(),
+          totalPages: ((int.tryParse(widget.totalPages) ?? 0) + 1).toString(),
+        ),
+      ),
+    );
+  }
+
+  void _navigateLeft() {
+    if ((int.tryParse(widget.page)??0) <= 0) {
+      return;
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationProfile(
+          accountId: widget.accountId,
+          subAccountId: widget.subAccountId,
+          sovId: widget.sovId,
+          accountName: widget.accountName,
+          subAccountName: widget.subAccountName,
+          sovName: widget.sovName,
+          searchQuery: widget.searchQuery,
+          page: ((int.tryParse(widget.page) ?? 0) - 1).toString(),
+          totalPages: ((int.tryParse(widget.totalPages) ?? 0) - 1).toString(),
+        ),
+      ),
+    );
   }
 }

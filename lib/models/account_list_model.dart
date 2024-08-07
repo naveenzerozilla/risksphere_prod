@@ -41,6 +41,7 @@ class Accounts {
   int? sovCount;
   int? subAccountCount;
   bool? isChecked;
+  bool disabled = false;
 
   Accounts({
     this.accountName,
@@ -51,6 +52,7 @@ class Accounts {
     this.sovCount,
     this.subAccountCount,
     this.isChecked = false,
+    this.disabled = false,
   });
 
   Accounts.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class Accounts {
     overallScore = json['overall_score'];
     sovCount = json['sov_count'];
     subAccountCount = json['sub_account_count'];
+    disabled = json['disabled'] ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -74,12 +77,13 @@ class Accounts {
     data['overall_score'] = overallScore;
     data['sov_count'] = sovCount;
     data['sub_account_count'] = subAccountCount;
+    data['disabled'] = disabled;
     return data;
   }
 
   @override
   String toString() {
-    return 'Accounts(accountId: $accountId, accountName: $accountName)';
+    return 'Accounts(accountId: $accountId, accountName: $accountName, disabled: $disabled)';
   }
 }
 
