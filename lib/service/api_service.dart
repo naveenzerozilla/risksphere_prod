@@ -192,6 +192,43 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> postMultiPartSOVPartial(File filePath, String accountId, String subAccountId, String sovId) async {
+    await FirebaseAuth.instance.currentUser?.reload();
+    IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+    var headers = {
+      'Authorization': 'Bearer ${token?.token ?? ""}',
+      'Content-Type': 'multipart/form-data',
+    };
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
+    var body = {
+      //  'data': {
+      'account_id': accountId,
+      'sov_id': sovId,
+      //   }
+    };
+    request.fields.addAll(body);
+    print("Request Fields: ${request.fields}");
+    print("Request Files path: ${filePath.path}");
+    request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
+    print("Request Files: ${request.files}");
+    request.headers.addAll(headers);
+    log("Request headers: ${request.headers}");
+
+    http.StreamedResponse streamedResponse = await request.send();
+
+    print("Response Code: ${streamedResponse.statusCode}");
+    print("Response Reason: ${streamedResponse.reasonPhrase}");
+    if (streamedResponse.statusCode == 200) {
+      String responseData = await streamedResponse.stream.bytesToString();
+      print(responseData);
+      return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
+    } else {
+      String responseData = await streamedResponse.stream.bytesToString();
+      print(responseData);
+      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
+    }
+  }
+
   Future<Map<String, dynamic>> postMultiPartLocationProfile(File filePath, String accountId, String subAccountId, String sovId, String locationId, String name) async {
     await FirebaseAuth.instance.currentUser?.reload();
     IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
@@ -280,6 +317,8 @@ class ApiService {
     }
     return 'Something went wrong.';
   }
+
+
 }
 
 /// Exception thrown when an error occurs during backend communication.

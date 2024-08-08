@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/rating_half_stars.dart';
 import 'package:green/design_system/components/rating_slider.dart';
@@ -12,6 +15,7 @@ import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
+import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -25,12 +29,14 @@ import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../models/location_list_model.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
+import '../../providers/upload_sov_provider.dart';
 import '../../service/language_service.dart';
 
 class LocationList extends StatefulWidget {
   final String userId;
   final String companyName;
   final String accountId;
+  final String accountName;
   final String subAccountId;
   final String subAccountName;
   final String sovId;
@@ -42,6 +48,7 @@ class LocationList extends StatefulWidget {
     required this.userId,
     required this.companyName,
     required this.accountId,
+    required this.accountName,
     required this.subAccountId,
     required this.subAccountName,
     required this.sovId,
@@ -85,6 +92,10 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   Timer? deBouncer;
 
   List<Location> selectedLocations = [];
+
+  String? _uploadedFileName;
+  TextEditingController _sovNameController = TextEditingController();
+  late File files;
 
   void debounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
@@ -235,18 +246,48 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                   child: Icon(Icons.delete), // Change icon to delete
                 ),
                 !showSelectAll ? SizedBox() : SizedBox(height: CustomSpacing.two),
-                FloatingActionButton(
-                  onPressed: () {
-                    _selectedScreen = Screens.addLocation;
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => AddLocationScreen(
-                        accountId: widget.accountId,
-                        subAccountId: widget.subAccountId,
-                        sovId: widget.sovId,
-                      ),
-                    ));
-                  },
-                  child: Icon(Icons.add),
+
+                SpeedDial(
+                  icon: Icons.upload,
+                  activeIcon: Icons.close,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  children: [
+                    /*SpeedDialChild(
+                      child: Icon(Icons.upload_file),
+                      label: 'Upload Full List',
+                      onTap: () {
+                        // Add your logic for uploading full list
+                        print('Upload Full List tapped');
+                      },
+                    ),*/
+                    SpeedDialChild(
+                      child: Icon(Icons.upload),
+                      label: 'Upload Partial List',
+                      onTap: () async {
+                        setState(() {
+                          _uploadedFileName = null;
+                          _sovNameController.clear();
+                        });
+                        _showUploadDialog(widget.accountId, widget.subAccountId, widget.sovId);
+                      },
+                    ),
+                    SpeedDialChild(
+                      child: Icon(Icons.add),
+                      label: 'Add Single Location',
+                      onTap: () {
+                        _selectedScreen = Screens.addLocation;
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => AddLocationScreen(
+                            accountId: widget.accountId,
+                            subAccountId: widget.subAccountId,
+                            sovId: widget.sovId,
+                          ),
+                        ));
+                      },
+                    ),
+                  ],
                 ),
               ],
             );
@@ -999,5 +1040,263 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         SnackBar(content: Text('Failed to delete locations: ${e.toString()}')),
       );
     }
+  }
+
+  void _showUploadDialog(String accountId, String subAccountId, String sovId) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, StateSetter setState) {
+            return WillPopScope(
+              onWillPop: () async {
+                return false; // Disable the back button
+              },
+              child: AlertDialog(
+                backgroundColor: Colors.black87,
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                          "Upload Partial List",
+                          textAlign: TextAlign.start,
+                          style: CustomTypography.Body1),
+                      SizedBox(height: 20),
+                      _uploadedFileName == null
+                          ? GestureDetector(
+                        onTap: () async {
+                          FilePickerResult? result =
+                          await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['xls', 'xlsx'],
+                          );
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            setState(() {
+                              files = file;
+                              String fileNameWithExtension = file.path.split('/').last;
+                              _uploadedFileName = fileNameWithExtension.split('.').first;
+                              _sovNameController.text = _uploadedFileName!;
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 150,
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined,
+                                    color: Colors.white),
+                                SizedBox(height: 10),
+                                Text(
+                                  LanguageService.getTranslated(context,
+                                      "account_list_app_account_upload_drag_and_drop"),
+                                  style: CustomTypography.Body1,
+                                ),
+                                SizedBox(height: 5),
+                                Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        color: Colors.white54),
+                                    SizedBox(width: 3),
+                                    Text('Max file size is 200 MB',
+                                        style: CustomTypography.Body1),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                          : Container(
+                        height: 150,
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.description, size: 25),
+                            SizedBox(height: 10),
+                            Text(
+                              _sovNameController.text,
+                              style: CustomTypography.Body1,
+                            ),
+                            SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                              },
+                              child: Text(
+                                LanguageService.getTranslated(context,
+                                    "account_list_app_cancel_text"),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .error,
+                                    fontSize: 14),
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Consumer<LocationListProvider>(
+                              builder: (_, locationListProvider, child) {
+                                return locationListProvider.isImageUploadLoading
+                                    ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                                    : Container(
+                                  width:
+                                  MediaQuery.of(context).size.width / 1.2,
+                                  child: CustomButton(
+                                    onPressed: () async {
+                                      String success = (await Provider.of<
+                                          LocationListProvider>(
+                                          context,
+                                          listen: false)
+                                          .uploadSovAccount(context, files, accountId, subAccountId, sovId));
+
+                                      print('Success: $success');
+                                      // contain symbol +
+                                      if(success.isNotEmpty && success.contains('+')){
+                                        print('Inside + success: $success');
+                                        // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                        showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  /*LanguageService.getTranslated(
+                                                        context,
+                                                        "account_list_app_empty_sov_title")*/
+                                                  'Empty SOV',
+                                                  style: CustomTypography.H5_Regular,
+                                                ),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      /* LanguageService.getTranslated(
+                                                            context,
+                                                            "account_list_app_empty_sov_text"),*/
+                                                      'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                      style: CustomTypography.Body1,
+                                                    ),
+                                                    SizedBox(
+                                                      height: CustomSpacing.two,
+                                                    ),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                      children: [
+                                                        Consumer<UploadSovProvider>(
+                                                            builder: (context, uploadSovProvider, child) {
+                                                              return uploadSovProvider.isLoading?
+                                                              const Center(
+                                                                child: CircularProgressIndicator(),
+                                                              ):
+                                                              CustomButton(
+                                                                onPressed: () async {
+                                                                  // Create empty SOV
+                                                                  var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                  await provider.createEmptySov(context, success);
+                                                                  Navigator.pop(context);
+                                                                },
+                                                                child: Text(
+                                                                  /*LanguageService.getTranslated(
+                                                                      context,
+                                                                      "account_list_app_empty_sov_create"),*/
+                                                                  'Create',
+                                                                  style: CustomTypography.ButtonLarge,
+                                                                ),
+                                                                type: ButtonType.elevated,
+                                                              );
+                                                            }
+                                                        ),
+                                                        CustomButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(context);
+                                                          },
+                                                          child: Text(
+                                                            /*LanguageService.getTranslated(
+                                                                  context,
+                                                                  "account_list_app_empty_sov_abort")*/
+                                                            'Abort',
+                                                            style: CustomTypography.ButtonLarge,
+                                                          ),
+                                                          type: ButtonType.text,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            });
+                                      }
+                                      else if(success.isNotEmpty) {
+
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountId, accountName: widget.accountName??"",)));
+
+                                      }
+                                    },
+                                    type: ButtonType.filled,
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "login_submit_button"),
+                                      style: CustomTypography.ButtonLarge,
+                                    ),
+                                  ),
+                                );
+                              }),
+                          Container(
+                            width: MediaQuery.of(context).size.width / 1.2,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                  LanguageService.getTranslated(
+                                      context, "account_list_app_cancel_text"),
+                                  style: CustomTypography.Body1),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          });
+        });
   }
 }

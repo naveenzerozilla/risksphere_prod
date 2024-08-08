@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/account_list_model.dart';
@@ -19,6 +20,8 @@ import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/location_list_model.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
+
+import '../service/language_service.dart';
 
 class LocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -53,6 +56,15 @@ class LocationListProvider extends ChangeNotifier {
   set isDeleteLocationLoading(bool value) {
     _isDeleteLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
+  bool _isImageUploadLoading = false;
+  bool get isImageUploadLoading => _isImageUploadLoading;
+  set isImageUploadLoading(bool value) {
+    _isImageUploadLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -523,5 +535,90 @@ class LocationListProvider extends ChangeNotifier {
       isDeleteLocationLoading = false;
     }
   }
+
+
+  /// Upload SOV
+  Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String subAccountId, String sovId) async {
+    try {
+      isImageUploadLoading = true;
+      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
+      print(apiService);
+      // Send a POST request to the API to upload the image
+      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId);
+      // print(response!.message.toString());
+      isImageUploadLoading = false;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          response['message']??LanguageService.getTranslated(context, "sub_account_list_app_sov_upload_success"),
+          style: CustomTypography.Body1,
+        ),
+      ));
+      print("total records: "+response['total_records'].toString());
+      if(response['total_records'] == 0){
+        print("total records: "+response['total_records'].toString());
+        String tempId = (response['temp_id']??'') + "+";
+        print("tempIdLocal: "+tempId);
+        return tempId;
+      }
+      return response['temp_id']??'';
+    }on BackendException catch (e) {
+      isImageUploadLoading = false;
+      Navigator.pop(context);
+
+      print("Raw Backend Exception Message: ${e.message}");
+
+      // Initialize a variable to store the error message
+      String message = '';
+
+      try {
+        // Check if the message is a JSON string
+        if (e.message.trim().startsWith('{') && e.message.trim().endsWith('}')) {
+          // Attempt to parse the message as JSON
+          final Map<String, dynamic> errorJson = jsonDecode(e.message.trim());
+
+          // Extract the error message
+          message = errorJson['error'] ?? 'An unexpected error occurred';
+        } else {
+          // If it's not JSON, use the message as-is
+          message = e.message;
+        }
+      } catch (decodeError) {
+        // Handle any JSON parsing errors
+        print('JSON Decode Error: $decodeError');
+
+        // Fallback to the raw message or a generic error message
+        message = e.message ?? 'An unexpected error occurred. Please try again later.';
+      }
+
+      // Display the error message in a SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: CustomTypography.Body1,
+          ),
+        ),
+      );
+
+      return ''; // Return an empty string or handle the error as needed
+    }
+
+    catch (e) {
+      // Handle other unexpected exceptions
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${e.toString()}',
+            style: CustomTypography.Body1,
+          ),
+        ),
+      );
+      isImageUploadLoading = false;
+      return ''; // Return empty string or handle the error as needed
+    }
+  }
+
 }
 

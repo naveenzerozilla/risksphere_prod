@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/components/roles_dropdown.dart';
@@ -17,6 +20,7 @@ import 'package:green/providers/sub_account_list_provider.dart';
 import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
+import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -36,6 +40,7 @@ import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
+import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
@@ -76,6 +81,10 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
   Timer? deBouncer;
 
   TextEditingController _sovEditNameController = TextEditingController();
+
+  String? _uploadedFileName;
+  TextEditingController _sovNameController = TextEditingController();
+  late File files;
 
   int _selectedAccountIndex = 0;
 
@@ -164,36 +173,67 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
         ),
         drawer: CustomDrawer(),
         floatingActionButton: Builder(builder: (contextLocal) {
-          return FloatingActionButton(
-            onPressed: () {
-              // On export button click
-              List<String> selectedSovIds = Provider.of<SOVListProvider>(context, listen: false)
-                  .sovList
-                  .where((sov) => sov.isChecked ?? false)
-                  .map((sov) => sov.id!)
-                  .toList();
-
-              if (selectedSovIds.isNotEmpty) {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return ExportDialog(
-                      accountId: widget.accountId,
-                      subAccountId: widget.subAccountId,
-                      sovId: selectedSovIds,
-                    );
+          return SpeedDial(
+            icon: Icons.upload,
+            activeIcon: Icons.close,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            children: [
+              /*SpeedDialChild(
+                      child: Icon(Icons.upload_file),
+                      label: 'Upload Full List',
+                      onTap: () {
+                        // Add your logic for uploading full list
+                        print('Upload Full List tapped');
+                      },
+                    ),*/
+              SpeedDialChild(
+                child: Icon(Icons.upload),
+                label: 'Upload Partial List',
+                onTap:
+                  () async {
+                    setState(() {
+                      _uploadedFileName = null;
+                      _sovNameController.clear();
+                    });
+                    _showUploadDialog(widget.accountId, widget.subAccountId);
                   },
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(
-                    LanguageService.getTranslated(context, "no_items_selected_error"),
-                    style: CustomTypography.Body1,
-                  ),
-                ));
-              }
-            },
-            child: Icon(CupertinoIcons.tray_arrow_down),
+
+              ),
+              SpeedDialChild(
+                child: Icon(CupertinoIcons.tray_arrow_down),
+                label: 'Export',
+                onTap: () {
+                  // On export button click
+                  List<String> selectedSovIds = Provider.of<SOVListProvider>(context, listen: false)
+                      .sovList
+                      .where((sov) => sov.isChecked ?? false)
+                      .map((sov) => sov.id!)
+                      .toList();
+
+                  if (selectedSovIds.isNotEmpty) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return ExportDialog(
+                          accountId: widget.accountId,
+                          subAccountId: widget.subAccountId,
+                          sovId: selectedSovIds,
+                        );
+                      },
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                        LanguageService.getTranslated(context, "no_items_selected_error"),
+                        style: CustomTypography.Body1,
+                      ),
+                    ));
+                  }
+                },
+              ),
+            ],
           );
         }),
         body: PopScope(
@@ -383,6 +423,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
               userId: sOVListProvider.sovList[index].accountId ?? "",
               companyName: widget.accountName,
               accountId: widget.accountId,
+              accountName: widget.accountName,
               subAccountId: widget.subAccountId,
               sovId: sOVListProvider.sovList[index].id ?? "",
               sovName: sOVListProvider.sovList[index].name ?? "",
@@ -1145,5 +1186,308 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
       print(e.toString());
       return [];
     }
+  }
+
+  void _showUploadDialog(String accountId, String subAccountId) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, StateSetter setState) {
+            return WillPopScope(
+              onWillPop: () async {
+                return false; // Disable the back button
+              },
+              child: AlertDialog(
+                backgroundColor: Colors.black87,
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                          LanguageService.getTranslated(
+                              context, "account_list_app_account_upload_sov"),
+                          textAlign: TextAlign.start,
+                          style: CustomTypography.Body1),
+                      SizedBox(height: 20),
+                      _uploadedFileName == null
+                          ? GestureDetector(
+                        onTap: () async {
+                          FilePickerResult? result =
+                          await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['xls', 'xlsx'],
+                          );
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            setState(() {
+                              files = file;
+                              String fileNameWithExtension = file.path.split('/').last;
+                              _uploadedFileName = fileNameWithExtension.split('.').first;
+                              _sovNameController.text = _uploadedFileName!;
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 150,
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined,
+                                    color: Colors.white),
+                                SizedBox(height: 10),
+                                Text(
+                                  LanguageService.getTranslated(context,
+                                      "account_list_app_account_upload_drag_and_drop"),
+                                  style: CustomTypography.Body1,
+                                ),
+                                SizedBox(height: 5),
+                                Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        color: Colors.white54),
+                                    SizedBox(width: 3),
+                                    Text('Max file size is 200 MB',
+                                        style: CustomTypography.Body1),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                          : Container(
+                        height: 150,
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.description, size: 25),
+                            SizedBox(height: 10),
+                            Text(
+                              _sovNameController.text,
+                              style: CustomTypography.Body1,
+                            ),
+                            SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                              },
+                              child: Text(
+                                LanguageService.getTranslated(context,
+                                    "account_list_app_cancel_text"),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .error,
+                                    fontSize: 14),
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_1"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                          Flexible(
+                            child: Center(
+                              child: Text(
+                                  widget.accountName ?? "",
+                                  textAlign: TextAlign.start,
+                                  style: CustomTypography.Body1),
+                            ),
+                          ),
+                          Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_account_sov_name_2"),
+                              textAlign: TextAlign.start,
+                              style: CustomTypography.Body1),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        controller: _sovNameController,
+                        readOnly: false,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(
+                              context, "account_list_app_sov_name"),
+                          labelStyle: TextStyle(color: Colors.white),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue),
+                          ),
+                          hintText: LanguageService.getTranslated(
+                              context, "account_list_app_account_name_of_sov"),
+                          hintStyle: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Consumer<SubAccountListProvider>(
+                              builder: (_, subAccountProvider, child) {
+                                return subAccountProvider.isImageUploadLoading
+                                    ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                                    : Container(
+                                  width:
+                                  MediaQuery.of(context).size.width / 1.2,
+                                  child: CustomButton(
+                                    onPressed: () async {
+                                      String success = (await Provider.of<
+                                          SubAccountListProvider>(
+                                          context,
+                                          listen: false)
+                                          .uploadSovAccount(context, files, accountId, subAccountId, _sovNameController.text));
+
+                                      print('Success: $success');
+                                      // contain symbol +
+                                      if(success.isNotEmpty && success.contains('+')){
+                                        print('Inside + success: $success');
+                                        // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                        showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  /*LanguageService.getTranslated(
+                                                        context,
+                                                        "account_list_app_empty_sov_title")*/
+                                                  'Empty SOV',
+                                                  style: CustomTypography.H5_Regular,
+                                                ),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      /* LanguageService.getTranslated(
+                                                            context,
+                                                            "account_list_app_empty_sov_text"),*/
+                                                      'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                      style: CustomTypography.Body1,
+                                                    ),
+                                                    SizedBox(
+                                                      height: CustomSpacing.two,
+                                                    ),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                      children: [
+                                                        Consumer<UploadSovProvider>(
+                                                            builder: (context, uploadSovProvider, child) {
+                                                              return uploadSovProvider.isLoading?
+                                                              const Center(
+                                                                child: CircularProgressIndicator(),
+                                                              ):
+                                                              CustomButton(
+                                                                onPressed: () async {
+                                                                  // Create empty SOV
+                                                                  var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                  await provider.createEmptySov(context, success);
+                                                                  Navigator.pop(context);
+                                                                },
+                                                                child: Text(
+                                                                  /*LanguageService.getTranslated(
+                                                                      context,
+                                                                      "account_list_app_empty_sov_create"),*/
+                                                                  'Create',
+                                                                  style: CustomTypography.ButtonLarge,
+                                                                ),
+                                                                type: ButtonType.elevated,
+                                                              );
+                                                            }
+                                                        ),
+                                                        CustomButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(context);
+                                                          },
+                                                          child: Text(
+                                                            /*LanguageService.getTranslated(
+                                                                  context,
+                                                                  "account_list_app_empty_sov_abort")*/
+                                                            'Abort',
+                                                            style: CustomTypography.ButtonLarge,
+                                                          ),
+                                                          type: ButtonType.text,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            });
+                                      }
+                                      else if(success.isNotEmpty) {
+
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountId, accountName: widget.accountName??"",)));
+
+                                      }
+                                    },
+                                    type: ButtonType.filled,
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "login_submit_button"),
+                                      style: CustomTypography.ButtonLarge,
+                                    ),
+                                  ),
+                                );
+                              }),
+                          Container(
+                            width: MediaQuery.of(context).size.width / 1.2,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                  LanguageService.getTranslated(
+                                      context, "account_list_app_cancel_text"),
+                                  style: CustomTypography.Body1),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          });
+        });
   }
 }
