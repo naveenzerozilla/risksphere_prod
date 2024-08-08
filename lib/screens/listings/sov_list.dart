@@ -190,7 +190,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                     ),*/
               SpeedDialChild(
                 child: Icon(Icons.upload),
-                label: 'Upload Partial List',
+                label: 'Upload SOV',
                 onTap:
                   () async {
                     setState(() {
