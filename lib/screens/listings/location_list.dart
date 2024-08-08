@@ -473,61 +473,31 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                           ],
                         ),
                         Consumer<LocationListProvider>(
-                            builder: (context, locationListProvider, child) {
-                              return TabBar(
-                                controller: _tabController,
-                                labelStyle: CustomTypography.BottomNavigationActiveLabel,
-                                tabs: [
-                                  Tab(
-                                    child: InkWell(
-                                      onTap: () {
-                                        _tabController?.animateTo(0);
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Tab(
-                                            text: LanguageService.getTranslated(
-                                                context, "locationlist_app_connections_tab_all"),
-                                          ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                              label: Text(
-                                                locationListProvider.locationHits.toString(),
-                                                style: CustomTypography.BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  InkWell(
+                          builder: (context, locationListProvider, child) {
+                            return TabBar(
+                              controller: _tabController,
+                              labelStyle: CustomTypography.BottomNavigationActiveLabel,
+                              tabs: [
+                                Tab(
+                                  child: InkWell(
                                     onTap: () {
-                                      _tabController?.animateTo(1);
+                                      _tabController?.animateTo(0);
                                     },
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Tab(
                                           text: LanguageService.getTranslated(
-                                              context, "locationlist_app_connections_tab_certified"),
+                                              context, "locationlist_app_connections_tab_all"),
                                         ),
                                         SizedBox(width: CustomSpacing.two),
                                         SizedBox(
                                           height: 25,
                                           child: Chip(
                                             labelPadding: EdgeInsets.all(0),
-                                            materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
+                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                             label: Text(
-                                              locationListProvider.certifiedLocationHits.toString(),
+                                              locationListProvider.locationHits.toString(),
                                               style: CustomTypography.BottomNavigationActiveLabel
                                                   .copyWith(height: -0.6),
                                             ),
@@ -536,9 +506,48 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                       ],
                                     ),
                                   ),
-                                ],
-                              );
-                            }),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    if (locationListProvider.isCertifiedTabAllowed()) {
+                                      _tabController?.animateTo(1);
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text(
+                                          "Please include a rating of 5 in filter to view certified locations.",
+                                          style: CustomTypography.Body1,
+                                        ),
+                                      ));
+                                    }
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Tab(
+                                        text: LanguageService.getTranslated(
+                                            context, "locationlist_app_connections_tab_certified"),
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                      SizedBox(
+                                        height: 25,
+                                        child: Chip(
+                                          labelPadding: EdgeInsets.all(0),
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          label: Text(
+                                            locationListProvider.certifiedLocationHits.toString(),
+                                            style: CustomTypography.BottomNavigationActiveLabel
+                                                .copyWith(height: -0.6),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+
                         SizedBox(height: CustomSpacing.four),
                         Expanded(
                           child: TabBarView(

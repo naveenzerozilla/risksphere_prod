@@ -207,6 +207,13 @@ class LocationListProvider extends ChangeNotifier {
   int locationHits = 0;
   int certifiedLocationHits = 0;
 
+
+  bool isCertifiedTabAllowed() {
+    return _rating.isEmpty || _rating.contains(5);
+  }
+
+
+
   Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
     final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
 
@@ -347,20 +354,24 @@ class LocationListProvider extends ChangeNotifier {
       int page,
       int pageSize, {
         String type = "",
-        List<String> countries = const [],
-        String state = "",
-        List<String> propertyType = const [],
-        List<String> constructionType = const [],
-        List<String> certifications = const [],
-        List<String> hazard = const [],
-        List<int> rating = const [],
       }) async {
     try {
+      print("condition: ${rating.isNotEmpty && !rating.contains(5)}");
+      print("rating: $rating");
+      if (rating.isNotEmpty && !rating.contains(5)) {
+        // If the rating filter is not set to 5, set certifiedLocationHits to 0 and skip fetching
+        certifiedLocationHits = 0;
+        certifiedLocationList = [];
+        notifyListeners();
+        return;
+      }
       if (page == 0) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
+
+
 
       var headers =  await CommonHeaders.createHeaders();
 
@@ -368,9 +379,9 @@ class LocationListProvider extends ChangeNotifier {
       var ratingLocal = _rating;
       if (ratingLocal.isEmpty) {
         ratingLocal = [5];
-      } else if (!ratingLocal.contains(5)) {
+      }/* else if (!ratingLocal.contains(5)) {
         ratingLocal.add(5);
-      }
+      }*/
       print(_countries);
       print('Rating for certified tab: $ratingLocal');
       var body = json.encode({

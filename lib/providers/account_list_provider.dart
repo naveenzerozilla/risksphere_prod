@@ -260,7 +260,7 @@ class AccountListProvider extends ChangeNotifier {
       isRenameLoading = true;
 
       ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
-      var response = await apiService.post({'data':{
+      var response = await apiService.patch({'data':{
         'account_id': accountId,
         'account_name': newName,
       }});
