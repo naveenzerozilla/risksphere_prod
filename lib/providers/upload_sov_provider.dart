@@ -212,7 +212,7 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
 
       if (response['data'] != null) {
-        Navigator.of(context).push(MaterialPageRoute(
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => LocationDataScreen(
             response: response,
             tempId: tempId,
@@ -327,6 +327,7 @@ class UploadSovProvider extends ChangeNotifier {
           context,
           MaterialPageRoute(builder: (context) => SubAccountListScreen(accountId: accountId, accountName: accountName)), // Navigate to AccountsScreen
         );
+        Navigator.pop(context);
         return true; // Indicate success
       } else {
         throw Exception('Failed to submit data');
