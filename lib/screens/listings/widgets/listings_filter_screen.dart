@@ -246,7 +246,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     'Ukraine',
     'United Arab Emirates',
     'United Kingdom',
-    'United States of America',
+    'USA',
     'Uruguay',
     'Uzbekistan',
     'Vanuatu',
@@ -393,7 +393,17 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       // Reset page to 0
       40, // Page size
     );
-
+    locationListProvider.fetchCertifiedLocationList(
+      context,
+      widget.accountId,
+      widget.subAccountId,
+      widget.sovId,
+      "",
+      // No search query
+      0,
+      // Reset page to 0
+      40, // Page size
+    );
     Navigator.of(context).pop(); // Close the filter screen
   }
 

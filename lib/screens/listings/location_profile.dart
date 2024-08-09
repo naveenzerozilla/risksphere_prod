@@ -389,7 +389,7 @@ class _LocationProfileState extends State<LocationProfile>
                         ),
                       ),
                       // Right navigation button
-                      ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1))?
+                      ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1)-1)?
                           SizedBox.shrink():
                       Positioned(
                         right: 16,
@@ -661,7 +661,7 @@ class _LocationProfileState extends State<LocationProfile>
               children: [
                 ListTile(
                   title: Text(
-                    '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                    '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
                     style: CustomTypography.Subtitle1.copyWith(
                         fontWeight: FontWeight.w500),
                   ),
@@ -1159,7 +1159,7 @@ class _LocationProfileState extends State<LocationProfile>
           children: [
             ListTile(
               title: Text(
-                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
                 style: CustomTypography.H6.copyWith(height: 1.2),
               ),
               trailing: IconButton(
@@ -2085,97 +2085,7 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  void _removeMarker(MarkerId markerId) {
-    setState(() {
-      markers.remove(markerId);
-    });
-  }
 
-  void _searchWithPlacesAPI() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Search location'),
-          content: Autocomplete<Suggestion>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text == '') {
-                return const Iterable<Suggestion>.empty();
-              } else {
-                return Future.delayed(Duration.zero, () async {
-                  _searchLocations =
-                      await searchLocations(textEditingValue.text);
-                  // If single suggestion is found, select it automatically
-                  if (_searchLocations.length == 1) {
-                    // Select the first suggestion
-                    searchController.text = _searchLocations.first.description;
-                    // Add the marker
-                    try {
-                      final placeId = _searchLocations.first.placeId;
-                      var placeApiProvider = PlaceApiProvider(Uuid().v4());
-                      final latLng =
-                          await placeApiProvider.getLatLngFromPlaceId(placeId);
-                      print(
-                          'Latitude: ${latLng.latitude}, Longitude: ${latLng.longitude}');
-                      _addMarker(latLng);
-                      // Move the camera to the selected location
-                      final GoogleMapController controller =
-                          await _controller.future;
-                      controller.animateCamera(CameraUpdate.newLatLng(latLng));
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      print('Error fetching location from place ID: $e');
-                    }
-
-                    // Clear the suggestions
-                    _searchLocations.clear();
-                  }
-                  return _searchLocations;
-                });
-              }
-            },
-            displayStringForOption: (suggestion) => suggestion.description,
-            onSelected: (suggestion) {
-              searchController.text = suggestion.description;
-              // Add the marker
-              addMarkerFromPlaceId(suggestion, context);
-            },
-            fieldViewBuilder:
-                (context, controller, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: controller,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Search location',
-                  border: OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: () {
-                      // Search for a location using the Places API
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Search for a location using the Places API
-                Navigator.of(context).pop();
-              },
-              child: const Text('Search'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _addSelectedToSOV() async {
     var provider = Provider.of<LocationProfileProvider>(context, listen: false);
@@ -2459,7 +2369,8 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _navigateRight() {
-    if ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1)) {
+    print('Page: ${widget.page}, Total Pages: ${widget.totalPages}');
+    if ((int.tryParse(widget.page)??0) > (int.tryParse(widget.totalPages)??1) - 1) {
       return;
     }
     Navigator.pushReplacement(
@@ -2474,7 +2385,7 @@ class _LocationProfileState extends State<LocationProfile>
           sovName: widget.sovName,
           searchQuery: widget.searchQuery,
           page: ((int.tryParse(widget.page) ?? 0) + 1).toString(),
-          totalPages: ((int.tryParse(widget.totalPages) ?? 0) + 1).toString(),
+          totalPages: widget.totalPages,
         ),
       ),
     );
@@ -2496,9 +2407,31 @@ class _LocationProfileState extends State<LocationProfile>
           sovName: widget.sovName,
           searchQuery: widget.searchQuery,
           page: ((int.tryParse(widget.page) ?? 0) - 1).toString(),
-          totalPages: ((int.tryParse(widget.totalPages) ?? 0) - 1).toString(),
+          totalPages: widget.totalPages,
         ),
       ),
     );
   }
+
+  String getOrdinal(int number) {
+    if (number >= 11 && number <= 13) {
+      return '${number}th';
+    }
+
+    switch (number % 10) {
+      case 1:
+        return '${number}st';
+      case 2:
+        return '${number}nd';
+      case 3:
+        return '${number}rd';
+      default:
+        return '${number}th';
+    }
+  }
+
+  String formatLocationText(int location, int total) {
+    return '${getOrdinal(location)} Location of $total';
+  }
 }
+

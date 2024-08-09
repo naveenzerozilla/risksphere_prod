@@ -472,6 +472,7 @@ class LocationListProvider extends ChangeNotifier {
       var response = await apiService.post(body);
       log(response.toString());
       CustomToast.success(context, response['message']);
+      Navigator.pop(context);
       isAddLocationLoading = false;
       return true;
     } on BackendException catch (e) {
