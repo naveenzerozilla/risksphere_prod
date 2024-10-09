@@ -9,7 +9,7 @@ class ProfileImageWidget extends StatelessWidget {
     return Consumer<UserProfileProvider>(
       builder: (context, userProfile, child) {
         return CircleAvatar(
-          radius: 20.0,
+          radius: 18.0,
           backgroundColor: Colors.grey.shade200,
           child: (userProfile.userData.displayImageUrl ?? "").isNotEmpty
               ? ClipOval(

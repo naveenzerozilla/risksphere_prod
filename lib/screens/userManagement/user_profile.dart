@@ -205,453 +205,456 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context1) {
-    return Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        body: _tabsLoading?Column(children: [
-          SizedBox(height: CustomSpacing.four,),
-          Center(child: CircularProgressIndicator(),)
-        ],):PopScope(
-          canPop: _selectedScreen == Screens.generalInfo,
-          onPopInvoked: (canPop) {
-            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-            if (_selectedScreen != Screens.generalInfo) {
+    var typography = CustomTypography(context1);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(
+          builder: (buildContext, themeProvider, child) {
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
               setState(() {
-                _selectedScreen = Screens.generalInfo;
-                _tabController?.animateTo(0);
+                _isExpanded = isExpanded;
               });
-            }
-          },
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          drawer: CustomDrawer(),
+          body: _tabsLoading?Column(children: [
+            SizedBox(height: CustomSpacing.four,),
+            Center(child: CircularProgressIndicator(),)
+          ],):PopScope(
+            canPop: _selectedScreen == Screens.generalInfo,
+            onPopInvoked: (canPop) {
+              print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+              if (_selectedScreen != Screens.generalInfo) {
+                setState(() {
+                  _selectedScreen = Screens.generalInfo;
+                  _tabController?.animateTo(0);
+                });
+              }
+            },
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              Column(
-                children: [
-                  SizedBox(height: CustomSpacing.four),
-                  Expanded(
-                    child: Container(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(LanguageService.getTranslated(context, "user_profile_user_management_title"),
-                                style: CustomTypography.H5_Regular),
-                          ),
-                          // Add 3 tabs
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          TabBar(
-                            controller: _tabController,
-                            labelStyle:
-                                CustomTypography.BottomNavigationActiveLabel,
-                            tabs: _tabLength == 3?[
-                              Tab(
-                                child: InkWell(
-                                  onTap: () {
-                                    _tabController?.animateTo(0);
-                                    _selectedScreen = Screens.connectionList;
-                                  },
-                                  child: Tab(
-                                    text: LanguageService.getTranslated(
-                                        context, "user_profile_app_user_management_general_info_tab"),
-                                  ),
-                                ),
-                              ),
-                              !showMyTeams?SizedBox():InkWell(
-                                onTap: () {
-                                  _tabController?.animateTo(1);
-                                  _selectedScreen = Screens.requestList;
-                                },
-                                child: Tab(
-                                  text: LanguageService.getTranslated(
-                                      context, "user_profile_app_user_management_my_team_tab"),
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  _tabController?.animateTo(2);
-                                  _selectedScreen = Screens.chatList;
-                                },
-                                child: Tab(
-                                  text: LanguageService.getTranslated(
-                                      context, "user_profile_app_user_management_security_tab"),
-                                ),
-                              ),
-                            ]:[
-                              Tab(
-                                child: InkWell(
-                                  onTap: () {
-                                    _tabController?.animateTo(0);
-                                    _selectedScreen = Screens.connectionList;
-                                  },
-                                  child: Tab(
-                                    text: LanguageService.getTranslated(
-                                        context, "user_profile_app_user_management_general_info_tab"),
-                                  ),
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  _tabController?.animateTo(1);
-                                  _selectedScreen = Screens.chatList;
-                                },
-                                child: Tab(
-                                  text: LanguageService.getTranslated(
-                                      context, "user_profile_app_user_management_security_tab"),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Add 3 tab views
-                          Expanded(
-                            child: TabBarView(
+                Column(
+                  children: [
+                    SizedBox(height: CustomSpacing.four),
+                    Expanded(
+                      child: Container(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Text(LanguageService.getTranslated(context, "user_profile_user_management_title"),
+                                  style: typography.H5_Regular),
+                            ),
+                            // Add 3 tabs
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                            TabBar(
                               controller: _tabController,
-                              children: _tabLength == 3?[
-                                // General Info
-                                _getGeneralInfoUI(),
-                                // My Team
-                                !showMyTeams?SizedBox():_getMyTeamUI(),
-                                // Security
-                                _getSecurityUI(),
+                              labelStyle:
+                                  typography.BottomNavigationActiveLabel,
+                              tabs: _tabLength == 3?[
+                                Tab(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _tabController?.animateTo(0);
+                                      _selectedScreen = Screens.connectionList;
+                                    },
+                                    child: Tab(
+                                      text: LanguageService.getTranslated(
+                                          context, "user_profile_app_user_management_general_info_tab"),
+                                    ),
+                                  ),
+                                ),
+                                !showMyTeams?SizedBox():InkWell(
+                                  onTap: () {
+                                    _tabController?.animateTo(1);
+                                    _selectedScreen = Screens.requestList;
+                                  },
+                                  child: Tab(
+                                    text: LanguageService.getTranslated(
+                                        context, "user_profile_app_user_management_my_team_tab"),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    _tabController?.animateTo(2);
+                                    _selectedScreen = Screens.chatList;
+                                  },
+                                  child: Tab(
+                                    text: LanguageService.getTranslated(
+                                        context, "user_profile_app_user_management_security_tab"),
+                                  ),
+                                ),
                               ]:[
-                                // General Info
-                                _getGeneralInfoUI(),
-                                // Security
-                                _getSecurityUI(),
+                                Tab(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _tabController?.animateTo(0);
+                                      _selectedScreen = Screens.connectionList;
+                                    },
+                                    child: Tab(
+                                      text: LanguageService.getTranslated(
+                                          context, "user_profile_app_user_management_general_info_tab"),
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    _tabController?.animateTo(1);
+                                    _selectedScreen = Screens.chatList;
+                                  },
+                                  child: Tab(
+                                    text: LanguageService.getTranslated(
+                                        context, "user_profile_app_user_management_security_tab"),
+                                  ),
+                                ),
                               ],
+                            ),
+
+                            // Add 3 tab views
+                            Expanded(
+                              child: TabBarView(
+                                controller: _tabController,
+                                children: _tabLength == 3?[
+                                  // General Info
+                                  _getGeneralInfoUI(),
+                                  // My Team
+                                  !showMyTeams?SizedBox():_getMyTeamUI(),
+                                  // Security
+                                  _getSecurityUI(),
+                                ]:[
+                                  // General Info
+                                  _getGeneralInfoUI(),
+                                  // Security
+                                  _getSecurityUI(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          endDrawer: Material(
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(height: CustomSpacing.two),
+                    // Circular elevated icon for filter
+                    Center(
+                        child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Icon(
+                          Icons.filter_alt_outlined,
+                          size: 32,
+                        ),
+                      ),
+                    )),
+                    SizedBox(height: CustomSpacing.six),
+                    // name, phone, email, company, role dropdown, status,
+                Form(
+                  child: Column(
+                    children: [
+                      // Name
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_name"),
+                          labelStyle: typography.Body1,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      // Email
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_email"),
+                          labelStyle: typography.Body1,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      // Phone
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 4,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white.withOpacity(0.5)),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              child: Center(
+                                child: CountryListPicker(
+                                  initialCountry: Countries.United_States,
+                                  border: InputBorder.none,
+                                  flagSize: Size(35, 30),
+                                  onChanged: (code) {
+                                    setState(() {
+                                      _selectedCountryCode = code;
+                                    });
+                                  },
+                                  diallingCodeStyle: typography.Body1,
+                                  isShowInputField: false,
+                                  dialogTheme: DialogThemeData(
+                                    style: typography.Body1,
+                                    isShowFloatButton: false,
+                                  ),
+                                  countryNameStyle: typography.Body1,
+                                  isShowCountryName: false,
+                                  onCountryChanged: (country) {
+                                    print('This is the country code: $country');
+                                    setState(() {
+                                      _selectedCountryCode = country.dialing_code;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          // Mobile Number TextFormField
+                          Expanded(
+                            flex: 7,
+                            child: TextFormField(
+                              keyboardType: TextInputType.number,
+                              maxLength: 10,
+                              // Numeric keyboard
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly
+                                // Only allows digits
+                              ],
+                              decoration: InputDecoration(
+                                labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone"),
+                                hintText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone_hint"),
+                                border: const OutlineInputBorder(),
+                                counterText: '',
+                              ),
+                              validator: (value) {
+                                if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
+                                  return LanguageService.getTranslated(context, "usermanagement_app_filter_phone_validation");
+                                }
+                                return null;
+                              },
+                              controller: mobileController,
+                            ),
+                          ),
+                          // Dropdown Icon Suffix
+                        ],
+                      ),
+                      SizedBox(height: CustomSpacing.two),
+                      // Company
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_company"),
+                          labelStyle: typography.Body1,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: CustomSpacing.two),
+                      // Role Dropdown
+                      Stack(
+                        children: [
+                          TextField(
+                            readOnly: true,
+                            onTap: () {
+                              showBottomSheet(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return RolesBottomSheet(
+                                    showCorporateSwitch: true,
+                                    options: roles,
+                                    selectedRoles: _selectedRoles,
+                                    addChip: _addChip,
+                                    removeChip: _removeChip,
+                                    removeAllChips: _removeAllChips,
+                                    selectedOption: SignUpOptions.corporate,
+                                    onOptionChanged: (SignUpOptions option) {
+                                      setState(() {
+                                        _selectedOption = option;
+                                      });
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                            controller: _textEditingController,
+                            onChanged: (value) {
+                              // Handle input changes
+                            },
+                            decoration: InputDecoration(
+                              labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_roles"),
+                              hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                              border: OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(Icons.arrow_drop_down),
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    useSafeArea: true,
+                                    isScrollControlled: true,
+                                    builder: (BuildContext context) {
+                                      return RolesBottomSheet(
+                                        showCorporateSwitch: false,
+                                        options: roles,
+                                        selectedRoles: _selectedRoles,
+                                        addChip: _addChip,
+                                        removeChip: _removeChip,
+                                        removeAllChips: _removeAllChips,
+                                        selectedOption: SignUpOptions.corporate,
+                                        onOptionChanged: (SignUpOptions signUpOptions) {
+                                          setState(() {
+                                            _selectedOption = signUpOptions;
+                                          });
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 10.0,
+                            left: 10.0,
+                            right: 10.0,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 32.0),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: _selectedRoles
+                                      .map(
+                                        (value) => Padding(
+                                      padding: const EdgeInsets.only(right: 8.0),
+                                      child: Chip(
+                                        label: Text(value.name),
+                                        deleteIcon: Icon(Icons.cancel),
+                                        onDeleted: () => _removeChip(value),
+                                      ),
+                                    ),
+                                  )
+                                      .toList(),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        endDrawer: Material(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  SizedBox(height: CustomSpacing.two),
-                  // Circular elevated icon for filter
-                  Center(
-                      child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Icon(
-                        Icons.filter_alt_outlined,
-                        size: 32,
-                      ),
-                    ),
-                  )),
-                  SizedBox(height: CustomSpacing.six),
-                  // name, phone, email, company, role dropdown, status,
-              Form(
-                child: Column(
-                  children: [
-                    // Name
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_name"),
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: CustomSpacing.two,
-                    ),
-                    // Email
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_email"),
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: CustomSpacing.two,
-                    ),
-                    // Phone
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.white.withOpacity(0.5)),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(
-                              child: CountryListPicker(
-                                initialCountry: Countries.United_States,
-                                border: InputBorder.none,
-                                flagSize: Size(35, 30),
-                                onChanged: (code) {
-                                  setState(() {
-                                    _selectedCountryCode = code;
-                                  });
-                                },
-                                diallingCodeStyle: CustomTypography.Body1,
-                                isShowInputField: false,
-                                dialogTheme: DialogThemeData(
-                                  style: CustomTypography.Body1,
-                                  isShowFloatButton: false,
-                                ),
-                                countryNameStyle: CustomTypography.Body1,
-                                isShowCountryName: false,
-                                onCountryChanged: (country) {
-                                  print('This is the country code: $country');
-                                  setState(() {
-                                    _selectedCountryCode = country.dialing_code;
-                                  });
-                                },
-                              ),
-                            ),
+                      SizedBox(height: CustomSpacing.two),
+                      // Status
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_status"),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        SizedBox(width: CustomSpacing.two),
-                        // Mobile Number TextFormField
-                        Expanded(
-                          flex: 7,
-                          child: TextFormField(
-                            keyboardType: TextInputType.number,
-                            maxLength: 10,
-                            // Numeric keyboard
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                              // Only allows digits
-                            ],
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone"),
-                              hintText: LanguageService.getTranslated(context, "usermanagement_app_filter_phone_hint"),
-                              border: const OutlineInputBorder(),
-                              counterText: '',
-                            ),
-                            validator: (value) {
-                              if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                return LanguageService.getTranslated(context, "usermanagement_app_filter_phone_validation");
-                              }
-                              return null;
-                            },
-                            controller: mobileController,
-                          ),
-                        ),
-                        // Dropdown Icon Suffix
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Company
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_company"),
-                        labelStyle: CustomTypography.Body1,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        items: ['Active', 'Inactive'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? value) {
+                          // Handle status change
+                        },
                       ),
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Role Dropdown
-                    Stack(
-                      children: [
-                        TextField(
-                          readOnly: true,
-                          onTap: () {
-                            showBottomSheet(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return RolesBottomSheet(
-                                  showCorporateSwitch: true,
-                                  options: roles,
-                                  selectedRoles: _selectedRoles,
-                                  addChip: _addChip,
-                                  removeChip: _removeChip,
-                                  removeAllChips: _removeAllChips,
-                                  selectedOption: SignUpOptions.corporate,
-                                  onOptionChanged: (SignUpOptions option) {
-                                    setState(() {
-                                      _selectedOption = option;
-                                    });
-                                  },
-                                );
-                              },
-                            );
-                          },
-                          controller: _textEditingController,
-                          onChanged: (value) {
-                            // Handle input changes
-                          },
-                          decoration: InputDecoration(
-                            labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_roles"),
-                            hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
-                            border: OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: Icon(Icons.arrow_drop_down),
+                      SizedBox(height: CustomSpacing.two),
+                      // Cancel and Submit Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
                               onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  useSafeArea: true,
-                                  isScrollControlled: true,
-                                  builder: (BuildContext context) {
-                                    return RolesBottomSheet(
-                                      showCorporateSwitch: false,
-                                      options: roles,
-                                      selectedRoles: _selectedRoles,
-                                      addChip: _addChip,
-                                      removeChip: _removeChip,
-                                      removeAllChips: _removeAllChips,
-                                      selectedOption: SignUpOptions.corporate,
-                                      onOptionChanged: (SignUpOptions signUpOptions) {
-                                        setState(() {
-                                          _selectedOption = signUpOptions;
-                                        });
-                                      },
-                                    );
-                                  },
-                                );
+                                // Handle cancel button
                               },
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10.0,
-                          left: 10.0,
-                          right: 10.0,
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 32.0),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: _selectedRoles
-                                    .map(
-                                      (value) => Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: Chip(
-                                      label: Text(value.name),
-                                      deleteIcon: Icon(Icons.cancel),
-                                      onDeleted: () => _removeChip(value),
-                                    ),
-                                  ),
-                                )
-                                    .toList(),
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                              ),
+                              child: Text(
+                                LanguageService.getTranslated(context, "usermanagement_app_filter_cancel"),
+                                style: typography.ButtonLarge,
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Status
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: LanguageService.getTranslated(context, "usermanagement_app_filter_status"),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                          SizedBox(width: CustomSpacing.two),
+                          Expanded(
+                            child: CustomButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              type: ButtonType.filled,
+                              child: Text(
+                                LanguageService.getTranslated(context, "usermanagement_app_filter_submit"),
+                                style: typography.ButtonLarge,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      items: ['Active', 'Inactive'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        // Handle status change
-                      },
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                    // Cancel and Submit Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              // Handle cancel button
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                            ),
-                            child: Text(
-                              LanguageService.getTranslated(context, "usermanagement_app_filter_cancel"),
-                              style: CustomTypography.ButtonLarge,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: CustomSpacing.two),
-                        Expanded(
-                          child: CustomButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            type: ButtonType.filled,
-                            child: Text(
-                              LanguageService.getTranslated(context, "usermanagement_app_filter_submit"),
-                              style: CustomTypography.ButtonLarge,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              ],
+                ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      }),
+    );
   }
 
   void _showFiltersBottomSheet(BuildContext context) {
@@ -672,6 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _getGeneralInfoUI() {
+    var typography = CustomTypography(context);
     return Consumer<UserProfileProvider>(
         builder: (context, userProfileProvider, child) {
       return !userProfileProvider.isLoading
@@ -730,8 +734,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           Text(
                                             LanguageService.getTranslated(context, "user_profile_user_managemt_uploadimage_text"),
                                             style:
-                                                CustomTypography.Body1.copyWith(
-                                                    color: Colors.white),
+                                                typography.Body1,
                                             textAlign: TextAlign.center,
                                           ),
                                           SizedBox(
@@ -739,7 +742,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           ),
                                           Text(
                                             LanguageService.getTranslated(context, "usermanagement_app_image_size"),
-                                            style: CustomTypography
+                                            style: typography
                                                 .BottomNavigationActiveLabel,
                                             textAlign: TextAlign.center,
                                           ),
@@ -801,7 +804,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   },
                                                         child: Text(
                                                           LanguageService.getTranslated(context, "user_profile_user_management_upload_imamge_btn"),
-                                                          style: CustomTypography
+                                                          style: typography
                                                               .ButtonLarge,
                                                           textAlign:
                                                               TextAlign.center,
@@ -814,7 +817,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               ),
                                               Text(
                                                 LanguageService.getTranslated(context, "user_profile_user_management_upload_or"),
-                                                style: CustomTypography.Body1,
+                                                style: typography.Body1,
                                                 textAlign: TextAlign.center,
                                               ),
 
@@ -854,7 +857,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                               children: [
                                                                                 Text(
                                                                                   LanguageService.getTranslated(context, "user_profile_user_management_select_avatar_btn"),
-                                                                                  style: CustomTypography
+                                                                                  style: typography
                                                                                       .H6
                                                                                       .copyWith(
                                                                                           color:
@@ -943,7 +946,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                     },
                                                                     child: Text(
                                                                       LanguageService.getTranslated(context, "user_profile_user_management_ cancel_btn"),
-                                                                      style: CustomTypography
+                                                                      style: typography
                                                                           .ButtonLarge,
                                                                       textAlign:
                                                                           TextAlign
@@ -962,7 +965,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 },
                                                 child: Text(
                                                   LanguageService.getTranslated(context, "user_profile_app_user_management_upload_avatar_button"),
-                                                  style: CustomTypography.ButtonLarge,
+                                                  style: typography.ButtonLarge,
                                                   textAlign: TextAlign.center,
                                                 ),
                                               ),
@@ -998,7 +1001,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                 ? LanguageService.getTranslated(context, "user_profile_app_user_management_profile_save_text")
                                                                 : LanguageService.getTranslated(context, "user_profile_app_user_management_edit_profile_text"),
                                                             style:
-                                                                CustomTypography
+                                                                typography
                                                                     .ButtonLarge,
                                                           ),
                                                         ],
@@ -1030,8 +1033,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       decoration: InputDecoration(
                         labelText: isEdit ? LanguageService.getTranslated(context, "user_profile_user_management_name_filed_label") : nameLabelText,
                         labelStyle: isEdit
-                            ? CustomTypography.Body1
-                            : CustomTypography.Body1.copyWith(
+                            ? typography.Body1
+                            : typography.Body1.copyWith(
                                 color: Theme.of(context)
                                     .textTheme
                                     .labelMedium
@@ -1059,8 +1062,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         labelText:
                             isEdit ? 'Display Name' : displayNameLabelText,
                         labelStyle: isEdit
-                            ? CustomTypography.Body1
-                            : CustomTypography.Body1.copyWith(
+                            ? typography.Body1
+                            : typography.Body1.copyWith(
                                 color: Theme.of(context)
                                     .textTheme
                                     .labelMedium
@@ -1120,8 +1123,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           decoration: InputDecoration(
                             labelText: isEdit ? '' : '',
                             labelStyle: isEdit
-                                ? CustomTypography.Body1
-                                : CustomTypography.Body1.copyWith(
+                                ? typography.Body1
+                                : typography.Body1.copyWith(
                                     color: Theme.of(context)
                                         .textTheme
                                         .labelMedium
@@ -1165,7 +1168,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         Positioned(
-                          top: 10.0,
+                          top: 4.0,
                           left: 10.0,
                           right: 10.0,
                           child: Container(
@@ -1202,12 +1205,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ? LanguageService.getTranslated(context, "user_profile_user_management_email_field_label")
                             : emailLabelText,
                         labelStyle: isEdit
-                            ? CustomTypography.Body1.copyWith(
+                            ? typography.Body1.copyWith(
                             color: Theme.of(context)
                                 .textTheme
                                 .labelMedium
                                 ?.color)
-                            : CustomTypography.Body1.copyWith(
+                            : typography.Body1.copyWith(
                                 color: Theme.of(context)
                                     .textTheme
                                     .labelMedium
@@ -1248,8 +1251,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         : phoneLabelText,
 
                                     labelStyle: isEdit
-                                        ? CustomTypography.Body1
-                                        : CustomTypography.Body1.copyWith(
+                                        ? typography.Body1
+                                        : typography.Body1.copyWith(
                                         color: Theme.of(context)
                                             .textTheme
                                             .labelMedium
@@ -1265,8 +1268,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     ),
                                     hintText: LanguageService.getTranslated(context, "user_profile_user_management_mobile_placeholder"),
                                    /* hintStyle: isEdit
-                                  ? CustomTypography.Body1
-                                      : CustomTypography.Body1.copyWith(
+                                  ? typography.Body1
+                                      : typography.Body1.copyWith(
                                       color: Theme.of(context)
                                       .textTheme
                                       .labelMedium
@@ -1361,7 +1364,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       type: ButtonType.filled,
                                       child: Text(
                                         LanguageService.getTranslated(context, "user_profile_user_management_btn_submit"),
-                                        style: CustomTypography.ButtonLarge,
+                                        style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -1386,7 +1389,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                       child: Text(
                                         LanguageService.getTranslated(context, "user_profile_user_management_btn_cancel"),
-                                        style: CustomTypography.ButtonLarge,
+                                        style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -1469,6 +1472,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _managerCardUI(UserProfileProvider userProfileProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1490,7 +1494,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Text(
                     LanguageService.getTranslated(
                         context, "user_profile_user_management_row_name_manager"),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
                 !showAssignDeleteManager?SizedBox():Builder(
@@ -1558,8 +1562,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(userProfileProvider.myManager[0]?.name??"", style: CustomTypography.Body1),
-                        Text(userProfileProvider.myManager[0]?.email??"", style: CustomTypography.Body2),
+                        Text(userProfileProvider.myManager[0]?.name??"", style: typography.Body1),
+                        Text(userProfileProvider.myManager[0]?.email??"", style: typography.Body2),
                       ],
                     ),
 
@@ -1669,6 +1673,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _delegateCardUI(UserProfileProvider userProfileProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1690,7 +1695,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Text(
                     LanguageService.getTranslated(
                         context, "user_profile_user_management_row_name_Delegate"),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
                 !showAddDelegate?SizedBox():userProfileProvider.myReportee.isEmpty?SizedBox(
@@ -1761,8 +1766,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(userProfileProvider.myDeligate[0]?.name??"", style: CustomTypography.Body1),
-                        Text(userProfileProvider.myDeligate[0]?.email??"", style: CustomTypography.Body2),
+                        Text(userProfileProvider.myDeligate[0]?.name??"", style: typography.Body1),
+                        Text(userProfileProvider.myDeligate[0]?.email??"", style: typography.Body2),
                       ],
                     ),
 
@@ -1876,6 +1881,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _reporteesCardUI(UserProfileProvider userProfileProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1897,7 +1903,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Text(
                     LanguageService.getTranslated(
                         context, "user_profile_user_management_row_name_reportee"),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
                 !showAddReportee?SizedBox():Row(
@@ -1942,6 +1948,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _reporteesListCardUI(UserProfileProvider userProfileProvider, int index) {
+    var typography = CustomTypography(context);
     return Container(
       color: Theme.of(context).colorScheme.background,
       child: Column(
@@ -1977,8 +1984,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text( userProfileProvider.myReportee[index]?.name??"" , style: CustomTypography.Body1),
-                  Text(userProfileProvider.myReportee[index]?.email??"" , style: CustomTypography.Body2),
+                  Text( userProfileProvider.myReportee[index]?.name??"" , style: typography.Body1),
+                  Text(userProfileProvider.myReportee[index]?.email??"" , style: typography.Body2),
                 ],
               ),
 
@@ -2073,6 +2080,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _addMemberDialogUI(BuildContext localContext, String type) {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2080,7 +2088,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         children: [
           SizedBox(height: CustomSpacing.two),
           Text(type == "add_manager" ? LanguageService.getTranslated(context, "user_profile_user_management_add_manager_btn") : type == 'add_delegate' ? LanguageService.getTranslated(context, "user_profile_user_management_add_delegate_btn") : LanguageService.getTranslated(context, "user_profile_user_management_add_reportee"),
-              style: CustomTypography.H5_Regular.copyWith(color: Colors.white)),
+              style: typography.H5_Regular),
           SizedBox(height: CustomSpacing.two),
           // Search Box with Autocomplete
           Autocomplete<NetworkingUsers>(
@@ -2158,8 +2166,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   "",
                             ),
                           ),
-                          title: Text(user.name??"", style: CustomTypography.Body1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
-                          subtitle: Text(user.email??"", style: CustomTypography.Subtitle1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
+                          title: Text(user.name??"", style: typography.Body1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
+                          subtitle: Text(user.email??"", style: typography.Subtitle1.copyWith(color: Theme.of(context).textTheme.labelMedium?.color)),
                         ),
                       );
                     },
@@ -2185,7 +2193,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   child: Text(
                     LanguageService.getTranslated(context, "user_profile_user_management_btn_cancel"),
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -2229,7 +2237,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   type: ButtonType.filled,
                   child: Text(
                     LanguageService.getTranslated(context, "user_profile_user_management_btn_submit"),
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -2241,6 +2249,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   _getSecurityUI() {
+    var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -2254,7 +2263,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: Text(
                         LanguageService.getTranslated(
                             context, 'coming_soon_title'),
-                        style: CustomTypography.H4),
+                        style: typography.H4),
                   ),
                   SizedBox(
                     height: CustomSpacing.two,
@@ -2262,7 +2271,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_subtitle'),
-                      style: CustomTypography.Body1),
+                      style: typography.Body1),
                 ],
               ),
             ),

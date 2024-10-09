@@ -15,6 +15,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:green/constants/enums.dart';
+import 'package:green/design_system/components/rating_widget.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
@@ -104,6 +105,26 @@ class _LocationProfileState extends State<LocationProfile>
   MarkerId? _selectedMarker;
 
   late TextEditingController _searchController;
+
+  ScrollController _scrollController = ScrollController();
+
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      _scrollController.offset - 100, // Scroll left by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      _scrollController.offset + 100, // Scroll right by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
 
   @override
   void didChangeDependencies() {
@@ -206,6 +227,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _captureAndUploadMapScreenshot() async {
+    var typography = CustomTypography(context);
     // Request storage permission
     // Log initial permission status
     PermissionStatus initialStatus =
@@ -242,7 +264,7 @@ class _LocationProfileState extends State<LocationProfile>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to capture screenshot',
-                style: CustomTypography.Body1),
+                style: typography.Body1),
           ),
         );
       }
@@ -250,14 +272,14 @@ class _LocationProfileState extends State<LocationProfile>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-              Text('Storage permission denied', style: CustomTypography.Body1),
+              Text('Storage permission denied', style: typography.Body1),
         ),
       );
     } else if (status.isPermanentlyDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Storage permission permanently denied',
-              style: CustomTypography.Body1),
+              style: typography.Body1),
           action: SnackBarAction(
             label: 'Settings',
             onPressed: () {
@@ -271,287 +293,551 @@ class _LocationProfileState extends State<LocationProfile>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-      return Scaffold(
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                TabBar(
-                  isScrollable: true,
-                  labelStyle: CustomTypography.BottomNavigationActiveLabel,
-                  tabAlignment: TabAlignment.start,
-                  controller: _tabController,
-                  tabs: [
-                    Tab(
-                      text: 'Geocoding',
-                    ),
-                    Tab(text: 'Hazard'),
-                    Tab(text: 'Occupancy'),
-                    Tab(text: 'Construction'),
-                  ],
-                ),
-                Expanded(
-                  child: Stack(
+    var typography = CustomTypography(context);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+        return Consumer<LocationProfileProvider>(builder: (context, locationProfileProvider, child) {
+            return Scaffold(
+              backgroundColor: themeProvider.getTheme.colorScheme.background,
+              appBar: CustomAppBar(
+                isExpanded: _isExpanded,
+                showNotificationDot: _showNotificationDot,
+                onExpandPressed: (isExpanded) {
+                  setState(() {
+                    _isExpanded = isExpanded;
+                  });
+                },
+                onSearchPressed: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+              drawer: CustomDrawer(),
+              body: Stack(
+                children: [
+                  Column(
                     children: [
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(16), // Rounded edges
+                ),
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                child: DefaultTabController(
+
+                length: 4,
+                  child: Column(
+                    children: <Widget>[
+                      // Container for the TabBar with arrows
                       Container(
-                        margin: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
+                          borderRadius: BorderRadius.circular(16),
+                          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        ),
+                        height: 50,
+                        child: Row(
+                          children: <Widget>[
+                            // Left arrow button
+                            IconButton(
+                              icon: Icon(Icons.arrow_left, color: Colors.grey),
+                              onPressed: _scrollLeft,
+                            ),
+                            // Scrollable TabBar
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                scrollDirection: Axis.horizontal,
+                                child: TabBar(
+                                  tabAlignment: TabAlignment.start,
+                                  labelStyle: typography.Subtitle2,
+                                  isScrollable: true,
+                                  indicatorColor: Colors.lightBlueAccent,
+                                  labelColor: Colors.lightBlueAccent,
+                                  unselectedLabelColor: Colors.grey,
+                                  tabs: [
+                                    Tab(text: 'Overall Score', ),
+                                    Tab(text: 'Geocoding Score'),
+                                    Tab(text: 'Risk Score'),
+                                    Tab(text: 'Hazard Score'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Right arrow button
+                            IconButton(
+                              icon: Icon(Icons.arrow_right, color: Colors.grey),
+                              onPressed: _scrollRight,
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Screenshot(
-                            controller: screenshotController,
-                            child: GoogleMap(
-                              key: _googleMapKey,
-                              mapType: _currentMapType,
-                              markers: Set<Marker>.of(markers.values),
-                              initialCameraPosition: _kGooglePlex,
-                              onMapCreated: (GoogleMapController controller) {
-                                _controller.complete(controller);
-                              },
-                              gestureRecognizers: <Factory<
-                                  OneSequenceGestureRecognizer>>{
-                                Factory<OneSequenceGestureRecognizer>(
-                                  () => EagerGestureRecognizer(),
-                                ),
-                              },
-                              onTap: _isAddingMarker ? _handleMapTap : null,
-                            ),
-                          ),
-                        ),
                       ),
-                      Consumer<LocationProfileProvider>(
-                          builder: (context, locationProfileProvider, child) {
-                        return Positioned(
-                          top: 16,
-                          left: 28,
-                          right: 0,
-                          child: (locationProfileProvider.result?.score ?? 0) ==
-                                      3 ||
-                                  (locationProfileProvider.result?.score ??
-                                          0) ==
-                                      4
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Expanded(
-                                        child: _buildGoogleSearchBar(context)),
-                                  ],
-                                )
-                              : SizedBox(),
-                        );
-                      }),
-                      // Left navigation button
-                      ((int.tryParse(widget.page)??0) <= 0)?
-                          SizedBox.shrink():
-                      Positioned(
-                        left: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: FloatingActionButton(
-                            shape: CircleBorder(),
-                            mini: true,
-                            backgroundColor: AppColors.paperElavation25,
-                            onPressed: _navigateLeft,
-                            child: Icon(
-                              Icons.chevron_left,
-                              size: 30,
-                            ),
-                          ),
+
+                      /*// TabBarView for the tab content
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            Center(child: Text('Overall Score Content')),
+                            Center(child: Text('Geocoding Score Content')),
+                            Center(child: Text('Risk Content')),
+                            Center(child: Text('Contruction Content')),
+                          ],
                         ),
-                      ),
-                      // Right navigation button
-                      ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1)-1)?
-                          SizedBox.shrink():
-                      Positioned(
-                        right: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: FloatingActionButton(
-                            mini: true,
-                            shape: CircleBorder(),
-                            backgroundColor: AppColors.paperElavation25,
-                            onPressed: _navigateRight,
-                            child: Icon(
-                              Icons.chevron_right,
-                              size: 30,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Consumer<LocationProfileProvider>(
-                          builder: (context, locationProfileProvider, child) {
-                        return Positioned(
-                          top: 16,
-                          left: 28,
-                          right: 0,
-                          child: (locationProfileProvider.result?.score ?? 0) ==
-                                      3 ||
-                                  (locationProfileProvider.result?.score ??
-                                          0) ==
-                                      4
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Expanded(
-                                        child: _buildGoogleSearchBar(context)),
-                                  ],
-                                )
-                              : SizedBox(),
-                        );
-                      }),
-                      Consumer<LocationProfileProvider>(
-                          builder: (context, locationProfileProvider, child) {
-                        return Positioned(
-                          bottom: 16,
-                          left: 16,
-                          child: Container(
-                            margin: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.paperElevation2,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                FloatingActionButton.small(
-                                  onPressed: _captureAndUploadMapScreenshot,
-                                  backgroundColor: AppColors.paperElevation2,
-                                  child: Icon(Icons.camera,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface),
-                                  tooltip: 'Capture and Upload Screenshot',
-                                ),
-                                SizedBox(height: 8),
-                                FloatingActionButton.small(
-                                  backgroundColor: AppColors.paperElevation2,
-                                  onPressed: () {
-                                    setState(() {
-                                      _currentMapType =
-                                          _currentMapType == MapType.normal
-                                              ? MapType.satellite
-                                              : MapType.normal;
-                                    });
-                                  },
-                                  child: Icon(Icons.map,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface),
-                                  tooltip: 'Change Map Type',
-                                ),
-                                SizedBox(height: 8),
-                                FloatingActionButton.small(
-                                  backgroundColor: AppColors.paperElevation2,
-                                  onPressed: _goToTheInitialPin,
-                                  child: Icon(Icons.pin_drop,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface),
-                                  tooltip: 'Go to Initial Pin',
-                                ),
-                                (locationProfileProvider.result?.score ?? 0) ==
-                                            5 &&
-                                        (locationProfileProvider
-                                                .result?.placeTypes
-                                                ?.any((placeType) => [
-                                                      "premise",
-                                                      "subpremise",
-                                                      "rooftop"
-                                                    ].contains(placeType
-                                                        .toLowerCase())) ??
-                                            false)
-                                    ? FloatingActionButton.small(
-                                        backgroundColor:
-                                            AppColors.paperElevation2,
-                                        onPressed: _handleSubDestinationTap,
-                                        child: Icon(Icons.add_location_alt,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface),
-                                        tooltip: 'Add Sub-Destination',
-                                      )
-                                    : SizedBox.shrink(),
-                                (locationProfileProvider.result?.score ?? 0) ==
-                                            1 ||
-                                        (locationProfileProvider
-                                                    .result?.score ??
-                                                0) ==
-                                            2
-                                    ? FloatingActionButton.small(
-                                        backgroundColor:
-                                            AppColors.paperElevation2,
-                                        onPressed: _toggleAddMarkerMode,
-                                        child: _isAddingMarker
-                                            ? const Icon(Icons.cancel)
-                                            : const Icon(Icons.add_location),
-                                        tooltip: 'Add Marker',
-                                      )
-                                    : SizedBox.shrink(),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
+                      ),*/
                     ],
                   ),
                 ),
-                if (!_isBottomSheetFullScreen) _buildBottomSheet(),
-              ],
-            ),
-            if (_isBottomSheetFullScreen)
-              Positioned.fill(
-                child: _locationProfileBody(),
               ),
-            /*Consumer<LocationProfileProvider>(
-              builder: (context, provider, child) {
-                return provider.isUploadingImage ? Center(child: CircularProgressIndicator()) : SizedBox.shrink();
-              },
-            ),*/
-            if (_selectedMarker != null) _buildCustomInfoWindow(),
-          ],
-        ),
-      );
-    });
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(height: CustomSpacing.two,),
+                                        Text(
+                                          locationProfileProvider.result?.locationName ??
+                                              '',
+                                          style:
+                                          typography.H6.copyWith(height: 1.2),
+                                        ),
+
+                                        Text(
+                                          '${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                                          style: typography.Subtitle2.copyWith(
+                                              fontWeight: FontWeight.w500, color: AppColors.primaryMain),
+                                        ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      splashRadius: 1,
+                                      padding: EdgeInsets.zero,
+                                      icon: Icon(Icons.edit,
+                                          color: Theme.of(context).colorScheme.primary),
+                                      onPressed: () {
+                                        // Handle edit button press
+                                        _editName(locationProfileProvider);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Spacer(),
+                            Column(
+                              children: [
+                                SizedBox(
+                                  height: CustomSpacing.four,
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    //Share Icon
+                                    Icon(Icons.share),
+                                    SizedBox(width: CustomSpacing.six,),
+                                    TooltipTheme(
+                                      data: TooltipThemeData(
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.surface,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        textStyle: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                          fontSize: 14,
+                                        ),
+                                        padding: EdgeInsets.all(8),
+                                        verticalOffset: 20,
+                                        preferBelow: false,
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12.0),
+                                        child: Tooltip(
+                                          showDuration: Duration(seconds: 5),
+                                          triggerMode: TooltipTriggerMode.tap,
+                                          preferBelow: true,
+                                          richMessage: TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text:
+                                                'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
+                                                style: typography.Subtitle1,
+                                              ),
+                                              // Comma seperated
+                                              TextSpan(
+                                                text:
+                                                'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
+                                                style: typography.Subtitle1,
+                                              ),
+                                            ],
+                                            style: typography.Subtitle1,
+                                          ),
+                                          child: Icon(
+                                            Icons.info,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      /*ListTile(
+
+                        title: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+      */
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+      /*                          Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    locationProfileProvider.result?.locationName ??
+                                        '',
+                                    style:
+                                    typography.H6.copyWith(height: 1.2),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.edit,
+                                      color: Theme.of(context).colorScheme.primary),
+                                  onPressed: () {
+                                    // Handle edit button press
+                                    _editName(locationProfileProvider);
+                                  },
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                              style: typography.Subtitle1.copyWith(
+                                  fontWeight: FontWeight.w500, color: AppColors.primaryMain),
+                            )*//*
+                          ],
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        trailing:
+                      ),
+                      */
+                      Padding(
+                        padding: EdgeInsets.only(left: 16, right: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            /*RatingSlider(
+                              progress: context
+                                  .read<LocationProfileProvider>()
+                                  .result
+                                  ?.score ??
+                                  0,
+                              total: 5,
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              progressColor: Colors.amber,
+                              thumbColor: Colors.amberAccent,
+                              textColor: Colors.white,
+                            ),*/
+                            RatingWidget(score: context
+                                .read<LocationProfileProvider>()
+                                .result
+                                ?.score ??
+                                0),
+                            SvgPicture.asset('assets/images/certified.svg'),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Container(
+                              margin: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Screenshot(
+                                  controller: screenshotController,
+                                  child: GoogleMap(
+                                    key: _googleMapKey,
+                                    mapType: _currentMapType,
+                                    markers: Set<Marker>.of(markers.values),
+                                    initialCameraPosition: _kGooglePlex,
+                                    onMapCreated: (GoogleMapController controller) {
+                                      _controller.complete(controller);
+                                    },
+                                    gestureRecognizers: <Factory<
+                                        OneSequenceGestureRecognizer>>{
+                                      Factory<OneSequenceGestureRecognizer>(
+                                        () => EagerGestureRecognizer(),
+                                      ),
+                                    },
+                                    onTap: _isAddingMarker ? _handleMapTap : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Consumer<LocationProfileProvider>(
+                                builder: (context, locationProfileProvider, child) {
+                              return Positioned(
+                                top: 16,
+                                left: 28,
+                                right: 0,
+                                child: (locationProfileProvider.result?.score ?? 0) ==
+                                            3 ||
+                                        (locationProfileProvider.result?.score ??
+                                                0) ==
+                                            4
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                              child: _buildGoogleSearchBar(context)),
+                                        ],
+                                      )
+                                    : SizedBox(),
+                              );
+                            }),
+                            // Left navigation button
+                            ((int.tryParse(widget.page)??0) <= 0)?
+                                SizedBox.shrink():
+                            Positioned(
+                              left: 16,
+                              top: 0,
+                              bottom: 0,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FloatingActionButton(
+                                  shape: CircleBorder(),
+                                  mini: true,
+                                  backgroundColor: Theme.of(context).brightness == Brightness.light
+                                      ? AppColors.paperElavation25Light
+                                      : AppColors.paperElavation25,
+                                  onPressed: _navigateLeft,
+                                  child: Icon(
+                                    Icons.chevron_left,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Right navigation button
+                            ((int.tryParse(widget.page)??0) >= (int.tryParse(widget.totalPages)??1)-1)?
+                                SizedBox.shrink():
+                            Positioned(
+                              right: 16,
+                              top: 0,
+                              bottom: 0,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: FloatingActionButton(
+                                  mini: true,
+                                  shape: CircleBorder(),
+                                  backgroundColor: Theme.of(context).brightness == Brightness.light
+                                      ? AppColors.paperElavation25Light
+                                      : AppColors.paperElavation25,
+                                  onPressed: _navigateRight,
+                                  child: Icon(
+                                    Icons.chevron_right,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Consumer<LocationProfileProvider>(
+                                builder: (context, locationProfileProvider, child) {
+                              return Positioned(
+                                top: 16,
+                                left: 28,
+                                right: 0,
+                                child: (locationProfileProvider.result?.score ?? 0) ==
+                                            3 ||
+                                        (locationProfileProvider.result?.score ??
+                                                0) ==
+                                            4
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                              child: _buildGoogleSearchBar(context)),
+                                        ],
+                                      )
+                                    : SizedBox(),
+                              );
+                            }),
+                            Consumer<LocationProfileProvider>(
+                                builder: (context, locationProfileProvider, child) {
+                              return Positioned(
+                                bottom: 16,
+                                left: 16,
+                                child: Container(
+                                  margin: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                        ? AppColors.paperElevation2Light
+                                        : AppColors.paperElevation2,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      FloatingActionButton.small(
+                                        elevation: 0,
+                                        onPressed: _captureAndUploadMapScreenshot,
+                                        backgroundColor: Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                            ? AppColors.paperElevation2Light
+                                            : AppColors.paperElevation2,
+                                        child: Icon(Icons.camera,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface),
+                                        tooltip: 'Capture and Upload Screenshot',
+                                      ),
+                                      SizedBox(height: 8),
+                                      FloatingActionButton.small(
+                                        elevation: 0,
+                                        backgroundColor: Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                            ? AppColors.paperElevation2Light
+                                            : AppColors.paperElevation2,
+                                        onPressed: () {
+                                          setState(() {
+                                            _currentMapType =
+                                                _currentMapType == MapType.normal
+                                                    ? MapType.satellite
+                                                    : MapType.normal;
+                                          });
+                                        },
+                                        child: Icon(Icons.map,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface),
+                                        tooltip: 'Change Map Type',
+                                      ),
+                                      SizedBox(height: 8),
+                                      FloatingActionButton.small(
+                                        elevation: 0,
+                                        backgroundColor: Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                            ? AppColors.paperElevation2Light
+                                            : AppColors.paperElevation2,
+                                        onPressed: _goToTheInitialPin,
+                                        child: Icon(Icons.pin_drop,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface),
+                                        tooltip: 'Go to Initial Pin',
+                                      ),
+                                      (locationProfileProvider.result?.score ?? 0) ==
+                                                  5 &&
+                                              (locationProfileProvider
+                                                      .result?.placeTypes
+                                                      ?.any((placeType) => [
+                                                            "premise",
+                                                            "subpremise",
+                                                            "rooftop"
+                                                          ].contains(placeType
+                                                              .toLowerCase())) ??
+                                                  false)
+                                          ? FloatingActionButton.small(
+                                        elevation: 0,
+                                              backgroundColor:
+                                              Theme.of(context).colorScheme.brightness ==
+                                                  Brightness.light
+                                                  ? AppColors.paperElevation2Light
+                                                  : AppColors.paperElevation2,
+                                              onPressed: _handleSubDestinationTap,
+                                              child: Icon(Icons.add_location_alt,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface),
+                                              tooltip: 'Add Sub-Destination',
+                                            )
+                                          : SizedBox.shrink(),
+                                      (locationProfileProvider.result?.score ?? 0) ==
+                                                  1 ||
+                                              (locationProfileProvider
+                                                          .result?.score ??
+                                                      0) ==
+                                                  2
+                                          ? FloatingActionButton.small(
+                                        elevation: 0,
+                                              backgroundColor:
+                                              Theme.of(context).colorScheme.brightness ==
+                                                  Brightness.light
+                                                  ? AppColors.paperElevation2Light
+                                                  : AppColors.paperElevation2,
+                                              onPressed: _toggleAddMarkerMode,
+                                              child: _isAddingMarker
+                                                  ? const Icon(Icons.cancel)
+                                                  : const Icon(Icons.add_location),
+                                              tooltip: 'Add Marker',
+                                            )
+                                          : SizedBox.shrink(),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                      if (!_isBottomSheetFullScreen) _buildBottomSheet(),
+                    ],
+                  ),
+                  if (_isBottomSheetFullScreen)
+                    Positioned.fill(
+                      child: _locationProfileBody(),
+                    ),
+                  /*Consumer<LocationProfileProvider>(
+                    builder: (context, provider, child) {
+                      return provider.isUploadingImage ? Center(child: CircularProgressIndicator()) : SizedBox.shrink();
+                    },
+                  ),*/
+                  if (_selectedMarker != null) _buildCustomInfoWindow(),
+                ],
+              ),
+            );
+          }
+        );
+      }),
+    );
   }
 
   Widget _buildCustomInfoWindow() {
+    var typography = CustomTypography(context);
     var marker = markers[_selectedMarker];
     var isSubdestination =
         marker?.infoWindow.title?.contains("Subdestination") ?? false;
@@ -591,14 +877,14 @@ class _LocationProfileState extends State<LocationProfile>
                       icon: Icon(Icons.delete, color: Colors.red),
                       label:
                           Text('Remove', style: TextStyle(color: Colors.red)),
-                      style: ElevatedButton.styleFrom(primary: Colors.black),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                     ),
                   ElevatedButton.icon(
                     onPressed: () => _addToSOV(_selectedMarker!.value),
                     icon: Icon(Icons.add, color: Colors.blue),
                     label: Text('Add to SOV',
                         style: TextStyle(color: Colors.blue)),
-                    style: ElevatedButton.styleFrom(primary: Colors.black),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                   ),
                 ],
               ),
@@ -610,6 +896,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<Uint8List> createCustomMarkerBitmap(GlobalKey widgetKey) async {
+
     RenderRepaintBoundary boundary =
         widgetKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     var image = await boundary.toImage();
@@ -617,41 +904,17 @@ class _LocationProfileState extends State<LocationProfile>
     return byteData!.buffer.asUint8List();
   }
 
-  void _addCustomMarker(LatLng position, String title, String address,
-      bool isSubdestination, bool isAdded,
-      {VoidCallback? onAddToSOV, VoidCallback? onRemoveFromSOV}) async {
-    /* Uint8List markerBitmap = await createCustomMarkerBitmap(isSubdestination ? _subdestinationMarkerKey : _mainMarkerKey);
-
-    final Marker marker = Marker(
-      markerId: MarkerId("custom_marker_${markers.length}"),
-      position: position,
-      icon: BitmapDescriptor.fromBytes(markerBitmap),
-      infoWindow: InfoWindow(
-        title: title,
-        snippet: address,
-        onTap: () {
-          setState(() {
-            _selectedMarker = MarkerId("custom_marker_${markers.length}");
-          });
-        },
-      ),
-    );
-
-    setState(() {
-      markers[marker.markerId] = marker;
-    });*/
-  }
-
   Widget _buildBottomSheet() {
+    var typography = CustomTypography(context);
     return Consumer<LocationProfileProvider>(
         builder: (context, locationProfileProvider, child) {
       return AnimatedContainer(
         duration: Duration(milliseconds: 300),
         height: _isBottomSheetExpanded
-            ? MediaQuery.of(context).size.height * 0.5
+            ? MediaQuery.of(context).size.height * 0.3
             : MediaQuery.of(context).size.height * 0.14,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).brightness == Brightness.light? AppColors.paperElavation25Light: AppColors.paperElavation25,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -662,7 +925,7 @@ class _LocationProfileState extends State<LocationProfile>
                 ListTile(
                   title: Text(
                     '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
-                    style: CustomTypography.Subtitle1.copyWith(
+                    style: typography.Subtitle1.copyWith(
                         fontWeight: FontWeight.w500),
                   ),
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -714,143 +977,11 @@ class _LocationProfileState extends State<LocationProfile>
                   thumbVisibility: true,
                   child: ListView(
                     children: [
-                      ListTile(
-                        title: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                locationProfileProvider.result?.locationName ??
-                                    '',
-                                style:
-                                    CustomTypography.H6.copyWith(height: 1.2),
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.edit,
-                                  color: Theme.of(context).colorScheme.primary),
-                              onPressed: () {
-                                // Handle edit button press
-                                _editName(locationProfileProvider);
-                              },
-                            ),
-                          ],
-                        ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        trailing: TooltipTheme(
-                          data: TooltipThemeData(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: 14,
-                            ),
-                            padding: EdgeInsets.all(8),
-                            verticalOffset: 20,
-                            preferBelow: false,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 12.0),
-                            child: Tooltip(
-                              showDuration: Duration(seconds: 5),
-                              triggerMode: TooltipTriggerMode.tap,
-                              preferBelow: true,
-                              richMessage: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                    style: CustomTypography.Subtitle1,
-                                  ),
-                                  // Comma seperated
-                                  TextSpan(
-                                    text:
-                                        'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                    style: CustomTypography.Subtitle1,
-                                  ),
-                                ],
-                                style: CustomTypography.Subtitle1,
-                              ),
-                              child: Icon(
-                                Icons.info,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(left: 16, right: 24),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            RatingSlider(
-                              progress: context
-                                      .read<LocationProfileProvider>()
-                                      .result
-                                      ?.score ??
-                                  0,
-                              total: 5,
-                              width: MediaQuery.of(context).size.width * 0.5,
-                              progressColor: Colors.amber,
-                              thumbColor: Colors.amberAccent,
-                              textColor: Colors.white,
-                            ),
-                            SvgPicture.asset('assets/images/certified.svg'),
-                          ],
-                        ),
-                      ),
                       Divider(),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Address',
-                              style: CustomTypography.H6.copyWith(height: 1.2),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.download),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return ExportDialog(
-                                          accountId: widget.accountId,
-                                          subAccountId: widget.subAccountId,
-                                          sovId: [widget.sovId],
-                                          locationId: locationProfileProvider
-                                                  .result?.locationId ??
-                                              '',
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                                // Todo: Implement history feature
-                                /*IconButton(
-                                      icon: Icon(Icons.history),
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Coming Soon',
-                                                style: CustomTypography.Body1),
-                                          ),
-                                        );
-                                      },
-                                    ),*/
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                       ListTile(
                         title: Text(
                           locationProfileProvider.result?.address ?? '',
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: 16),
                         trailing: IconButton(
@@ -858,6 +989,42 @@ class _LocationProfileState extends State<LocationProfile>
                               color: Theme.of(context).colorScheme.primary),
                           onPressed: () =>
                               _editAddress(locationProfileProvider),
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          children: [
+                            CustomButton(type: ButtonType.outlined, onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return ExportDialog(
+                                    accountId: widget.accountId,
+                                    subAccountId: widget.subAccountId,
+                                    sovId: [widget.sovId],
+                                    locationId: locationProfileProvider
+                                        .result?.locationId ??
+                                        '',
+                                  );
+                                },
+                              );
+                            }, child: Text('Download', style: typography.Body1.copyWith(color: AppColors.primaryMain),))
+
+                            // Todo: Implement history feature
+                            /*IconButton(
+                                        icon: Icon(Icons.history),
+                                        onPressed: () {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Coming Soon',
+                                                  style: typography.Body1),
+                                            ),
+                                          );
+                                        },
+                                      ),*/
+                          ],
                         ),
                       ),
                       (locationProfileProvider.result?.score ?? 0) == 5
@@ -897,7 +1064,7 @@ class _LocationProfileState extends State<LocationProfile>
                                   );
                                 },
                                 child: Text('Edit Location',
-                                    style: CustomTypography.Body1),
+                                    style: typography.Body1),
                               ),
                             ),
                       Divider(),
@@ -910,7 +1077,7 @@ class _LocationProfileState extends State<LocationProfile>
                               child: Text(
                                 'Sub Destination Locations List',
                                 style:
-                                    CustomTypography.H6.copyWith(height: 1.2),
+                                    typography.H6.copyWith(height: 1.2),
                               ),
                             ),
                             locationProfileProvider.result?.score != 5
@@ -925,7 +1092,7 @@ class _LocationProfileState extends State<LocationProfile>
                       locationProfileProvider.subdestinations.isEmpty
                           ? Center(
                               child: Text('No Sub Destinations',
-                                  style: CustomTypography.Body1))
+                                  style: typography.Body1))
                           : Container(
                               height: 200,
                               child: PageView.builder(
@@ -970,7 +1137,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                     subdestination.status ??
                                                         "Not Added",
                                                     style:
-                                                        CustomTypography.Body1),
+                                                        typography.Body1),
                                                 backgroundColor: (subdestination
                                                                     .status ??
                                                                 "")
@@ -997,7 +1164,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                           child: Text(
                                                               'Remove from SOV',
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         )
                                                       : CustomButton(
@@ -1010,7 +1177,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                           child: Text(
                                                               'Add to SOV',
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                             ],
@@ -1036,7 +1203,7 @@ class _LocationProfileState extends State<LocationProfile>
                           children: [
                             Text(
                               'Images',
-                              style: CustomTypography.H6.copyWith(height: 1.2),
+                              style: typography.H6.copyWith(height: 1.2),
                             ),
                             IconButton(
                               icon: Icon(Icons.upload),
@@ -1125,7 +1292,7 @@ class _LocationProfileState extends State<LocationProfile>
                                 )
                               : Center(
                                   child: Text('No Images',
-                                      style: CustomTypography.Body1)),
+                                      style: typography.Body1)),
                       SizedBox(height: 24),
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: 16),
@@ -1133,7 +1300,7 @@ class _LocationProfileState extends State<LocationProfile>
                           type: ButtonType.elevated,
                           onPressed: _pickImage,
                           child: Text('Upload relevant image(s)',
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -1148,6 +1315,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Widget _locationProfileBody() {
+    var typography = CustomTypography(context);
     return Consumer<LocationProfileProvider>(
         builder: (context, locationProfileProvider, child) {
       return Container(
@@ -1160,7 +1328,7 @@ class _LocationProfileState extends State<LocationProfile>
             ListTile(
               title: Text(
                 '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
-                style: CustomTypography.H6.copyWith(height: 1.2),
+                style: typography.H6.copyWith(height: 1.2),
               ),
               trailing: IconButton(
                 icon: Icon(Icons.close),
@@ -1181,7 +1349,7 @@ class _LocationProfileState extends State<LocationProfile>
                         Flexible(
                           child: Text(
                             locationProfileProvider.result?.locationName ?? '',
-                            style: CustomTypography.H6.copyWith(height: 1.2),
+                            style: typography.H6.copyWith(height: 1.2),
                           ),
                         ),
                         IconButton(
@@ -1218,16 +1386,16 @@ class _LocationProfileState extends State<LocationProfile>
                               TextSpan(
                                 text:
                                     'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                style: CustomTypography.Subtitle1,
+                                style: typography.Subtitle1,
                               ),
                               // Comma seperated
                               TextSpan(
                                 text:
                                     'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                style: CustomTypography.Subtitle1,
+                                style: typography.Subtitle1,
                               ),
                             ],
-                            style: CustomTypography.Subtitle1,
+                            style: typography.Subtitle1,
                           ),
                           child: Icon(
                             Icons.info,
@@ -1263,7 +1431,7 @@ class _LocationProfileState extends State<LocationProfile>
                       children: [
                         Text(
                           'Address',
-                          style: CustomTypography.H6.copyWith(height: 1.2),
+                          style: typography.H6.copyWith(height: 1.2),
                         ),
                         Row(
                           children: [
@@ -1292,7 +1460,7 @@ class _LocationProfileState extends State<LocationProfile>
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Coming Soon',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                   ),
                                 );
                               },
@@ -1305,7 +1473,7 @@ class _LocationProfileState extends State<LocationProfile>
                   ListTile(
                     title: Text(
                       locationProfileProvider.result?.address ?? '',
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     trailing: IconButton(
@@ -1326,7 +1494,7 @@ class _LocationProfileState extends State<LocationProfile>
                         Flexible(
                           child: Text(
                             'Sub Destination Locations List',
-                            style: CustomTypography.H6.copyWith(height: 1.2),
+                            style: typography.H6.copyWith(height: 1.2),
                           ),
                         ),
                         IconButton(
@@ -1339,7 +1507,7 @@ class _LocationProfileState extends State<LocationProfile>
                   locationProfileProvider.subdestinations.isEmpty
                       ? Center(
                           child: Text('No Sub Destinations',
-                              style: CustomTypography.Body1))
+                              style: typography.Body1))
                       : Container(
                           height: 200,
                           child: PageView.builder(
@@ -1381,7 +1549,7 @@ class _LocationProfileState extends State<LocationProfile>
                                             label: Text(
                                                 subdestination.status ??
                                                     "Not Added",
-                                                style: CustomTypography.Body1),
+                                                style: typography.Body1),
                                             backgroundColor:
                                                 (subdestination.status ?? "")
                                                             .toLowerCase() ==
@@ -1405,7 +1573,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                       child: Text(
                                                           'Remove from SOV',
                                                           style:
-                                                              CustomTypography
+                                                              typography
                                                                   .Body1),
                                                     )
                                                   : CustomButton(
@@ -1416,7 +1584,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                   .id!),
                                                       child: Text('Add to SOV',
                                                           style:
-                                                              CustomTypography
+                                                              typography
                                                                   .Body1),
                                                     ),
                                         ],
@@ -1437,7 +1605,7 @@ class _LocationProfileState extends State<LocationProfile>
                       children: [
                         Text(
                           'Images',
-                          style: CustomTypography.H6.copyWith(height: 1.2),
+                          style: typography.H6.copyWith(height: 1.2),
                         ),
                         IconButton(
                           icon: Icon(Icons.upload),
@@ -1502,7 +1670,7 @@ class _LocationProfileState extends State<LocationProfile>
                         )
                       : Center(
                           child:
-                              Text('No Images', style: CustomTypography.Body1)),
+                              Text('No Images', style: typography.Body1)),
                   SizedBox(height: 16),
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: 16),
@@ -1510,7 +1678,7 @@ class _LocationProfileState extends State<LocationProfile>
                       type: ButtonType.elevated,
                       onPressed: _pickImage,
                       child: Text('Upload relevant image(s)',
-                          style: CustomTypography.Body1),
+                          style: typography.Body1),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -1524,6 +1692,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _showImagePreview(File image) {
+    var typography = CustomTypography(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1546,6 +1715,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _showImagePreviewFromUrl(String imageUrl) {
+    var typography = CustomTypography(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1724,16 +1894,17 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _handleSubDestinationTap() {
+    var typography = CustomTypography(context);
     var locationProfileProvider =
         Provider.of<LocationProfileProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add Sub-Destinations', style: CustomTypography.H6),
-          content: const Text(
+          title: Text('Add Sub-Destinations', style: typography.H6),
+          content: Text(
               'Do you want to get sub-destinations for this location?',
-              style: CustomTypography.Body1),
+              style: typography.Body1),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1775,6 +1946,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _editName(LocationProfileProvider provider) {
+    var typography = CustomTypography(context);
     _nameController.text = provider.result?.locationName ?? '';
 
     showDialog(
@@ -1783,7 +1955,7 @@ class _LocationProfileState extends State<LocationProfile>
         return Consumer<LocationProfileProvider>(
             builder: (context, locationProfileProvider, child) {
           return AlertDialog(
-            title: Text('Edit Name', style: CustomTypography.H6),
+            title: Text('Edit Name', style: typography.H6),
             content: Container(
               margin: EdgeInsets.only(top: 16),
               child: TextField(
@@ -1795,13 +1967,13 @@ class _LocationProfileState extends State<LocationProfile>
                         color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
-                style: CustomTypography.Body1,
+                style: typography.Body1,
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel', style: CustomTypography.Body1),
+                child: Text('Cancel', style: typography.Body1),
               ),
               TextButton(
                 onPressed: () {
@@ -1821,7 +1993,7 @@ class _LocationProfileState extends State<LocationProfile>
                 },
                 child: locationProfileProvider.isLoading
                     ? const CircularProgressIndicator()
-                    : Text('Save', style: CustomTypography.Body1),
+                    : Text('Save', style: typography.Body1),
               ),
             ],
           );
@@ -1831,6 +2003,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _editAddress(LocationProfileProvider provider) {
+    var typography = CustomTypography(context);
     _addressController.text = provider.result?.address ?? '';
 
     showDialog(
@@ -1840,19 +2013,19 @@ class _LocationProfileState extends State<LocationProfile>
             builder: (context, locationProfileProvider, child) {
           return AlertDialog(
             title: Text('Edit address & run geocoding',
-                style: CustomTypography.H6.copyWith(height: 1.2)),
+                style: typography.H6.copyWith(height: 1.2)),
             content: TextField(
               controller: _addressController,
               decoration: InputDecoration(
                 hintText: 'Enter the new address',
                 border: OutlineInputBorder(),
               ),
-              style: CustomTypography.Body1,
+              style: typography.Body1,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel', style: CustomTypography.Body1),
+                child: Text('Cancel', style: typography.Body1),
               ),
               TextButton(
                 onPressed: () {
@@ -1872,7 +2045,7 @@ class _LocationProfileState extends State<LocationProfile>
                 },
                 child: locationProfileProvider.isLoading
                     ? const CircularProgressIndicator()
-                    : Text('Save', style: CustomTypography.Body1),
+                    : Text('Save', style: typography.Body1),
               ),
             ],
           );
@@ -1891,7 +2064,7 @@ class _LocationProfileState extends State<LocationProfile>
         trailing: ElevatedButton(
           onPressed: onAddToSOV,
           style: ElevatedButton.styleFrom(
-            primary: isAdded ? Colors.green : Colors.blue,
+            backgroundColor: isAdded ? Colors.green : Colors.blue,
           ),
           child: Text(isAdded ? 'Added' : 'Add to SOV'),
         ),
@@ -1926,6 +2099,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   Widget _customInfoWindow(String title, String address, bool isAdded,
       Function() onAddToSOV, Function() onRemoveFromSOV) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1938,13 +2112,13 @@ class _LocationProfileState extends State<LocationProfile>
         children: [
           Text(
             title,
-            style: CustomTypography.H7.copyWith(
+            style: typography.H7.copyWith(
                 color: Colors.white, fontWeight: FontWeight.bold, height: 1.2),
           ),
           SizedBox(height: 16),
           Text(
             address,
-            style: CustomTypography.Body1.copyWith(color: Colors.white),
+            style: typography.Body1.copyWith(color: Colors.white),
           ),
           SizedBox(height: 8),
           Row(
@@ -1956,8 +2130,8 @@ class _LocationProfileState extends State<LocationProfile>
                   icon: Icon(Icons.delete, color: Colors.red),
                   label: Text('Remove',
                       style:
-                          CustomTypography.Body1.copyWith(color: Colors.red)),
-                  style: ElevatedButton.styleFrom(primary: Colors.black),
+                          typography.Body1.copyWith(color: Colors.red)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 ),
               if (!isAdded)
                 ElevatedButton.icon(
@@ -1965,8 +2139,8 @@ class _LocationProfileState extends State<LocationProfile>
                   icon: Icon(Icons.add, color: Colors.blue),
                   label: Text('Add to SOV',
                       style:
-                          CustomTypography.Body1.copyWith(color: Colors.blue)),
-                  style: ElevatedButton.styleFrom(primary: Colors.black),
+                          typography.Body1.copyWith(color: Colors.blue)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 ),
             ],
           )
@@ -1976,6 +2150,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Widget _buildGoogleSearchBar(BuildContext context) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.only(right: 16, top: 16),
       margin: EdgeInsets.only(right: 16),
@@ -1998,7 +2173,7 @@ class _LocationProfileState extends State<LocationProfile>
               focusNode: focusNode,
               decoration: InputDecoration(
                   hintText: 'Search location',
-                  hintStyle: CustomTypography.Body1,
+                  hintStyle: typography.Body1,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -2034,7 +2209,7 @@ class _LocationProfileState extends State<LocationProfile>
         itemBuilder: (context, suggestion) {
           print('Suggestion: ${suggestion.description}');
           return ListTile(
-            title: Text(suggestion.description, style: CustomTypography.Body1),
+            title: Text(suggestion.description, style: typography.Body1),
           );
         },
         onSelected: (suggestion) async {
@@ -2088,6 +2263,7 @@ class _LocationProfileState extends State<LocationProfile>
 
 
   void _addSelectedToSOV() async {
+    var typography = CustomTypography(context);
     var provider = Provider.of<LocationProfileProvider>(context, listen: false);
     var checkedSubdestinations =
         provider.subdestinations.where((sd) => sd.isChecked).toList();
@@ -2096,7 +2272,7 @@ class _LocationProfileState extends State<LocationProfile>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('Please select at least one subdestination',
-                style: CustomTypography.Body1)),
+                style: typography.Body1)),
       );
       return;
     }
@@ -2115,7 +2291,7 @@ class _LocationProfileState extends State<LocationProfile>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text('Selected subdestinations added to SOV',
-              style: CustomTypography.Body1)),
+              style: typography.Body1)),
     );
   }
 
@@ -2224,6 +2400,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   Widget _buildConfirmationBottomSheet(BuildContext context,
       Map<String, dynamic> placeDetails, double lat, double lng) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2237,12 +2414,12 @@ class _LocationProfileState extends State<LocationProfile>
           SizedBox(height: 16),
           Text(
             placeDetails['name'] ?? 'Selected Location',
-            style: CustomTypography.H6,
+            style: typography.H6,
           ),
           SizedBox(height: 8),
           Text(
             placeDetails['formatted_address'] ?? 'No address available',
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
           SizedBox(height: 16),
           Row(
@@ -2258,7 +2435,7 @@ class _LocationProfileState extends State<LocationProfile>
                   });
                   _goToTheInitialPin();
                 },
-                child: Text('Cancel', style: CustomTypography.Body1),
+                child: Text('Cancel', style: typography.Body1),
               ),
               SizedBox(width: 16),
               ElevatedButton(
@@ -2290,7 +2467,7 @@ class _LocationProfileState extends State<LocationProfile>
                   // Continue with existing functionality
                   _confirmLocationSelection(placeDetails, lat, lng);
                 },
-                child: Text('OK', style: CustomTypography.Body1),
+                child: Text('OK', style: typography.Body1),
               ),
             ],
           ),
@@ -2301,6 +2478,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   Future<void> _confirmLocationSelection(
       Map<String, dynamic> placeDetails, double lat, double lng) async {
+    var typography = CustomTypography(context);
     // Continue with the existing functionality to handle the selected location
     // This could include updating the state, making API calls, etc.
 
@@ -2363,7 +2541,7 @@ class _LocationProfileState extends State<LocationProfile>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to update location details',
-            style: CustomTypography.Body1),
+            style: typography.Body1),
       ));
     }
   }

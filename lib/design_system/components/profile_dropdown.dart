@@ -28,6 +28,7 @@ class ProfileDropdownWidget extends StatelessWidget {
 class ProfileMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return PopupMenuButton<int>(
       offset: Offset(0, 50),
       icon: ProfileImageWidget(),
@@ -44,14 +45,14 @@ class ProfileMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
 
           value: 1,
           child: Row(
             children: [
               Icon(Icons.edit),
               SizedBox(width: 8),
-              Text('Edit Profile', style: CustomTypography.Body1,),
+              Text('Edit Profile', style: typography.Body1,),
             ],
           ),
         ),

@@ -40,6 +40,7 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -48,7 +49,7 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
         InputDecorator(
           decoration: InputDecoration(
             labelText: 'Campus Ids',
-            labelStyle: CustomTypography.Body1,
+            labelStyle: typography.Body1,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -57,7 +58,7 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
             child: DropdownButton<String>(
               isExpanded: true,
               value: null,
-              hint: const Text('Select options', style: CustomTypography.Body1),
+              hint: Text('Select options', style: typography.Body1),
               onChanged: (_) {},
               items: widget.items.map((item) {
                 return DropdownMenuItem<String>(

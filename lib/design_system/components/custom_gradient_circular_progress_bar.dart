@@ -28,6 +28,7 @@ class CustomGradientCircularProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     // Determine colors based on value
     Color backgroundColor1;
     Color backgroundColor2;
@@ -76,7 +77,7 @@ class CustomGradientCircularProgressBar extends StatelessWidget {
             child: showText
                 ? Text(
               text,
-              style: CustomTypography.Subtitle2.copyWith(
+              style: typography.Subtitle2.copyWith(
                 color: textColor,
               ),
             )

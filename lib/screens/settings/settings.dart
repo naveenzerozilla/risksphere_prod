@@ -185,6 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context1) {
+    var typography = CustomTypography(context1);
     return Consumer<ThemeProvider>(
         builder: (buildContext, themeProvider, child) {
       return Scaffold(
@@ -247,7 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             child: Text(
                               'Cancel',
-                              style: CustomTypography.ButtonLarge,
+                              style: typography.ButtonLarge,
                             ),
                           ),
                         ),
@@ -260,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             type: ButtonType.filled,
                             child: Text(
                               'Save',
-                              style: CustomTypography.ButtonLarge,
+                              style: typography.ButtonLarge,
                             ),
                           ),
                         ),
@@ -303,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             isScrollable: true,
                             controller: _tabController,
                             labelStyle:
-                                CustomTypography.BottomNavigationActiveLabel,
+                                typography.BottomNavigationActiveLabel,
                             tabs: [
                               Tab(
                                 child: InkWell(
@@ -412,7 +413,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Name',
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -425,7 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Email',
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -456,13 +457,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                                     _selectedCountryCode = code;
                                   });
                                 },
-                                diallingCodeStyle: CustomTypography.Body1,
+                                diallingCodeStyle: typography.Body1,
                                 isShowInputField: false,
                                 dialogTheme: DialogThemeData(
-                                  style: CustomTypography.Body1,
+                                  style: typography.Body1,
                                   isShowFloatButton: false,
                                 ),
-                                countryNameStyle: CustomTypography.Body1,
+                                countryNameStyle: typography.Body1,
                                 isShowCountryName: false,
                                 onCountryChanged: (country) {
                                   print('This is the country code: $country');
@@ -510,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Company Name',
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -646,7 +647,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             child: Text(
                               'Cancel',
-                              style: CustomTypography.ButtonLarge,
+                              style: typography.ButtonLarge,
                             ),
                           ),
                         ),
@@ -659,7 +660,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             type: ButtonType.filled,
                             child: Text(
                               'Add Filter',
-                              style: CustomTypography.ButtonLarge,
+                              style: typography.ButtonLarge,
                             ),
                           ),
                         ),
@@ -693,6 +694,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getFeaturesUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -713,7 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     children: [
                       SizedBox(height: CustomSpacing.four),
                       Text('Feature Management',
-                          style: CustomTypography.H5_Regular),
+                          style: typography.H5_Regular),
                       featureProvider.isLoading
                           ? Container(
                               height: MediaQuery.of(context).size.height,
@@ -797,7 +799,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                                 featureProvider
                                                         .features[i]?.name ??
                                                     "",
-                                                style: CustomTypography.Body1),
+                                                style: typography.Body1),
                                           ],
                                         ),
                                         backgroundColor: Theme.of(context)
@@ -859,7 +861,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                                                     .name ??
                                                                 "",
                                                             style:
-                                                                CustomTypography
+                                                                typography
                                                                     .Subtitle1)),
                                                     Expanded(
                                                       flex: 1,
@@ -901,6 +903,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _addFeaturesUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Container(
         color: Theme.of(context).brightness == Brightness.dark
@@ -923,7 +926,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Configure Feature',
-                            style: CustomTypography.H5_Regular),
+                            style: typography.H5_Regular),
                         Form(
                           key: _formFeatureKey,
                           child: Column(
@@ -934,7 +937,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 controller: featureNameController,
                                 decoration: InputDecoration(
                                   labelText: 'Feature Name',
-                                  labelStyle: CustomTypography.Body1,
+                                  labelStyle: typography.Body1,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -951,7 +954,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 controller: featureTagController,
                                 decoration: InputDecoration(
                                   labelText: 'Feature Tag',
-                                  labelStyle: CustomTypography.Body1,
+                                  labelStyle: typography.Body1,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -982,7 +985,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                       ),
                                       child: Text(
                                         'Cancel',
-                                        style: CustomTypography.ButtonLarge,
+                                        style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -1020,7 +1023,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                             child: Text(
                                               'Save',
                                               style:
-                                                  CustomTypography.ButtonLarge,
+                                                  typography.ButtonLarge,
                                             ),
                                           ),
                                         ),
@@ -1044,14 +1047,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                         children: [
                           SizedBox(height: CustomSpacing.four),
                           Text('Add sub-feature(s)',
-                              style: CustomTypography.H7),
+                              style: typography.H7),
                           SizedBox(height: CustomSpacing.six),
                           // Sub-feature Name, Tag, Add Button
                           TextFormField(
                             controller: subFeatureNameController,
                             decoration: InputDecoration(
                               labelText: 'Sub feature Name',
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -1068,7 +1071,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             controller: subFeatureTagController,
                             decoration: InputDecoration(
                               labelText: 'Sub feature Tag',
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -1099,7 +1102,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   ),
                                   child: Text(
                                     'Cancel',
-                                    style: CustomTypography.ButtonLarge,
+                                    style: typography.ButtonLarge,
                                   ),
                                 ),
                               ),
@@ -1136,7 +1139,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   type: ButtonType.filled,
                                   child: Text(
                                     'Add',
-                                    style: CustomTypography.ButtonLarge,
+                                    style: typography.ButtonLarge,
                                   ),
                                 ),
                               ),
@@ -1168,6 +1171,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _featuresSwitchCardUI() {
+    var typography = CustomTypography(context);
     // Title, Subtitle is a Chip, Switch
     return Consumer<FeatureProvider>(builder: (_, featureProvider, child) {
       return Container(
@@ -1182,7 +1186,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     children: [
                       ListTile(
                         title: Text(featureProvider.subFeatures[i]?.name ?? "",
-                            style: CustomTypography.Body1),
+                            style: typography.Body1),
                         subtitle: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -1217,6 +1221,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getRolesUI() {
+    var typography = CustomTypography(context);
     return Consumer<role.RoleProvider>(builder: (context, roleProvider, child) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1224,7 +1229,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           SizedBox(height: CustomSpacing.four),
           Container(
               padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text('Role Manager', style: CustomTypography.H5_Regular)),
+              child: Text('Role Manager', style: typography.H5_Regular)),
           SizedBox(height: CustomSpacing.four),
           Expanded(
             child: ListView.builder(
@@ -1240,18 +1245,19 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _addRoleUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: CustomSpacing.four),
-          Text('Configure Role', style: CustomTypography.H5_Regular),
+          Text('Configure Role', style: typography.H5_Regular),
           SizedBox(height: CustomSpacing.four),
           // Role Name, Description, Tag, Save Button
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Role Name',
-              labelStyle: CustomTypography.Body1,
+              labelStyle: typography.Body1,
               border: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1265,7 +1271,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             maxLines: 3,
             decoration: InputDecoration(
               labelText: 'Description',
-              labelStyle: CustomTypography.Body1,
+              labelStyle: typography.Body1,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1275,7 +1281,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Feature Tag',
-              labelStyle: CustomTypography.Body1,
+              labelStyle: typography.Body1,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1284,13 +1290,13 @@ class _SettingsScreenState extends State<SettingsScreen>
           SizedBox(height: CustomSpacing.two),
 
           SizedBox(height: CustomSpacing.six),
-          Text('Add sub-feature(s)', style: CustomTypography.H7),
+          Text('Add sub-feature(s)', style: typography.H7),
           SizedBox(height: CustomSpacing.six),
           // Sub-feature Name, Tag, Add Button
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Sub feature Name',
-              labelStyle: CustomTypography.Body1,
+              labelStyle: typography.Body1,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1300,7 +1306,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Sub feature Tag',
-              labelStyle: CustomTypography.Body1,
+              labelStyle: typography.Body1,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1323,7 +1329,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   child: Text(
                     'Cancel',
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -1336,7 +1342,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   type: ButtonType.filled,
                   child: Text(
                     'Add',
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -1350,6 +1356,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _roleCardUI(int index) {
+    var typography = CustomTypography(context);
     return Consumer<role.RoleProvider>(builder: (context, roleProvider, child) {
       return Container(
         color: Theme.of(context).brightness == Brightness.dark
@@ -1363,7 +1370,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(roleProvider.roles[index].name ?? "",
-                    style: CustomTypography.Body1),
+                    style: typography.Body1),
                 Row(
                   children: [
                     // configure icon and status switch
@@ -1412,31 +1419,33 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getChatsUI() {
+    var typography = CustomTypography(context);
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
             child: Center(
                 child: Text('API Error',
-                    style: CustomTypography.Subtitle1.copyWith(
+                    style: typography.Subtitle1.copyWith(
                         color: Theme.of(context).colorScheme.error)))),
       ],
     );
   }
 
   _getEmailUI() {
+    var typography = CustomTypography(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: CustomSpacing.four),
-        Text('Email Setup', style: CustomTypography.H5_Regular),
+        Text('Email Setup', style: typography.H5_Regular),
         SizedBox(height: CustomSpacing.four),
         // TabBar for Notifications, Help Desk, Admin and Contact Us
         TabBar(
           isScrollable: true,
           controller: _emailTabController,
-          labelStyle: CustomTypography.BottomNavigationActiveLabel,
+          labelStyle: typography.BottomNavigationActiveLabel,
           tabs: [
             Tab(
               text: 'Notifications',
@@ -1494,7 +1503,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               _selectedEmailOption = EmailOptions.values[index];
                             });
                           },
-                          selectedLabelTextStyle: CustomTypography.Subtitle1.copyWith(color: AppColors.primaryMain),
+                          selectedLabelTextStyle: typography.Subtitle1.copyWith(color: AppColors.primaryMain),
                           useIndicator: false,
                           labelType: NavigationRailLabelType.all,
                           destinations: EmailOptions.values
@@ -1513,7 +1522,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   },
                                   child: Text(
                                     _getName(option),
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                   ),
                                 ),
                               ),
@@ -1538,7 +1547,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: 'Email ID',
-                            labelStyle: CustomTypography.Body1,
+                            labelStyle: typography.Body1,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1548,7 +1557,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            labelStyle: CustomTypography.Body1,
+                            labelStyle: typography.Body1,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1559,7 +1568,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: 'SMTP Server',
-                            labelStyle: CustomTypography.Body1,
+                            labelStyle: typography.Body1,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1569,7 +1578,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: 'Port Number',
-                            labelStyle: CustomTypography.Body1,
+                            labelStyle: typography.Body1,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1588,7 +1597,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                type: ButtonType.filled, child: Text('Save', style: CustomTypography.ButtonLarge,),
+                                type: ButtonType.filled, child: Text('Save', style: typography.ButtonLarge,),
                               ),
                             ),
                           ],
@@ -1606,6 +1615,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getEmailNotificationFieldsUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Consumer<EmailProvider>(builder: (context, emailProvider, child) {
         return Column(
@@ -1616,7 +1626,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: emailNotificationController,
               decoration: InputDecoration(
                 labelText: 'Email ID',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1627,7 +1637,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: passwordNotificationController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1639,7 +1649,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: smtpNotificationController,
               decoration: InputDecoration(
                 labelText: 'SMTP Server',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1650,7 +1660,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: portNotificationController,
               decoration: InputDecoration(
                 labelText: 'Port Number',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1680,7 +1690,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     child: Text(
                       'Cancel',
-                      style: CustomTypography.ButtonLarge,
+                      style: typography.ButtonLarge,
                     ),
                   ),
                 ),
@@ -1734,7 +1744,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           type: ButtonType.filled,
                           child: Text(
                             'Save',
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                 ),
@@ -1747,6 +1757,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getEmailHelpDeskFieldsUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Consumer<EmailProvider>(builder: (context, emailProvider, child) {
         return Column(
@@ -1757,7 +1768,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: emailHelpDeskController,
               decoration: InputDecoration(
                 labelText: 'Email ID',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1768,7 +1779,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: passwordHelpDeskController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1780,7 +1791,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: smtpHelpDeskController,
               decoration: InputDecoration(
                 labelText: 'SMTP Server',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1791,7 +1802,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: portHelpDeskController,
               decoration: InputDecoration(
                 labelText: 'Port Number',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1821,7 +1832,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     child: Text(
                       'Cancel',
-                      style: CustomTypography.ButtonLarge,
+                      style: typography.ButtonLarge,
                     ),
                   ),
                 ),
@@ -1862,7 +1873,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           type: ButtonType.filled,
                           child: Text(
                             'Save',
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                 ),
@@ -1875,6 +1886,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getEmailAdminFieldsUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Consumer<EmailProvider>(builder: (context, emailProvider, child) {
         return Column(
@@ -1885,7 +1897,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: emailAdminController,
               decoration: InputDecoration(
                 labelText: 'Email ID',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1896,7 +1908,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: passwordAdminController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1908,7 +1920,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: smtpAdminController,
               decoration: InputDecoration(
                 labelText: 'SMTP Server',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1919,7 +1931,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: portAdminController,
               decoration: InputDecoration(
                 labelText: 'Port Number',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1949,7 +1961,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     child: Text(
                       'Cancel',
-                      style: CustomTypography.ButtonLarge,
+                      style: typography.ButtonLarge,
                     ),
                   ),
                 ),
@@ -1989,7 +2001,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           type: ButtonType.filled,
                           child: Text(
                             'Save',
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                 ),
@@ -2002,6 +2014,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _getEmailSupportFieldsUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Consumer<EmailProvider>(builder: (context, emailProvider, child) {
         return Column(
@@ -2012,7 +2025,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: emailSupportController,
               decoration: InputDecoration(
                 labelText: 'Email ID',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -2023,7 +2036,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: passwordSupportController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -2035,7 +2048,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: smtpSupportController,
               decoration: InputDecoration(
                 labelText: 'SMTP Server',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -2046,7 +2059,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               controller: portSupportController,
               decoration: InputDecoration(
                 labelText: 'Port Number',
-                labelStyle: CustomTypography.Body1,
+                labelStyle: typography.Body1,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -2077,7 +2090,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     child: Text(
                       'Cancel',
-                      style: CustomTypography.ButtonLarge,
+                      style: typography.ButtonLarge,
                     ),
                   ),
                 ),
@@ -2117,7 +2130,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           type: ButtonType.filled,
                           child: Text(
                             'Save',
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                 ),
@@ -2130,6 +2143,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _networkingCardUI() {
+    var typography = CustomTypography(context);
     //profile avatar, role, company, rating out of 5, actions are in popupmenu (send message, connections, remove connection)
     return Container(
       margin: EdgeInsets.only(bottom: CustomSpacing.two),
@@ -2153,10 +2167,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Amit Didwania', style: CustomTypography.Body1),
+                        Text('Amit Didwania', style: typography.Body1),
                         SizedBox(height: CustomSpacing.two),
-                        Text('Risk Manager', style: CustomTypography.Body2),
-                        Text('Green', style: CustomTypography.Body2),
+                        Text('Risk Manager', style: typography.Body2),
+                        Text('Green', style: typography.Body2),
                         SizedBox(height: CustomSpacing.two),
                         RatingBar(rating: 4, maxRating: 5),
                       ],
@@ -2192,7 +2206,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           SizedBox(width: CustomSpacing.two),
                           Text(
                             'Connect',
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ],
                       ),
@@ -2209,6 +2223,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   _addNetworkDialogUI() {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2221,10 +2236,10 @@ class _SettingsScreenState extends State<SettingsScreen>
             backgroundImage: AssetImage('assets/images/loginImage.png'),
           ),
           SizedBox(height: CustomSpacing.four),
-          Text('Amit Didwania', style: CustomTypography.H5_Regular),
+          Text('Amit Didwania', style: typography.H5_Regular),
           SizedBox(height: CustomSpacing.two),
-          Text('Risk Manager', style: CustomTypography.Body2),
-          Text('Green', style: CustomTypography.Body2),
+          Text('Risk Manager', style: typography.Body2),
+          Text('Green', style: typography.Body2),
           SizedBox(height: CustomSpacing.two),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2238,7 +2253,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text('Personalized Message (Optional)',
-                  style: CustomTypography.Body2),
+                  style: typography.Body2),
             ],
           ),
           TextFormField(
@@ -2267,7 +2282,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   child: Text(
                     'Cancel',
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -2280,7 +2295,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   type: ButtonType.filled,
                   child: Text(
                     'Send',
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),

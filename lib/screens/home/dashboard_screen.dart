@@ -108,42 +108,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-      return Scaffold(
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            // Background image
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/mesh.png',
-                fit: BoxFit.cover,
+    var typography = CustomTypography(context);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
+              setState(() {
+                _isExpanded = isExpanded;
+              });
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          drawer: CustomDrawer(),
+          body: Stack(
+            children: [
+              // Background image
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/mesh.png',
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
 
-            _homeScreenBody(),
-          ],
-        ),
-      );
-    });
+              _homeScreenBody(typography),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
-  _homeScreenBody() {
+  _homeScreenBody(CustomTypography typography) {
     return Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, child) {
       return dashboardProvider.isLoading
@@ -169,12 +172,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       LanguageService.getTranslated(
                           context, 'usermanagement_dash_overview'),
-                      style: CustomTypography.H5_Regular,
+                      style: typography.H5_Regular,
                     ),
                     SizedBox(height: CustomSpacing.six),
                     !showTotalCorporates
                         ? SizedBox()
                         : _overviewCardHorizontal(
+
                             title: LanguageService.getTranslated(
                                 context, 'usermanagement_dash_total_corps'),
                             amount: dashboardProvider
@@ -201,7 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   child: Text(
                                     _getTotalCorporatePercentage(
                                         dashboardProvider),
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                     maxLines: 2,
                                   ),
                                 ),
@@ -239,7 +243,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Flexible(
                                   child: Text(
                                     _getSignupsPercentage(dashboardProvider),
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                   ),
                                 ),
                               ],
@@ -277,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Text(
                                   LanguageService.getTranslated(
                                       context, 'usermanagement_dash_verification_req_list_btn'),
-                                  style: CustomTypography.Body1,
+                                  style: typography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
                                 Icon(
@@ -333,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Text(
                                   LanguageService.getTranslated(
                                       context, 'usermanagement_dash_connection_req_list_btn'),
-                                  style: CustomTypography.Body1,
+                                  style: typography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
                                 Icon(
@@ -366,7 +370,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   title: Text(
                                     LanguageService.getTranslated(
                                         context, 'usermanagement_dash_company_onboarding_status_title'),
-                                    style: CustomTypography.Body1,
+                                    style: typography.Body1,
                                   ),
                                 ),
                                 expandedChild:
@@ -393,7 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   title: Text(
                                     LanguageService.getTranslated(
                                         context, 'usermanagement_dash_user_on_boarding_status'),
-                                    style: CustomTypography.Body1,
+                                    style: typography.Body1,
                                   ),
                                 ),
                                 expandedChild:
@@ -414,6 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       required String amount,
       required String icon,
       required Row bottomWidget}) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -453,7 +458,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(height: CustomSpacing.two),
                     Text(
                       title,
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     SizedBox(height: CustomSpacing.two),
                   ],
@@ -465,7 +470,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       amount,
-                      style: CustomTypography.H4,
+                      style: typography.H4,
                     ),
                   ],
                 ),
@@ -576,6 +581,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   _expandedCompanyOnboardingStatsWidget(DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -607,7 +613,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_dash_company_onboarding_status_title'),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
               ],
@@ -681,7 +687,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _getPercentConversions(
                         dashboardProvider.dashboardModel?.companyPercent ??
                             "0"),
-                    style: CustomTypography.H4.copyWith(
+                    style: typography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
@@ -689,7 +695,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_dash_conversions'),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Row(
@@ -701,7 +707,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               TextSpan(
                                 text: LanguageService.getTranslated(
                                     context, 'usermanagement_dash_forcast_part_1'),
-                                style: CustomTypography.Body1.copyWith(
+                                style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
@@ -709,7 +715,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 text:
                                     LanguageService.getTranslated(
                                         context, 'usermanagement_dash_forcast_part_2'),
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ],
                           ),
@@ -728,13 +734,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget companyOnboardingStatsProgressCards(
       CompanyType corporate, DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           corporate.name ?? '',
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
         SizedBox(height: CustomSpacing.two),
         Row(
@@ -750,7 +757,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(width: CustomSpacing.two),
             Text(
               corporate.count.toString(),
-              style: CustomTypography.Subtitle1,
+              style: typography.Subtitle1,
             ),
           ],
         ),
@@ -845,6 +852,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   _expandedUserOnboardingStatsWidget(DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -876,7 +884,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_dash_user_on_boarding_status'),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
               ],
@@ -947,7 +955,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     _getPercentConversions(
                         dashboardProvider.dashboardModel?.rolePercent ?? "0"),
-                    style: CustomTypography.H4.copyWith(
+                    style: typography.H4.copyWith(
                       color: Colors.green,
                     ),
                   ),
@@ -955,7 +963,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_dash_conversions'),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Row(
@@ -967,7 +975,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               TextSpan(
                                 text: LanguageService.getTranslated(
                                     context, 'usermanagement_dash_forcast_part_1'),
-                                style: CustomTypography.Body1.copyWith(
+                                style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
@@ -975,7 +983,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 text:
                                     LanguageService.getTranslated(
                                         context, 'usermanagement_dash_forcast_part_2'),
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ],
                           ),
@@ -994,13 +1002,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget userOnboardingStatsProgressCards(
       DashboardRoles role, DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           role.name ?? '',
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
         SizedBox(height: CustomSpacing.two),
         Row(
@@ -1016,7 +1025,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(width: CustomSpacing.two),
             Text(
               role.count.toString(),
-              style: CustomTypography.Subtitle1,
+              style: typography.Subtitle1,
             ),
           ],
         ),
@@ -1046,7 +1055,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     String changeText = changePercentage >= 0
         ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
-        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}}';
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
     String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
 
@@ -1060,7 +1069,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     String changeText = changePercentage >= 0
         ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
-        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}}';
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
     String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
 

@@ -75,6 +75,7 @@ class _MapFullScreenState extends State<MapFullScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('Map Full Screen'),
@@ -121,7 +122,7 @@ class _MapFullScreenState extends State<MapFullScreen> {
                 Navigator.pop(context);
               },
               icon: Icon(Icons.cancel),
-              label: Text('Cancel', style: CustomTypography.ButtonLarge),
+              label: Text('Cancel', style: typography.ButtonLarge),
               backgroundColor: AppColors.paperElavation25,
             ),
             FloatingActionButton.extended(
@@ -129,7 +130,7 @@ class _MapFullScreenState extends State<MapFullScreen> {
                 // Submit logic
               },
               icon: Icon(Icons.check),
-              label: Text('Submit', style: CustomTypography.ButtonLarge),
+              label: Text('Submit', style: typography.ButtonLarge),
               backgroundColor: AppColors.paperElavation25,
             ),
           ],

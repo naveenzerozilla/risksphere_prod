@@ -61,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -86,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           LanguageService.getTranslated(
                               context, "login_image_text"),
-                          style: CustomTypography.H5_Regular,
+                          style: typography.H5_Regular,
                         ),
                       ),
                     ),
@@ -112,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Flexible(
                             child: Text(
                               country.name,
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                             ),
                           ),
                         ],
@@ -155,6 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _loginForm() {
+    var typography = CustomTypography(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 24),
       child: Column(
@@ -162,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Text(
             LanguageService.getTranslated(context, "login_title"),
-            style: CustomTypography.H4,
+            style: typography.H4,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: CustomSpacing.eight),
@@ -268,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 LanguageService.getTranslated(
                     context, "register_non_corporate_register_manually"),
-                style: CustomTypography.Subtitle1.copyWith(
+                style: typography.Subtitle1.copyWith(
                     color: Theme.of(context).colorScheme.onSurface),
               ),
               SizedBox(width: CustomSpacing.three),
@@ -379,7 +381,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                         LanguageService.getTranslated(
                             context, 'login_forgot_password'),
-                        style: CustomTypography.Subtitle1.copyWith(
+                        style: typography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
           /*SizedBox(height: CustomSpacing.four),
@@ -486,7 +488,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text(
                               LanguageService.getTranslated(
                                   context, 'login_submit_button'),
-                              style: CustomTypography.ButtonLarge.copyWith(
+                              style: typography.ButtonLarge.copyWith(
                                   color: Colors.black),
                             ),
                           ),
@@ -512,18 +514,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                     LanguageService.getTranslated(
                         context, 'login_dont_hv_account'),
-                    style: CustomTypography.Body1.copyWith(
+                    style: typography.Body1.copyWith(
                         color: Theme.of(context).colorScheme.onSurface)),
                 Text(
                   ' ',
-                  style: CustomTypography.Body1.copyWith(
+                  style: typography.Body1.copyWith(
                       color: Theme.of(context).colorScheme.onSurface),
                 ),
                 Flexible(
                   child: Text(
                       LanguageService.getTranslated(
                           context, 'login_register_now'),
-                      style: CustomTypography.Subtitle1.copyWith(
+                      style: typography.Subtitle1.copyWith(
                           color: AppColors.primaryMain)),
                 ),
               ],

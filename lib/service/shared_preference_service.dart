@@ -54,6 +54,18 @@ class SharedPreferenceService {
   static const String SETROL = 'SETROL'; // Placeholder for future use
   static const String NCMMT = 'NCMMT'; // My Teams for NCM
   static const String EMPMT = 'EMPMT'; // My Teams for EMP
+  static const String FCMTK = 'FCMTK'; // FCM Token
+
+  // Save and get FCM Token
+  static Future<void> saveFcmToken(String fcmToken) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString(FCMTK, fcmToken);
+  }
+
+  static Future<String?> getFcmToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(FCMTK);
+  }
 
   static Future<void> setClaims(Map<String, dynamic> claims) async {
     await AuthNotifier().getAllClaims();

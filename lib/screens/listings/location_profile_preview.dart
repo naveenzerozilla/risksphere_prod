@@ -206,6 +206,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   Future<void> _captureAndUploadMapScreenshot() async {
+    var typography = CustomTypography(context);
     // Request storage permission
     // Log initial permission status
     PermissionStatus initialStatus =
@@ -242,7 +243,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to capture screenshot',
-                style: CustomTypography.Body1),
+                style: typography.Body1),
           ),
         );
       }
@@ -250,14 +251,14 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-          Text('Storage permission denied', style: CustomTypography.Body1),
+          Text('Storage permission denied', style: typography.Body1),
         ),
       );
     } else if (status.isPermanentlyDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Storage permission permanently denied',
-              style: CustomTypography.Body1),
+              style: typography.Body1),
           action: SnackBarAction(
             label: 'Settings',
             onPressed: () {
@@ -271,6 +272,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
       return Scaffold(
         backgroundColor: themeProvider.getTheme.colorScheme.background,
@@ -296,12 +298,12 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                 ListTile(
                 title: Text(
                   'Seems this Address already exists in the database!!',
-                  style: CustomTypography.Subtitle1.copyWith(
+                  style: typography.Subtitle1.copyWith(
                       fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   'Please check and confirm!!',
-                  style: CustomTypography.Body1,
+                  style: typography.Body1,
                 ),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),
@@ -450,14 +452,14 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                       icon: Icon(Icons.delete, color: Colors.red),
                       label:
                       Text('Remove', style: TextStyle(color: Colors.red)),
-                      style: ElevatedButton.styleFrom(primary: Colors.black),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                     ),
                   ElevatedButton.icon(
                     onPressed: () => _addToSOV(_selectedMarker!.value),
                     icon: Icon(Icons.add, color: Colors.blue),
                     label: Text('Add to SOV',
                         style: TextStyle(color: Colors.blue)),
-                    style: ElevatedButton.styleFrom(primary: Colors.black),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                   ),
                 ],
               ),
@@ -502,6 +504,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   Widget _buildBottomSheet() {
+    var typography = CustomTypography(context);
     return Consumer<LocationProfileProvider>(
         builder: (context, locationProfileProvider, child) {
           return AnimatedContainer(
@@ -521,7 +524,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                     ListTile(
                       title: Text(
                         '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
-                        style: CustomTypography.Subtitle1.copyWith(
+                        style: typography.Subtitle1.copyWith(
                             fontWeight: FontWeight.w500),
                       ),
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -581,7 +584,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                                     locationProfileProvider.result?.locationName ??
                                         '',
                                     style:
-                                    CustomTypography.H6.copyWith(height: 1.2),
+                                    typography.H6.copyWith(height: 1.2),
                                   ),
                                 ),
                               ],
@@ -612,16 +615,16 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                                       TextSpan(
                                         text:
                                         'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                        style: CustomTypography.Subtitle1,
+                                        style: typography.Subtitle1,
                                       ),
                                       // Comma seperated
                                       TextSpan(
                                         text:
                                         'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                        style: CustomTypography.Subtitle1,
+                                        style: typography.Subtitle1,
                                       ),
                                     ],
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                   ),
                                   child: Icon(
                                     Icons.info,
@@ -659,7 +662,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                               children: [
                                 Text(
                                   'Address',
-                                  style: CustomTypography.H6.copyWith(height: 1.2),
+                                  style: typography.H6.copyWith(height: 1.2),
                                 ),
                               ],
                             ),
@@ -667,7 +670,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                           ListTile(
                             title: Text(
                               locationProfileProvider.result?.address ?? '',
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                             ),
                             contentPadding: EdgeInsets.symmetric(horizontal: 16),
 
@@ -681,7 +684,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                                 Flexible(
                                   child: Text(
                                     'Is this the same location?',
-                                    style: CustomTypography.H6.copyWith(height: 1.2),
+                                    style: typography.H6.copyWith(height: 1.2),
                                   ),
                                 ),
                               ],
@@ -696,7 +699,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                                   Navigator.of(context).pop();
                                 },
                                 child: Text('No',
-                                    style: CustomTypography.Body1),
+                                    style: typography.Body1),
                               ),
                               Consumer<LocationProfileProvider>(
                                 builder: (context, locationProfileProvider, child) {
@@ -711,7 +714,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
                                     },
                                     child: Text('Yes',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                   );
                                 }
                               ),
@@ -729,6 +732,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   Widget _locationProfileBody() {
+    var typography = CustomTypography(context);
     return Consumer<LocationProfileProvider>(
         builder: (context, locationProfileProvider, child) {
           return Container(
@@ -741,7 +745,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                 ListTile(
                   title: Text(
                     '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''}',
-                    style: CustomTypography.H6.copyWith(height: 1.2),
+                    style: typography.H6.copyWith(height: 1.2),
                   ),
                   trailing: IconButton(
                     icon: Icon(Icons.close),
@@ -762,7 +766,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                             Flexible(
                               child: Text(
                                 locationProfileProvider.result?.locationName ?? '',
-                                style: CustomTypography.H6.copyWith(height: 1.2),
+                                style: typography.H6.copyWith(height: 1.2),
                               ),
                             ),
                           ],
@@ -792,16 +796,16 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                                   TextSpan(
                                     text:
                                     'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                   ),
                                   // Comma seperated
                                   TextSpan(
                                     text:
                                     'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                    style: CustomTypography.Subtitle1,
+                                    style: typography.Subtitle1,
                                   ),
                                 ],
-                                style: CustomTypography.Subtitle1,
+                                style: typography.Subtitle1,
                               ),
                               child: Icon(
                                 Icons.info,
@@ -837,7 +841,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                           children: [
                             Text(
                               'Address',
-                              style: CustomTypography.H6.copyWith(height: 1.2),
+                              style: typography.H6.copyWith(height: 1.2),
                             ),
                           ],
                         ),
@@ -845,7 +849,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                       ListTile(
                         title: Text(
                           locationProfileProvider.result?.address ?? '',
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: 16),
 
@@ -859,7 +863,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                             Flexible(
                               child: Text(
                                 'Is this the same location?',
-                                style: CustomTypography.H6.copyWith(height: 1.2),
+                                style: typography.H6.copyWith(height: 1.2),
                               ),
                             ),
                           ],
@@ -873,14 +877,14 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
-                            child: Text('No', style: CustomTypography.Body1),
+                            child: Text('No', style: typography.Body1),
                           ),
                           CustomButton(
                             type: ButtonType.elevated,
                             onPressed: () {
                               locationProfileProvider.autocompleteUserConfirmation(context, widget.accountId, widget.subAccountId, widget.sovId, widget.toDeleteLocationId,);
                             },
-                            child: Text('Yes', style: CustomTypography.Body1),
+                            child: Text('Yes', style: typography.Body1),
                           ),
                         ],
                       ),
@@ -1100,11 +1104,12 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        var typography = CustomTypography(context);
         return AlertDialog(
-          title: const Text('Add Sub-Destinations', style: CustomTypography.H6),
-          content: const Text(
+          title: Text('Add Sub-Destinations', style: typography.H6),
+          content: Text(
               'Do you want to get sub-destinations for this location?',
-              style: CustomTypography.Body1),
+              style: typography.Body1),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1145,6 +1150,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   void _editName(LocationProfileProvider provider) {
+    var typography = CustomTypography(context);
     _nameController.text = provider.result?.locationName ?? '';
 
     showDialog(
@@ -1153,7 +1159,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         return Consumer<LocationProfileProvider>(
             builder: (context, locationProfileProvider, child) {
               return AlertDialog(
-                title: Text('Edit Name', style: CustomTypography.H6),
+                title: Text('Edit Name', style: typography.H6),
                 content: Container(
                   margin: EdgeInsets.only(top: 16),
                   child: TextField(
@@ -1165,13 +1171,13 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                             color: Theme.of(context).colorScheme.primary),
                       ),
                     ),
-                    style: CustomTypography.Body1,
+                    style: typography.Body1,
                   ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: CustomTypography.Body1),
+                    child: Text('Cancel', style: typography.Body1),
                   ),
                   TextButton(
                     onPressed: () {
@@ -1191,7 +1197,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                     },
                     child: locationProfileProvider.isLoading
                         ? const CircularProgressIndicator()
-                        : Text('Save', style: CustomTypography.Body1),
+                        : Text('Save', style: typography.Body1),
                   ),
                 ],
               );
@@ -1201,6 +1207,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   void _editAddress(LocationProfileProvider provider) {
+    var typography = CustomTypography(context);
     _addressController.text = provider.result?.address ?? '';
 
     showDialog(
@@ -1210,19 +1217,19 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
             builder: (context, locationProfileProvider, child) {
               return AlertDialog(
                 title: Text('Edit address & run geocoding',
-                    style: CustomTypography.H6.copyWith(height: 1.2)),
+                    style: typography.H6.copyWith(height: 1.2)),
                 content: TextField(
                   controller: _addressController,
                   decoration: InputDecoration(
                     hintText: 'Enter the new address',
                     border: OutlineInputBorder(),
                   ),
-                  style: CustomTypography.Body1,
+                  style: typography.Body1,
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: CustomTypography.Body1),
+                    child: Text('Cancel', style: typography.Body1),
                   ),
                   TextButton(
                     onPressed: () {
@@ -1242,7 +1249,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                     },
                     child: locationProfileProvider.isLoading
                         ? const CircularProgressIndicator()
-                        : Text('Save', style: CustomTypography.Body1),
+                        : Text('Save', style: typography.Body1),
                   ),
                 ],
               );
@@ -1261,7 +1268,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         trailing: ElevatedButton(
           onPressed: onAddToSOV,
           style: ElevatedButton.styleFrom(
-            primary: isAdded ? Colors.green : Colors.blue,
+            backgroundColor: isAdded ? Colors.green : Colors.blue,
           ),
           child: Text(isAdded ? 'Added' : 'Add to SOV'),
         ),
@@ -1296,6 +1303,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
   Widget _customInfoWindow(String title, String address, bool isAdded,
       Function() onAddToSOV, Function() onRemoveFromSOV) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1308,13 +1316,13 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         children: [
           Text(
             title,
-            style: CustomTypography.H7.copyWith(
+            style: typography.H7.copyWith(
                 color: Colors.white, fontWeight: FontWeight.bold, height: 1.2),
           ),
           SizedBox(height: 16),
           Text(
             address,
-            style: CustomTypography.Body1.copyWith(color: Colors.white),
+            style: typography.Body1.copyWith(color: Colors.white),
           ),
           SizedBox(height: 8),
           Row(
@@ -1326,8 +1334,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                   icon: Icon(Icons.delete, color: Colors.red),
                   label: Text('Remove',
                       style:
-                      CustomTypography.Body1.copyWith(color: Colors.red)),
-                  style: ElevatedButton.styleFrom(primary: Colors.black),
+                      typography.Body1.copyWith(color: Colors.red)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 ),
               if (!isAdded)
                 ElevatedButton.icon(
@@ -1335,8 +1343,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                   icon: Icon(Icons.add, color: Colors.blue),
                   label: Text('Add to SOV',
                       style:
-                      CustomTypography.Body1.copyWith(color: Colors.blue)),
-                  style: ElevatedButton.styleFrom(primary: Colors.black),
+                      typography.Body1.copyWith(color: Colors.blue)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 ),
             ],
           )
@@ -1346,6 +1354,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   Widget _buildGoogleSearchBar(BuildContext context) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.only(right: 16, top: 16),
       margin: EdgeInsets.only(right: 16),
@@ -1368,7 +1377,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
               focusNode: focusNode,
               decoration: InputDecoration(
                   hintText: 'Search location',
-                  hintStyle: CustomTypography.Body1,
+                  hintStyle: typography.Body1,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -1404,7 +1413,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         itemBuilder: (context, suggestion) {
           print('Suggestion: ${suggestion.description}');
           return ListTile(
-            title: Text(suggestion.description, style: CustomTypography.Body1),
+            title: Text(suggestion.description, style: typography.Body1),
           );
         },
         onSelected: (suggestion) async {
@@ -1548,6 +1557,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
   void _addSelectedToSOV() async {
+    var typography = CustomTypography(context);
     var provider = Provider.of<LocationProfileProvider>(context, listen: false);
     var checkedSubdestinations =
     provider.subdestinations.where((sd) => sd.isChecked).toList();
@@ -1556,7 +1566,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('Please select at least one subdestination',
-                style: CustomTypography.Body1)),
+                style: typography.Body1)),
       );
       return;
     }
@@ -1575,7 +1585,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text('Selected subdestinations added to SOV',
-              style: CustomTypography.Body1)),
+              style: typography.Body1)),
     );
   }
 
@@ -1684,6 +1694,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
   Widget _buildConfirmationBottomSheet(BuildContext context,
       Map<String, dynamic> placeDetails, double lat, double lng) {
+    var typography = CustomTypography(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1697,12 +1708,12 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
           SizedBox(height: 16),
           Text(
             placeDetails['name'] ?? 'Selected Location',
-            style: CustomTypography.H6,
+            style: typography.H6,
           ),
           SizedBox(height: 8),
           Text(
             placeDetails['formatted_address'] ?? 'No address available',
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
           SizedBox(height: 16),
           Row(
@@ -1718,7 +1729,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                   });
                   _goToTheInitialPin();
                 },
-                child: Text('Cancel', style: CustomTypography.Body1),
+                child: Text('Cancel', style: typography.Body1),
               ),
               SizedBox(width: 16),
               ElevatedButton(
@@ -1750,7 +1761,7 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
                   // Continue with existing functionality
                   _confirmLocationSelection(placeDetails, lat, lng);
                 },
-                child: Text('OK', style: CustomTypography.Body1),
+                child: Text('OK', style: typography.Body1),
               ),
             ],
           ),

@@ -177,6 +177,7 @@ class SOVListProvider extends ChangeNotifier {
 
   /// Fetch sov list with pagination and search query
   Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
+    var typography = CustomTypography(context);
     try {
       if (page == 0) {
         isLoading = true;
@@ -212,14 +213,14 @@ class SOVListProvider extends ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -227,12 +228,14 @@ class SOVListProvider extends ChangeNotifier {
 
   /// Rename sov
   Future<void> renameSov(BuildContext context, String accountId, String subAccountId, String sovId, String newName) async {
+    var typography = CustomTypography(context);
     try {
       isRenameLoading = true;
 
       ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
       var response = await apiService.patch({'data': {
         'sov_id': sovId,  // Updated field
+        "rename_sov":true,
         'name': newName,  // Updated field
       }});
       log(response.toString());
@@ -247,18 +250,19 @@ class SOVListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
     } catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
     }
   }
 
   /// Duplicate sov
-  Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId, String sovId) async {
+  Future<void> duplicateSov(BuildContext context, String accountId, String subAccountId, String sovId) async {
+    var typography = CustomTypography(context);
     try {
       isDuplicateLoading = true;
 
@@ -276,15 +280,19 @@ class SOVListProvider extends ChangeNotifier {
       sovList = [duplicatedSovAccount, ...sovList];
 
       isDuplicateLoading = false;
-    } on BackendException catch (e) {
+    } on BackendException catch (e, stack) {
       isDuplicateLoading = false;
+      print(e.message);
+      print(stack);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
-    } catch (e) {
+    } catch (e, stack) {
+      print(e);
+      print(stack);
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     }
   }
@@ -292,6 +300,7 @@ class SOVListProvider extends ChangeNotifier {
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, String accountId, String subAccountId, {required bool showLocationCount, required bool showOverallScore, required String type}) async {
+    var typography = CustomTypography(context);
     try {
     if (type == 'location_count') {
         showLocationCountLoading = true;
@@ -314,14 +323,14 @@ class SOVListProvider extends ChangeNotifier {
       showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
       return false;
     } catch (e) {
       showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
       return false;
     }
@@ -329,6 +338,7 @@ class SOVListProvider extends ChangeNotifier {
 
   /// Fetch autocomplete sov list
   Future<void> fetchAutoCompleteSubAccountList(BuildContext context, String searchQuery) async {
+    var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
 
@@ -345,11 +355,11 @@ class SOVListProvider extends ChangeNotifier {
       print("Updated autoCompleteAccountList: $autoCompleteSovList");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
     } finally {
       isAutoCompleteLoading = false;
@@ -358,6 +368,7 @@ class SOVListProvider extends ChangeNotifier {
 
   /// Add sov
   Future<void> addSubAccount(BuildContext context, String accountId, String subAccountId, String accountName) async {
+    var typography = CustomTypography(context);
     try {
       isAddAccountLoading = true;
 
@@ -377,12 +388,12 @@ class SOVListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     }
   }
@@ -391,6 +402,7 @@ class SOVListProvider extends ChangeNotifier {
 
   // Request access with message
   Future<void> requestAccess(BuildContext context, String accountId, String message) async {
+    var typography = CustomTypography(context);
     try {
       ApiService apiService = ApiService(AppConstant.REQUEST_ACCESS);
       var response = await apiService.post({'data':{
@@ -399,17 +411,17 @@ class SOVListProvider extends ChangeNotifier {
       }});
       log(response.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Request sent successfully!', style: CustomTypography.Body1,),
+        content: Text('Request sent successfully!', style: typography.Body1,),
 
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }

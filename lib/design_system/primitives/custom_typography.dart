@@ -1,559 +1,493 @@
 import 'package:flutter/material.dart';
 
 class CustomTypography {
-  static const double buttonLargeFontSize = 16.0;
+  final BuildContext context;
 
-  static const TextStyle ButtonLarge = TextStyle(
+  CustomTypography(this.context);
+
+  TextStyle get ButtonLarge => TextStyle(
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w500,
-    fontSize: buttonLargeFontSize,
-    height: 26.0 / buttonLargeFontSize, // Calculate the height based on line-height and font size
-    letterSpacing: 0.46000000834465027,
+    fontSize: 16.0,
+    height: 26.0 / 16.0,
+    letterSpacing: 0.46,
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
   );
 
-  static const TextStyle Caption = TextStyle(
-    color: Color.fromRGBO(255, 255, 255, 0.70), // Using rgba(255, 255, 255, 0.70)
+  TextStyle get Caption => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
     fontFamily: 'General Sans',
     fontSize: 12.0,
     fontStyle: FontStyle.normal,
     fontWeight: FontWeight.w400,
-    height: 1.66, // Corresponds to line-height: 166%
+    height: 1.66,
     letterSpacing: 0.4,
   );
 
-  static const TextStyle H6 = TextStyle(
-    color: Colors.white,
+  TextStyle get H6 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontSize: 20,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w500,
     height: 0.08,
-    letterSpacing: 0.15,);
+    letterSpacing: 0.15,
+  );
 
-  static const TextStyle H7 = TextStyle(
+  TextStyle get H7 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontSize: 18,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w500,
     height: 0.08,
-    letterSpacing: 0.15,);
+    letterSpacing: 0.15,
+  );
 
-  static const TextStyle Body1 = TextStyle(
+  TextStyle get Body1 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 16.0,
-    height: 1.0, // Since line-height is a variable, set height to 1.0
-    letterSpacing: 0.15000000596046448,
+    height: 1.0,
+    letterSpacing: 0.15,
   );
 
-  static const TextStyle Body1_5 = TextStyle(
+  TextStyle get Body1_5 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 15.0,
-    height: 1.0, // Since line-height is a variable, set height to 1.0
-    letterSpacing: 0.15000000596046448,
+    height: 1.0,
+    letterSpacing: 0.15,
   );
 
-  static const TextStyle Body2 = TextStyle(
+  TextStyle get Body2 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 14.0,
-    height: 1.0, // Since line-height is a variable, set height to 1.0
-    letterSpacing: 0.15000000596046448,
+    height: 1.0,
+    letterSpacing: 0.15,
   );
 
-  static const TextStyle InputValue = TextStyle(
+  TextStyle get InputValue => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 16.0,
-    height: 1.0, // Since line-height is a variable, set height to 1.0
-    letterSpacing: 0.15000000596046448,
+    height: 1.0,
+    letterSpacing: 0.15,
   );
 
-  static const TextStyle InputLabel = TextStyle(
+  TextStyle get InputLabel => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 12.0,
-    height: 1.0, // Since line-height is given as 12px, set height to 1.0
-    letterSpacing: 0.15000000596046448,
+    height: 1.0,
+    letterSpacing: 0.15,
   );
 
-  static const TextStyle H4 = TextStyle(
+  TextStyle get H4 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 34.0,
-    height: 1.23558823529, // Calculate this value based on the provided line-height
+    height: 1.24,
     letterSpacing: 0.25,
   );
 
-  static const TextStyle Subtitle1 = TextStyle(
+  TextStyle get Subtitle1 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 16.0,
     height: 1.75,
-    letterSpacing: 0.15000000596046448,
+    letterSpacing: 0.15,
   );
-  static const TextStyle Subtitle2 = TextStyle(
+
+  TextStyle get Subtitle2 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontSize: 14.0,
     fontWeight: FontWeight.w500,
-    height: 1.57, // Calculated based on the provided line-height of 157%
+    height: 1.57,
     letterSpacing: 0.1,
   );
 
-
-  static const TextStyle BottomNavigationActiveLabel = TextStyle(
+  TextStyle get BottomNavigationActiveLabel => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 14.0,
-    height: 1.59142857143,
-    letterSpacing: 0.4000000059604645,
+    height: 1.59,
+    letterSpacing: 0.4,
   );
 
-
-  static const TextStyle H5_Regular = TextStyle(
+  TextStyle get H5_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w400,
     fontSize: 24.0,
-    height: 1.1265625, // Calculate this value based on the provided line-height.. height = fontSize * (lineHeight / fontSize);...height = 24.0 * (32.02 / 24.0) ≈ 1.1265625
+    height: 1.13,
   );
 
-
   // XS sizes
-  static const TextStyle XS_Light = TextStyle(
+  TextStyle get XS_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 12.0,
   );
 
-  static const TextStyle XS_Regular = TextStyle(
+  TextStyle get XS_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 12.0,
   );
 
-  static const TextStyle XS_Medium = TextStyle(
+  TextStyle get XS_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 12.0,
   );
 
-  static const TextStyle XS_SemiBold = TextStyle(
+  TextStyle get XS_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 12.0,
   );
 
-  static const TextStyle XS_Bold = TextStyle(
+  TextStyle get XS_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 12.0,
   );
 
   // SM sizes
-  static const TextStyle SM_Light = TextStyle(
+  TextStyle get SM_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 14.0,
   );
 
-  static const TextStyle SM_Regular = TextStyle(
+  TextStyle get SM_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 14.0,
   );
 
-  static const TextStyle SM_Medium = TextStyle(
+  TextStyle get SM_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 14.0,
   );
 
-  static const TextStyle SM_SemiBold = TextStyle(
+  TextStyle get SM_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 14.0,
   );
 
-  static const TextStyle SM_Bold = TextStyle(
+  TextStyle get SM_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 14.0,
   );
 
   // Base sizes
-  static const TextStyle Base_Light = TextStyle(
+  TextStyle get Base_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 16.0,
   );
 
-  static const TextStyle Base_Regular = TextStyle(
+  TextStyle get Base_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 16.0,
   );
 
-  static const TextStyle Base_Medium = TextStyle(
+  TextStyle get Base_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 16.0,
   );
 
-  static const TextStyle Base_SemiBold = TextStyle(
+  TextStyle get Base_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 16.0,
   );
 
-  static const TextStyle Base_Bold = TextStyle(
+  TextStyle get Base_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 16.0,
   );
 
-// LG sizes
-  static const TextStyle LG_Light = TextStyle(
+  // LG sizes
+  TextStyle get LG_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 18.0,
   );
 
-  static const TextStyle LG_Regular = TextStyle(
+  TextStyle get LG_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 18.0,
   );
 
-  static const TextStyle LG_Medium = TextStyle(
+  TextStyle get LG_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 18.0,
   );
 
-  static const TextStyle LG_SemiBold = TextStyle(
+  TextStyle get LG_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 18.0,
   );
 
-  static const TextStyle LG_Bold = TextStyle(
+  TextStyle get LG_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 18.0,
   );
 
-// XL sizes
-  static const TextStyle XL_Light = TextStyle(
+  // XL sizes
+  TextStyle get XL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 20.0,
   );
 
-  static const TextStyle XL_Regular = TextStyle(
+  TextStyle get XL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 20.0,
   );
 
-  static const TextStyle XL_Medium = TextStyle(
+  TextStyle get XL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 20.0,
   );
 
-  static const TextStyle XL_SemiBold = TextStyle(
+  TextStyle get XL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 20.0,
   );
 
-  static const TextStyle XL_Bold = TextStyle(
+  TextStyle get XL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 20.0,
   );
 
-// 2XL sizes
-  static const TextStyle TwoXL_Light = TextStyle(
+  // 2XL sizes
+  TextStyle get TwoXL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 24.0,
   );
 
-  static const TextStyle TwoXL_Regular = TextStyle(
+  TextStyle get TwoXL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 24.0,
   );
 
-  static const TextStyle TwoXL_Medium = TextStyle(
+  TextStyle get TwoXL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 24.0,
   );
 
-  static const TextStyle TwoXL_SemiBold = TextStyle(
+  TextStyle get TwoXL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 24.0,
   );
 
-  static const TextStyle TwoXL_Bold = TextStyle(
+  TextStyle get TwoXL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 24.0,
   );
 
-// 3XL sizes
-  static const TextStyle ThreeXL_Light = TextStyle(
+  // 3XL sizes
+  TextStyle get ThreeXL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 28.0,
   );
 
-  static const TextStyle ThreeXL_Regular = TextStyle(
+  TextStyle get ThreeXL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 28.0,
   );
 
-  static const TextStyle ThreeXL_Medium = TextStyle(
+  TextStyle get ThreeXL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 28.0,
   );
 
-  static const TextStyle ThreeXL_SemiBold = TextStyle(
+  TextStyle get ThreeXL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 28.0,
   );
 
-  static const TextStyle ThreeXL_Bold = TextStyle(
+  TextStyle get ThreeXL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 28.0,
   );
 
-// 4XL sizes
-  static const TextStyle FourXL_Light = TextStyle(
+  // 4XL sizes
+  TextStyle get FourXL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 32.0,
   );
 
-  static const TextStyle FourXL_Regular = TextStyle(
+  TextStyle get FourXL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 32.0,
   );
 
-  static const TextStyle FourXL_Medium = TextStyle(
+  TextStyle get FourXL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 32.0,
   );
 
-  static const TextStyle FourXL_SemiBold = TextStyle(
+  TextStyle get FourXL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 32.0,
   );
 
-  static const TextStyle FourXL_Bold = TextStyle(
+  TextStyle get FourXL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 32.0,
   );
 
-// 5XL sizes
-  static const TextStyle FiveXL_Light = TextStyle(
+  // 5XL sizes
+  TextStyle get FiveXL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 36.0,
   );
 
-  static const TextStyle FiveXL_Regular = TextStyle(
+  TextStyle get FiveXL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 36.0,
   );
 
-  static const TextStyle FiveXL_Medium = TextStyle(
+  TextStyle get FiveXL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 36.0,
   );
 
-  static const TextStyle FiveXL_SemiBold = TextStyle(
+  TextStyle get FiveXL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 36.0,
   );
 
-  static const TextStyle FiveXL_Bold = TextStyle(
+  TextStyle get FiveXL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 36.0,
   );
 
-// 6XL sizes
-  static const TextStyle SixXL_Light = TextStyle(
+  // 6XL sizes
+  TextStyle get SixXL_Light => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w300,
     fontSize: 40.0,
   );
 
-  static const TextStyle SixXL_Regular = TextStyle(
+  TextStyle get SixXL_Regular => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
     fontSize: 40.0,
   );
 
-  static const TextStyle SixXL_Medium = TextStyle(
+  TextStyle get SixXL_Medium => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w500,
     fontSize: 40.0,
   );
 
-  static const TextStyle SixXL_SemiBold = TextStyle(
+  TextStyle get SixXL_SemiBold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
     fontSize: 40.0,
   );
 
-  static const TextStyle SixXL_Bold = TextStyle(
+  TextStyle get SixXL_Bold => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w700,
     fontSize: 40.0,
   );
-
-  // 7XL sizes
-  static const TextStyle SevenXL_Light = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w300,
-    fontSize: 12.0,
-  );
-
-  static const TextStyle SevenXL_Regular = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w400,
-    fontSize: 12.0,
-  );
-
-  static const TextStyle SevenXL_Medium = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w500,
-    fontSize: 12.0,
-  );
-
-  static const TextStyle SevenXL_SemiBold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w600,
-    fontSize: 12.0,
-  );
-
-  static const TextStyle SevenXL_Bold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w700,
-    fontSize: 12.0,
-  );
-
-// 8XL sizes
-  static const TextStyle EightXL_Light = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w300,
-    fontSize: 13.0,
-  );
-
-  static const TextStyle EightXL_Regular = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w400,
-    fontSize: 13.0,
-  );
-
-  static const TextStyle EightXL_Medium = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w500,
-    fontSize: 13.0,
-  );
-
-  static const TextStyle EightXL_SemiBold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w600,
-    fontSize: 13.0,
-  );
-
-  static const TextStyle EightXL_Bold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w700,
-    fontSize: 13.0,
-  );
-
-// 9XL sizes
-  static const TextStyle NineXL_Light = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w300,
-    fontSize: 14.0,
-  );
-
-  static const TextStyle NineXL_Regular = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w400,
-    fontSize: 14.0,
-  );
-
-  static const TextStyle NineXL_Medium = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w500,
-    fontSize: 14.0,
-  );
-
-  static const TextStyle NineXL_SemiBold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w600,
-    fontSize: 14.0,
-  );
-
-  static const TextStyle NineXL_Bold = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w700,
-    fontSize: 14.0,
-  );
-
-// Badge size
-  static const TextStyle Badge_ForSmallSize = TextStyle(
-    fontFamily: 'Inter',
-    fontWeight: FontWeight.w500,
-    fontSize: 12.0,
-  );
-
-// kbd sizes
-  static const TextStyle kbd_Small = TextStyle(
-    fontFamily: 'Fira Mono',
-    fontWeight: FontWeight.w500,
-    fontSize: 12.0,
-  );
-
-  static const TextStyle kbd_Default = TextStyle(
-    fontFamily: 'Fira Mono',
-    fontWeight: FontWeight.w500,
-    fontSize: 16.0,
-  );
-
-  static const TextStyle kbd_Large = TextStyle(
-    fontFamily: 'Fira Mono',
-    fontWeight: FontWeight.w500,
-    fontSize: 20.0,
-  );
-
-  // Text Case
-  static const String textCaseNone = 'none';
-
-// Text Decoration
-  static const String textDecorationNone = 'none';
-
-// Paragraph Indent
-  static const String paragraphIndentZero = '0px';
-
-
 }

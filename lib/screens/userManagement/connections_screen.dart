@@ -252,6 +252,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   @override
   Widget build(BuildContext context1) {
+    var typography = CustomTypography(context1);
     return Consumer<ThemeProvider>(
         builder: (buildContext, themeProvider, child) {
       return Scaffold(
@@ -341,13 +342,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 ? LanguageService.getTranslated(context,
                                     "connections_user_connection_connections_tab")
                                 : '${LanguageService.getTranslated(context, "connections_user_connection_connections_tab")} ${widget.userName.substring(0, 1).toUpperCase()}${widget.userName.substring(1)}',
-                            style: CustomTypography.H5_Regular,
+                            style: typography.H5_Regular,
                           ),
                           SizedBox(height: CustomSpacing.two),
                           Text(
                             LanguageService.getTranslated(context,
                                 "connections_user connections_sub_title_description"),
-                            style: CustomTypography.Body2,
+                            style: typography.Body2,
                           ),
                           SizedBox(height: CustomSpacing.two),
                           Consumer<ConnectionsProvider>(
@@ -355,7 +356,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               return TabBar(
                                 isScrollable: true,
                                 controller: _tabController,
-                                labelStyle: CustomTypography
+                                labelStyle: typography
                                     .BottomNavigationActiveLabel,
                                 tabs: [
                                   Tab(
@@ -388,7 +389,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                             .getTranslated(
                                                                 context,
                                                                 "connections_user_connection_connections_tab"),
-                                                        style: CustomTypography
+                                                        style: typography
                                                             .BottomNavigationActiveLabel,
                                                       ),
                                                     ],
@@ -402,7 +403,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                     LanguageService.getTranslated(
                                                         context,
                                                         "connections_user_connection_corporate_connections_filed_label"),
-                                                    style: CustomTypography
+                                                    style: typography
                                                         .BottomNavigationActiveLabel,
                                                   ),
                                                   value: 'Corporate',
@@ -412,7 +413,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                     LanguageService.getTranslated(
                                                         context,
                                                         "connections_user_connection_non_corporate_label"),
-                                                    style: CustomTypography
+                                                    style: typography
                                                         .BottomNavigationActiveLabel,
                                                   ),
                                                   value: 'Non Corporate',
@@ -444,7 +445,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                               label: Text(
                                                 connectionsProvider
                                                     .totalConnections,
-                                                style: CustomTypography
+                                                style: typography
                                                         .BottomNavigationActiveLabel
                                                     .copyWith(height: -0.6),
                                               ),
@@ -480,7 +481,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             label: Text(
                                               connectionsProvider
                                                   .requestReceivedCount,
-                                              style: CustomTypography
+                                              style: typography
                                                       .BottomNavigationActiveLabel
                                                   .copyWith(height: -0.6),
                                             ),
@@ -514,7 +515,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                     .shrinkWrap,
                                             label: Text(
                                               '0',
-                                              style: CustomTypography
+                                              style: typography
                                                       .BottomNavigationActiveLabel
                                                   .copyWith(height: -0.6),
                                             ),
@@ -733,7 +734,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           'user_profile_user_management_name_filed_label'),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -749,7 +750,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           "user_profile_user_management_email_field_label"),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -793,7 +794,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           "usermangement_corp_trow_comp_name"),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -921,7 +922,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         type: ButtonType.filled,
                                         child: Text(
                                           'Add Filter',
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                                       SizedBox(width: CustomSpacing.two),
@@ -941,7 +942,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               "user_profile_user_management_btn_cancel"),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                                     ],
@@ -1095,6 +1096,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   Widget _connectionsCardUIOLD() {
+    var typography = CustomTypography(context);
     //profile avatar, role, company, rating out of 5, actions are in popupmenu (send message, connections, remove connection)
     return Container(
       margin: EdgeInsets.only(bottom: CustomSpacing.two),
@@ -1117,7 +1119,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     ),
                     child: Text(
                       'Request Pending',
-                      style: CustomTypography.Body2.copyWith(
+                      style: typography.Body2.copyWith(
                         color: AppColors.warning,
                       ),
                     ),
@@ -1140,10 +1142,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Amit Didwania',
-                                style: CustomTypography.Body1),
+                                style: typography.Body1),
                             SizedBox(height: CustomSpacing.two),
-                            Text('Risk Manager', style: CustomTypography.Body2),
-                            Text('Green', style: CustomTypography.Body2),
+                            Text('Risk Manager', style: typography.Body2),
+                            Text('Green', style: typography.Body2),
                             SizedBox(height: CustomSpacing.two),
                             RatingBar(
                               rating: 4,
@@ -1202,6 +1204,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   Widget _corporateConnectionsCardUI(
       ConnectionsProvider connectionsProvider, int index) {
+    var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
@@ -1226,7 +1229,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         child: Text(
                           LanguageService.getTranslated(context,
                               "connections_user_connection_connect_requestpending"),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                             color: AppColors.warning,
                           ),
                         ),
@@ -1284,7 +1287,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                           .corporateConnections[index].name
                                           ?.substring(1) ??
                                       ""),
-                              style: CustomTypography.Body2.copyWith(
+                              style: typography.Body2.copyWith(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? AppColors.white
@@ -1296,7 +1299,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 connectionsProvider.corporateConnections[index]
                                         .companyTypeName ??
                                     "",
-                                style: CustomTypography.Caption),
+                                style: typography.Caption),
                           ],
                         ),
                       ),
@@ -1323,7 +1326,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               connectionsProvider
                                       .corporateConnections[index].companyName ??
                                   "",
-                              style: CustomTypography.Body2.copyWith(
+                              style: typography.Body2.copyWith(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? AppColors.white
@@ -1333,7 +1336,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 connectionsProvider
                                         .corporateConnections[index].role?[0] ??
                                     "",
-                                style: CustomTypography.Caption),
+                                style: typography.Caption),
                             SizedBox(
                               height: CustomSpacing.two,
                             ),
@@ -1348,7 +1351,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 .corporateConnections[index].rating
                                 ?.toString() ??
                                 "",
-                            style: CustomTypography.Caption,
+                            style: typography.Caption,
                           ),
                           Icon(
                             Icons.star,
@@ -1390,7 +1393,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           },
                           icon: Icon(Icons.people),
                           label: Text('View Connections',
-                              style: CustomTypography.Caption.copyWith(
+                              style: typography.Caption.copyWith(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? AppColors.white
@@ -1443,6 +1446,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   Widget _nonCorporateConnectionsCardUI(
       ConnectionsProvider connectionsProvider, int index) {
+    var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
@@ -1468,7 +1472,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         child: Text(
                           LanguageService.getTranslated(context,
                               "connections_user_connection_connect_requestpending"),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                             color: AppColors.warning,
                           ),
                         ),
@@ -1528,7 +1532,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                           .nonCorporateConnections[index].name
                                           ?.substring(1) ??
                                       ""),
-                              style: CustomTypography.Body2.copyWith(
+                              style: typography.Body2.copyWith(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? AppColors.white
@@ -1541,7 +1545,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         .nonCorporateConnections[index]
                                         .companyTypeName ??
                                     "",
-                                style: CustomTypography.Caption),
+                                style: typography.Caption),
                           ],
                         ),
                       ),
@@ -1565,7 +1569,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         .nonCorporateConnections[index].rating
                                         ?.toString() ??
                                     "",
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                               Icon(
                                 Icons.star,
@@ -1574,7 +1578,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               ),
                               Text(
                                 '\'s',
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ],
                           ),
@@ -1601,7 +1605,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             connectionsProvider.nonCorporateConnections[index]
                                     .companyName ??
                                 "",
-                            style: CustomTypography.Body2.copyWith(
+                            style: typography.Body2.copyWith(
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
                                     ? AppColors.white
@@ -1617,7 +1621,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                       .map((e) =>
                                           e[0].toUpperCase() + e.substring(1))
                                       .join(', '),
-                                  style: CustomTypography.Caption)
+                                  style: typography.Caption)
                               : SizedBox(),
                           SizedBox(
                             height: CustomSpacing.two,
@@ -1663,7 +1667,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 label: Text(
                                     LanguageService.getTranslated(
                                         context, "view_connections"),
-                                    style: CustomTypography.Caption.copyWith(
+                                    style: typography.Caption.copyWith(
                                         color: Theme.of(context).brightness ==
                                                 Brightness.dark
                                             ? AppColors.white
@@ -1732,7 +1736,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                     Text(
                                       LanguageService.getTranslated(context,
                                           "connections_user_connection_connect_sendreminder"),
-                                      style: CustomTypography.Caption.copyWith(
+                                      style: typography.Caption.copyWith(
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
                                               ? AppColors.white
@@ -1803,6 +1807,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   Widget _requestsCardUI(ConnectionsProvider connectionsProvider, int index) {
+    var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(bottom: CustomSpacing.two),
       child: Card(
@@ -1877,7 +1882,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                         .requestUsers[index].name
                                                         ?.substring(1) ??
                                                     ""),
-                                            style: CustomTypography.Body2.copyWith(
+                                            style: typography.Body2.copyWith(
                                                 color: Theme.of(context)
                                                             .brightness ==
                                                         Brightness.dark
@@ -1891,7 +1896,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             text: LanguageService.getTranslated(
                                                 context,
                                                 "connections_user_connection_request_submit"),
-                                            style: CustomTypography.Body2.copyWith(),
+                                            style: typography.Body2.copyWith(),
                                           ),
                                         ],
                                       ),
@@ -1908,13 +1913,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                      /* .map((e) =>
                                           e[0].toUpperCase() + e.substring(1))
                                       .join(', '),*/
-                                  style: CustomTypography.Caption)
+                                  style: typography.Caption)
                               : SizedBox(),
                           Text(
                               connectionsProvider
                                       .requestUsers[index].companyName ??
                                   "",
-                              style: CustomTypography.Caption),
+                              style: typography.Caption),
                           SizedBox(height: CustomSpacing.two),
                           Row(
                             children: [
@@ -1929,7 +1934,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         connectionsProvider
                                                 .requestUsers[index].message ??
                                             "",
-                                        style: CustomTypography.Body2,
+                                        style: typography.Body2,
                                         softWrap: true,
                                         overflow: TextOverflow.ellipsis,
                                         maxLines: 2,
@@ -1984,7 +1989,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           child: Text(
                             LanguageService.getTranslated(context,
                                 "usermanagement_verification_req_ignore_btn"),
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                       ),
@@ -2008,7 +2013,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           child: Text(
                             LanguageService.getTranslated(context,
                                 "connections_user_connection_accept_btn"),
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                         ),
                       ),
@@ -2022,6 +2027,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   _getChatsUI() {
+    var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -2035,7 +2041,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Text(
                         LanguageService.getTranslated(
                             context, 'coming_soon_title'),
-                        style: CustomTypography.H4),
+                        style: typography.H4),
                   ),
                   SizedBox(
                     height: CustomSpacing.two,
@@ -2043,7 +2049,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                   Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_subtitle'),
-                      style: CustomTypography.Body1),
+                      style: typography.Body1),
                 ],
               ),
             ),
@@ -2054,6 +2060,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   _getNetworkingUI() {
+    var typography = CustomTypography(context);
     return Column(
       children: [
         SizedBox(height: CustomSpacing.two),
@@ -2067,8 +2074,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                   decoration: InputDecoration(
                     hintText: LanguageService.getTranslated(context,
                         'usermanagement_search_field_lable_name_email_mobile'),
-                    label: Text('Search', style: CustomTypography.Body1),
-                    hintStyle: CustomTypography.Body1,
+                    label: Text('Search', style: typography.Body1),
+                    hintStyle: typography.Body1,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -2121,6 +2128,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   Widget _networkingCardUI(ConnectionsProvider connectionsProvider, int index) {
+    var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
@@ -2173,7 +2181,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               (connectionsProvider.networkingUsers[index].name
                                       ?.substring(1) ??
                                   ""),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -2185,7 +2193,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             connectionsProvider
                                     .networkingUsers[index].companyTypeName ??
                                 "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                       ],
                     ),
                   ),
@@ -2201,7 +2209,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             connectionsProvider.networkingUsers[index].rating
                                     ?.toString() ??
                                 "",
-                            style: CustomTypography.Body1,
+                            style: typography.Body1,
                           ),
                           Icon(
                             Icons.star,
@@ -2210,7 +2218,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           ),
                           Text(
                             '\'s',
-                            style: CustomTypography.Body1,
+                            style: typography.Body1,
                           ),
                         ],
                       ),
@@ -2237,7 +2245,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         connectionsProvider
                                 .networkingUsers[index].companyName ??
                             "",
-                        style: CustomTypography.Body2.copyWith(
+                        style: typography.Body2.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -2250,7 +2258,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                   .map((e) =>
                                       e[0].toUpperCase() + e.substring(1))
                                   .join(', '),
-                              style: CustomTypography.Caption)
+                              style: typography.Caption)
                           : SizedBox(),
                       SizedBox(
                         height: CustomSpacing.two,
@@ -2288,7 +2296,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       label: Text(
                           LanguageService.getTranslated(context,
                               "connections_user_connection_connect_btn"),
-                          style: CustomTypography.Caption.copyWith(
+                          style: typography.Caption.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -2306,6 +2314,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
   _addNetworkDialogUI(BuildContext dialogContext,
       ConnectionsProvider connectionsProvider, int index) {
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2336,17 +2345,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           ),
           SizedBox(height: CustomSpacing.four),
           Text(connectionsProvider.networkingUsers[index].name ?? "",
-              style: CustomTypography.H5_Regular),
+              style: typography.H5_Regular),
           SizedBox(height: CustomSpacing.two),
           connectionsProvider.networkingUsers[index].role != null
               ? Text(
                   connectionsProvider.networkingUsers[index].role!
                       .map((e) => e[0].toUpperCase() + e.substring(1))
                       .join(', '),
-                  style: CustomTypography.Body2)
+                  style: typography.Body2)
               : SizedBox(),
           Text(connectionsProvider.networkingUsers[index].companyName ?? "",
-              style: CustomTypography.Body2),
+              style: typography.Body2),
           SizedBox(height: CustomSpacing.two),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2363,7 +2372,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text('Personalized Message (Optional)',
-                  style: CustomTypography.Body2),
+                  style: typography.Body2),
             ],
           ),
           TextFormField(
@@ -2395,7 +2404,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                   child: Text(
                     LanguageService.getTranslated(
                         context, "connections_user_connection_cancel"),
-                    style: CustomTypography.ButtonLarge,
+                    style: typography.ButtonLarge,
                   ),
                 ),
               ),
@@ -2427,7 +2436,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         type: ButtonType.filled,
                         child: Text(
                           'Send',
-                          style: CustomTypography.ButtonLarge,
+                          style: typography.ButtonLarge,
                         ),
                       ),
               ),
@@ -2440,6 +2449,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   }
 
   _getBlockedUI() {
+    var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -2453,7 +2463,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Text(
                         LanguageService.getTranslated(
                             context, 'coming_soon_title'),
-                        style: CustomTypography.H4),
+                        style: typography.H4),
                   ),
                   SizedBox(
                     height: CustomSpacing.two,
@@ -2461,7 +2471,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                   Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_subtitle'),
-                      style: CustomTypography.Body1),
+                      style: typography.Body1),
                 ],
               ),
             ),

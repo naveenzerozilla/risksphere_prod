@@ -92,6 +92,26 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   Timer? autoCompleteDeBouncer;
 
+
+  ScrollController _scrollController = ScrollController();
+
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      _scrollController.offset - 100, // Scroll left by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      _scrollController.offset + 100, // Scroll right by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void debounce(
     VoidCallback callback, {
     Duration duration = const Duration(seconds: 1),
@@ -144,6 +164,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   @override
   void initState() {
+    _tabController = TabController(length: 3, vsync: this);
     super.initState();
     _getData();
   }
@@ -159,245 +180,215 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   @override
   Widget build(BuildContext context1) {
-    return Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showDropdown: true,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        floatingActionButton: _selectedScreen == Screens.subAccountList
-            ? showCheckbox
-                ? Builder(builder: (contextLocal) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        FloatingActionButton(
-                          onPressed: () {
-                            // On export button click
-                          },
-                          child: Icon(CupertinoIcons.tray_arrow_down),
-                        ),
-                        SizedBox(
-                          height: CustomSpacing.two,
-                        ),
-                        FloatingActionButton(
-                          onPressed: () {
-                            _tabController?.animateTo(3);
-                            _selectedScreen = Screens.networkList;
-                          },
-                          child: Icon(Icons.add),
-                        ),
-                      ],
-                    );
-                  })
-                : FloatingActionButton(
-          onPressed: () {
-            // Add sub account dialog with autocomplete from api and create account
-            _showAddSubAccountDialog(context);
-
-          },
-          child: Icon(Icons.add),
-        )
-
-            : SizedBox(),
-        body: PopScope(
-          canPop: /*_selectedScreen == Screens.connectionList ||
-                  _selectedScreen == Screens.corporateConnectionList,*/
-              true,
-          onPopInvoked: (canPop) {
-            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-            /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateConnectionList;
-                  });
-                } else if (_selectedScreen == Screens.requestList) {
-                  setState(() {
-                    _tabController?.animateTo(0);
-                    _selectedScreen = Screens.corporateConnectionList;
-                  });
-                }*/
-          },
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    var typography = CustomTypography(context1);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(
+          builder: (buildContext, themeProvider, child) {
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showDropdown: true,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
+              setState(() {
+                _isExpanded = isExpanded;
+              });
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          drawer: CustomDrawer(),
+          floatingActionButton: _selectedScreen == Screens.subAccountList
+              ? showCheckbox
+                  ? Builder(builder: (contextLocal) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          /*     Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      RolesDropdown(),
-                                    ],
-                                  ),
-                                ],
-                              ),*/
-                          Text(
-                            '${LanguageService.getTranslated(context, "sub_account_list_app_title")} ',
-                            style: CustomTypography.H5_Regular,
+                          FloatingActionButton(
+                            onPressed: () {
+                              // On export button click
+                            },
+                            child: Icon(CupertinoIcons.tray_arrow_down),
                           ),
-                          Text(
-                            LanguageService.getTranslated(
-                                context, "sub_account_list_app_subtitle"),
-                            style: CustomTypography.Body2,
-                          ),
-                          SizedBox(height: CustomSpacing.four),
-                          // Search
                           SizedBox(
-                            height: 50,
-                            child: TextField(
-                              controller: _textEditingController,
-                              onChanged: (query) {
-                                accountsSearchClient(query);
-                              },
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                hintText: LanguageService.getTranslated(
-                                    context, "sub_account_list_search_hint"),
-                                hintStyle: CustomTypography.Body2,
-                                prefixIcon: Icon(Icons.search),
-                              ),
-                            ),
+                            height: CustomSpacing.two,
                           ),
-                          SizedBox(height: CustomSpacing.four),
-                          // List of accounts
-                          Expanded(
-                            child: Consumer<SubAccountListProvider>(
-                                builder: (context, subAccountListProvider, _) {
-                              return subAccountListProvider.isLoading
-                                  ? Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 100,
-                                        ),
-                                        Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      ],
-                                    )
-                                  : subAccountListProvider.subAccountList.isEmpty
-                                      ? Center(
-                                          child: Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "sub_account_list_app_no_sub_accounts_text"),
-                                            style: CustomTypography.Body1,
-                                          ),
-                                        )
-                                      :
-                              ListView.builder(
-                                      itemCount: subAccountListProvider
-                                          .subAccountList.length,
-                                      itemBuilder: (context, index) {
-                                        print("Query1: $_subAccountQuery");
-                                        if (index ==
-                                            subAccountListProvider
-                                                    .subAccountList.length -
-                                                1) {
-                                          // Check if it's the last item
-                                          if (subAccountListProvider
-                                              .isNextPageLoading) {
-                                            // Display loading indicator
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                            );
-                                          } else if (subAccountListProvider.page >=
-                                              subAccountListProvider.totalPages&&subAccountListProvider.subAccountList.isNotEmpty) {
-                                            // Display end of list message
-                                            print("sub account list: ${subAccountListProvider.subAccountList}");
-                                            return Column(
-                                              children: [
-                                                _buildSubAccountCard(
-                                                    index, subAccountListProvider),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Center(
-                                                    child: Text(LanguageService.getTranslated(
-                                                        context,
-                                                        "sub_account_list_app_end_of_list_text"),
-                                                      style: CustomTypography.Body1,
-                                                  ),
-                                                ), ),
-                                              ],
-                                            );
-                                          } else {
-                                            // Trigger fetching the next page
-                                            subAccountListProvider.page =
-                                                subAccountListProvider.page + 1;
-                                            print(
-                                                "Fetching page ${subAccountListProvider.page}");
-                                            print(
-                                                "Query: $_subAccountQuery, Page: ${subAccountListProvider.page}");
-                                            subAccountListProvider
-                                                .fetchSubAccountList(
-                                              context,
-                                              widget.accountId,
-                                              _subAccountQuery,
-                                              // Pass the search query if any
-                                              subAccountListProvider.page,
-                                              2, // Page size
-                                            );
-                                            return SizedBox();
-                                          }
-                                        }
-
-                                        return _buildSubAccountCard(
-                                            index, subAccountListProvider);
-                                      },
-                                    );
-                            }),
+                          FloatingActionButton(
+                            onPressed: () {
+                              _tabController?.animateTo(3);
+                              _selectedScreen = Screens.networkList;
+                            },
+                            child: Icon(Icons.add),
                           ),
                         ],
+                      );
+                    })
+                  : FloatingActionButton(
+            onPressed: () {
+              // Add sub account dialog with autocomplete from api and create account
+              _showAddSubAccountDialog(context);
+
+            },
+            child: Icon(Icons.add),
+          )
+
+              : SizedBox(),
+          body: PopScope(
+            canPop: /*_selectedScreen == Screens.connectionList ||
+                    _selectedScreen == Screens.corporateConnectionList,*/
+                true,
+            onPopInvoked: (canPop) {
+              print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+              /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                    setState(() {
+                      _selectedScreen = Screens.corporateConnectionList;
+                    });
+                  } else if (_selectedScreen == Screens.requestList) {
+                    setState(() {
+                      _tabController?.animateTo(0);
+                      _selectedScreen = Screens.corporateConnectionList;
+                    });
+                  }*/
+            },
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            /*     Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        RolesDropdown(),
+                                      ],
+                                    ),
+                                  ],
+                                ),*/
+                            SizedBox(height: CustomSpacing.two),
+                            Container(
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
+                                borderRadius:
+                                BorderRadius.circular(16), // Rounded edges
+                              ),
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 0, vertical: 0),
+                              child: DefaultTabController(
+                                length: 3,
+                                child: Column(
+                                  children: <Widget>[
+                                    // Container for the TabBar with arrows
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHigh,
+                                      ),
+                                      height: 50,
+                                      child: Row(
+                                        children: <Widget>[
+                                          // Left arrow button
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_left,
+                                                color: Colors.grey),
+                                            onPressed: _scrollLeft,
+                                          ),
+                                          // Scrollable TabBar
+                                          Expanded(
+                                            child: SingleChildScrollView(
+                                              controller: _scrollController,
+                                              scrollDirection: Axis.horizontal,
+                                              child: TabBar(
+                                                controller: _tabController,
+                                                tabAlignment:
+                                                TabAlignment.start,
+                                                labelStyle:
+                                                typography.Subtitle2,
+                                                isScrollable: true,
+                                                indicatorColor:
+                                                Colors.lightBlueAccent,
+                                                labelColor:
+                                                Colors.lightBlueAccent,
+                                                unselectedLabelColor:
+                                                Colors.grey,
+                                                tabs: [
+                                                  Tab(
+                                                    text: 'Sub Accounts',
+                                                  ),
+                                                  Tab(text: 'Shared'),
+                                                  Tab(text: 'Access Requests'),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          // Right arrow button
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_right,
+                                                color: Colors.grey),
+                                            onPressed: _scrollRight,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // TabBarView for the tab content
+                            Expanded(
+                              child
+                                  : TabBarView(
+                                controller: _tabController,
+                                children: [
+                                  _getSubAccountUI(),
+                                  _getComingSoonUI(),
+                                  _getComingSoonUI(),
+                                ],
+                              ),
+                            ),
+
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    });
+        );
+      }),
+    );
   }
 
   Widget _buildSubAccountCard(int index, SubAccountListProvider subAccountListProvider) {
+    var typography = CustomTypography(context);
     bool isDisabled = subAccountListProvider.subAccountList[index].disabled;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
@@ -464,9 +455,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
             )
                 : */
             SizedBox(),
-            SizedBox(
-              width: CustomSpacing.two,
-            ),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -519,7 +507,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       .substring(1)
                                               : "",
                                           style:
-                                              CustomTypography.Body2.copyWith(
+                                              typography.Body2.copyWith(
                                             color:
                                                 Theme.of(context).brightness ==
                                                         Brightness.dark
@@ -560,7 +548,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       "sub_account_list_edit_sub_account_title"),
-                                                  style: CustomTypography
+                                                  style: typography
                                                       .H5_Regular,
                                                 ),
                                                 content: Column(
@@ -581,7 +569,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                     context,
                                                                     "sub_account_list_app_edit_label_text"),
                                                         labelStyle:
-                                                            CustomTypography
+                                                            typography
                                                                 .Body1,
                                                         hintText:
                                                             LanguageService
@@ -589,7 +577,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                     context,
                                                                     "sub_account_list_app_edit_label_hint_text"),
                                                         hintStyle:
-                                                            CustomTypography
+                                                            typography
                                                                 .Body1,
                                                       ),
                                                     ),
@@ -610,7 +598,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   .getTranslated(
                                                                       context,
                                                                       "sub_account_list_app_edit_cancel_text"),
-                                                              style: CustomTypography
+                                                              style: typography
                                                                   .ButtonLarge,
                                                             ),
                                                             type:
@@ -632,7 +620,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                               child: CustomButton(
                                                                 onPressed: () async {
                                                                   if(_subAccountEditNameController.text.isEmpty){
-                                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_rename_sub_account_empty_text_error"), style: CustomTypography.Body1,)));
+                                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_rename_sub_account_empty_text_error"), style: typography.Body1,)));
                                                                     return;
                                                                   }
                                                                   // Update account details
@@ -652,7 +640,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                       .getTranslated(
                                                                           context,
                                                                           "sub_account_list_app_edit_update_text"),
-                                                                  style: CustomTypography
+                                                                  style: typography
                                                                       .ButtonLarge,
                                                                 ),
                                                                 type: ButtonType
@@ -705,7 +693,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                 context,
                                                                 "sub_account_list_app_sovs_text"),
                                                 style:
-                                                    CustomTypography.Caption),
+                                                    typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
                                             ),
@@ -716,7 +704,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         ?.toString() ??
                                                     "",
                                                 style:
-                                                    CustomTypography.Caption),
+                                                    typography.Caption),
                                           ],
                                         ),
                                   !subAccountListProvider.showOwner
@@ -728,7 +716,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     context,
                                                     "sub_account_list_app_owner_text"),
                                                 style:
-                                                    CustomTypography.Caption),
+                                                    typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
                                             ),
@@ -741,7 +729,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         ?.name ??
                                                     "",
                                                 style:
-                                                    CustomTypography.Caption),
+                                                    typography.Caption),
                                           ],
                                         ),
                                 ],
@@ -775,7 +763,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           },
                           icon: const Icon(Symbols.share_windows),
                           label: Text('Transfer',
-                              style: CustomTypography.Caption.copyWith(
+                              style: typography.Caption.copyWith(
                                   color: Theme.of(context).brightness ==
                                       Brightness.dark
                                       ? AppColors.white
@@ -808,7 +796,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   title: Text(
                                     LanguageService.getTranslated(
                                         context, "sub_account_list_app_duplicate_title"),
-                                    style: CustomTypography.H5_Regular,
+                                    style: typography.H5_Regular,
                                   ),
                                   content: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -817,7 +805,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                         LanguageService.getTranslated(
                                             context,
                                             "sub_account_list_app_duplicate_text"),
-                                        style: CustomTypography.Body1,
+                                        style: typography.Body1,
                                       ),
                                       SizedBox(
                                         height: CustomSpacing.two,
@@ -833,7 +821,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                               child: Text(
                                                 LanguageService.getTranslated(
                                                     context, "sub_account_list_app_duplicate_cancel"),
-                                                style: CustomTypography.ButtonLarge,
+                                                style: typography.ButtonLarge,
                                               ),
                                               type: ButtonType.text,
                                             ),
@@ -863,7 +851,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                               child: Text(
                                                 LanguageService.getTranslated(
                                                     context, "sub_account_list_app_duplicate_duplicate"),
-                                                style: CustomTypography.ButtonLarge,
+                                                style: typography.ButtonLarge,
                                               ),
                                               type: ButtonType.elevated,
                                             ),
@@ -879,7 +867,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           tooltip: LanguageService.getTranslated(
                               context, "sub_account_list_app_duplicate_tooltip_text"),
                         ),
-                        IconButton(
+                        /*IconButton(
                           icon: Icon(
                             Icons.settings,
                             color: AppColors.primaryMain,
@@ -889,15 +877,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           },
                           tooltip: LanguageService.getTranslated(
                               context, "sub_account_list_app_settings_tooltip_text"),
-                        ),
+                        ),*/
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-            SizedBox(
-              width: CustomSpacing.two,
             ),
           ],
         ),
@@ -906,6 +891,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   }
 
   void _showSettingsModal(BuildContext context, int index) {
+    var typography = CustomTypography(context);
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -940,7 +926,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
                         },
                       ),
-                      title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_owner_text"), style: CustomTypography.Body1),
+                      title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_owner_text"), style: typography.Body1),
                     ),
                     ListTile(
                       leading: subAccountListProvider.showSOVCountLoading?
@@ -965,7 +951,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           }
                         },
                       ),
-                      title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_sov_count_text"), style: CustomTypography.Body1),
+                      title: Text(LanguageService.getTranslated(context, "sub_account_list_app_column_sov_count_text"), style: typography.Body1),
                     ),
                   ],
                 );
@@ -978,6 +964,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   }
 
   Future<void> _showAddSubAccountDialog(BuildContext context) async {
+    var typography = CustomTypography(context);
     await showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -990,7 +977,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                   children: [
                     Text(
                       LanguageService.getTranslated(context, "sub_account_list_app_add_account_title"),
-                      style: CustomTypography.H5_Regular,
+                      style: typography.H5_Regular,
                     ),
                     SizedBox(height: 8.0),
                     Consumer<SubAccountListProvider>(
@@ -1001,7 +988,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                             Chip(
                               label: Text(
                                 widget.accountName ?? "",
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ),
                             SizedBox(height: 8,),
@@ -1072,7 +1059,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     : CustomButton(
                                   onPressed: () async {
                                     if (_autocompleteText.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_add_sub_account_empty_text_error"), style: CustomTypography.Body1,)));
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_add_sub_account_empty_text_error"), style: typography.Body1,)));
                                       return;
                                     }
 
@@ -1082,7 +1069,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     } else {
                                       // Request access
                                       if (_messageController.text.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_comment_empty_text_error"), style: CustomTypography.Body1,)));
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LanguageService.getTranslated(context, "sub_account_list_app_comment_empty_text_error"), style: typography.Body1,)));
                                         return;
                                       }
                                       await subAccountListProvider.requestAccess(context, _selectedSubAccount?.subAccountId ?? "", _messageController.text, widget.accountId);
@@ -1093,7 +1080,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     _subAccountAlreadyExists
                                         ? LanguageService.getTranslated(context, "sub_account_list_app_request_access_text")
                                         : LanguageService.getTranslated(context, "sub_account_list_app_submit_text"),
-                                    style: CustomTypography.ButtonLarge,
+                                    style: typography.ButtonLarge,
                                   ),
                                   type: ButtonType.elevated,
                                 );
@@ -1108,7 +1095,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           },
                           child: Text(
                             LanguageService.getTranslated(context, "sub_account_list_app_cancel_text"),
-                            style: CustomTypography.ButtonLarge,
+                            style: typography.ButtonLarge,
                           ),
                           type: ButtonType.text,
                         ),
@@ -1131,6 +1118,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   }
 
   void _showUploadDialog(String accountId, String subAccountId) {
+    var typography = CustomTypography(context);
     showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -1150,7 +1138,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           LanguageService.getTranslated(
                               context, "account_list_app_account_upload_sov"),
                           textAlign: TextAlign.start,
-                          style: CustomTypography.Body1),
+                          style: typography.Body1),
                       SizedBox(height: 20),
                       _uploadedFileName == null
                           ? GestureDetector(
@@ -1187,7 +1175,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 Text(
                                   LanguageService.getTranslated(context,
                                       "account_list_app_account_upload_drag_and_drop"),
-                                  style: CustomTypography.Body1,
+                                  style: typography.Body1,
                                 ),
                                 SizedBox(height: 5),
                                 Row(
@@ -1200,7 +1188,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                         color: Colors.white54),
                                     SizedBox(width: 3),
                                     Text('Max file size is 200 MB',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                   ],
                                 ),
                               ],
@@ -1223,7 +1211,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                             SizedBox(height: 10),
                             Text(
                               _sovNameController.text,
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                             ),
                             SizedBox(height: 10),
                             GestureDetector(
@@ -1255,20 +1243,20 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                               LanguageService.getTranslated(
                                   context, "account_list_app_account_sov_name_1"),
                               textAlign: TextAlign.start,
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                           Flexible(
                             child: Center(
                               child: Text(
                                   widget.accountName ?? "",
                                   textAlign: TextAlign.start,
-                                  style: CustomTypography.Body1),
+                                  style: typography.Body1),
                             ),
                           ),
                           Text(
                               LanguageService.getTranslated(
                                   context, "account_list_app_account_sov_name_2"),
                               textAlign: TextAlign.start,
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                         ],
                       ),
                       SizedBox(height: 10),
@@ -1326,7 +1314,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         context,
                                                         "account_list_app_empty_sov_title")*/
                                                   'Empty SOV',
-                                                  style: CustomTypography.H5_Regular,
+                                                  style: typography.H5_Regular,
                                                 ),
                                                 content: Column(
                                                   mainAxisSize: MainAxisSize.min,
@@ -1336,7 +1324,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                             context,
                                                             "account_list_app_empty_sov_text"),*/
                                                       'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                      style: CustomTypography.Body1,
+                                                      style: typography.Body1,
                                                     ),
                                                     SizedBox(
                                                       height: CustomSpacing.two,
@@ -1364,7 +1352,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                       context,
                                                                       "account_list_app_empty_sov_create"),*/
                                                                   'Create',
-                                                                  style: CustomTypography.ButtonLarge,
+                                                                  style: typography.ButtonLarge,
                                                                 ),
                                                                 type: ButtonType.elevated,
                                                               );
@@ -1379,7 +1367,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   context,
                                                                   "account_list_app_empty_sov_abort")*/
                                                             'Abort',
-                                                            style: CustomTypography.ButtonLarge,
+                                                            style: typography.ButtonLarge,
                                                           ),
                                                           type: ButtonType.text,
                                                         ),
@@ -1400,7 +1388,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     child: Text(
                                       LanguageService.getTranslated(
                                           context, "login_submit_button"),
-                                      style: CustomTypography.ButtonLarge,
+                                      style: typography.ButtonLarge,
                                     ),
                                   ),
                                 );
@@ -1418,7 +1406,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                               child: Text(
                                   LanguageService.getTranslated(
                                       context, "account_list_app_cancel_text"),
-                                  style: CustomTypography.Body1),
+                                  style: typography.Body1),
                             ),
                           ),
                           SizedBox(width: 10),
@@ -1434,6 +1422,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   }
 
   Future<void> _showTransferDialog(BuildContext context, SubAccounts subAccount) async {
+    var typography = CustomTypography(context);
     TextEditingController _userSearchController = TextEditingController();
     TransferAutocompleteModel? _selectedUser;
     List<TransferAutocompleteModel> _autocompleteUsersList = [];
@@ -1481,7 +1470,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                       padding: EdgeInsets.all(16),
                       child: Text(
                         'Transfer Sub-Account',
-                        style: CustomTypography.H5_Regular.copyWith(height: 1.2),
+                        style: typography.H5_Regular.copyWith(height: 1.2),
                       ),
                     ),
                     Padding(
@@ -1595,5 +1584,211 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
       print(e.toString());
       return [];
     }
+  }
+
+  Widget _getSubAccountUI() {
+    var typography = CustomTypography(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: CustomSpacing.four),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${LanguageService.getTranslated(context, "sub_account_list_app_title")} ',
+              style: typography.Body1,
+            ),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryMain,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Container(
+                height: 40,
+                // Adjust this value to match your desired button height
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 18),
+                      child: Text(
+                        'Upload',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: double.infinity,
+                      color: AppColors.primaryDark,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Icon(
+                        Icons.arrow_drop_down,
+                        color: Theme.of(context).colorScheme.surface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: CustomSpacing.four),
+        // Search
+        SizedBox(
+          height: 50,
+          child: TextField(
+            controller: _textEditingController,
+            onChanged: (query) {
+              accountsSearchClient(query);
+            },
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              hintText: LanguageService.getTranslated(
+                  context, "sub_account_list_search_hint"),
+              hintStyle: typography.Body2,
+            ),
+          ),
+        ),
+        SizedBox(height: CustomSpacing.four),
+        // List of sub accounts
+        Expanded(
+          child: Consumer<SubAccountListProvider>(
+              builder: (context, subAccountListProvider, _) {
+                return subAccountListProvider.isLoading
+                    ? Column(
+                  children: [
+                    SizedBox(
+                      height: 100,
+                    ),
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ],
+                )
+                    : subAccountListProvider.subAccountList.isEmpty
+                    ? Center(
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context,
+                        "sub_account_list_app_no_sub_accounts_text"),
+                    style: typography.Body1,
+                  ),
+                )
+                    :
+                ListView.builder(
+                  itemCount: subAccountListProvider
+                      .subAccountList.length,
+                  itemBuilder: (context, index) {
+                    print("Query1: $_subAccountQuery");
+                    if (index ==
+                        subAccountListProvider
+                            .subAccountList.length -
+                            1) {
+                      // Check if it's the last item
+                      if (subAccountListProvider
+                          .isNextPageLoading) {
+                        // Display loading indicator
+                        return Padding(
+                          padding:
+                          const EdgeInsets.all(8.0),
+                          child: Center(
+                            child:
+                            CircularProgressIndicator(),
+                          ),
+                        );
+                      } else if (subAccountListProvider.page >=
+                          subAccountListProvider.totalPages&&subAccountListProvider.subAccountList.isNotEmpty) {
+                        // Display end of list message
+                        print("sub account list: ${subAccountListProvider.subAccountList}");
+                        return Column(
+                          children: [
+                            _buildSubAccountCard(
+                                index, subAccountListProvider),
+                            Padding(
+                              padding:
+                              const EdgeInsets.all(8.0),
+                              child: Center(
+                                child: Text(LanguageService.getTranslated(
+                                    context,
+                                    "sub_account_list_app_end_of_list_text"),
+                                  style: typography.Body1,
+                                ),
+                              ), ),
+                          ],
+                        );
+                      } else {
+                        // Trigger fetching the next page
+                        subAccountListProvider.page =
+                            subAccountListProvider.page + 1;
+                        print(
+                            "Fetching page ${subAccountListProvider.page}");
+                        print(
+                            "Query: $_subAccountQuery, Page: ${subAccountListProvider.page}");
+                        subAccountListProvider
+                            .fetchSubAccountList(
+                          context,
+                          widget.accountId,
+                          _subAccountQuery,
+                          // Pass the search query if any
+                          subAccountListProvider.page,
+                          2, // Page size
+                        );
+                        return SizedBox();
+                      }
+                    }
+
+                    return _buildSubAccountCard(
+                        index, subAccountListProvider);
+                  },
+                );
+              }),
+        ),
+      ],
+    );
+  }
+
+  _getComingSoonUI() {
+    var typography = CustomTypography(context);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'coming_soon_title'),
+                        style: typography.H4),
+                  ),
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      style: typography.Body1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

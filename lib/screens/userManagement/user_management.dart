@@ -818,6 +818,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
       return Scaffold(
         backgroundColor: themeProvider.getTheme.colorScheme.background,
@@ -1083,7 +1084,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     children: [
                                       Text(
                                         'User Management',
-                                        style: CustomTypography.H5_Regular
+                                        style: typography.H5_Regular
                                             .copyWith(
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
@@ -1101,7 +1102,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       TabBar(
                                         isScrollable: true,
                                         controller: _tabController,
-                                        labelStyle: CustomTypography
+                                        labelStyle: typography
                                             .BottomNavigationActiveLabel,
                                         tabs: [
                                           if (showCorporateManagementTab)
@@ -1523,7 +1524,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           'usermanagement_app_filter_name'),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -1539,7 +1540,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           'usermanagement_app_filter_email'),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -1584,7 +1585,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       labelText: LanguageService.getTranslated(
                                           context,
                                           'usermanagement_app_filter_company'),
-                                      labelStyle: CustomTypography.Body1,
+                                      labelStyle: typography.Body1,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -1729,7 +1730,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_app_filter_submit'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                                       SizedBox(width: CustomSpacing.two),
@@ -1749,7 +1750,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_app_filter_cancel'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                                     ],
@@ -1772,6 +1773,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _defaultScreen() {
+    var typography = CustomTypography(context);
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
@@ -1783,7 +1785,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   child: Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_title'),
-                      style: CustomTypography.H4),
+                      style: typography.H4),
                 ),
                 SizedBox(
                   height: CustomSpacing.two,
@@ -1791,7 +1793,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 Text(
                     LanguageService.getTranslated(
                         context, 'coming_soon_subtitle'),
-                    style: CustomTypography.Body1),
+                    style: typography.Body1),
               ],
             ),
           ),
@@ -1801,6 +1803,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _corporateManagement() {
+    var typography = CustomTypography(context);
     return RefreshIndicator(
       onRefresh: () async {
         companySearchClient(_corporateSearchController.text);
@@ -1816,7 +1819,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             Text(
                 LanguageService.getTranslated(
                     context, 'usermanagement_companies_list_companies_title'),
-                style: CustomTypography.H6.copyWith(
+                style: typography.H6.copyWith(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? AppColors.white
                         : AppColors.black)),
@@ -1826,7 +1829,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             Text(
                 LanguageService.getTranslated(
                     context, 'usermanagement_companies_list_subtitle'),
-                style: CustomTypography.Body2),
+                style: typography.Body2),
             SizedBox(
               height: CustomSpacing.four,
             ),
@@ -1846,8 +1849,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         label: Text(
                             LanguageService.getTranslated(
                                 context, 'usermanagement_search_field_lable'),
-                            style: CustomTypography.Body1),
-                        hintStyle: CustomTypography.Body1,
+                            style: typography.Body1),
+                        hintStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1896,7 +1899,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                             LanguageService.getTranslated(context,
                                 "usermanagement_app_corporate_management_select_all_text"),
-                            style: CustomTypography.Body1),
+                            style: typography.Body1),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.delete),
@@ -1909,11 +1912,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   title: Text(
                                       LanguageService.getTranslated(context,
                                           'usermanagement_app_corporate_management_bulk_delete_dialog_title'),
-                                      style: CustomTypography.H7),
+                                      style: typography.H7),
                                   content: Text(
                                       LanguageService.getTranslated(context,
                                           'usermanagement_app_corporate_management_bulk_delete_dialog_description'),
-                                      style: CustomTypography.Body2),
+                                      style: typography.Body2),
                                   actions: [
                                     TextButton(
                                       onPressed: () {
@@ -1981,7 +1984,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               child: Text(
                                   LanguageService.getTranslated(context,
                                       "usermanagement_app_corporate_management_empty_list_text"),
-                                  style: CustomTypography.Body1),
+                                  style: typography.Body1),
                             )
                           : ListView.builder(
                               itemCount: companyProvider.companies.length +
@@ -2016,6 +2019,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _companyListItem(int index, CompanyProvider companyProvider) {
+    var typography = CustomTypography(context);
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Builder(builder: (context) {
       return Container(
@@ -2094,7 +2098,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           .substring(0, 1)
                                           .toUpperCase()
                                       : "",
-                              style: CustomTypography.Body2.copyWith(
+                              style: typography.Body2.copyWith(
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
                                     ? AppColors.white
@@ -2126,7 +2130,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         companyProvider.companies[index].name!
                                             .substring(1)
                                     : "",
-                            style: CustomTypography.Body2.copyWith(
+                            style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -2139,7 +2143,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               companyProvider
                                       .companies[index].companyTypeName ??
                                   "",
-                              style: CustomTypography.Caption),
+                              style: typography.Caption),
                         ],
                       ),
                     ),
@@ -2204,7 +2208,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               (companyProvider.companies[index].admins?.name
                                       ?.substring(1) ??
                                   ""),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -2213,7 +2217,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                             companyProvider.companies[index].admins?.email ??
                                 '',
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                         SizedBox(
                           height: CustomSpacing.two,
                         ),
@@ -2262,7 +2266,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 },
                                 icon: const Icon(Icons.people),
                                 label: Text('View Employees',
-                                    style: CustomTypography.Caption.copyWith(
+                                    style: typography.Caption.copyWith(
                                         color: Theme.of(context).brightness ==
                                                 Brightness.dark
                                             ? AppColors.white
@@ -2386,11 +2390,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       builder: (context) {
                                         // delete company name
                                         return AlertDialog(
-                                          title: const Text('Delete Company',
-                                              style: CustomTypography.H6),
+                                          title: Text('Delete Company',
+                                              style: typography.H6),
                                           content: Text(
                                               'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
-                                              style: CustomTypography.Body1),
+                                              style: typography.Body1),
                                           actions: [
                                             TextButton(
                                               onPressed: () {
@@ -2441,6 +2445,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _corporateEmployeeManagement() {
+    var typography = CustomTypography(context);
     return RefreshIndicator(
       onRefresh: () async {
         corporateEmployeeSearchClient(_corporateEmployeeSearchController.text);
@@ -2469,8 +2474,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         label: Text(
                             LanguageService.getTranslated(
                                 context, "usermanagement_search_field_lable"),
-                            style: CustomTypography.Body1),
-                        hintStyle: CustomTypography.Body1,
+                            style: typography.Body1),
+                        hintStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -2518,7 +2523,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                             LanguageService.getTranslated(context,
                                 "usermanagement_app_corporate_employee_management_select_all_text"),
-                            style: CustomTypography.Body1),
+                            style: typography.Body1),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.delete),
@@ -2531,11 +2536,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   title: Text(
                                       LanguageService.getTranslated(context,
                                           'usermanagement_app_corporate_employee_management_bulk_delete_dialog_title'),
-                                      style: CustomTypography.H7),
+                                      style: typography.H7),
                                   content: Text(
                                       LanguageService.getTranslated(context,
                                           'usermanagement_app_corporate_employee_management_bulk_delete_dialog_description'),
-                                      style: CustomTypography.Body2),
+                                      style: typography.Body2),
                                   actions: [
                                     TextButton(
                                       onPressed: () {
@@ -2607,9 +2612,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ),
                       )
                     : (corporateProvider.employeeList ?? []).isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text('No employees',
-                                style: CustomTypography.Body1),
+                                style: typography.Body1),
                           )
                         : ListView.builder(
                             itemCount:
@@ -2645,6 +2650,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _createCompany() {
     // Add Company
+    var typography = CustomTypography(context);
     return SingleChildScrollView(
       child: Container(
         margin: const EdgeInsets.only(top: 8),
@@ -2672,7 +2678,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Text(
                           LanguageService.getTranslated(context,
                               'usermanagement_crete_new_corporateacct_main_title'),
-                          style: CustomTypography.H7.copyWith(
+                          style: typography.H7.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -2683,7 +2689,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Text(
                           LanguageService.getTranslated(context,
                               'usermanagement_crete_new_corporateacct_main_titledesc'),
-                          style: CustomTypography.Body2),
+                          style: typography.Body2),
                       SizedBox(
                         height: CustomSpacing.three,
                       ),
@@ -2731,7 +2737,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 Text(
                                   LanguageService.getTranslated(context,
                                       'usermanagement_upload_image_txt'),
-                                  style: CustomTypography.Body1.copyWith(
+                                  style: typography.Body1.copyWith(
                                       color: Colors.white),
                                   textAlign: TextAlign.center,
                                 ),
@@ -2741,7 +2747,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 Text(
                                   LanguageService.getTranslated(
                                       context, 'usermanagement_app_image_size'),
-                                  style: CustomTypography
+                                  style: typography
                                       .BottomNavigationActiveLabel,
                                   textAlign: TextAlign.center,
                                 ),
@@ -2785,7 +2791,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_upload_image_btn'),
-                                            style: CustomTypography.ButtonLarge,
+                                            style: typography.ButtonLarge,
                                             textAlign: TextAlign.center,
                                           ),
                                         );
@@ -2843,7 +2849,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         labelText: LanguageService.getTranslated(
                                             context,
                                             'usermanagement_company type_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -2855,7 +2861,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           child: Text(
                                             corporateType.name ?? "",
                                             // Assuming 'name' is the property that holds the role name
-                                            style: CustomTypography.Body1,
+                                            style: typography.Body1,
                                           ),
                                           value: corporateType
                                               .id, // Assuming 'id' is the property that uniquely identifies the role
@@ -2897,7 +2903,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   Text(
                                     LanguageService.getTranslated(
                                         context, 'usermanagement_domain_check'),
-                                    style: CustomTypography.Body1,
+                                    style: typography.Body1,
                                   ),
                                   Switch(
                                     value: _enableDomainCheck,
@@ -2923,7 +2929,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           labelText: LanguageService.getTranslated(
                                               context,
                                               'usermanagement_domainname_list'),
-                                          labelStyle: CustomTypography.Body1,
+                                          labelStyle: typography.Body1,
                                           border: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8),
@@ -2952,7 +2958,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 labelText: LanguageService.getTranslated(
                                     context,
                                     'usermanagement_company_name_field_label'),
-                                labelStyle: CustomTypography.Body1,
+                                labelStyle: typography.Body1,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -2972,7 +2978,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               decoration: InputDecoration(
                                 labelText: LanguageService.getTranslated(
                                     context, 'usermanagement_display_label'),
-                                labelStyle: CustomTypography.Body1,
+                                labelStyle: typography.Body1,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -2998,7 +3004,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 Text(
                                   LanguageService.getTranslated(context,
                                       'usermanagement_users&roles_field_label'),
-                                  style: CustomTypography.Subtitle1.copyWith(
+                                  style: typography.Subtitle1.copyWith(
                                       color: Theme.of(context)
                                           .colorScheme
                                           .onSurface),
@@ -3076,7 +3082,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               decoration: InputDecoration(
                                 labelText: LanguageService.getTranslated(
                                     context, 'usermanagement_name_field_label'),
-                                labelStyle: CustomTypography.Body1,
+                                labelStyle: typography.Body1,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -3097,7 +3103,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 labelText: LanguageService.getTranslated(
                                     context,
                                     'usermanagement_display_name_field_label'),
-                                labelStyle: CustomTypography.Body1,
+                                labelStyle: typography.Body1,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -3172,7 +3178,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 labelText: LanguageService.getTranslated(
                                     context,
                                     'usermanagement_email_field_label'),
-                                labelStyle: CustomTypography.Body1,
+                                labelStyle: typography.Body1,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -3236,7 +3242,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_user_name_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3253,7 +3259,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_user_email_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3269,7 +3275,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_company_legal_name_invalid_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3285,7 +3291,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_company_type_invalid_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3301,7 +3307,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_company_roles_invalid_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3317,7 +3323,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       context,
                                                                       'usermanagement_app_corporate_create_company_country_invalid_error_text'),
                                                               style:
-                                                                  CustomTypography
+                                                                  typography
                                                                       .Body1),
                                                         ),
                                                       );
@@ -3434,7 +3440,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       'usermanagement_save_act_btn'),
-                                                  style: CustomTypography
+                                                  style: typography
                                                       .ButtonLarge,
                                                 ),
                                               ),
@@ -3465,7 +3471,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_cancel_btn'),
-                                            style: CustomTypography.ButtonLarge,
+                                            style: typography.ButtonLarge,
                                           ),
                                         ),
                                       ),
@@ -3485,6 +3491,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _editCompany({bool isView = false}) {
+    var typography = CustomTypography(context);
     // Add Company
     return Consumer<CompanyProvider>(
         builder: (context, companyProvider, child) {
@@ -3522,7 +3529,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           'usermanagement_app_corporate_view_company_title_text')
                                       : LanguageService.getTranslated(context,
                                           'usermanagement_app_corporate_edit_company_title_text'),
-                                  style: CustomTypography.H7.copyWith(
+                                  style: typography.H7.copyWith(
                                       color: Theme.of(context).brightness ==
                                               Brightness.dark
                                           ? AppColors.white
@@ -3541,7 +3548,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             : LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_app_corporate_edit_company_description_text'),
-                                        style: CustomTypography.Body2),
+                                        style: typography.Body2),
                                   ),
                                 ],
                               ),
@@ -3596,7 +3603,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               ),
                                               Text(
                                                 "Upload Image",
-                                                style: CustomTypography.Body1
+                                                style: typography.Body1
                                                     .copyWith(
                                                         color: Colors.white),
                                                 textAlign: TextAlign.center,
@@ -3604,9 +3611,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               SizedBox(
                                                 height: CustomSpacing.two,
                                               ),
-                                              const Text(
+                                              Text(
                                                 "Min 400x400px\nPNG or JPEG",
-                                                style: CustomTypography
+                                                style: typography
                                                     .BottomNavigationActiveLabel,
                                                 textAlign: TextAlign.center,
                                               ),
@@ -3657,10 +3664,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                             }
                                                           });
                                                         },
-                                                        child: const Text(
+                                                        child: Text(
                                                           "Upload Image",
                                                           style:
-                                                              CustomTypography
+                                                              typography
                                                                   .ButtonLarge,
                                                           textAlign:
                                                               TextAlign.center,
@@ -3726,7 +3733,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     .getTranslated(context,
                                                         'usermanagement_company type_label'),
                                                 labelStyle:
-                                                    CustomTypography.Body1,
+                                                    typography.Body1,
                                                 border: OutlineInputBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
@@ -3738,7 +3745,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     selectedCompanyType?.name ??
                                                         "",
                                                     style:
-                                                        CustomTypography.Body1,
+                                                        typography.Body1,
                                                   ),
                                                   value:
                                                       selectedCompanyType?.type,
@@ -3773,7 +3780,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_domain_check'),
-                                            style: CustomTypography.Body1,
+                                            style: typography.Body1,
                                           ),
                                           Switch(
                                             value: _enableDomainCheck,
@@ -3805,7 +3812,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       .getTranslated(context,
                                                           'usermanagement_domainname_list'),
                                                   labelStyle:
-                                                      CustomTypography.Body1,
+                                                      typography.Body1,
                                                   border: OutlineInputBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -3837,7 +3844,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         labelText: LanguageService.getTranslated(
                                             context,
                                             'usermanagement_company_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -3862,7 +3869,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_display_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -3892,7 +3899,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_users&roles_field_label'),
-                                          style: CustomTypography.Subtitle1
+                                          style: typography.Subtitle1
                                               .copyWith(
                                                   color: Theme.of(context)
                                                       .colorScheme
@@ -3987,7 +3994,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         labelText: LanguageService.getTranslated(
                                             context,
                                             'usermanagement_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -4011,7 +4018,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         labelText: LanguageService.getTranslated(
                                             context,
                                             'usermanagement_display_name_field_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -4099,7 +4106,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         labelText: LanguageService.getTranslated(
                                             context,
                                             'usermanagement_email_field_label'),
-                                        labelStyle: CustomTypography.Body1,
+                                        labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -4168,8 +4175,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                             .isEmpty) {
                                                                           ScaffoldMessenger.of(context)
                                                                               .showSnackBar(
-                                                                            const SnackBar(
-                                                                              content: Text('User Name cannot be empty', style: CustomTypography.Body1),
+                                                                            SnackBar(
+                                                                              content: Text('User Name cannot be empty', style: typography.Body1),
                                                                             ),
                                                                           );
                                                                         } else if (_adminEmailController
@@ -4178,8 +4185,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                           // check regex for email
                                                                           ScaffoldMessenger.of(context)
                                                                               .showSnackBar(
-                                                                            const SnackBar(
-                                                                              content: Text('User Email cannot be empty', style: CustomTypography.Body1),
+                                                                            SnackBar(
+                                                                              content: Text('User Email cannot be empty', style: typography.Body1),
                                                                             ),
                                                                           );
                                                                         } else if (_companyLegalNameController
@@ -4187,24 +4194,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                             .isEmpty) {
                                                                           ScaffoldMessenger.of(context)
                                                                               .showSnackBar(
-                                                                            const SnackBar(
-                                                                              content: Text('Company Legal Name cannot be empty', style: CustomTypography.Body1),
+                                                                            SnackBar(
+                                                                              content: Text('Company Legal Name cannot be empty', style: typography.Body1),
                                                                             ),
                                                                           );
                                                                         } else if (selectedCompanyType ==
                                                                             null) {
                                                                           ScaffoldMessenger.of(context)
                                                                               .showSnackBar(
-                                                                            const SnackBar(
-                                                                              content: Text('Company Type cannot be empty', style: CustomTypography.Body1),
+                                                                            SnackBar(
+                                                                              content: Text('Company Type cannot be empty', style: typography.Body1),
                                                                             ),
                                                                           );
                                                                         } else if (selectedCorporateTypeRole
                                                                             .isEmpty) {
                                                                           ScaffoldMessenger.of(context)
                                                                               .showSnackBar(
-                                                                            const SnackBar(
-                                                                              content: Text('Role(s) cannot be empty', style: CustomTypography.Body1),
+                                                                            SnackBar(
+                                                                              content: Text('Role(s) cannot be empty', style: typography.Body1),
                                                                             ),
                                                                           );
                                                                         }
@@ -4279,7 +4286,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                     LanguageService.getTranslated(
                                                                         context,
                                                                         'usermanagement_save_act_btn'),
-                                                                    style: CustomTypography
+                                                                    style: typography
                                                                         .ButtonLarge,
                                                                   ),
                                                                 ),
@@ -4321,7 +4328,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                   context,
                                                                   'usermanagement_cancel_btn'),
                                                           style:
-                                                              CustomTypography
+                                                              typography
                                                                   .ButtonLarge,
                                                         ),
                                                       ),
@@ -4352,6 +4359,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _corporateUserList(int index, CorporateProvider corporateProvider) {
+    var typography = CustomTypography(context);
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
       margin: const EdgeInsets.only(top: 0.0, bottom: 8),
@@ -4433,7 +4441,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               (corporateProvider.employeeList?[index].name
                                       ?.substring(1) ??
                                   ""),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -4442,12 +4450,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(corporateProvider.employeeList?[index].email ?? "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                         Text(
                             corporateProvider.employeeList?[index].phone
                                     ?.toString() ??
                                 "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                       ],
                     ),
                   ),
@@ -4552,7 +4560,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             },
                             icon: const Icon(Icons.people),
                             label: Text('View Connections',
-                                style: CustomTypography.Caption.copyWith(
+                                style: typography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
                                         ? AppColors.white
@@ -4618,12 +4626,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     builder: (context) {
                                       // delete company name
                                       return AlertDialog(
-                                        title: const Text('Delete Employee',
-                                            style: CustomTypography.H6),
+                                        title: Text('Delete Employee',
+                                            style: typography.H6),
                                         content: Text(
                                             'Are you sure you want to delete '
                                             '${corporateProvider.employeeList?[index].name}?',
-                                            style: CustomTypography.Body1),
+                                            style: typography.Body1),
                                         actions: [
                                           TextButton(
                                             onPressed: () {
@@ -4678,6 +4686,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _createCorporateUser() {
+    var typography = CustomTypography(context);
     // Add Corporate User
     return SingleChildScrollView(
       child: Container(
@@ -4708,14 +4717,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     Text(
                         LanguageService.getTranslated(
                             context, 'usermanagemet_cuser_create_titile'),
-                        style: CustomTypography.Body1),
+                        style: typography.Body1),
                     SizedBox(
                       height: CustomSpacing.two,
                     ),
                     Text(
                         LanguageService.getTranslated(context,
                             'usermanagement_cuser_create_title_description'),
-                        style: CustomTypography.Body2),
+                        style: typography.Body2),
                     SizedBox(
                       height: CustomSpacing.six,
                     ),
@@ -4752,7 +4761,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           LanguageService.getTranslated(context,
                               'usermanagement_app_corporate_create_image_text'),
-                          style: CustomTypography.Body1.copyWith(
+                          style: typography.Body1.copyWith(
                               color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
@@ -4762,7 +4771,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           LanguageService.getTranslated(
                               context, 'usermanagement_app_image_size'),
-                          style: CustomTypography.BottomNavigationActiveLabel,
+                          style: typography.BottomNavigationActiveLabel,
                           textAlign: TextAlign.center,
                         ),
                         // Add button
@@ -4799,7 +4808,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: Text(
                                     LanguageService.getTranslated(context,
                                         'usermanagement_cuser_upload_image_btn'),
-                                    style: CustomTypography.ButtonLarge,
+                                    style: typography.ButtonLarge,
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -4821,7 +4830,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
                             context, 'usermanagement_cuser_trow_name_label'),
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -4975,7 +4984,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
                             context, 'usermanagement_cuser_email_label'),
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -5233,7 +5242,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_cuser_submit_btn'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                               );
@@ -5261,7 +5270,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 child: Text(
                                   LanguageService.getTranslated(context,
                                       'usermanagemet_cuser_cancel_btn'),
-                                  style: CustomTypography.ButtonLarge,
+                                  style: typography.ButtonLarge,
                                 ),
                               ),
                             ),
@@ -5276,6 +5285,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   Widget _editCorporateUser(BuildContext context, String employeeId) {
+    var typography = CustomTypography(context);
     CorporateProvider corporateProvider =
         Provider.of<CorporateProvider>(context, listen: false);
     return FutureBuilder<UsersCorporate>(
@@ -5349,14 +5359,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Text(
                               LanguageService.getTranslated(
                                   context, 'usermanagement_cuser_edit_title'),
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                           SizedBox(
                             height: CustomSpacing.two,
                           ),
                           Text(
                               LanguageService.getTranslated(context,
                                   'usermanagement_cuser_edit_title_description'),
-                              style: CustomTypography.Body2),
+                              style: typography.Body2),
                           SizedBox(
                             height: CustomSpacing.six,
                           ),
@@ -5394,7 +5404,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Text(
                                 LanguageService.getTranslated(context,
                                     'usermanagement_cuser_upload_image_label'),
-                                style: CustomTypography.Body1.copyWith(
+                                style: typography.Body1.copyWith(
                                     color: Colors.white),
                                 textAlign: TextAlign.center,
                               ),
@@ -5404,7 +5414,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Text(
                                 LanguageService.getTranslated(
                                     context, 'usermanagement_app_image_size'),
-                                style: CustomTypography
+                                style: typography
                                     .BottomNavigationActiveLabel,
                                 textAlign: TextAlign.center,
                               ),
@@ -5445,7 +5455,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_cuser_upload_image_btn'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                           textAlign: TextAlign.center,
                                         ),
                                       );
@@ -5467,7 +5477,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(context,
                                   'usermanagement_cuser_trow_name_label'),
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -5590,7 +5600,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(
                                   context, 'usermanagement_cuser_email_label'),
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -5624,7 +5634,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     labelText: LanguageService.getTranslated(
                                         context,
                                         'usermanagement_cuser_trow_ph_number'),
-                                    labelStyle: CustomTypography.Body1,
+                                    labelStyle: typography.Body1,
                                     disabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide(
@@ -5775,7 +5785,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 LanguageService.getTranslated(
                                                     context,
                                                     'usermanagement_cuser_submit_btn'),
-                                                style: CustomTypography
+                                                style: typography
                                                     .ButtonLarge,
                                               ),
                                             ),
@@ -5808,7 +5818,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       child: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagemet_cuser_cancel_btn'),
-                                        style: CustomTypography.ButtonLarge,
+                                        style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -5892,6 +5902,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _nonCorporateManagement() {
+    var typography = CustomTypography(context);
     return Builder(builder: (context) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -5916,8 +5927,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       label: Text(
                           LanguageService.getTranslated(
                               context, "usermanagement_search_field_lable"),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
+                          style: typography.Body1),
+                      hintStyle: typography.Body1,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -5957,7 +5968,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_individual_users_all_tab'),
-                    style: CustomTypography.BottomNavigationActiveLabel,
+                    style: typography.BottomNavigationActiveLabel,
                   ),
                   SizedBox(
                     width: CustomSpacing.two,
@@ -5973,7 +5984,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           noncorporateProvider.allCount,
-                          style: CustomTypography.BottomNavigationActiveLabel
+                          style: typography.BottomNavigationActiveLabel
                               .copyWith(height: -0.6),
                         ),
                       ),
@@ -5992,7 +6003,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   Text(
                     LanguageService.getTranslated(
                         context, 'usermanagement_individual_users_active_tab'),
-                    style: CustomTypography.BottomNavigationActiveLabel,
+                    style: typography.BottomNavigationActiveLabel,
                   ),
                   SizedBox(
                     width: CustomSpacing.two,
@@ -6008,7 +6019,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           noncorporateProvider.activeCount,
-                          style: CustomTypography.BottomNavigationActiveLabel
+                          style: typography.BottomNavigationActiveLabel
                               .copyWith(height: -0.6),
                         ),
                       ),
@@ -6043,7 +6054,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Text(
                               LanguageService.getTranslated(context,
                                   "usermanagement_individual_users_select_all"),
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                           const Spacer(),
                           IconButton(
                             icon: const Icon(Icons.delete),
@@ -6056,11 +6067,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     title: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagement_individual_users_bulk_delete_dialog_title'),
-                                        style: CustomTypography.H7),
+                                        style: typography.H7),
                                     content: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagement_individual_users_bulk_delete_dialog_description'),
-                                        style: CustomTypography.Body2),
+                                        style: typography.Body2),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
@@ -6147,7 +6158,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       child: Text(
                                           LanguageService.getTranslated(context,
                                               "usermanagement_individual_users_empty_list_text"),
-                                          style: CustomTypography.Body1),
+                                          style: typography.Body1),
                                     )
                                   : Builder(builder: (context) {
                                       return ListView.builder(
@@ -6197,7 +6208,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       child: Text(
                                           LanguageService.getTranslated(context,
                                               "usermanagement_individual_users_empty_list_text"),
-                                          style: CustomTypography.Body1),
+                                          style: typography.Body1),
                                     )
                                   : ListView.builder(
                                       itemCount: noncorporateProvider
@@ -6253,6 +6264,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _nonCorporateListItem(int index, NonCorporateProvider nonCorporateProvider) {
+    var typography = CustomTypography(context);
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
       margin: const EdgeInsets.only(top: 0.0, bottom: 8),
@@ -6334,7 +6346,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         .substring(0, 1)
                                         .toUpperCase()
                                     : "",
-                            style: CustomTypography.Body2.copyWith(
+                            style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -6373,7 +6385,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                           .employeeList![index].name!
                                           .substring(1)
                                   : "",
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -6386,7 +6398,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             nonCorporateProvider
                                     .employeeList![index].displayName ??
                                 "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                       ],
                     ),
                   ),
@@ -6466,7 +6478,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         //     (nonCorporateProvider.employeeList![index].admins?.name
                         //         ?.substring(1) ??
                         //         ""),
-                        style: CustomTypography.Body2.copyWith(
+                        style: typography.Body2.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -6476,7 +6488,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           nonCorporateProvider.employeeList![index].displayName
                               .toString(),
                           // .admins?.email ?? '',
-                          style: CustomTypography.Caption),
+                          style: typography.Caption),
                       SizedBox(
                         height: CustomSpacing.two,
                       ),
@@ -6514,7 +6526,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             },
                             icon: const Icon(Icons.people),
                             label: Text('View Connections',
-                                style: CustomTypography.Caption.copyWith(
+                                style: typography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
                                         ? AppColors.white
@@ -6613,11 +6625,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 builder: (context) {
                                   // delete company name
                                   return AlertDialog(
-                                    title: const Text('Delete Company',
-                                        style: CustomTypography.H6),
+                                    title: Text('Delete Company',
+                                        style: typography.H6),
                                     content: Text(
                                         'Are you sure you want to delete ${nonCorporateProvider.employeeList![index].displayName}?',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
@@ -6666,6 +6678,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   Widget _editNonCorporateUser(BuildContext context, String userId) {
+    var typography = CustomTypography(context);
     NonCorporateProvider nonCorporateProvider =
         Provider.of<NonCorporateProvider>(context, listen: false);
     return FutureBuilder<UsersCorporate>(
@@ -6736,14 +6749,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Text(
                               LanguageService.getTranslated(context,
                                   'usermanagement_individual_user_edit_title'),
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                           SizedBox(
                             height: CustomSpacing.two,
                           ),
                           Text(
                               LanguageService.getTranslated(context,
                                   'usermanagement_individual_user_edit_description'),
-                              style: CustomTypography.Body2),
+                              style: typography.Body2),
                           SizedBox(
                             height: CustomSpacing.six,
                           ),
@@ -6781,7 +6794,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Text(
                                 LanguageService.getTranslated(context,
                                     'usermanagement_individual_user_upload_image_text'),
-                                style: CustomTypography.Body1.copyWith(
+                                style: typography.Body1.copyWith(
                                     color: Colors.white),
                                 textAlign: TextAlign.center,
                               ),
@@ -6791,7 +6804,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Text(
                                 LanguageService.getTranslated(
                                     context, 'usermanagement_app_image_size'),
-                                style: CustomTypography
+                                style: typography
                                     .BottomNavigationActiveLabel,
                                 textAlign: TextAlign.center,
                               ),
@@ -6832,7 +6845,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_individual_user_upload_image_button_text'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                           textAlign: TextAlign.center,
                                         ),
                                       );
@@ -6854,7 +6867,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(context,
                                   'usermanagement_individual_user_edit_name_label'),
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -6991,7 +7004,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(context,
                                   'usermanagement_individual_user_edit_email_label'),
-                              labelStyle: CustomTypography.Body1,
+                              labelStyle: typography.Body1,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -7038,13 +7051,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               code; // Update the controller
                                         });
                                       },
-                                      diallingCodeStyle: CustomTypography.Body1,
+                                      diallingCodeStyle: typography.Body1,
                                       isShowInputField: false,
-                                      dialogTheme: const DialogThemeData(
-                                        style: CustomTypography.Body1,
+                                      dialogTheme: DialogThemeData(
+                                        style: typography.Body1,
                                         isShowFloatButton: false,
                                       ),
-                                      countryNameStyle: CustomTypography.Body1,
+                                      countryNameStyle: typography.Body1,
                                       isShowCountryName: false,
                                       onCountryChanged: (country) {
                                         // This may be triggered based on specific implementations of CountryListPicker
@@ -7198,7 +7211,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 LanguageService.getTranslated(
                                                     context,
                                                     'usermanagement_individual_user_edit_submit_button'),
-                                                style: CustomTypography
+                                                style: typography
                                                     .ButtonLarge,
                                               ),
                                             ),
@@ -7230,7 +7243,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       child: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagement_individual_user_edit_cancel_button'),
-                                        style: CustomTypography.ButtonLarge,
+                                        style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -7264,6 +7277,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _employeeManagement() {
+    var typography = CustomTypography(context);
     return Builder(builder: (context) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -7275,14 +7289,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           Text(
               LanguageService.getTranslated(
                   context, 'usermanagement_emp_management_title'),
-              style: CustomTypography.Body1),
+              style: typography.Body1),
           SizedBox(
             height: CustomSpacing.two,
           ),
           Text(
               LanguageService.getTranslated(
                   context, 'usermanagement_emp_management_descrption'),
-              style: CustomTypography.Body2),
+              style: typography.Body2),
           SizedBox(
             height: CustomSpacing.four,
           ),
@@ -7302,8 +7316,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       label: Text(
                           LanguageService.getTranslated(context,
                               'usermanagement_app_employee_management_search_text'),
-                          style: CustomTypography.Body1),
-                      hintStyle: CustomTypography.Body1,
+                          style: typography.Body1),
+                      hintStyle: typography.Body1,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -7339,7 +7353,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   Text(
                     LanguageService.getTranslated(context,
                         'usermanagement_app_employee_management_all_tab_title'),
-                    style: CustomTypography.BottomNavigationActiveLabel,
+                    style: typography.BottomNavigationActiveLabel,
                   ),
                   SizedBox(
                     width: CustomSpacing.two,
@@ -7355,7 +7369,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           employeeProvider.allCount.toString(),
-                          style: CustomTypography.BottomNavigationActiveLabel
+                          style: typography.BottomNavigationActiveLabel
                               .copyWith(height: -0.6),
                         ),
                       ),
@@ -7370,7 +7384,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   Text(
                     LanguageService.getTranslated(context,
                         'usermanagement_app_employee_management_active_tab_title'),
-                    style: CustomTypography.BottomNavigationActiveLabel,
+                    style: typography.BottomNavigationActiveLabel,
                   ),
                   SizedBox(
                     width: CustomSpacing.two,
@@ -7386,7 +7400,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         label: Text(
                           employeeProvider.activeCount.toString(),
-                          style: CustomTypography.BottomNavigationActiveLabel
+                          style: typography.BottomNavigationActiveLabel
                               .copyWith(height: -0.6),
                         ),
                       ),
@@ -7421,7 +7435,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Text(
                               LanguageService.getTranslated(context,
                                   "usermanagement_app_employee_management_select_all_text"),
-                              style: CustomTypography.Body1),
+                              style: typography.Body1),
                           const Spacer(),
                           IconButton(
                             icon: const Icon(Icons.delete),
@@ -7434,11 +7448,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     title: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagement_app_employee_management_bulk_delete_dialog_title'),
-                                        style: CustomTypography.H7),
+                                        style: typography.H7),
                                     content: Text(
                                         LanguageService.getTranslated(context,
                                             'usermanagement_app_employee_management_bulk_delete_dialog_description'),
-                                        style: CustomTypography.Body2),
+                                        style: typography.Body2),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
@@ -7521,9 +7535,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: CircularProgressIndicator(),
                                 )
                               : employeeProvider.employeeList!.isEmpty
-                                  ? const Center(
+                                  ? Center(
                                       child: Text('No employees found',
-                                          style: CustomTypography.Body1),
+                                          style: typography.Body1),
                                     )
                                   : ListView.builder(
                                       itemCount: employeeProvider
@@ -7569,9 +7583,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: CircularProgressIndicator(),
                                 )
                               : employeeProvider.employeeList!.isEmpty
-                                  ? const Center(
+                                  ? Center(
                                       child: Text('No employees found',
-                                          style: CustomTypography.Body1),
+                                          style: typography.Body1),
                                     )
                                   : ListView.builder(
                                       itemCount: employeeProvider
@@ -7624,6 +7638,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _employeeManagementListItem(int index, EmployeeProvider employeeProvider) {
+    var typography = CustomTypography(context);
     // Option to multiple select using checkbox, show company name, type, Admin Details (Admin Name, Email), Status switch and 2 action icons for Employees and Edit
     return Container(
       margin: const EdgeInsets.only(top: 0.0, bottom: 8),
@@ -7710,7 +7725,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               (employeeProvider.employeeList?[index].name
                                       ?.substring(1) ??
                                   ""),
-                          style: CustomTypography.Body2.copyWith(
+                          style: typography.Body2.copyWith(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? AppColors.white
@@ -7719,9 +7734,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(employeeProvider.employeeList?[index].email ?? "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                         Text(employeeProvider.employeeList?[index].phone ?? "",
-                            style: CustomTypography.Caption),
+                            style: typography.Caption),
                       ],
                     ),
                   ),
@@ -7818,7 +7833,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             },
                             icon: const Icon(Icons.people),
                             label: Text('View Connections',
-                                style: CustomTypography.Caption.copyWith(
+                                style: typography.Caption.copyWith(
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
                                         ? AppColors.white
@@ -7906,11 +7921,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 builder: (context) {
                                   // delete company name
                                   return AlertDialog(
-                                    title: const Text('Delete Employee',
-                                        style: CustomTypography.H6),
+                                    title: Text('Delete Employee',
+                                        style: typography.H6),
                                     content: Text(
                                         'Are you sure you want to delete ${employeeProvider.employeeList?[index].name}?',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
@@ -7956,7 +7971,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
-  _createEmployee() {
+  Widget _createEmployee() {
+    var typography = CustomTypography(context);
     // Add Employee
     return SingleChildScrollView(
       child: Container(
@@ -7987,14 +8003,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     Text(
                         LanguageService.getTranslated(context,
                             "usermanagement_app_employee_create_account_title"),
-                        style: CustomTypography.Body1),
+                        style: typography.Body1),
                     SizedBox(
                       height: CustomSpacing.two,
                     ),
                     Text(
                         LanguageService.getTranslated(context,
                             'usermanagement_app_employee_create_account_description'),
-                        style: CustomTypography.Body2),
+                        style: typography.Body2),
                     SizedBox(
                       height: CustomSpacing.six,
                     ),
@@ -8031,7 +8047,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           LanguageService.getTranslated(
                               context, 'usermanagement_upload_image_txt'),
-                          style: CustomTypography.Body1.copyWith(
+                          style: typography.Body1.copyWith(
                               color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
@@ -8041,7 +8057,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           LanguageService.getTranslated(
                               context, 'usermanagement_app_image_size'),
-                          style: CustomTypography.BottomNavigationActiveLabel,
+                          style: typography.BottomNavigationActiveLabel,
                           textAlign: TextAlign.center,
                         ),
                         // Add button
@@ -8078,7 +8094,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: Text(
                                     LanguageService.getTranslated(context,
                                         'usermanagement_upload_image_btn'),
-                                    style: CustomTypography.ButtonLarge,
+                                    style: typography.ButtonLarge,
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -8100,7 +8116,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
                             context, 'usermanagement_name_field_label'),
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -8216,7 +8232,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
                             context, 'usermanagement_email_field_label'),
-                        labelStyle: CustomTypography.Body1,
+                        labelStyle: typography.Body1,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -8256,13 +8272,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     _selectedCountryCode = code;
                                   });
                                 },
-                                diallingCodeStyle: CustomTypography.Body1,
+                                diallingCodeStyle: typography.Body1,
                                 isShowInputField: false,
-                                dialogTheme: const DialogThemeData(
-                                  style: CustomTypography.Body1,
+                                dialogTheme: DialogThemeData(
+                                  style: typography.Body1,
                                   isShowFloatButton: false,
                                 ),
-                                countryNameStyle: CustomTypography.Body1,
+                                countryNameStyle: typography.Body1,
                                 isShowCountryName: false,
                                 onCountryChanged: (country) {
                                   print('This is the country code: $country');
@@ -8487,7 +8503,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_app_employee_create_account_submit'),
-                                          style: CustomTypography.ButtonLarge,
+                                          style: typography.ButtonLarge,
                                         ),
                                       ),
                               );
@@ -8515,7 +8531,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 child: Text(
                                   LanguageService.getTranslated(context,
                                       'usermanagement_app_employee_create_account_cancel'),
-                                  style: CustomTypography.ButtonLarge,
+                                  style: typography.ButtonLarge,
                                 ),
                               ),
                             ),
@@ -8530,6 +8546,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   _verificationRequestsUI() {
+    var typography = CustomTypography(context);
     return Container(
       color: Theme.of(context).brightness == Brightness.dark
           ? AppColors.paperElavation25
@@ -8541,12 +8558,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           SizedBox(
             height: CustomSpacing.five,
           ),
-          const Text('Verification Requests', style: CustomTypography.H7),
+          Text('Verification Requests', style: typography.H7),
           SizedBox(
             height: CustomSpacing.three,
           ),
-          const Text('Manage all accounts request from this panel',
-              style: CustomTypography.Body2),
+          Text('Manage all accounts request from this panel',
+              style: typography.Body2),
           SizedBox(
             height: CustomSpacing.two,
           ),
@@ -8595,10 +8612,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       .size
                                                       .height *
                                                   0.6,
-                                              child: const Center(
+                                              child: Center(
                                                 child: Text(
                                                   "No Requests",
-                                                  style: CustomTypography.Body1,
+                                                  style: typography.Body1,
                                                 ),
                                               ),
                                             ),
@@ -8657,7 +8674,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       'usermanagement_app_user_verification_no_requests'),
-                                                  style: CustomTypography.Body1,
+                                                  style: typography.Body1,
                                                 ),
                                               ),
                                             ),
@@ -8687,6 +8704,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _verificationCorporateRequestsListItem(
       int index, VerificationProvider verificationProvider) {
+    var typography = CustomTypography(context);
     return Container(
       margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: Card(
@@ -8706,7 +8724,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         TextSpan(
                           text:
                               '“${verificationProvider.corporateRequests[index].admin?.name ?? ""}”',
-                          style: CustomTypography.Body1_5.copyWith(
+                          style: typography.Body1_5.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -8714,15 +8732,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const TextSpan(
+                        TextSpan(
                           text:
                               ' has requested to create new corporate account for company name ',
-                          style: CustomTypography.Body1_5,
+                          style: typography.Body1_5,
                         ),
                         TextSpan(
                           text:
                               '“${verificationProvider.corporateRequests[index].companyName}”',
-                          style: CustomTypography.Body1_5.copyWith(
+                          style: typography.Body1_5.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -8746,25 +8764,25 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 verificationProvider.corporateRequests[index]
                                         .admin?.email ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                             label: Text(
                                 verificationProvider.corporateRequests[index]
                                         .admin?.phone ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                             label: Text(
                                 verificationProvider.corporateRequests[index]
                                         .companyTypeName ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
-                        const CustomChip(
+                        CustomChip(
                             label: Text('Admin',
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                       ],
                     ),
                   ),
@@ -8817,7 +8835,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           },
                           child: Text('Accept',
                               style:
-                                  CustomTypography.BottomNavigationActiveLabel
+                                  typography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
                   SizedBox(width: CustomSpacing.two),
@@ -8855,7 +8873,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           },
                           child: Text('Reject',
                               style:
-                                  CustomTypography.BottomNavigationActiveLabel
+                                  typography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
                   const Spacer(),
@@ -8867,7 +8885,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Text(
                           formatCreatedAt(
                               verificationProvider.corporateRequests[index]),
-                          style: CustomTypography.Caption),
+                          style: typography.Caption),
                     ],
                   ),
                 ],
@@ -8887,6 +8905,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   _verificationUserRequestsListItem(
       int index, VerificationProvider verificationProvider) {
+    var typography = CustomTypography(context);
     return Container(
       margin: const EdgeInsets.only(top: 0.0, bottom: 8),
       child: Card(
@@ -8906,7 +8925,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         TextSpan(
                           text:
                               '“${verificationProvider.userRequests[index].name ?? ""}”',
-                          style: CustomTypography.Body1_5.copyWith(
+                          style: typography.Body1_5.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
@@ -8917,7 +8936,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         TextSpan(
                           text: LanguageService.getTranslated(context,
                               'usermanagement_app_corporate_verification_request_text'),
-                          style: CustomTypography.Body1_5,
+                          style: typography.Body1_5,
                         ),
                       ],
                     ),
@@ -8935,14 +8954,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 verificationProvider
                                         .userRequests[index].email ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                             label: Text(
                                 verificationProvider
                                         .userRequests[index].phone ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                             onPressed: () {
@@ -8951,8 +8970,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 context: context,
                                 builder: (context) {
                                   return AlertDialog(
-                                    title: const Text('Select Role',
-                                        style: CustomTypography.H6),
+                                    title: Text('Select Role',
+                                        style: typography.H6),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -8999,8 +9018,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       // Handle save role
                                                       Navigator.pop(context);
                                                     },
-                                                    child: const Text('Save',
-                                                        style: CustomTypography
+                                                    child: Text('Save',
+                                                        style: typography
                                                             .BottomNavigationActiveLabel),
                                                   ),
                                                 ),
@@ -9016,7 +9035,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                       Navigator.pop(context);
                                                     },
                                                     child: Text('Cancel',
-                                                        style: CustomTypography
+                                                        style: typography
                                                                 .BottomNavigationActiveLabel
                                                             .copyWith(
                                                                 color: AppColors
@@ -9036,7 +9055,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             label: Text(
                                 verificationProvider.userRequests[index].role ??
                                     "",
-                                style: CustomTypography.InputLabel)),
+                                style: typography.InputLabel)),
                         SizedBox(width: CustomSpacing.two),
                       ],
                     ),
@@ -9089,7 +9108,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           },
                           child: Text('Accept',
                               style:
-                                  CustomTypography.BottomNavigationActiveLabel
+                                  typography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
                   SizedBox(width: CustomSpacing.two),
@@ -9124,7 +9143,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           },
                           child: Text('Reject',
                               style:
-                                  CustomTypography.BottomNavigationActiveLabel
+                                  typography.BottomNavigationActiveLabel
                                       .copyWith(color: AppColors.primaryMain)),
                         ),
                   const Spacer(),
@@ -9133,8 +9152,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     children: [
                       const Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
-                      const Text('Mar 7, 2024 23:26',
-                          style: CustomTypography.Caption),
+                      Text('Mar 7, 2024 23:26',
+                          style: typography.Caption),
                     ],
                   ),
                 ],
@@ -9147,61 +9166,62 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   buildDropdownMenuItems() {
+    var typography = CustomTypography(context);
     return [
       DropdownMenuItem(
         child: Row(
           children: [
             const Icon(Icons.apartment),
             SizedBox(width: CustomSpacing.two),
-            const Text(
+            Text(
               'Corporate Management',
-              style: CustomTypography.BottomNavigationActiveLabel,
+              style: typography.BottomNavigationActiveLabel,
             ),
           ],
         ),
         value: 'Corporate',
       ),
       showCorporateList
-          ? const DropdownMenuItem(
+          ? DropdownMenuItem(
               child: Text(
                 'Companies',
-                style: CustomTypography.BottomNavigationActiveLabel,
+                style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Companies',
             )
           : Container(
               height: 0,
-              child: const DropdownMenuItem(
+              child: DropdownMenuItem(
                 child: Text(
                   'Companies',
-                  style: CustomTypography.BottomNavigationActiveLabel,
+                  style: typography.BottomNavigationActiveLabel,
                 ),
                 value: 'Companies',
               ),
             ),
       showCorporateUserListDropdown
-          ? const DropdownMenuItem(
+          ? DropdownMenuItem(
               child: Text(
                 'Users',
-                style: CustomTypography.BottomNavigationActiveLabel,
+                style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Users',
             )
           : const SizedBox(),
       showViewCorporate
-          ? const DropdownMenuItem(
+          ? DropdownMenuItem(
               child: Text(
                 'Company Profiles',
-                style: CustomTypography.BottomNavigationActiveLabel,
+                style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Company Profiles',
             )
           : const SizedBox(),
       showCorporateVerificationTab || showUserVerificationTab
-          ? const DropdownMenuItem(
+          ? DropdownMenuItem(
               child: Text(
                 'Verification Requests',
-                style: CustomTypography.BottomNavigationActiveLabel,
+                style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Verification Requests',
             )

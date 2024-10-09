@@ -103,6 +103,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
   }
 
   void _showOptionsDialog() {
+    var typography = CustomTypography(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -113,7 +114,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
             return AlertDialog(
               title: Text(
                 LanguageService.getTranslated(context, "app_options"),
-                style: CustomTypography.H5_Regular,
+                style: typography.H5_Regular,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -121,11 +122,11 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                   RadioListTile<String>(
                     title: Text(
                       LanguageService.getTranslated(context, "app_use_sov_data"),
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     subtitle: Text(
                       LanguageService.getTranslated(context, "app_only_missing_data_processed"),
-                      style: CustomTypography.Caption,
+                      style: typography.Caption,
                     ),
                     value: "Use SOV Data",
                     groupValue: _selectedOption,
@@ -138,7 +139,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                   RadioListTile<String>(
                     title: Text(
                       LanguageService.getTranslated(context, "app_refresh_all_data"),
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     value: "Refresh All Data",
                     groupValue: _selectedOption,
@@ -163,7 +164,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                         },
                         child: Text(
                           LanguageService.getTranslated(context, "app_commit_selected_locations"),
-                          style: CustomTypography.Body1.copyWith(fontWeight: FontWeight.w300),
+                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -183,7 +184,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                         },
                         child: Text(
                           LanguageService.getTranslated(context, "app_commit_all_locations"),
-                          style: CustomTypography.Body1.copyWith(fontWeight: FontWeight.w300),
+                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -202,7 +203,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                         },
                         child: Text(
                           LanguageService.getTranslated(context, "app_cancel"),
-                          style: CustomTypography.Body1.copyWith(fontWeight: FontWeight.w300),
+                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -219,13 +220,14 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     final isSubmitLoading = Provider.of<UploadSovProvider>(context).isSubmitLoading;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           LanguageService.getTranslated(context, "app_upload_preview"),
-          style: CustomTypography.H5_Regular,
+          style: typography.H5_Regular,
         ),
       ),
       body: Stack(
@@ -255,7 +257,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                     ),
                     Text(
                       LanguageService.getTranslated(context, "app_select_all"),
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                   ],
                 ),
@@ -280,12 +282,12 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                           title: Text(
                             locations[index]['fields']
                                 .firstWhere((field) => field['key'] == 'formatted_address', orElse: () => {'value': 'No address available'})['value'],
-                            style: CustomTypography.Body1,
+                            style: typography.Body1,
                           ),
                           subtitle: Text(
                             locations[index]['fields']
                                 .firstWhere((field) => field['key'] == 'Address', orElse: () => {'value': 'No address available'})['value'],
-                            style: CustomTypography.Body2,
+                            style: typography.Body2,
                           ),
                           trailing: IconButton(
                             icon: Icon(Icons.arrow_forward),
@@ -318,7 +320,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                               },
                               child: Text(
                                 LanguageService.getTranslated(context, "app_back"),
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ),
                           ),
@@ -334,7 +336,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                               onPressed: _showOptionsDialog,
                               child: Text(
                                 LanguageService.getTranslated(context, "app_next"),
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               ),
                             ),
                           ),

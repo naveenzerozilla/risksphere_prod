@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/upload_sov_model.dart';
 import 'package:green/screens/listings/sub_account_list.dart';
+import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
 
@@ -38,6 +39,7 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   Future<void> createEmptySov(BuildContext context, String tempId) async {
+    var typography = CustomTypography(context);
     try {
        isLoading = true;
 
@@ -60,7 +62,7 @@ class UploadSovProvider extends ChangeNotifier {
       if (response['message'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? "Empty SOV created", style: CustomTypography.Body1,),
+            content: Text(response['message'] ?? "Empty SOV created", style: typography.Body1,),
           ),
         );
       } else {
@@ -262,7 +264,7 @@ class UploadSovProvider extends ChangeNotifier {
 
       log('Response: $response');
 
-      if (response['results'] != null) {
+      if (response['message'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? "SOV submitted successfully"),
@@ -270,7 +272,7 @@ class UploadSovProvider extends ChangeNotifier {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AccountListScreen()), // Navigate to AccountsScreen
+          MaterialPageRoute(builder: (context) => ProcessMonitoringScreen()), // Navigate to AccountsScreen
         );
         return true; // Indicate success
       } else {
@@ -323,10 +325,11 @@ class UploadSovProvider extends ChangeNotifier {
             content: Text(response['message'] ?? "SOV submitted successfully"),
           ),
         );
-        Navigator.pushReplacement(
+       /* Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => SubAccountListScreen(accountId: accountId, accountName: accountName)), // Navigate to AccountsScreen
-        );
+        );*/
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
         Navigator.pop(context);
         return true; // Indicate success
       } else {
@@ -345,11 +348,6 @@ class UploadSovProvider extends ChangeNotifier {
       isSubmitLoading = false;
     }
   }
-
-
-
-
-
 
 
 

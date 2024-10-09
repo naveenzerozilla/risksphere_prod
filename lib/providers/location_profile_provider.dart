@@ -70,6 +70,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<void> fetchLocationDetails(BuildContext context, String accountId,
       String subAccountId, String sovId, String searchQuery, String page, String totalPages) async {
+    var typography = CustomTypography(context);
     try {
       print('page: $page');
       print('totalPages: $totalPages');
@@ -161,16 +162,17 @@ class LocationProfileProvider extends ChangeNotifier {
 
       isLoading = false;
     } on BackendException catch (e, stackTrace) {
+
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     }
   }
@@ -218,6 +220,7 @@ class LocationProfileProvider extends ChangeNotifier {
       double lat,
       double lng,
       String placeId) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -242,13 +245,13 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     } finally {
       isLoading = false;
@@ -258,6 +261,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<void> addSubdestinationToSOV(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String subDestinationId) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -295,11 +299,11 @@ class LocationProfileProvider extends ChangeNotifier {
       if (response.containsKey('processed')) {
         //result = LocationProfileModel.fromJson(response['result']);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message'] ?? "Subdestination added successfully", style: CustomTypography.Body1),
+          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to add subdestination", style: CustomTypography.Body1),
+          content: Text("Failed to add subdestination", style: typography.Body1),
         ));
       }
 
@@ -309,13 +313,13 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     } finally {
       isLoading = false;
@@ -325,6 +329,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<void> addSelectedSubdestinationToSOV(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, List<String> subDestinationId) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -361,11 +366,11 @@ class LocationProfileProvider extends ChangeNotifier {
       if (response.containsKey('processed')) {
         //result = LocationProfileModel.fromJson(response['result']);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message'] ?? "Subdestination added successfully", style: CustomTypography.Body1),
+          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to add subdestination", style: CustomTypography.Body1),
+          content: Text("Failed to add subdestination", style: typography.Body1),
         ));
       }
 
@@ -375,13 +380,13 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     } finally {
       isLoading = false;
@@ -391,6 +396,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<void> removeSubdestinationFromSOV(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String subDestinationId) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -410,7 +416,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
         //result = LocationProfileModel.fromJson(response['result']);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message'] ?? "Subdestination removed successfully", style: CustomTypography.Body1),
+          content: Text(response['message'] ?? "Subdestination removed successfully", style: typography.Body1),
         ));
 
 
@@ -420,13 +426,13 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     } finally {
       isLoading = false;
@@ -436,6 +442,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<String> updateLocationDetails(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, Map<String, dynamic> data) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -514,7 +521,7 @@ class LocationProfileProvider extends ChangeNotifier {
           print(e);
           print(stackTrace);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString(), style: CustomTypography.Body1),
+            content: Text(e.toString(), style: typography.Body1),
           ));
           return false.toString();
         }
@@ -523,17 +530,20 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      // Todo: Add condition based on response 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
-      ));
+      // Todo: Add condition based on response
+      if (e.statusCode != 422) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message, style: typography.Body1),
+        ));
+      }
+
       return false.toString();
     } catch (e, stackTrace) {
       isLoading = false;
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
       return false.toString();
     } finally {
@@ -545,6 +555,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<bool> autocompleteUserConfirmation(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -561,7 +572,7 @@ class LocationProfileProvider extends ChangeNotifier {
       var body = data;
       var response = await apiService.post(body);
       if (response.containsKey('message')) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'], style: CustomTypography.Body1)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'], style: typography.Body1)));
         // Back to location profile page
         Navigator.of(context).pop();
         // back to sov listing page
@@ -569,7 +580,7 @@ class LocationProfileProvider extends ChangeNotifier {
       } else {
         result = null;
         subdestinations = [];
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Location Merged", style: CustomTypography.Body1,)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Location Merged", style: typography.Body1,)));
 
       }
 
@@ -581,7 +592,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
       return false;
     } catch (e, stackTrace) {
@@ -589,7 +600,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
       return false;
     } finally {
@@ -602,6 +613,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<bool> updateLocationName(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String locationName) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -642,7 +654,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
       return false;
     } catch (e, stackTrace) {
@@ -650,7 +662,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
       return false;
     } finally {
@@ -662,6 +674,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   Future<bool> updateLocationAddress(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String locationAddress) async {
+    var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
@@ -702,7 +715,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
       return false;
     } catch (e, stackTrace) {
@@ -710,7 +723,7 @@ class LocationProfileProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
       return false;
     } finally {

@@ -151,16 +151,17 @@ class AuthNotifier extends ChangeNotifier {
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
+            var typography = CustomTypography(context);
             return AlertDialog(
               title: Text(
                 LanguageService.getTranslated(
                     context, "login_admin_not_verified_dialog_title"),
-                style: CustomTypography.H6.copyWith(color: Colors.white),
+                style: typography.H6.copyWith(color: Colors.white),
               ),
               content: Text(
                 LanguageService.getTranslated(
                     context, "login_admin_not_verified_dialog_description"),
-                style: CustomTypography.Body1.copyWith(color: Colors.white),
+                style: typography.Body1.copyWith(color: Colors.white),
               ),
               actions: [
                 // Remind and cancel in column
@@ -182,7 +183,7 @@ class AuthNotifier extends ChangeNotifier {
                                       content: Text(
                                         LanguageService.getTranslated(context,
                                             "login_admin_not_verified_remind_success"),
-                                        style: CustomTypography.Body1,
+                                        style: typography.Body1,
                                       ),
                                     ),
                                   );
@@ -197,7 +198,7 @@ class AuthNotifier extends ChangeNotifier {
                                   : Text(
                                       LanguageService.getTranslated(context,
                                           "login_admin_not_verified_remind_button"),
-                                      style: CustomTypography.Body1,
+                                      style: typography.Body1,
                                     )),
                         ),
                       ],
@@ -222,7 +223,7 @@ class AuthNotifier extends ChangeNotifier {
                               child: Text(
                                 LanguageService.getTranslated(context,
                                     "login_admin_not_verified_cancel_button"),
-                                style: CustomTypography.Body1,
+                                style: typography.Body1,
                               )),
                         ),
                       ],
@@ -239,12 +240,13 @@ class AuthNotifier extends ChangeNotifier {
 
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
+        var typography = CustomTypography(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               LanguageService.getTranslated(
                   context, "login_email_not_verified_error"),
-              style: CustomTypography.Body1,
+              style: typography.Body1,
             ),
           ),
         );
@@ -264,12 +266,13 @@ class AuthNotifier extends ChangeNotifier {
       });
     } catch (e) {
       _isSigningIn = false;
+      var typography = CustomTypography(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             LanguageService.getTranslated(
                 context, "login_invaild_email_password_error"),
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -324,7 +327,7 @@ class AuthNotifier extends ChangeNotifier {
         } else {
           isNewUser = false;
           Navigator.pushAndRemoveUntil(context!,
-              MaterialPageRoute(builder: (context) => App()), (route) => false);
+              MaterialPageRoute(builder: (context) => MyApp()), (route) => false);
         }
       }
       _isSigningIn = false;
@@ -395,7 +398,7 @@ class AuthNotifier extends ChangeNotifier {
         isNewUser = false;
         Navigator.pushAndRemoveUntil(
           context!,
-          MaterialPageRoute(builder: (context) => App()),
+          MaterialPageRoute(builder: (context) => MyApp()),
           (route) => false,
         );
       }
@@ -677,25 +680,26 @@ class AuthNotifier extends ChangeNotifier {
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
+            var typography = CustomTypography(context);
             return AlertDialog(
               title: Text(
                 selectedRoles.any((role) => role.isApplicableForTrial)
                     ? 'Enjoy your 7-day free trial!'
                     : 'Check your inbox.',
-                style: CustomTypography.H6.copyWith(color: Colors.white),
+                style: typography.H6.copyWith(color: Colors.white),
               ),
               content: Text(
                 selectedRoles.any((role) => role.isApplicableForTrial)
                     ? 'Trial account created with full features. Upgrade for continued access or remain free after 7 days. Activate email by clicking link sent.'
                     : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.',
-                style: CustomTypography.Body1.copyWith(color: Colors.white),
+                style: typography.Body1.copyWith(color: Colors.white),
               ),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => App()),
+                        MaterialPageRoute(builder: (context) => MyApp()),
                         (route) => false);
                   },
                   child: Row(
@@ -806,23 +810,24 @@ class AuthNotifier extends ChangeNotifier {
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
+              var typography = CustomTypography(context);
               return AlertDialog(
                 title: Text(
                   LanguageService.getTranslated(
                       context, "login_check_your_inbox_dialog_title"),
-                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                  style: typography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
                   LanguageService.getTranslated(
                       context, "login_check_your_inbox_dialog_description"),
-                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                  style: typography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => App()),
+                          MaterialPageRoute(builder: (context) => MyApp()),
                           (route) => false);
                     },
                     child: Row(
@@ -834,7 +839,7 @@ class AuthNotifier extends ChangeNotifier {
                             context,
                             "login_check_your_inbox_dialog_back_button_text",
                           ),
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                       ],
                     ),
@@ -850,23 +855,24 @@ class AuthNotifier extends ChangeNotifier {
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
+              var typography = CustomTypography(context);
               return AlertDialog(
                 title: Text(
                   LanguageService.getTranslated(
                       context, "login_registration_request_dialog_title"),
-                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                  style: typography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
                   LanguageService.getTranslated(
                       context, "login_registration_request_dialog_description"),
-                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                  style: typography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => App()),
+                          MaterialPageRoute(builder: (context) => MyApp()),
                           (route) => false);
                     },
                     child: Row(
@@ -876,7 +882,7 @@ class AuthNotifier extends ChangeNotifier {
                         Text(
                           LanguageService.getTranslated(context,
                               "login_registration_request_dialog_back_button_text"),
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                       ],
                     ),
@@ -890,11 +896,12 @@ class AuthNotifier extends ChangeNotifier {
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
+              var typography = CustomTypography(context);
               return AlertDialog(
                 title: Text(
                   LanguageService.getTranslated(
                       context, "login_check_your_inbox_dialog_title"),
-                  style: CustomTypography.H6.copyWith(color: Colors.white),
+                  style: typography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
                   LanguageService.getTranslated(context,
@@ -902,14 +909,14 @@ class AuthNotifier extends ChangeNotifier {
                       "${obscureEmail(adminEmail)}" +
                       LanguageService.getTranslated(context,
                           "login_registration_request_dialog_description_part_2"),
-                  style: CustomTypography.Body1.copyWith(color: Colors.white),
+                  style: typography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => App()),
+                          MaterialPageRoute(builder: (context) => MyApp()),
                           (route) => false);
                     },
                     child: Row(
@@ -919,7 +926,7 @@ class AuthNotifier extends ChangeNotifier {
                         Text(
                           LanguageService.getTranslated(context,
                               "login_check_your_inbox_dialog_back_button_text"),
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                       ],
                     ),

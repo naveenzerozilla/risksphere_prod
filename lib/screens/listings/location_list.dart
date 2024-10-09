@@ -17,6 +17,7 @@ import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dar
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:screenshot/screenshot.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
@@ -97,6 +98,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   TextEditingController _sovNameController = TextEditingController();
   late File files;
 
+  TabController? _mainTabController;
+  int selectedMainTab = 0;
+
   void debounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
       deBouncer!.cancel();
@@ -115,6 +119,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         widget.sovId,
         query,
         0,
+        "forward",
         40,
         countries: [], // Add your filter parameters here
         state: "",
@@ -132,6 +137,10 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
     super.initState();
     print('User ID: ${widget.userId}');
     print('User Name: ${widget.companyName}');
+    _mainTabController = TabController(length: 3, vsync: this);
+    _mainTabController?.addListener(() {
+      setState(() {}); // This ensures that the widget rebuilds when the tab changes
+    });
     _tabController = TabController(length: 2, vsync: this);
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
@@ -144,6 +153,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
           widget.sovId,
           locationQuery,
           0,
+          "forward",
           40,
         );
       } else {
@@ -161,7 +171,6 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
       }
       setState(() {});
     });
-
     _getData();
   }
 
@@ -174,6 +183,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
       widget.sovId,
       "",
       0,
+      "forward",
       40,
       countries: [], // Add your filter parameters here
       state: "",
@@ -203,292 +213,382 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context1) {
-    return Consumer<ThemeProvider>(
-      builder: (buildContext, themeProvider, child) {
-        return Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: themeProvider.getTheme.colorScheme.background,
-          appBar: CustomAppBar(
-            isExpanded: _isExpanded,
-            showNotificationDot: _showNotificationDot,
-            onExpandPressed: (isExpanded) {
-              setState(() {
-                _isExpanded = isExpanded;
-              });
-            },
-            onSearchPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-          ),
-          drawer: CustomDrawer(),
-          floatingActionButton: Builder(builder: (contextLocal) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                !showSelectAll
-                    ? SizedBox()
-                    : FloatingActionButton(
-                  onPressed: () {
-                    if (selectedLocations.isEmpty) {
-                      // Show a toast or snackbar message to select locations
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('No locations selected for deletion.'),
-                        ),
-                      );
-                      return;
-                    }
-
-                    showDeleteConfirmationDialog(context, _bulkDeleteLocations);
-                  }, // Trigger bulk delete
-                  child: Icon(Icons.delete), // Change icon to delete
-                ),
-                !showSelectAll ? SizedBox() : SizedBox(height: CustomSpacing.two),
-
-                SpeedDial(
-                  icon: Icons.upload,
-                  activeIcon: Icons.close,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  children: [
-                    /*SpeedDialChild(
-                      child: Icon(Icons.upload_file),
-                      label: 'Upload Full List',
-                      onTap: () {
-                        // Add your logic for uploading full list
-                        print('Upload Full List tapped');
-                      },
-                    ),*/
-                    SpeedDialChild(
-                      child: Icon(Icons.upload),
-                      label: 'Upload Partial List',
-                      onTap: () async {
-                        setState(() {
-                          _uploadedFileName = null;
-                          _sovNameController.clear();
-                        });
-                        _showUploadDialog(widget.accountId, widget.subAccountId, widget.sovId);
-                      },
-                    ),
-                    SpeedDialChild(
-                      child: Icon(Icons.add),
-                      label: 'Add Single Location',
-                      onTap: () {
-                        _selectedScreen = Screens.addLocation;
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => AddLocationScreen(
-                            accountId: widget.accountId,
-                            subAccountId: widget.subAccountId,
-                            sovId: widget.sovId,
-                          ),
-                        ));
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }),
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Column(
+    var typography = CustomTypography(context);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(
+        builder: (buildContext, themeProvider, child) {
+          return Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            appBar: CustomAppBar(
+              isExpanded: _isExpanded,
+              showNotificationDot: _showNotificationDot,
+              onExpandPressed: (isExpanded) {
+                setState(() {
+                  _isExpanded = isExpanded;
+                });
+              },
+              onSearchPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+            ),
+            drawer: CustomDrawer(),
+            floatingActionButton: Builder(builder: (contextLocal) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        SizedBox(height: CustomSpacing.two),
-                        Row(
-                          children: [
-                            Text(widget.companyName, style: CustomTypography.Body1),
-                            Text(' > ', style: CustomTypography.Body1),
-                            Text(widget.subAccountName, style: CustomTypography.Body1),
-                            Text(' > ', style: CustomTypography.Body1),
-                          ],
-                        ),
-                        SizedBox(height: CustomSpacing.two),
-                        Consumer<LocationListProvider>(
-                            builder: (context, locationListProvider, child) {
-                              return Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      widget.sovName == ''
-                                          ? ""
-                                          : '${widget.sovName.substring(0, 1).toUpperCase()}${widget.sovName.substring(1)}',
-                                      style: CustomTypography.H5_Regular,
-                                    ),
-                                  ),
-                                  SizedBox(width: CustomSpacing.two),
-                                  RatingHalfStars(
-                                    rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
-                                    maxRating: 5,
-                                    iconSize: 24,
-                                  ),
-                                  SizedBox(width: CustomSpacing.two),
-                                  TooltipTheme(
-                                    data: TooltipThemeData(
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.surface,
+                  !showSelectAll
+                      ? SizedBox()
+                      : FloatingActionButton(
+                    onPressed: () {
+                      if (selectedLocations.isEmpty) {
+                        // Show a toast or snackbar message to select locations
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('No locations selected for deletion.'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      showDeleteConfirmationDialog(context, _bulkDeleteLocations);
+                    }, // Trigger bulk delete
+                    child: Icon(Icons.delete), // Change icon to delete
+                  ),
+                  !showSelectAll ? SizedBox() : SizedBox(height: CustomSpacing.two),
+
+                  SpeedDial(
+                    icon: Icons.upload,
+                    activeIcon: Icons.close,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    children: [
+                      /*SpeedDialChild(
+                        child: Icon(Icons.upload_file),
+                        label: 'Upload Full List',
+                        onTap: () {
+                          // Add your logic for uploading full list
+                          print('Upload Full List tapped');
+                        },
+                      ),*/
+                      SpeedDialChild(
+                        child: Icon(Icons.upload),
+                        label: 'Upload Partial List',
+                        onTap: () async {
+                          setState(() {
+                            _uploadedFileName = null;
+                            _sovNameController.clear();
+                          });
+                          _showUploadDialog(widget.accountId, widget.subAccountId, widget.sovId);
+                        },
+                      ),
+                      SpeedDialChild(
+                        child: Icon(Icons.add),
+                        label: 'Add Single Location',
+                        onTap: () {
+                          _selectedScreen = Screens.addLocation;
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => AddLocationScreen(
+                              accountId: widget.accountId,
+                              subAccountId: widget.subAccountId,
+                              sovId: widget.sovId,
+                            ),
+                          ));
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Column(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          /*SizedBox(height: CustomSpacing.two),
+                          Row(
+                            children: [
+                              Text(widget.companyName, style: typography.Body1),
+                              Text(' > ', style: typography.Body1),
+                              Text(widget.subAccountName, style: typography.Body1),
+                              Text(' > ', style: typography.Body1),
+                            ],
+                          ),*/
+                          SizedBox(height: CustomSpacing.two),
+                          Container(
+                            margin: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                            padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest, // Set your border color here
+                                width: 1.0, // Set the width of the border
+                              ),
+                              //color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                            ),
+
+                            child: Consumer<LocationListProvider>(
+                                builder: (context, locationListProvider, child) {
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      SizedBox(width: 8,),
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                widget.sovName == ''
+                                                    ? ""
+                                                    : '${widget.sovName.substring(0, 1).toUpperCase()}${widget.sovName.substring(1)}',
+                                                style: typography.Body1,
+                                              ),
+                                            ),
+                                            SizedBox(width: CustomSpacing.two),
+                                            RatingHalfStars(
+                                              rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
+                                              maxRating: 5,
+                                              iconSize: 18,
+                                            ),
+                                            SizedBox(width: CustomSpacing.two),
+                                            TooltipTheme(
+                                              data: TooltipThemeData(
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.surface,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                textStyle: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  fontSize: 14,
+                                                ),
+                                                padding: EdgeInsets.all(8),
+                                                verticalOffset: 20,
+                                                preferBelow: false,
+                                              ),
+                                              child: Tooltip(
+                                                showDuration: Duration(seconds: 5),
+                                                triggerMode: TooltipTriggerMode.tap,
+                                                preferBelow: true,
+                                                richMessage: TextSpan(
+                                                  children: [
+                                                    for (int i = 0;
+                                                    i < locationListProvider.summaryList.length;
+                                                    i++)
+                                                      TextSpan(
+                                                        text:
+                                                        '• ${locationListProvider.summaryList[i]}\n',
+                                                        style: typography.Subtitle1,
+                                                      ),
+                                                  ],
+                                                  style: typography.Subtitle1,
+                                                ),
+                                                child: Icon(
+                                                  Icons.info,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      PopupMenuButton(itemBuilder: (context) => [
+
+                                      ]),
+
+                                    ],
+                                  );
+                                }),
+                          ),
+
+                          SizedBox(height: CustomSpacing.two),
+                          showSelectAll
+                              ? Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Checkbox(
+                                value: isAllSelected,
+                                onChanged: (value) {
+                                  setState(() {
+                                    isAllSelected = value ?? false;
+                                    if (isAllSelected) {
+                                      // Select all locations
+                                      selectedLocations =
+                                          List.from(Provider.of<LocationListProvider>(
+                                              context,
+                                              listen: false)
+                                              .locationList);
+                                    } else {
+                                      // Deselect all locations
+                                      selectedLocations.clear();
+                                    }
+                                  });
+                                },
+                              ),
+                              Text(
+                                LanguageService.getTranslated(
+                                    context, "locationlist_app_select_all"),
+                                style: typography.Body1,
+                              ),
+                            ],
+                          )
+                              : /*Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 50,
+                                  child: TextField(
+                                    controller: _locationSearchController,
+                                    onChanged: locationSearchClient,
+                                    decoration: InputDecoration(
+                                      hintText: LanguageService.getTranslated(
+                                          context, 'locationlist_search_field_hint_text'),
+                                      label: Text(
+                                          LanguageService.getTranslated(
+                                              context, 'usermanagement_search_field_lable'),
+                                          style: typography.Body1),
+                                      hintStyle: typography.Body1,
+                                      border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      textStyle: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                        fontSize: 14,
-                                      ),
-                                      padding: EdgeInsets.all(8),
-                                      verticalOffset: 20,
-                                      preferBelow: false,
-                                    ),
-                                    child: Tooltip(
-                                      showDuration: Duration(seconds: 5),
-                                      triggerMode: TooltipTriggerMode.tap,
-                                      preferBelow: true,
-                                      richMessage: TextSpan(
-                                        children: [
-                                          for (int i = 0;
-                                          i < locationListProvider.summaryList.length;
-                                          i++)
-                                            TextSpan(
-                                              text:
-                                              '• ${locationListProvider.summaryList[i]}\n',
-                                              style: CustomTypography.Subtitle1,
-                                            ),
-                                        ],
-                                        style: CustomTypography.Subtitle1,
-                                      ),
-                                      child: Icon(
-                                        Icons.info,
-                                      ),
                                     ),
                                   ),
-                                ],
-                              );
-                            }),
-                        SizedBox(height: CustomSpacing.two),
-                        Wrap(
-                          children: [
-                            RichText(
-                              text: TextSpan(
-                                text: '',
-                                style: CustomTypography.Subtitle1,
-                                children: [
-                                  TextSpan(
-                                    text: LanguageService.getTranslated(
-                                        context, "locationlist_app_sub_title_description_pt_1"),
-                                    style: CustomTypography.Subtitle1,
-                                  ),
-                                  TextSpan(
-                                    text: widget.companyName == ''
-                                        ? ""
-                                        : '${widget.companyName.substring(0, 1).toUpperCase()}${widget.companyName.substring(1)}',
-                                    style: CustomTypography.Subtitle1,
-                                  ),
-                                  TextSpan(
-                                    text: LanguageService.getTranslated(
-                                        context, "locationlist_app_sub_title_description_pt_2"),
-                                    style: CustomTypography.Subtitle1,
-                                  ),
-                                ],
+                                ),
                               ),
+                              SizedBox(width: CustomSpacing.four),
+                              Builder(builder: (context) {
+                                return InkWell(
+                                  onTap: () {
+                                    // Show end drawer
+                                    Scaffold.of(context).openEndDrawer();
+                                  },
+                                  child: Icon(
+                                    Icons.filter_list,
+                                    size: 28,
+                                  ),
+                                );
+                              }),
+                              SizedBox(width: CustomSpacing.four),
+                            ],
+                          )*/SizedBox(),
+
+
+
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(16), // Rounded edges
                             ),
-                          ],
-                        ),
-                        SizedBox(height: CustomSpacing.two),
-                        showSelectAll
-                            ? Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Checkbox(
-                              value: isAllSelected,
-                              onChanged: (value) {
-                                setState(() {
-                                  isAllSelected = value ?? false;
-                                  if (isAllSelected) {
-                                    // Select all locations
-                                    selectedLocations =
-                                        List.from(Provider.of<LocationListProvider>(
-                                            context,
-                                            listen: false)
-                                            .locationList);
-                                  } else {
-                                    // Deselect all locations
-                                    selectedLocations.clear();
+                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            child: DefaultTabController(
+                              length: 3,
+                              child: Builder(
+                                  builder: (context) {
+                                    return Column(
+                                      children: <Widget>[
+                                        // Container for the TabBar with arrows
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(8),
+                                            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                                          ),
+                                          child: TabBar(
+                                            controller: _mainTabController,
+                                            dividerColor: Colors.transparent,
+                                            indicatorPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+                                            indicator: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8), // Makes the tab rounded
+                                    color: AppColors.primaryMain.withOpacity(0.16), // Background color for the selected tab
+                                    ),
+                                            //indicatorColor: Colors.lightBlueAccent,
+                                            labelColor: AppColors.primaryMain,
+                                            isScrollable: true,
+                                            tabAlignment: TabAlignment.start,
+                                            unselectedLabelColor: Colors.grey,
+                                            tabs: [
+                                              Tab(
+                                                icon: _buildTabIcon(context, 'assets/images/overall_tab_icon.svg', 'Overall Score', 0, ),
+                                              ),
+                                              Tab(
+                                                icon: _buildTabIcon(context, 'assets/images/geocoding_tab_icon.svg', 'Geocoding Score', 1),
+                                              ),
+                                              Tab(
+                                                icon: _buildTabIcon(context, 'assets/images/risk_tab_icon.svg', 'Risk Score', 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
                                   }
-                                });
-                              },
-                            ),
-                            Text(
-                              LanguageService.getTranslated(
-                                  context, "locationlist_app_select_all"),
-                              style: CustomTypography.Body1,
-                            ),
-                          ],
-                        )
-                            : Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 50,
-                                child: TextField(
-                                  controller: _locationSearchController,
-                                  onChanged: locationSearchClient,
-                                  decoration: InputDecoration(
-                                    hintText: LanguageService.getTranslated(
-                                        context, 'locationlist_search_field_hint_text'),
-                                    label: Text(
-                                        LanguageService.getTranslated(
-                                            context, 'usermanagement_search_field_lable'),
-                                        style: CustomTypography.Body1),
-                                    hintStyle: CustomTypography.Body1,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
                               ),
                             ),
-                            SizedBox(width: CustomSpacing.four),
-                            Builder(builder: (context) {
-                              return InkWell(
-                                onTap: () {
-                                  // Show end drawer
-                                  Scaffold.of(context).openEndDrawer();
-                                },
-                                child: Icon(
-                                  Icons.filter_list,
-                                  size: 28,
-                                ),
-                              );
-                            }),
-                            SizedBox(width: CustomSpacing.four),
-                          ],
-                        ),
-                        Consumer<LocationListProvider>(
-                          builder: (context, locationListProvider, child) {
-                            return TabBar(
-                              controller: _tabController,
-                              labelStyle: CustomTypography.BottomNavigationActiveLabel,
-                              tabs: [
-                                Tab(
-                                  child: InkWell(
+                          ),
+                          Consumer<LocationListProvider>(
+                            builder: (context, locationListProvider, child) {
+                              return TabBar(
+                                controller: _tabController,
+                                labelStyle: typography.BottomNavigationActiveLabel,
+                                tabs: [
+                                  Tab(
+                                    child: InkWell(
+                                      onTap: () {
+                                        _tabController?.animateTo(0);
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Tab(
+                                            text: LanguageService.getTranslated(
+                                                context, "locationlist_app_connections_tab_all"),
+                                          ),
+                                          SizedBox(width: CustomSpacing.two),
+                                          SizedBox(
+                                            height: 25,
+                                            child: Chip(
+                                              labelPadding: EdgeInsets.all(0),
+                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              label: Text(
+                                                locationListProvider.locationHits.toString(),
+                                                style: typography.BottomNavigationActiveLabel
+                                                    .copyWith(height: -0.6),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
                                     onTap: () {
-                                      _tabController?.animateTo(0);
+                                      if (locationListProvider.isCertifiedTabAllowed()) {
+                                        _tabController?.animateTo(1);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                          content: Text(
+                                            "Please include a rating of 5 in filter to view certified locations.",
+                                            style: typography.Body1,
+                                          ),
+                                        ));
+                                      }
                                     },
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Tab(
                                           text: LanguageService.getTranslated(
-                                              context, "locationlist_app_connections_tab_all"),
+                                              context, "locationlist_app_connections_tab_certified"),
                                         ),
                                         SizedBox(width: CustomSpacing.two),
                                         SizedBox(
@@ -497,8 +597,8 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                             labelPadding: EdgeInsets.all(0),
                                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                             label: Text(
-                                              locationListProvider.locationHits.toString(),
-                                              style: CustomTypography.BottomNavigationActiveLabel
+                                              locationListProvider.certifiedLocationHits.toString(),
+                                              style: typography.BottomNavigationActiveLabel
                                                   .copyWith(height: -0.6),
                                             ),
                                           ),
@@ -506,81 +606,81 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                       ],
                                     ),
                                   ),
-                                ),
-                                InkWell(
-                                  onTap: () {
-                                    if (locationListProvider.isCertifiedTabAllowed()) {
-                                      _tabController?.animateTo(1);
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text(
-                                          "Please include a rating of 5 in filter to view certified locations.",
-                                          style: CustomTypography.Body1,
-                                        ),
-                                      ));
-                                    }
-                                  },
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Tab(
-                                        text: LanguageService.getTranslated(
-                                            context, "locationlist_app_connections_tab_certified"),
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                      SizedBox(
-                                        height: 25,
-                                        child: Chip(
-                                          labelPadding: EdgeInsets.all(0),
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          label: Text(
-                                            locationListProvider.certifiedLocationHits.toString(),
-                                            style: CustomTypography.BottomNavigationActiveLabel
-                                                .copyWith(height: -0.6),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-
-                        SizedBox(height: CustomSpacing.four),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _getLocationListAllUI(),
-                              _getLocationListCertifiedUI(),
-                            ],
+                                ],
+                              );
+                            },
                           ),
-                        ),
-                      ],
+
+
+                          SizedBox(height: CustomSpacing.four),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _getLocationListAllUI(),
+                                _getLocationListCertifiedUI(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          endDrawer: Drawer(
-            child: SafeArea(
-              child: ListingsFilterScreen(
-                accountId: widget.accountId,
-                subAccountId: widget.subAccountId,
-                sovId: widget.sovId,
-                searchQuery: locationQuery,
+                  ],
+                ),
+              ],
+            ),
+            endDrawer: Drawer(
+              child: SafeArea(
+                child: ListingsFilterScreen(
+                  accountId: widget.accountId,
+                  subAccountId: widget.subAccountId,
+                  sovId: widget.sovId,
+                  searchQuery: locationQuery,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
+  Widget _buildTabIcon(BuildContext context, String iconPath, String label, int tabIndex) {
+    // Check if TabController exists and whether this tab is selected
+    bool isSelected = _mainTabController?.index == tabIndex;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding to control spacing
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            iconPath,
+            height: 36,
+            colorFilter: ColorFilter.mode(
+              isSelected ? AppColors.primaryMain : Colors.white.withOpacity(0.56),
+              BlendMode.srcIn,
+            ),
+          ),
+          if (isSelected) ...[
+            SizedBox(width: 4), // Reduce the space between icon and label
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.primaryMain,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+
   _getLocationListAllUI() {
+    var typography = CustomTypography(context);
     return Consumer<LocationListProvider>(
       builder: (context, locationListProvider, child) {
         return locationListProvider.isLoading
@@ -599,7 +699,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
           child: Text(
             LanguageService.getTranslated(
                 context, "location_list_app_no_accounts_text"),
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         )
             : ListView.builder(
@@ -633,7 +733,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                         child: Text(
                           LanguageService.getTranslated(
                               context, "location_list_end_of_list"),
-                          style: CustomTypography.Body1,
+                          style: typography.Body1,
                         ),
                       ),
                     ),
@@ -654,6 +754,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                   locationQuery,
                   // Pass the search query if any
                   locationListProvider.page,
+                  "forward",
                   40, // Page size
                   countries: [], // Add your filter parameters here
                   state: "",
@@ -676,6 +777,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   }
 
   Widget locationListCard(int index, List<Location> locationList) {
+    var typography = CustomTypography(context);
     return InkWell(
       onTap: () {
         print('Going to page $index');
@@ -732,12 +834,22 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 : null,
             title: Row(
               children: [
+                (locationList[index].score ?? 0) == 5
+                    ? Container(
+                  margin: EdgeInsets.only(right: 8),
+                      child: SvgPicture.asset(
+                                        'assets/images/certified.svg',
+                                        semanticsLabel: 'Verified',
+                                        height: 35,
+                                      ),
+                    )
+                    : SizedBox(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       locationList[index].locationIdForRef ?? '',
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     locationList[index].campusId != null &&
                         locationList[index].campusId!.isNotEmpty
@@ -745,20 +857,14 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                       padding: EdgeInsets.all(0),
                       label: Text(
                         locationList[index].campusId ?? '',
-                        style: CustomTypography.Subtitle2,
+                        style: typography.Subtitle2,
                       ),
                     )
                         : SizedBox(),
                   ],
                 ),
                 Spacer(),
-                (locationList[index].score ?? 0) == 5
-                    ? SvgPicture.asset(
-                  'assets/images/certified.svg',
-                  semanticsLabel: 'Verified',
-                  height: 35,
-                )
-                    : SizedBox(),
+
                 SizedBox(width: CustomSpacing.four),
                 AnimatedProgressIndicator(
                   percent: locationList[index].percent ?? "0",
@@ -770,7 +876,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Geocoding', style: CustomTypography.Body1),
+                    Text('Geocoding', style: typography.Body1),
                     RatingSlider(
                       progress: locationList[index].score ?? 0,
                       total: 5,
@@ -798,7 +904,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Hazard', style: CustomTypography.Body1),
+                    Text('Hazard', style: typography.Body1),
                     RatingSlider(
                       progress: 5,
                       total: 5,
@@ -827,7 +933,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Occupancy', style: CustomTypography.Body1),
+                    Text('Occupancy', style: typography.Body1),
                     RatingSlider(
                       progress: 5,
                       total: 5,
@@ -856,7 +962,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Construction', style: CustomTypography.Body1),
+                    Text('Construction', style: typography.Body1),
                     RatingSlider(
                       progress: 5,
                       total: 5,
@@ -889,6 +995,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   }
 
   _getLocationListCertifiedUI() {
+    var typography = CustomTypography(context);
     return Consumer<LocationListProvider>(
       builder: (context, locationListProvider, child) {
         return locationListProvider.isLoading
@@ -903,7 +1010,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
           child: Text(
               LanguageService.getTranslated(
                   context, "location_list_app_no_accounts_text"),
-              style: CustomTypography.Body1),
+              style: typography.Body1),
         )
             : ListView.builder(
           physics: ClampingScrollPhysics(),
@@ -935,7 +1042,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                           child: Text(
                               LanguageService.getTranslated(context,
                                   "location_list_end_of_list"),
-                              style: CustomTypography.Body1)),
+                              style: typography.Body1)),
                     ),
                   ],
                 );
@@ -955,8 +1062,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
               }
             }
 
-            return locationListCard(index,
-                locationListProvider.certifiedLocationList);
+            /*return locationListCard(index,
+                locationListProvider.certifiedLocationList);*/
+            return GeoCodingListCard();
           },
         );
       },
@@ -964,6 +1072,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   }
 
   void showDeleteConfirmationDialog(BuildContext context, Function onDelete) {
+    var typography = CustomTypography(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1007,7 +1116,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                     :
                   CustomButton(
                   type: ButtonType.danger,
-                  child: Text('Delete', style: CustomTypography.Body1.copyWith(fontWeight: FontWeight.w500)),
+                  child: Text('Delete', style: typography.Body1.copyWith(fontWeight: FontWeight.w500)),
                   onPressed: () {
                     Navigator.of(context).pop(); // Close the dialog
                     onDelete(); // Trigger the delete action
@@ -1022,6 +1131,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   }
 
   Future<void> _bulkDeleteLocations() async {
+    var typography = CustomTypography(context);
     try {
       // Construct the list of location details for deletion
       List<Map<String, String>> locationList = selectedLocations.map((location) {
@@ -1052,6 +1162,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
   }
 
   void _showUploadDialog(String accountId, String subAccountId, String sovId) {
+    var typography = CustomTypography(context);
     showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -1070,7 +1181,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                       Text(
                           "Upload Partial List",
                           textAlign: TextAlign.start,
-                          style: CustomTypography.Body1),
+                          style: typography.Body1),
                       SizedBox(height: 20),
                       _uploadedFileName == null
                           ? GestureDetector(
@@ -1107,7 +1218,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                 Text(
                                   LanguageService.getTranslated(context,
                                       "account_list_app_account_upload_drag_and_drop"),
-                                  style: CustomTypography.Body1,
+                                  style: typography.Body1,
                                 ),
                                 SizedBox(height: 5),
                                 Row(
@@ -1120,7 +1231,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                         color: Colors.white54),
                                     SizedBox(width: 3),
                                     Text('Max file size is 200 MB',
-                                        style: CustomTypography.Body1),
+                                        style: typography.Body1),
                                   ],
                                 ),
                               ],
@@ -1143,7 +1254,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                             SizedBox(height: 10),
                             Text(
                               _sovNameController.text,
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                             ),
                             SizedBox(height: 10),
                             GestureDetector(
@@ -1202,7 +1313,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                                         context,
                                                         "account_list_app_empty_sov_title")*/
                                                   'Empty SOV',
-                                                  style: CustomTypography.H5_Regular,
+                                                  style: typography.H5_Regular,
                                                 ),
                                                 content: Column(
                                                   mainAxisSize: MainAxisSize.min,
@@ -1212,7 +1323,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                                             context,
                                                             "account_list_app_empty_sov_text"),*/
                                                       'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                      style: CustomTypography.Body1,
+                                                      style: typography.Body1,
                                                     ),
                                                     SizedBox(
                                                       height: CustomSpacing.two,
@@ -1240,7 +1351,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                                                       context,
                                                                       "account_list_app_empty_sov_create"),*/
                                                                   'Create',
-                                                                  style: CustomTypography.ButtonLarge,
+                                                                  style: typography.ButtonLarge,
                                                                 ),
                                                                 type: ButtonType.elevated,
                                                               );
@@ -1255,7 +1366,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                                                   context,
                                                                   "account_list_app_empty_sov_abort")*/
                                                             'Abort',
-                                                            style: CustomTypography.ButtonLarge,
+                                                            style: typography.ButtonLarge,
                                                           ),
                                                           type: ButtonType.text,
                                                         ),
@@ -1276,7 +1387,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                     child: Text(
                                       LanguageService.getTranslated(
                                           context, "login_submit_button"),
-                                      style: CustomTypography.ButtonLarge,
+                                      style: typography.ButtonLarge,
                                     ),
                                   ),
                                 );
@@ -1294,7 +1405,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                               child: Text(
                                   LanguageService.getTranslated(
                                       context, "account_list_app_cancel_text"),
-                                  style: CustomTypography.Body1),
+                                  style: typography.Body1),
                             ),
                           ),
                           SizedBox(width: 10),
@@ -1307,5 +1418,284 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             );
           });
         });
+  }
+}
+
+
+class OverallListCard extends StatelessWidget {
+  const OverallListCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Color(0xFF2D2D2D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Image, 100% Indicator, RS Code
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    'https://via.placeholder.com/50', // Replace with your image
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'C-231',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'RS/00003',
+                      style: TextStyle(color: Colors.blue[300]),
+                    ),
+                  ],
+                ),
+                Spacer(),
+                CircularPercentIndicator(), // Replace with your circular progress indicator widget
+              ],
+            ),
+            SizedBox(height: 20),
+
+            // Scores Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ScoreWidget(
+                  icon: Icons.electric_bolt,
+                  label: 'Risk Score',
+                  score: 4,
+                  color: Colors.green,
+                ),
+                ScoreWidget(
+                  icon: Icons.people_alt,
+                  label: 'Occupancy',
+                  score: 2,
+                  color: Colors.red,
+                ),
+                ScoreWidget(
+                  icon: Icons.construction,
+                  label: 'Construction',
+                  score: 3,
+                  color: Colors.yellow,
+                ),
+              ],
+            ),
+
+            SizedBox(height: 10),
+
+            // Geocoding Score
+            ScoreWidget(
+              icon: Icons.gps_fixed,
+              label: 'Geocoding Score',
+              score: 5,
+              color: Colors.green,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ScoreWidget extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int score;
+  final Color color;
+
+  ScoreWidget({
+    required this.icon,
+    required this.label,
+    required this.score,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color),
+            SizedBox(width: 8),
+            Text(
+              '$label',
+              style: TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            for (var i = 0; i < 5; i++)
+              Icon(
+                Icons.circle,
+                size: 10,
+                color: i < score ? color : Colors.grey,
+              ),
+            SizedBox(width: 8),
+            Text(
+              '$score',
+              style: TextStyle(color: color),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class CircularPercentIndicator extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                value: 1.0, // This should be in the range of 0.0 to 1.0
+                strokeWidth: 5,
+                color: Colors.green,
+              ),
+            ),
+            Text(
+              '100%',
+              style: TextStyle(color: Colors.green, fontSize: 12),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class GeoCodingListCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            // Left Section: Badge Icon and Image
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/certified.svg',
+                  semanticsLabel: 'Location',),
+                SizedBox(width: 8),
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/location_thumbnail.png', // Replace with your image
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(width: 10),
+
+            // Middle Section: RS Code and C-231
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'RS/00002',
+                        style: TextStyle(color: Colors.blue[300], fontSize: 16),
+                      ),
+                      SizedBox(width: 5),
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Chip(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    label: Text(
+                    'C-231',
+                    style: CustomTypography(context).Body2,
+                  ),),
+
+                ],
+              ),
+            ),
+
+            // Right Section: Geocoding Score
+            Row(
+              children: [
+                ScoreBar(),
+                SizedBox(width: 5),
+                Text(
+                  '5',
+                  style: TextStyle(color: Colors.green, fontSize: 16),
+                ),
+              ],
+            ),
+
+            // Optional: More icon on the right
+            SizedBox(width: 10),
+            Icon(
+              Icons.more_vert,
+              color: Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ScoreBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Color(0xFF323232),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < 5; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: Icon(
+                Icons.circle,
+                size: 12,
+                color: i < 5 ? Colors.green : Colors.grey,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

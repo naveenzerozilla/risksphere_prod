@@ -136,7 +136,7 @@ class CompanyProvider with ChangeNotifier {
         additionalParams += "&pagetoken=$companyListPageToken&direction=forward";
       }
 
-      additionalParams += "&pageSize=2";
+      additionalParams += "&pageSize=10";
 
       // Construct the URL with correct formatting
       String url = AppConstant.CORPORATE_MANAGEMENT_URL;

@@ -85,6 +85,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   @override
   Widget build(BuildContext context1) {
+    var typography = CustomTypography(context);
     return Consumer<ThemeProvider>(
         builder: (buildContext, themeProvider, child) {
       return Scaffold(
@@ -158,7 +159,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                 ? LanguageService.getTranslated(
                                     context, "addlocation_app_title")
                                 : "Edit Location",
-                            style: CustomTypography.H5_Regular),
+                            style: typography.H5_Regular),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0),
@@ -167,7 +168,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                               ? LanguageService.getTranslated(
                                   context, "addlocation_app_subtitle")
                               : "Please provide the necessary information to update the location details",
-                          style: CustomTypography.Subtitle1,
+                          style: typography.Subtitle1,
                         ),
                       ),
                       SizedBox(
@@ -294,7 +295,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               "addlocation_optional_details"),
-                                          style: CustomTypography.Body1,
+                                          style: typography.Body1,
                                         ),
                                       ),
                                       Expanded(
@@ -528,7 +529,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                   context,
                                                                   "addlocation_create_button_text")
                                                           : "Update",
-                                                      style: CustomTypography
+                                                      style: typography
                                                           .ButtonLarge),
                                             ),
                                           ),
@@ -554,7 +555,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   context,
                                                   "addlocation_cancel_button_text"),
                                               style:
-                                                  CustomTypography.ButtonLarge),
+                                                  typography.ButtonLarge),
                                         ),
                                       ),
                                     ],

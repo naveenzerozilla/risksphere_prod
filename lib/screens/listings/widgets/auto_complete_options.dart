@@ -16,6 +16,7 @@ class AutocompleteOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     if (isLoading) {
       return Container(
         height: 100.0,
@@ -45,7 +46,7 @@ class AutocompleteOptions extends StatelessWidget {
               onTap: () => onSelected(option),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Text('${option.accountName}', style: CustomTypography.Subtitle1),
+                child: Text('${option.accountName}', style: typography.Subtitle1),
               ),
             );
           },

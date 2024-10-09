@@ -5,71 +5,74 @@ import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../../service/language_service.dart';
 
 class UserManagementCorporateDropdownMenuService {
-  final List<DropdownMenuItem<String>> _corporateDropdownItems = [
-    DropdownMenuItem(
-      child: Row(
-        children: [
-          Icon(Icons.apartment),
-          SizedBox(width: CustomSpacing.two),
-          Text(
-            'Corporate Management', // Placeholder text
-            style: CustomTypography.BottomNavigationActiveLabel,
-          ),
-        ],
-      ),
-      value: 'Corporate',
-    ),
-    DropdownMenuItem(
-      child: Text(
-        'Companies', // Placeholder text
-        style: CustomTypography.BottomNavigationActiveLabel,
-      ),
-      value: 'Companies',
-    ),
-    DropdownMenuItem(
-      child: Text(
-        'Users', // Placeholder text
-        style: CustomTypography.BottomNavigationActiveLabel,
-      ),
-      value: 'Users',
-    ),
-    DropdownMenuItem(
-      child: Text(
-        'Company Profiles', // Placeholder text
-        style: CustomTypography.BottomNavigationActiveLabel,
-      ),
-      value: 'Company Profiles',
-    ),
-    DropdownMenuItem(
-      child: Text(
-        'Verification Requests', // Placeholder text
-        style: CustomTypography.BottomNavigationActiveLabel,
-      ),
-      value: 'Verification Requests',
-    ),
-  ];
+  // Private list to hold dropdown items
+  final List<DropdownMenuItem<String>> _corporateDropdownItems = [];
 
+  // This method returns a list of DropdownMenuItem<String> with translated and styled text.
   List<DropdownMenuItem<String>> corporateDropdownItems(BuildContext context) {
-    return _corporateDropdownItems.map((item) {
+    var typography = CustomTypography(context);
+
+    return _corporateDropdownItems.isEmpty
+        ? [
+      DropdownMenuItem(
+        child: Row(
+          children: [
+            Icon(Icons.apartment),
+            SizedBox(width: CustomSpacing.two),
+            Text(
+              LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_title_corporate_mang'),
+              style: typography.BottomNavigationActiveLabel,
+            ),
+          ],
+        ),
+        value: 'Corporate',
+      ),
+      DropdownMenuItem(
+        child: Text(
+          LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_companies'),
+          style: typography.BottomNavigationActiveLabel,
+        ),
+        value: 'Companies',
+      ),
+      DropdownMenuItem(
+        child: Text(
+          LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_users'),
+          style: typography.BottomNavigationActiveLabel,
+        ),
+        value: 'Users',
+      ),
+      DropdownMenuItem(
+        child: Text(
+          LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_companies_profiles'),
+          style: typography.BottomNavigationActiveLabel,
+        ),
+        value: 'Company Profiles',
+      ),
+      DropdownMenuItem(
+        child: Text(
+          LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_verification_requests'),
+          style: typography.BottomNavigationActiveLabel,
+        ),
+        value: 'Verification Requests',
+      ),
+    ]
+        : _corporateDropdownItems;
+  }
+
+  // This method allows you to update the dropdown items dynamically.
+  void setCorporateDropdownItems(BuildContext context, List<DropdownMenuItem<String>> newItems) {
+    var typography = CustomTypography(context);
+
+    final List<DropdownMenuItem<String>> translatedItems = newItems.map((item) {
       String translatedText;
-      switch (item.value) {
-        case 'Corporate':
-          translatedText = LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_title_corporate_mang');
-          break;
-        case 'Companies':
-          translatedText = LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_companies');
-          break;
-        case 'Users':
-          translatedText = LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_users');
-          break;
-        case 'Company Profiles':
-          translatedText = LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_companies_profiles');
-          break;
-        case 'Verification Requests':
-          translatedText = LanguageService.getTranslated(context, 'usermanagement_corp_dropdown_option_verification_requests');
-          break;
-        default:
-          translatedText = item.child is Text ? (item.child as Text).data! : '';
+      if (item.child is Row) {
+        final rowChildren = (item.child as Row).children;
+        final textWidget = rowChildren.lastWhere((element) => element is Text) as Text;
+        translatedText = textWidget.data!;
+      } else if (item.child is Text) {
+        translatedText = (item.child as Text).data!;
+      } else {
+        translatedText = '';
       }
 
       return DropdownMenuItem<String>(
@@ -77,24 +80,22 @@ class UserManagementCorporateDropdownMenuService {
             ? Row(
           children: [
             (item.child as Row).children[0], // Icon
-            (item.child as Row).children[1], // SizedBox
+            SizedBox(width: CustomSpacing.two),
             Text(
               translatedText,
-              style: CustomTypography.BottomNavigationActiveLabel,
+              style: typography.BottomNavigationActiveLabel,
             ),
           ],
         )
             : Text(
           translatedText,
-          style: CustomTypography.BottomNavigationActiveLabel,
+          style: typography.BottomNavigationActiveLabel,
         ),
         value: item.value,
       );
     }).toList();
-  }
 
-  void setCorporateDropdownItems(BuildContext context, List<DropdownMenuItem<String>> newItems) {
     _corporateDropdownItems.clear();
-    _corporateDropdownItems.addAll(newItems);
+    _corporateDropdownItems.addAll(translatedItems);
   }
 }

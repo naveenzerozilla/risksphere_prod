@@ -45,6 +45,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: Card(
@@ -61,7 +62,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                         TextSpan(
                           text:
                           '“${verificationProvider.userRequests[index].name ?? ""}”',
-                          style: CustomTypography.Body1_5.copyWith(
+                          style: typography.Body1_5.copyWith(
                             color:
                             Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.white
@@ -72,7 +73,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                         TextSpan(
                           text:
                           ' has requested to create new corporate account.',
-                          style: CustomTypography.Body1_5,
+                          style: typography.Body1_5,
                         ),
                       ],
                     ),
@@ -86,14 +87,14 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                         CustomChip(
                           label: Text(
                             verificationProvider.userRequests[index].email ?? "",
-                            style: CustomTypography.InputLabel,
+                            style: typography.InputLabel,
                           ),
                         ),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
                           label: Text(
                             verificationProvider.userRequests[index].phone ?? "",
-                            style: CustomTypography.InputLabel,
+                            style: typography.InputLabel,
                           ),
                         ),
                         SizedBox(width: CustomSpacing.two),
@@ -104,7 +105,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                               builder: (context) {
                                 return AlertDialog(
                                   title: Text('Select Role',
-                                      style: CustomTypography.H6),
+                                      style: typography.H6),
                                   content: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -144,7 +145,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                                                     Navigator.pop(context);
                                                   },
                                                   child: Text('Save',
-                                                      style: CustomTypography
+                                                      style: typography
                                                           .BottomNavigationActiveLabel),
                                                 ),
                                               ),
@@ -160,7 +161,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                                                     Navigator.pop(context);
                                                   },
                                                   child: Text('Cancel',
-                                                      style: CustomTypography
+                                                      style: typography
                                                           .BottomNavigationActiveLabel
                                                           .copyWith(
                                                           color: AppColors
@@ -179,7 +180,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                           },
                           label: Text(
                             verificationProvider.userRequests[index].role ?? "",
-                            style: CustomTypography.InputLabel,
+                            style: typography.InputLabel,
                           ),
                         ),
                         SizedBox(width: CustomSpacing.two),
@@ -216,7 +217,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                       onAcceptRequest();
                     },
                     child: Text('Accept',
-                        style: CustomTypography.BottomNavigationActiveLabel
+                        style: typography.BottomNavigationActiveLabel
                             .copyWith(color: AppColors.primaryMain)),
                   ),
                   SizedBox(width: CustomSpacing.two),
@@ -236,7 +237,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                       onRejectRequest();
                     },
                     child: Text('Reject',
-                        style: CustomTypography.BottomNavigationActiveLabel
+                        style: typography.BottomNavigationActiveLabel
                             .copyWith(color: AppColors.primaryMain)),
                   ),
                   Spacer(),
@@ -245,7 +246,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                       Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
                       Text('Mar 7, 2024 23:26',
-                          style: CustomTypography.Caption),
+                          style: typography.Caption),
                     ],
                   ),
                 ],

@@ -9,7 +9,7 @@ class UserVerificationListModel {
     if (json['users'] != null) {
       users = <Users>[];
       json['users'].forEach((v) {
-        users!.add(new Users.fromJson(v));
+        users!.add(Users.fromJson(v));
       });
     }
   }

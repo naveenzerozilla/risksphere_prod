@@ -29,11 +29,11 @@ class _ExportDialogState extends State<ExportDialog> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SOVListProvider>(context);
-
+    var typography = CustomTypography(context);
     return Stack(
       children: [
         AlertDialog(
-          title: Text(LanguageService.getTranslated(context, "export_dialog_title"), style: CustomTypography.Body1),
+          title: Text(LanguageService.getTranslated(context, "export_dialog_title"), style: typography.Body1),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -43,15 +43,15 @@ class _ExportDialogState extends State<ExportDialog> {
                 items: [
                   DropdownMenuItem(
                     value: 'doc',
-                    child: Text('Word(.doc)', style: CustomTypography.Body1),
+                    child: Text('Word(.doc)', style: typography.Body1),
                   ),
                   DropdownMenuItem(
                     value: 'excel',
-                    child: Text('Excel(.xls)',style: CustomTypography.Body1),
+                    child: Text('Excel(.xls)',style: typography.Body1),
                   ),
                   DropdownMenuItem(
                     value: 'pdf',
-                    child: Text('PDF', style: CustomTypography.Body1),
+                    child: Text('PDF', style: typography.Body1),
                   ),
                 ],
                 onChanged: (value) {
@@ -63,11 +63,11 @@ class _ExportDialogState extends State<ExportDialog> {
                   border: OutlineInputBorder(),
                   labelText: LanguageService.getTranslated(context, "export_dialog_format"),
                 ),
-                style: CustomTypography.Body1,
+                style: typography.Body1,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(LanguageService.getTranslated(context, "export_dialog_profile"), style: CustomTypography.Body1),
+                title: Text(LanguageService.getTranslated(context, "export_dialog_profile"), style: typography.Body1),
                 leading: Radio(
                   value: ExportType.Profile,
                   groupValue: _exportType,
@@ -80,7 +80,7 @@ class _ExportDialogState extends State<ExportDialog> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(LanguageService.getTranslated(context, "export_dialog_table"), style: CustomTypography.Body1),
+                title: Text(LanguageService.getTranslated(context, "export_dialog_table"), style: typography.Body1),
                 leading: Radio(
                   value: ExportType.Table,
                   groupValue: _exportType,
@@ -93,7 +93,7 @@ class _ExportDialogState extends State<ExportDialog> {
               ),
               Divider(),
               SwitchListTile(
-                title: Text(LanguageService.getTranslated(context, "export_dialog_include_images_as_url"), style: CustomTypography.Body1),
+                title: Text(LanguageService.getTranslated(context, "export_dialog_include_images_as_url"), style: typography.Body1),
                 value: _includeImagesAsUrl,
                 onChanged: (value) {
                   setState(() {
@@ -102,7 +102,7 @@ class _ExportDialogState extends State<ExportDialog> {
                 },
               ),
               SwitchListTile(
-                title: Text(LanguageService.getTranslated(context, "export_dialog_download_images_in_zip"), style: CustomTypography.Body1),
+                title: Text(LanguageService.getTranslated(context, "export_dialog_download_images_in_zip"), style: typography.Body1),
                 value: _downloadImagesInZip,
                 onChanged: (value) {
                   setState(() {
@@ -117,7 +117,7 @@ class _ExportDialogState extends State<ExportDialog> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text(LanguageService.getTranslated(context, "export_dialog_cancel"), style: CustomTypography.Body1),
+              child: Text(LanguageService.getTranslated(context, "export_dialog_cancel"), style: typography.Body1),
             ),
             CustomButton(
               onPressed: () async {
@@ -154,7 +154,7 @@ class _ExportDialogState extends State<ExportDialog> {
                       exportData);
                 }
               },
-              child: Text(LanguageService.getTranslated(context, "export_dialog_download"), style: CustomTypography.Body1),
+              child: Text(LanguageService.getTranslated(context, "export_dialog_download"), style: typography.Body1),
               type: ButtonType.elevated,
             ),
           ],

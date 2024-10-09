@@ -19,7 +19,9 @@ class CustomDropdownMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return isVisible
+    
         ? DropdownMenuItem(
       value: value,
       child: Row(
@@ -28,7 +30,7 @@ class CustomDropdownMenuItem extends StatelessWidget {
           if (icon != null) SizedBox(width: CustomSpacing.two),
           Text(
             text,
-            style: CustomTypography.BottomNavigationActiveLabel,
+            style: typography.BottomNavigationActiveLabel,
           ),
         ],
       ),

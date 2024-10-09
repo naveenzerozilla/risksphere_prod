@@ -212,6 +212,15 @@ class LocationListProvider extends ChangeNotifier {
     return _rating.isEmpty || _rating.contains(5);
   }
 
+  /// Pagination variables
+  String? locationListPageToken;
+  String? locationListDirection;
+  bool locationListNextPageExists = true;
+
+  String? certifiedLocationListPageToken;
+  String? certifiedLocationListDirection;
+  bool certifiedLocationListNextPageExists = true;
+
 
 
   Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
@@ -250,6 +259,7 @@ class LocationListProvider extends ChangeNotifier {
       String selectedSovId,
       String searchQuery,
       int page,
+      String direction,
       int pageSize, {
         String type = "",
         List<String> countries = const [],
@@ -260,8 +270,14 @@ class LocationListProvider extends ChangeNotifier {
         List<String> hazard = const [],
         List<int> rating = const [],
   }) async {
+    var typography = CustomTypography(context);
     try {
-      if (page == 0) {
+      // Check if api is already working
+      if (isLoading||isNextPageLoading) return;
+      // dont call api is next page does not exist
+      if (!locationListNextPageExists) return;
+      if (locationListPageToken == null && locationListNextPageExists) {
+        locationList = [];
         isLoading = true;
       } else {
         isNextPageLoading = true;
@@ -288,13 +304,13 @@ class LocationListProvider extends ChangeNotifier {
 
       log(body);
       var url = Uri.parse(AppConstant.GET_SOV_LIST +
-          "/$selectedAccountId/subaccount/$selectedSubAccountId/sov/$selectedSovId/location?page=$page&pageSize=$pageSize");
+          "/$selectedAccountId/subaccount/$selectedSubAccountId/sov/$selectedSovId/location?pagetoken=$locationListPageToken&direction=$direction&pageSize=$pageSize");
       log(url.toString());
 
-      var response = await http.post(
+      var response = await http.get(
         url,
         headers: headers,
-        body: body,
+        //body: body,
       );
       log(response.body);
       print(response.statusCode);
@@ -328,7 +344,7 @@ class LocationListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
     } catch (e, stackTrace) {
@@ -338,7 +354,7 @@ class LocationListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
     }
@@ -355,6 +371,7 @@ class LocationListProvider extends ChangeNotifier {
       int pageSize, {
         String type = "",
       }) async {
+    var typography = CustomTypography(context);
     try {
       print("condition: ${rating.isNotEmpty && !rating.contains(5)}");
       print("rating: $rating");
@@ -441,7 +458,7 @@ class LocationListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
     } catch (e, stackTrace) {
@@ -451,7 +468,7 @@ class LocationListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
     }
@@ -551,6 +568,7 @@ class LocationListProvider extends ChangeNotifier {
 
   /// Upload SOV
   Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String subAccountId, String sovId) async {
+    var typography = CustomTypography(context);
     try {
       isImageUploadLoading = true;
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
@@ -563,7 +581,7 @@ class LocationListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           response['message']??LanguageService.getTranslated(context, "sub_account_list_app_sov_upload_success"),
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
       print("total records: "+response['total_records'].toString());
@@ -608,7 +626,7 @@ class LocationListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             message,
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -623,7 +641,7 @@ class LocationListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             '${e.toString()}',
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );

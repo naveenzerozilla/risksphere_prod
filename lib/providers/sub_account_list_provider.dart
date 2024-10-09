@@ -196,6 +196,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Fetch sub accounts list with pagination and search query
   Future<void> fetchSubAccountList(BuildContext context, String selectedAccountId, String searchQuery, int page, int pageSize) async {
+    var typography = CustomTypography(context);
     try {
       if (page == 0) {
         isLoading = true;
@@ -232,7 +233,7 @@ class SubAccountListProvider extends ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
       print(stackTrace);
@@ -240,7 +241,7 @@ class SubAccountListProvider extends ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
       print(e);
@@ -250,11 +251,13 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Rename sub account
   Future<void> renameSubAccount(BuildContext context, String accountId, String subAccountId, String newName) async {
+    var typography = CustomTypography(context);
     try {
       isRenameLoading = true;
 
       ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT+"/$accountId/subaccount");  // Updated URL
       var response = await apiService.patch({'data': {
+        "rename_subaccount": true,
         'sub_account_id': subAccountId,  // Updated field
         'sub_account_name': newName,  // Updated field
       }});
@@ -270,18 +273,19 @@ class SubAccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
     } catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
     }
   }
 
   /// Duplicate sub account
   Future<void> duplicateSubAccount(BuildContext context, String accountId, String subAccountId) async {
+    var typography = CustomTypography(context);
     try {
       isDuplicateLoading = true;
 
@@ -302,12 +306,12 @@ class SubAccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     }
   }
@@ -315,6 +319,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, {required String accountId, required bool showOwner, required bool showSOVCount, required bool showOverallScore, required String type}) async {
+    var typography = CustomTypography(context);
     try {
       if (type == 'owner') {
         isOwnerLoading = true;
@@ -346,7 +351,7 @@ class SubAccountListProvider extends ChangeNotifier {
       showSubAccountCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
       return false;
     } catch (e) {
@@ -355,7 +360,7 @@ class SubAccountListProvider extends ChangeNotifier {
       showSubAccountCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
       return false;
     }
@@ -363,6 +368,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Fetch autocomplete sub account list
   Future<void> fetchAutoCompleteSubAccountList(BuildContext context, String searchQuery, String accountId) async {
+    var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
 
@@ -380,11 +386,11 @@ class SubAccountListProvider extends ChangeNotifier {
       print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
       ));
     } finally {
       isAutoCompleteLoading = false;
@@ -393,6 +399,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Add sub account
   Future<void> addSubAccount(BuildContext context, String accountName, String accountId) async {
+    var typography = CustomTypography(context);
     try {
       isAddSubAccountLoading = true;
 
@@ -413,13 +420,13 @@ class SubAccountListProvider extends ChangeNotifier {
       isAddSubAccountLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
       isAddSubAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1),
+        content: Text(e.toString(), style: typography.Body1),
       ));
     }
   }
@@ -427,6 +434,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Request access with message
   Future<void> requestAccess(BuildContext context, String subAccountId, String message, String accountId) async {
+    var typography = CustomTypography(context);
     try {
       ApiService apiService = ApiService(AppConstant.REQUEST_ACCESS+"/$accountId/subaccount");
       var response = await apiService.post({'data':{
@@ -435,17 +443,17 @@ class SubAccountListProvider extends ChangeNotifier {
       }});
       log(response.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Request sent successfully!', style: CustomTypography.Body1,),
+        content: Text('Request sent successfully!', style: typography.Body1,),
 
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -453,6 +461,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Upload SOV
   Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String subAccountId, String name) async {
+    var typography = CustomTypography(context);
     try {
       isImageUploadLoading = true;
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
@@ -465,7 +474,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           response['message']??LanguageService.getTranslated(context, "sub_account_list_app_sov_upload_success"),
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
       print("total records: "+response['total_records'].toString());
@@ -510,7 +519,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             message,
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -525,7 +534,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             '${e.toString()}',
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -536,6 +545,7 @@ class SubAccountListProvider extends ChangeNotifier {
 
   /// Transfer sub account
   Future<void> transferSubAccount(BuildContext context, String accountId, String? subAccountId, String newOwnerId) async {
+
     try {
       isTransferLoading = true;
 

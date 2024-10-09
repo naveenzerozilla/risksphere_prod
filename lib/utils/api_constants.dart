@@ -50,7 +50,7 @@ class AppConstant {
   // R2 APIS
   static String get GET_ACCOUNT_LIST => '$baseURL/accounts/mobile';
   static String get RENAME_ACCOUNT => '$baseURL/accounts';
-  static String get DUPLICATE_ACCOUNT => '$baseURL/accounts';
+  static String get DUPLICATE_ACCOUNT => 'https://eb2e-49-207-208-98.ngrok-free.app/project-green-f4d78/us-central1/accounts';//'$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts';
   static String get AUTO_COMPLETE_ACCOUNT_LIST => '$baseURL/accounts';
   static String get ADD_ACCOUNT => '$baseURL/accounts';
@@ -82,4 +82,8 @@ class AppConstant {
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
+
+  /// R3 APIS
+  static String get GET_JOB_MONITORING => '$baseURL/job_monitoring';
+
 }

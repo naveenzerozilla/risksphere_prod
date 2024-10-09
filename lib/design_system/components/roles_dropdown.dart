@@ -14,6 +14,7 @@ class _RolesDropdownState extends State<RolesDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Container(
      /* padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -33,7 +34,7 @@ class _RolesDropdownState extends State<RolesDropdown> {
                   value: value,
                   child: Row(
                     children: [
-                      Text(value, style: CustomTypography.Body1),
+                      Text(value, style: typography.Body1),
                     ],
                   ),
                 );
@@ -47,7 +48,7 @@ class _RolesDropdownState extends State<RolesDropdown> {
                 children: [
                   Icon(Icons.switch_account),
                   SizedBox(width: 8),
-                  Text('Risk Manager', style: CustomTypography.Body1),
+                  Text('Risk Manager', style: typography.Body1),
                 ],
               ),
               icon: Icon(Icons.arrow_drop_down),

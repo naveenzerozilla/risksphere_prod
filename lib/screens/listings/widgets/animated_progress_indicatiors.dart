@@ -50,6 +50,7 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator> w
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -70,7 +71,7 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator> w
         ),
         Text(
           widget.percent + "%",
-          style: CustomTypography.Subtitle2.copyWith(
+          style: typography.Subtitle2.copyWith(
             color: AppColors.primaryMain,
             fontSize: 9,
           ),

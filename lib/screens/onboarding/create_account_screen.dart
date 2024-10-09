@@ -146,6 +146,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -171,7 +172,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           child: Center(
                               child: Text(
                                 LanguageService.getTranslated(context, "login_image_text"),
-                            style: CustomTypography.H5_Regular,
+                            style: typography.H5_Regular,
                           )),
                         ),
                       ],
@@ -279,11 +280,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                       LanguageService.getTranslated(context,"register_non_corporate_success_status_title"),
 
 
-                                                      style: CustomTypography.ButtonLarge,),
+                                                      style: typography.ButtonLarge,),
                                                     actions: [
                                                       TextButton(
                                                         onPressed: () {
-                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => App()));
+                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MyApp()));
                                                         },
                                                         child: Row(
                                                           children: [
@@ -371,7 +372,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             ? LanguageService.getTranslated(context,"register_non_corporate_freetrail_btn")
                                             : LanguageService.getTranslated(context,"usermanagement_cuser_create_account_btn"),
                                         style:
-                                            CustomTypography.ButtonLarge.copyWith(
+                                            typography.ButtonLarge.copyWith(
                                                 color: Colors.black),
                                       ),
                                     ),
@@ -390,6 +391,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _createAccountForm() {
+    var typography = CustomTypography(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
@@ -401,7 +403,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ? LanguageService.getTranslated(context,"register_non_corporate_create_user_account_title")
                   :
               LanguageService.getTranslated(context,"register_corporate_create_corporate_act_title"),
-              style: CustomTypography.H5_Regular.copyWith(
+              style: typography.H5_Regular.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
               textAlign: TextAlign.center,
             ),
@@ -453,6 +455,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _almostThereForm() {
+    var typography = CustomTypography(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
@@ -463,7 +466,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               _selectedOption == SignUpOptions.individual
                   ? 'Almost there! Please complete your account setup.'
                   : 'Do you want to create a corporate account?',
-              style: CustomTypography.H5_Regular.copyWith(
+              style: typography.H5_Regular.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
               textAlign: TextAlign.center,
             ),
@@ -476,6 +479,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _individualAccountUI() {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -518,7 +522,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             SizedBox(width: CustomSpacing.three),
             Text(
               LanguageService.getTranslated(context,"register_non_corporate_register_manually"),
-              style: CustomTypography.Subtitle1.copyWith(
+              style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),
             SizedBox(width: CustomSpacing.three),
@@ -540,8 +544,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
             hintText:   LanguageService.getTranslated(context,"user_profile_user_management_name_placeholder"),
 
-            hintStyle: CustomTypography.Body1,
-            labelStyle: CustomTypography.Body1,
+            hintStyle: typography.Body1,
+            labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -562,8 +566,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             labelText:   LanguageService.getTranslated(context,"usermanagement_display_name_field_label"),
 
             hintText:  LanguageService.getTranslated(context,"usermanagement_display_name_placeholder"),
-            hintStyle: CustomTypography.Body1,
-            labelStyle: CustomTypography.Body1,
+            hintStyle: typography.Body1,
+            labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -586,8 +590,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
             hintText: LanguageService.getTranslated(context,"register_non_corporate_emailfield_placeholder"),
 
-            hintStyle: CustomTypography.Body1,
-            labelStyle: CustomTypography.Body1,
+            hintStyle: typography.Body1,
+            labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -692,7 +696,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             Text(
               LanguageService.getTranslated(context,"categorymanagement_category_role_field_label"),
 
-              style: CustomTypography.Subtitle1.copyWith(
+              style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
             ),
             Expanded(
@@ -802,6 +806,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _signUpAdditionFields() {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -855,7 +860,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             Text(
               LanguageService.getTranslated(context,"register_non_corporate_role_field_label"),
 
-              style: CustomTypography.Subtitle1.copyWith(
+              style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
             ),
             Expanded(
@@ -964,6 +969,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   _corporateAccountUI() {
+    var typography = CustomTypography(context);
     print('Corporate Country: $_selectedCorporateCountryName');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,7 +1025,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 onTap: () => onSelected(option),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
-                                  child: Text('${option.name} (${option.countryName})', style: CustomTypography.Subtitle1),
+                                  child: Text('${option.name} (${option.countryName})', style: typography.Subtitle1),
                                 ),
                               );
                             },
@@ -1198,7 +1204,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           children: [
             Text(
               _enableCompanyTypeDropdown?'Admin':'User & Role(s)',
-              style: CustomTypography.Subtitle1.copyWith(
+              style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),
             SizedBox(width: CustomSpacing.three),
@@ -1231,9 +1237,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   }).toList() ?? [],
                   decoration: InputDecoration(
                     labelText: 'Role(s)',
-                    labelStyle: CustomTypography.Subtitle1,
+                    labelStyle: typography.Subtitle1,
                     hintText: 'Select Role',
-                    hintStyle: CustomTypography.Body1,
+                    hintStyle: typography.Body1,
                     border: const OutlineInputBorder(),
                     errorText: state.errorText, // Display validation error message
                   ),

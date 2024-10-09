@@ -201,6 +201,7 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Fetch account list with pagination and search query
   Future<void> fetchAccountList(BuildContext context, String searchQuery, int page, int pageSize) async {
+    var typography = CustomTypography(context);
     try {
       if(isLoading || isNextPageLoading) return;
       if (page == 0) {
@@ -240,7 +241,7 @@ class AccountListProvider extends ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e, stackTrace) {
@@ -248,7 +249,7 @@ class AccountListProvider extends ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -256,11 +257,13 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Rename account
   Future<void> renameAccount(BuildContext context, String accountId, String newName) async {
+    var typography = CustomTypography(context);
     try {
       isRenameLoading = true;
 
       ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
       var response = await apiService.patch({'data':{
+        "rename_account": true,
         'account_id': accountId,
         'account_name': newName,
       }});
@@ -276,13 +279,13 @@ class AccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -290,6 +293,7 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Duplicate account
   Future<void> duplicateAccount(BuildContext context, String accountId) async {
+    var typography = CustomTypography(context);
     try {
       isDuplicateLoading = true;
 
@@ -310,13 +314,13 @@ class AccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -325,6 +329,7 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context, {required bool showOwner, required bool showSOVCount, required bool showSubAccountCount, required bool showOverallScore, required String type}) async {
+    var typography = CustomTypography(context);
     try {
 
       if (type == 'owner') {
@@ -358,7 +363,7 @@ class AccountListProvider extends ChangeNotifier {
       showSubAccountCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
       return false;
@@ -368,7 +373,7 @@ class AccountListProvider extends ChangeNotifier {
       showSubAccountCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
       return false;
@@ -377,6 +382,7 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Fetch autocomplete account list
   Future<void> fetchAutoCompleteAccountList(BuildContext context, String searchQuery) async {
+    var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
 
@@ -394,13 +400,13 @@ class AccountListProvider extends ChangeNotifier {
     } on BackendException catch (e, stackTrace) {
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     } finally {
@@ -410,6 +416,7 @@ class AccountListProvider extends ChangeNotifier {
 
   /// Add account
   Future<void> addAccount(BuildContext context, String accountName) async {
+    var typography = CustomTypography(context);
     try {
       isAddAccountLoading = true;
 
@@ -429,13 +436,13 @@ class AccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       isAddAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
@@ -444,6 +451,7 @@ class AccountListProvider extends ChangeNotifier {
 
   // Request access with message
   Future<void> requestAccess(BuildContext context, String accountId, String message) async {
+    var typography = CustomTypography(context);
     try {
       ApiService apiService = ApiService(AppConstant.REQUEST_ACCESS);
       var response = await apiService.post({'data':{
@@ -452,23 +460,24 @@ class AccountListProvider extends ChangeNotifier {
       }});
       log(response.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Request sent successfully!', style: CustomTypography.Body1,),
+        content: Text('Request sent successfully!', style: typography.Body1,),
 
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: CustomTypography.Body1,),
+        content: Text(e.message, style: typography.Body1,),
 
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: CustomTypography.Body1,),
+        content: Text(e.toString(), style: typography.Body1,),
 
       ));
     }
   }
 
   Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String name) async {
+    var typography = CustomTypography(context);
     try {
       isImageUploadLoading = true;
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
@@ -482,7 +491,7 @@ class AccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           response['message']??LanguageService.getTranslated(context, "account_list_app_sov_upload_success"),
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
       ));
       print("total records: "+response['total_records'].toString());
@@ -527,7 +536,7 @@ class AccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             message,
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -540,7 +549,7 @@ class AccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             '${e.toString()}',
-            style: CustomTypography.Body1,
+            style: typography.Body1,
           ),
         ),
       );
@@ -550,6 +559,7 @@ class AccountListProvider extends ChangeNotifier {
   }
 
   Future<void> transferAccount(BuildContext context, String accountId, String newOwnerId) async {
+    var typography = CustomTypography(context);
     try {
       isTransferLoading = true;
 

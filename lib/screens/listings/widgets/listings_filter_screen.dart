@@ -390,6 +390,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       "",
       // No search query
       0,
+      "forward",
       // Reset page to 0
       40, // Page size
     );
@@ -466,7 +467,8 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       widget.searchQuery ?? "",
       0,
       // Reset page to 0
-      40, // Page size
+      "forward",
+      40,
     );
     Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
@@ -616,6 +618,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     List<String> filteredTitles = expansionTitles.where((title) {
       return title.toLowerCase().contains(searchQuery) ||
           subValues[title]!
@@ -629,12 +632,12 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         SizedBox(height: CustomSpacing.eight),
         Padding(
           padding: EdgeInsets.only(left: CustomSpacing.four),
-          child: Text('Filters', style: CustomTypography.H6),
+          child: Text('Filters', style: typography.H6),
         ),
         Padding(
           padding: EdgeInsets.all(CustomSpacing.four),
           child: Text('Apply filters to table data',
-              style: CustomTypography.Subtitle2),
+              style: typography.Subtitle2),
         ),
         SizedBox(height: CustomSpacing.two),
         Padding(
@@ -646,7 +649,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            style: CustomTypography.Body1,
+            style: typography.Body1,
             onChanged: updateSearchQuery,
           ),
         ),
@@ -666,7 +669,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               switch (title) {
                 case 'Geographical':
                   return ExpansionTile(
-                    title: Text('Geographical', style: CustomTypography.Body1),
+                    title: Text('Geographical', style: typography.Body1),
                     children: [
                       Column(
                         children: [
@@ -690,14 +693,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                                 counterText: '',
                                 labelText: 'Enter Zipcode',
                                 hintText: 'Enter Zipcode',
-                                hintStyle: CustomTypography.Body1,
-                                labelStyle: CustomTypography.Body1,
+                                hintStyle: typography.Body1,
+                                labelStyle: typography.Body1,
                                 border: const OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.all(Radius.circular(8)),
                                 ),
                               ),
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                               maxLength: 10,
                               initialValue: zipcode,
                               // Pre-fill with selected zipcode if available
@@ -720,14 +723,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Select Country',
                                 hintText: 'Select Country',
-                                hintStyle: CustomTypography.Body1,
-                                labelStyle: CustomTypography.Body1,
+                                hintStyle: typography.Body1,
+                                labelStyle: typography.Body1,
                                 border: const OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.all(Radius.circular(8)),
                                 ),
                               ),
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                               value: selectedCountry,
                               onChanged: (newValue) {
                                 setState(() {
@@ -738,7 +741,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                                 return DropdownMenuItem(
                                   child: Text(
                                     country,
-                                    style: CustomTypography.Body1,
+                                    style: typography.Body1,
                                     overflow: TextOverflow
                                         .ellipsis, // Handle overflow with ellipsis
                                   ),
@@ -756,14 +759,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Enter State',
                                 hintText: 'Enter State',
-                                hintStyle: CustomTypography.Body1,
-                                labelStyle: CustomTypography.Body1,
+                                hintStyle: typography.Body1,
+                                labelStyle: typography.Body1,
                                 border: const OutlineInputBorder(
                                   borderRadius:
                                       BorderRadius.all(Radius.circular(8)),
                                 ),
                               ),
-                              style: CustomTypography.Body1,
+                              style: typography.Body1,
                               initialValue: selectedState,
                               // Pre-fill with selected state if available
                               onChanged: (newValue) {
@@ -781,7 +784,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                   );
                 case 'Ratings':
                   return ExpansionTile(
-                    title: Text('Ratings', style: CustomTypography.Body1),
+                    title: Text('Ratings', style: typography.Body1),
                     children: List.generate(5, (index) {
                       return CheckboxListTile(
                         controlAffinity: ListTileControlAffinity.leading,
@@ -823,7 +826,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 // Excluded Property Type
                 // case 'Property Type':
                 //   return ExpansionTile(
-                //     title: Text('Property Type', style: CustomTypography.Body1),
+                //     title: Text('Property Type', style: typography.Body1),
                 //     children: propertyTypes.keys.map((type) {
                 //       return CheckboxListTile(
                 //         controlAffinity: ListTileControlAffinity.leading,
@@ -840,11 +843,11 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 // Excluded Construction Type
                 // case 'Construction Type':
                 //   return ExpansionTile(
-                //     title: Text('Construction Type', style: CustomTypography.Body1),
+                //     title: Text('Construction Type', style: typography.Body1),
                 //     children: constructionTypes.keys.map((type) {
                 //       return CheckboxListTile(
                 //         controlAffinity: ListTileControlAffinity.leading,
-                //         title: Text(type, style: CustomTypography.Body1),
+                //         title: Text(type, style: typography.Body1),
                 //         value: constructionTypes[type],
                 //         onChanged: (bool? value) {
                 //           setState(() {
@@ -856,11 +859,11 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 //   );
                 //   case 'Certifications':
                 //     return ExpansionTile(
-                //       title: Text('Certifications', style: CustomTypography.Body1),
+                //       title: Text('Certifications', style: typography.Body1),
                 //       children: certifications.keys.map((type) {
                 //         return CheckboxListTile(
                 //           controlAffinity: ListTileControlAffinity.leading,
-                //           title: Text(type, style: CustomTypography.Body1),
+                //           title: Text(type, style: typography.Body1),
                 //           value: certifications[type],
                 //           onChanged: (bool? value) {
                 //             setState(() {
@@ -872,11 +875,11 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 //     );
                 //   case 'Hazard':
                 //     return ExpansionTile(
-                //       title: Text('Hazard', style: CustomTypography.Body1),
+                //       title: Text('Hazard', style: typography.Body1),
                 //       children: hazards.keys.map((type) {
                 //         return CheckboxListTile(
                 //           controlAffinity: ListTileControlAffinity.leading,
-                //           title: Text(type, style: CustomTypography.Body1),
+                //           title: Text(type, style: typography.Body1),
                 //           value: hazards[type],
                 //           onChanged: (bool? value) {
                 //             setState(() {
@@ -902,13 +905,13 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 onPressed: () {
                   applyFilters(context);
                 },
-                child: Text('Apply', style: CustomTypography.ButtonLarge),
+                child: Text('Apply', style: typography.ButtonLarge),
               ),
               ElevatedButton(
                 onPressed: () {
                   clearAllFilters();
                 },
-                child: Text('Clear All', style: CustomTypography.ButtonLarge),
+                child: Text('Clear All', style: typography.ButtonLarge),
               ),
             ],
           ),

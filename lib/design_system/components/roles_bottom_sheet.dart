@@ -86,6 +86,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     List<Map<String, dynamic>> allOptions =
     widget.selectedOption == SignUpOptions.individual
         ? filteredOptionsIndividual
@@ -100,7 +101,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
             Container(
               margin: const EdgeInsets.only(left: 24, top: 24),
               child: Text('Select Account Roles',
-                  style: CustomTypography.H7.copyWith(
+                  style: typography.H7.copyWith(
                     color: Theme.of(context).colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   )),
@@ -212,7 +213,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                         widget.selectedOption == SignUpOptions.individual
                             ? 'SWITCH TO CORPORATE'
                             : 'SWITCH TO INDIVIDUAL',
-                        style: CustomTypography
+                        style: typography
                             .Subtitle1, // Adjust text color if needed
                       ),
                     ),
@@ -221,7 +222,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                       children: [
                         Text(
                           "${widget.selectedOption != SignUpOptions.individual ? 'Individual' : 'Corporate'} account roles",
-                          style: CustomTypography.Subtitle1,
+                          style: typography.Subtitle1,
                         ),
                         SvgPicture.asset(
                           'assets/images/down_icon.svg',
@@ -269,7 +270,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: Text('SUBMIT', style: CustomTypography.Subtitle1),
+          child: Text('SUBMIT', style: typography.Subtitle1),
         ),
       ],
     );
