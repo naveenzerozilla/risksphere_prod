@@ -128,6 +128,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         var jobs = snapshot.data?.docs ?? [];
 
                         return ListView.builder(
+                          physics: ClampingScrollPhysics(),
                           itemCount: jobs.length,
                           itemBuilder: (context, index) {
                             var jobData =
@@ -220,6 +221,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         backgroundColor: expandedColor2,
         // Expanded section hover color
         showTrailingIcon: false,
+        maintainState: false,
         tilePadding: EdgeInsets.all(12.0),
         title: Column(
           children: [
@@ -407,7 +409,34 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
   }
 
   Widget _buildSubprocesses(Map<String, dynamic> jobData) {
-    var subprocesses = jobData['subprocesses'] as Map<String, dynamic>? ?? {};
+    var unsortedSubprocesses = jobData['subprocesses'] as Map<String, dynamic>? ?? {};
+    var subprocesses = Map<String, dynamic>.fromEntries(
+        unsortedSubprocesses.entries.toList()
+          ..sort((a, b) {
+            // Safely access the 'sub_process_name' field from each entry, or fallback to 'Location Set 0'
+            String subProcessNameA = (a.value as Map<String, dynamic>)['sub_process_name'] ?? 'Location Set 0';
+            String subProcessNameB = (b.value as Map<String, dynamic>)['sub_process_name'] ?? 'Location Set 0';
+
+            // Extract the numerical part from the 'sub_process_name'
+            RegExp regex = RegExp(r'(\d+)$');
+            var matchA = regex.firstMatch(subProcessNameA);
+            var matchB = regex.firstMatch(subProcessNameB);
+
+            // Convert the numerical part to an integer for comparison, fallback to 0 if not found
+            int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
+            int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
+
+            // Compare the base part of the name (without numbers), then compare the numerical parts
+            int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+
+            // If the base names are the same, compare the numerical part
+            if (stringCompare == 0) {
+              return numberA.compareTo(numberB);
+            }
+            return stringCompare;
+          })
+    );
+
     final cardHeight = 120.0; // Approximate height of each subprocess card
     final maxHeight = cardHeight * 3; // Maximum height for 3 cards
 
@@ -434,8 +463,12 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             } else {
               log('Unexpected data format for subprocess: ${entry.value}');
             }
+            String subprocessId =
+                subprocessData['payload']?['subtask_id'] ?? 'Unknown Name';
             String subprocessName =
-                subprocessData['subtaskid'] ?? 'Unknown Name';
+                subprocessData['sub_process_name'] ?? 'Unknown Name';
+            String locationSetName = subprocessData['location_set_name'] ??
+                'Location Set'; // Can be calculated
             int successCount =
                 subprocessData['result']?['counts']?['processed_counts'] ?? 1;
             int failureCount =
@@ -453,6 +486,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 .hoverColor; // Darker hover color for expanded section
 
             return ExpansionTile(
+              maintainState: true,
               showTrailingIcon: false,
               tilePadding: EdgeInsets.all(0),
               title: SizedBox(
@@ -488,7 +522,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                           children: [
                             SizedBox(height: 8),
                             Text(
-                              subprocessName,
+                              subprocessId,
                               style: typography.Body1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -518,7 +552,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                               children: [
                                 Chip(
                                   label: Text(
-                                    'Location Set',
+                                    subprocessName,
                                   ),
                                   backgroundColor:
                                       AppColors.primaryMain.withOpacity(0.2),
@@ -591,17 +625,30 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         subprocessData['hazard_file'] as Map<String, dynamic>? ?? {};
     var hazardScore =
         subprocessData['hazard_score'] as Map<String, dynamic>? ?? {};
-    var overallData = subprocessData['overall'] as Map<String, dynamic>? ?? {};
+    var overallData = subprocessData['overall_score'];
     var scoreData = subprocessData['total_score_counts'];
 
     return ListView(
       physics: ClampingScrollPhysics(),
       shrinkWrap: true,
       children: [
+        // Geocoding Task (placeholder for now)
+        _buildTaskCard(
+          geeTaskID: 'GEE-TaskID: '+assetUploadData?['task_id'] ?? "",
+          taskName: "Geocoding",
+          description: "",
+          successCount:
+          subprocessData['result']?['counts']?['processed_counts'] ?? 0,
+          failureCount:
+          subprocessData['result']?['counts']?['processed_counts'] ?? 0,
+          typography: typography,
+          status: subprocessData['status'] ?? '',
+        ),
+
         // Asset Upload Task
         if (assetUploadData != null)
           _buildTaskCard(
-            geeTaskID: assetUploadData['task_id'],
+            geeTaskID: 'GEE-TaskID: '+assetUploadData['task_id'],
             taskName: "Asset Upload",
             description: "",
             successCount: assetUploadData['processed'] ?? 0,
@@ -613,23 +660,10 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 : 'in progress',
           ),
 
-        // Geocoding Task (placeholder for now)
-        _buildTaskCard(
-          geeTaskID: assetUploadData?['task_id'] ?? "",
-          taskName: "Geocoding",
-          description: "",
-          successCount:
-              subprocessData['result']?['counts']?['processed_counts'] ?? 0,
-          failureCount:
-              subprocessData['result']?['counts']?['processed_counts'] ?? 0,
-          typography: typography,
-          status: subprocessData['status'] ?? '',
-        ),
-
         // Boundary Intersection Tasks
         for (var entry in boundaryData.entries)
           _buildTaskCard(
-            geeTaskID: entry.key,
+            geeTaskID: 'GEE-TaskID: '+entry.key,
             taskName: "Boundary Intersection",
             description:
                 "${entry.value['vendor_name']}/${entry.value['hazard_name']}",
@@ -642,7 +676,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         // Hazard Tasks
         for (var entry in hazardData.entries)
           _buildTaskCard(
-            geeTaskID: entry.key,
+            geeTaskID: 'GEE-TaskID: '+entry.key,
             taskName: "Hazard",
             description:
                 "${entry.value['vendor_name']}/${entry.value['hazard_name']}",
@@ -653,10 +687,10 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           ),
 
         // Hazard Score Tasks
-        for (var entry in boundaryData.entries)
+        for (var entry in hazardScore.entries)
           _buildTaskCard(
-            geeTaskID: entry.key.toString(),
-            taskName: "Boundary Intersection",
+            geeTaskID: 'GEE-TaskID: '+entry.key.toString(),
+            taskName: "Hazard Score",
             description: (entry.value['vendor_name'] is String
                     ? entry.value['vendor_name']
                     : entry.value['vendor_name'] is List &&
@@ -672,55 +706,17 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           ),
 
         // Overall Task
-        if (overallData.isNotEmpty && overallData.entries.isNotEmpty)
-          ...overallData.entries.map((entry) {
-            var statusValue = "pending"; // Default value for status
-            var vendor = 'Unknown Vendor';
-            var hazardName = 'Unknown Hazard';
-
-            if (entry.value != null) {
-              print("Entry Value: ${entry.value}");
-
-              // Check if entry.value is a Map before trying to access it like one
-              if (entry.value is Map<String, dynamic>) {
-                print(
-                    "Entry Value Status: ${entry.value.containsKey('status')}");
-
-                // Safely check if status exists and is a string
-                if (entry.value['status'] is String) {
-                  statusValue = entry.value['status'];
-                }
-
-                // Safely check for vendor and hazard_name
-                if (entry.value['vendor_name'] is String) {
-                  vendor = entry.value['vendor_name'];
-                } else if (entry.value['vendor_name'] is List &&
-                    entry.value['vendor_name'].isNotEmpty) {
-                  vendor = entry.value['vendor_name'][0].toString();
-                }
-
-                hazardName =
-                    entry.value['hazard_name']?.toString() ?? 'Unknown Hazard';
-              } else if (entry.value is String) {
-                // If entry.value is a string, use it directly
-                statusValue = entry.value;
-              }
-            }
-
-            return _buildTaskCard(
-              geeTaskID: entry.key.toString(),
-              taskName: "Overall",
-              description: vendor != '' && hazardName != ''
-                  ? "$vendor/$hazardName"
-                  : '',
-              successCount:
-                  entry.value is Map ? entry.value['processed'] ?? 0 : 0,
-              failureCount:
-                  entry.value is Map ? entry.value['unprocessed'] ?? 0 : 0,
-              typography: typography,
-              status: statusValue,
-            );
-          }).toList(), // Convert the mapped values into a list of widgets
+        if (overallData != null)
+          _buildTaskCard(
+            geeTaskID: subprocessData['payload']['subtask_id'],
+            taskName: "Overall Score",
+            description: "",
+            successCount: overallData['processed'] ?? 0,
+            failureCount: overallData['unprocessed'] ?? 0,
+            typography: typography,
+            scoreData: scoreData,
+            status: overallData['score']['status']??'READY',
+          ),
 
         // Score and Overall Score
         if (scoreData != null) _buildScoreSection(scoreData, typography),
@@ -752,7 +748,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "GEE-TaskID: $geeTaskID",
+              "$geeTaskID",
               style: typography.Body1.copyWith(fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
             ),
@@ -760,8 +756,18 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text(taskName,
-                    style: typography.Body2.copyWith(color: Colors.amber)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(taskName,
+                        style: typography.Body2.copyWith(color: getStatusColor(context, status))),
+                    Text(
+                      'Status: ${_getStatusText(status)}',
+                      style: typography.Body2.copyWith(
+                          color: getStatusColor(context, status)),
+                    ),
+                  ],
+                ),
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -822,6 +828,47 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         Text('5 Stars: ${scoreData["5"] ?? 0}', style: typography.Body2),
       ],
     );
+  }
+
+  Color getStatusColor(BuildContext context, String? status) {
+    switch (status) {
+      case 'failed':
+      case 'cancelled':
+      case 'FAILED':
+      case 'CANCELLED':
+        return Colors.red;
+      case 'in_progress':
+      case 'inprogress':
+      case 'RUNNING':
+        return Colors.yellow;
+      case 'completed':
+      case 'compleated':
+        case 'COMPLETED':
+        return Colors.green;
+      default:
+        return Theme.of(context).colorScheme.onSurface;
+    }
+  }
+
+  _getStatusText(String status) {
+    switch (status) {
+      case 'failed':
+      case 'FAILED':
+        return 'Failed';
+      case 'in_progress':
+      case 'inprogress':
+      case 'RUNNING':
+        return 'In Progress';
+      case 'completed':
+      case 'compleated':
+      case 'COMPLETED':
+        return 'Completed';
+      case 'cancelled':
+      case 'CANCELLED':
+        return 'Cancelled';
+      default:
+        return 'Unknown';
+    }
   }
 }
 

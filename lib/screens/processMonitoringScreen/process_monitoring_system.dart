@@ -80,12 +80,14 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                     // Fetch all processes if the user is a super admin
                     stream = FirebaseFirestore.instance
                         .collection('processes')
+                        .orderBy('created_at', descending: true)
                         .snapshots();
                   } else if (provider.docIds.isNotEmpty) {
                     // Fetch specific processes if the user is not a super admin
                     stream = FirebaseFirestore.instance
                         .collection('processes')
                         .where(FieldPath.documentId, whereIn: provider.docIds)
+                        .orderBy('created_at', descending: true)
                         .snapshots();
                   } else {
                     // If there are no document IDs, show no processes
@@ -99,6 +101,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                     }
 
                     var processes = snapshot.data!.docs;
+
 
                     return ListView.builder(
                       itemCount: processes.length,
@@ -152,6 +155,30 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     required Map<String, dynamic> subProcesses,
     required CustomTypography typography,
   }) {
+    // Sort the subprocesses by the 'sub_process_name'
+    var sortedSubProcesses = subProcesses.entries.toList()
+      ..sort((a, b) {
+        String subProcessNameA = a.value['sub_process_name'] ?? 'Location Set 0';
+        String subProcessNameB = b.value['sub_process_name'] ?? 'Location Set 0';
+
+        // Extract the numerical part from the 'sub_process_name'
+        RegExp regex = RegExp(r'(\d+)$');
+        var matchA = regex.firstMatch(subProcessNameA);
+        var matchB = regex.firstMatch(subProcessNameB);
+
+        // Convert the numerical part to an integer for comparison
+        int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
+        int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
+
+        // First compare the base part of the name (without numbers), then compare the numbers
+        int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+
+        // If the base names are the same, compare the numerical part
+        if (stringCompare == 0) {
+          return numberA.compareTo(numberB);
+        }
+        return stringCompare;
+      });
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       padding: EdgeInsets.all(16.0),
@@ -230,7 +257,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           // Display subprocesses in the expansion tile
 
           Column(
-            children: subProcesses.entries.map<Widget>((entry) {
+            children: sortedSubProcesses.map<Widget>((entry) {
               count++;
               String locationSetId = entry.key; // This is the key of the subprocesses
 
@@ -253,11 +280,11 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
               var totalScore = convertToStringDynamicMap(locationSetData['total_score_counts'] ?? {});
               var hazardScoreCount = locationSetData['hazard_score']?.length ?? 0;
               var hazardScoreProcessedCount = _getProcessedCount(locationSetData['hazard_score']);
-              var overallScoreCount = locationSetData['overall']?.length ?? 0;
-              print('Overall Score Count: $overallScoreCount');
+              var overallScore = locationSetData['overall_score']?.length ?? 0;
+              print('Overall Score Count: $overallScore');
               var overallScoreProcessedCount = _getProcessedCount(locationSetData['overall']);
               print('Overall Score Processed Count: $overallScoreProcessedCount');
-              var overallScore = locationSetData['overall']?["status"] ?? "Pending";
+              var overallScoreStatus = locationSetData['overall_score']?["score"]?["status"] ?? "Pending";
 
               return _buildLocationSetCard(
                 locationSetId: locationSetId,
@@ -272,8 +299,8 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                 typography: typography,
                 hazardScoreCount: hazardScoreCount,
                 hazardScoreProcessedCount: hazardScoreProcessedCount,
-                overallScoreCount: overallScoreCount,
-                overallScoreProcessedCount: overallScoreProcessedCount
+                overallScore: overallScore,
+                overallScoreStatus: overallScoreStatus,
               );
             }).toList(),
           )
@@ -298,11 +325,13 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     required int hazardScoreCount,
     required int hazardScoreProcessedCount,
     required Map<String, dynamic> totalScore,
-    required CustomTypography typography, required overallScoreCount, required int overallScoreProcessedCount,
+    required CustomTypography typography, required overallScore, required String overallScoreStatus,
   }) {
+    print('Overall Score: $overallScoreStatus');
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ExpansionTile(
+
         tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         showTrailingIcon: false,
         collapsedBackgroundColor: Theme.of(context).hoverColor.withOpacity(0.05),
@@ -316,7 +345,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           side: BorderSide(color: Theme.of(context).hoverColor.withOpacity(0.1)),
         ),
         key: Key(locationSetId),
-        initiallyExpanded: false, // Initially collapsed
+        initiallyExpanded: true, // Initially collapsed
         title: Column(
           children: [
             Row(
@@ -384,9 +413,9 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           if(hazardCount > 0)
           _buildSubProcess('Hazard', '$hazardProcessedCount/$hazardCount', hazardCount - hazardProcessedCount == 0?"completed":"in progress", typography),
           if(hazardScoreCount > 0)
-          _buildSubProcess('Hazard Score', '$hazardScoreProcessedCount/$hazardScoreCount', 'Processing', typography),
-          if(overallScoreCount > 0)
-          _buildSubProcess('Overall Score', '$overallScoreProcessedCount/$overallScoreCount', overallScoreCount-overallScoreProcessedCount == 0?"completed":"in progress", typography),
+          _buildSubProcess('Hazard Score', '$hazardScoreProcessedCount/$hazardScoreCount', hazardCount - hazardProcessedCount == 0?"completed":"in progress", typography),
+          if(!(overallScoreStatus.toLowerCase() == 'ready'))
+          _buildSubProcess('Overall Score', '${overallScoreStatus.toLowerCase() == "completed"?"1":"0"}/1', overallScoreStatus, typography),
           Row(
             children: [
               Expanded(
@@ -472,7 +501,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     data.forEach((key, value) {
       // Ensure that value is a Map and has a 'status' field
       if (value is Map<String, dynamic> && value.containsKey('status')) {
-        if (value['status'] == 'completed') {
+        if (value['status'].toString().toLowerCase() == 'completed') {
           count++;
         }
       }

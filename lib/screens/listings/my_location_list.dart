@@ -33,35 +33,23 @@ import 'package:green/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/language_service.dart';
 
-class LocationList extends StatefulWidget {
+class MyLocationList extends StatefulWidget {
   final String userId;
   final String companyName;
-  final String accountId;
-  final String accountName;
-  final String subAccountId;
-  final String subAccountName;
-  final String sovId;
-  final String sovName;
   final String rating;
 
-  const LocationList({
+  const MyLocationList({
     super.key,
     required this.userId,
     required this.companyName,
-    required this.accountId,
-    required this.accountName,
-    required this.subAccountId,
-    required this.subAccountName,
-    required this.sovId,
-    required this.sovName,
     required this.rating,
   });
 
   @override
-  State<LocationList> createState() => _LocationListState();
+  State<MyLocationList> createState() => _MyLocationListState();
 }
 
-class _LocationListState extends State<LocationList> with TickerProviderStateMixin {
+class _MyLocationListState extends State<MyLocationList> with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   TabController? _tabController;
@@ -114,9 +102,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
       locationQuery = query;
       Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
         context,
-        widget.accountId,
-        widget.subAccountId,
-        widget.sovId,
+        "widget.accountId",
+        "widget.subAccountId",
+        "widget.sovId",
         query,
         0,
         "forward",
@@ -148,9 +136,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         Provider.of<LocationListProvider>(context, listen: false).page = 0;
         Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
           context,
-          widget.accountId,
-          widget.subAccountId,
-          widget.sovId,
+          "widget.accountId,",
+          "widget.subAccountId",
+          "widget.sovId",
           locationQuery,
           0,
           "forward",
@@ -161,9 +149,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         Provider.of<LocationListProvider>(context, listen: false).page = 0;
         Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
           context,
-          widget.accountId,
-          widget.subAccountId,
-          widget.sovId,
+          "widget.accountId",
+          "widget.subAccountId",
+          "widget.sovId",
           locationQuery,
           0,
           40,
@@ -178,9 +166,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
     // Fetch data from API
     Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
       context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
+      "widget.accountId",
+      "widget.subAccountId",
+      "widget.sovId",
       "",
       0,
       "forward",
@@ -195,14 +183,14 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
     ).then((value) => setState(() {}));
     Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
+      "widget.accountId",
+      "widget.subAccountId",
+      "widget.sovId",
       "",
       0,
       40,
     );
-    Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds(widget.accountId, widget.subAccountId, widget.sovId);
+    Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -282,7 +270,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                             _uploadedFileName = null;
                             _sovNameController.clear();
                           });
-                          _showUploadDialog(widget.accountId, widget.subAccountId, widget.sovId);
+                          _showUploadDialog("widget.accountId", "widget.subAccountId", "widget.sovId");
                         },
                       ),
                       SpeedDialChild(
@@ -292,9 +280,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                           _selectedScreen = Screens.addLocation;
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => AddLocationScreen(
-                              accountId: widget.accountId,
-                              subAccountId: widget.subAccountId,
-                              sovId: widget.sovId,
+                              accountId: "widget.accountId",
+                              subAccountId: "widget.subAccountId",
+                              sovId: "widget.sovId",
                             ),
                           ));
                         },
@@ -349,15 +337,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                       Expanded(
                                         child: Row(
                                           children: [
-                                            Flexible(
-                                              child: Text(
-                                                widget.sovName == ''
-                                                    ? ""
-                                                    : '${widget.sovName.substring(0, 1).toUpperCase()}${widget.sovName.substring(1)}',
-                                                style: typography.Body1,
-                                              ),
-                                            ),
-                                            SizedBox(width: CustomSpacing.two),
+                                            //SizedBox(width: CustomSpacing.two),
                                             RatingHalfStars(
                                               rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
                                               maxRating: 5,
@@ -509,9 +489,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                             dividerColor: Colors.transparent,
                                             indicatorPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
                                             indicator: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8), // Makes the tab rounded
-                                    color: AppColors.primaryMain.withOpacity(0.16), // Background color for the selected tab
-                                    ),
+                                              borderRadius: BorderRadius.circular(8), // Makes the tab rounded
+                                              color: AppColors.primaryMain.withOpacity(0.16), // Background color for the selected tab
+                                            ),
                                             //indicatorColor: Colors.lightBlueAccent,
                                             labelColor: AppColors.primaryMain,
                                             isScrollable: true,
@@ -633,9 +613,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             endDrawer: Drawer(
               child: SafeArea(
                 child: ListingsFilterScreen(
-                  accountId: widget.accountId,
-                  subAccountId: widget.subAccountId,
-                  sovId: widget.sovId,
+                  accountId: "widget.accountId",
+                  subAccountId: "widget.subAccountId",
+                  sovId: "widget.sovId",
                   searchQuery: locationQuery,
                 ),
               ),
@@ -749,9 +729,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                     "Query: $locationQuery, Page: ${locationListProvider.page}");
                 locationListProvider.fetchLocationList(
                   context,
-                  widget.accountId,
-                  widget.subAccountId,
-                  widget.sovId,
+                  "widget.accountId",
+                  "widget.subAccountId",
+                  "widget.sovId",
                   locationQuery,
                   // Pass the search query if any
                   locationListProvider.page,
@@ -786,12 +766,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
         // Open location details screen
         Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => LocationProfile(
-            accountId: widget.accountId,
+            accountId: "widget.accountId",
             accountName: widget.companyName,
-            subAccountId: widget.subAccountId,
-            subAccountName: widget.subAccountName,
-            sovId: widget.sovId,
-            sovName: widget.sovName,
+            subAccountId: "widget.subAccountId",
+            subAccountName: "widget.subAccountName",
+            sovId: "widget.sovId",
+            sovName: "widget.sovName",
             searchQuery: locationQuery,
             page: (index).toString(),
             totalPages: locationListProvider.locationHits.toString(),
@@ -838,12 +818,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                 (locationList[index].score ?? 0) == 5
                     ? Container(
                   margin: EdgeInsets.only(right: 8),
-                      child: SvgPicture.asset(
-                                        'assets/images/certified.svg',
-                                        semanticsLabel: 'Verified',
-                                        height: 35,
-                                      ),
-                    )
+                  child: SvgPicture.asset(
+                    'assets/images/certified.svg',
+                    semanticsLabel: 'Verified',
+                    height: 35,
+                  ),
+                )
                     : SizedBox(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1052,9 +1032,9 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                     locationListProvider.page + 1;
                 locationListProvider.fetchCertifiedLocationList(
                   context,
-                  widget.accountId,
-                  widget.subAccountId,
-                  widget.sovId,
+                  "widget.accountId",
+                  "widget.subAccountId",
+                  "widget.sovId",
                   locationQuery,
                   locationListProvider.page,
                   40,
@@ -1110,20 +1090,20 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
               },
             ),
             Consumer<LocationListProvider>(
-              builder: (context, locationListProvider, child) {
-                return
-                locationListProvider.isDeleteLocationLoading
-                    ? CircularProgressIndicator()
-                    :
-                  CustomButton(
-                  type: ButtonType.danger,
-                  child: Text('Delete', style: typography.Body1.copyWith(fontWeight: FontWeight.w500)),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                    onDelete(); // Trigger the delete action
-                  },
-                );
-              }
+                builder: (context, locationListProvider, child) {
+                  return
+                    locationListProvider.isDeleteLocationLoading
+                        ? CircularProgressIndicator()
+                        :
+                    CustomButton(
+                      type: ButtonType.danger,
+                      child: Text('Delete', style: typography.Body1.copyWith(fontWeight: FontWeight.w500)),
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                        onDelete(); // Trigger the delete action
+                      },
+                    );
+                }
             ),
           ],
         );
@@ -1144,8 +1124,8 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
 
       // Make API call to delete locations
       await Provider.of<LocationListProvider>(context, listen: false)
-          .deleteLocations(context, widget.accountId, widget.subAccountId,
-          widget.sovId, locationList);
+          .deleteLocations(context, "widget.accountId", "widget.subAccountId",
+          "widget.sovId", locationList);
 
       // Clear selections
       setState(() {
@@ -1380,7 +1360,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                                       }
                                       else if(success.isNotEmpty) {
 
-                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountId, accountName: widget.accountName??"",)));
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: "widget.accountId", accountName: "widget.accountName??""",)));
 
                                       }
                                     },
@@ -1642,9 +1622,9 @@ class GeoCodingListCard extends StatelessWidget {
                   Chip(
                     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                     label: Text(
-                    'C-231',
-                    style: CustomTypography(context).Body2,
-                  ),),
+                      'C-231',
+                      style: CustomTypography(context).Body2,
+                    ),),
 
                 ],
               ),

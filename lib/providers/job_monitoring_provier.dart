@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,28 +12,38 @@ import '../utils/api_constants.dart';
 class JobMonitoringProvider extends ChangeNotifier {
 
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool val) {
-    _isLoading = val;
-    notifyListeners();
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      _isLoading = val;
+      notifyListeners();
+    });
   }
 
   bool _isAddLoading = false;
+
   bool get isAddLoading => _isAddLoading;
+
   set isAddLoading(bool val) {
     _isAddLoading = val;
     notifyListeners();
   }
 
   bool _isEditLoading = false;
+
   bool get isEditLoading => _isEditLoading;
+
   set isEditLoading(bool val) {
     _isEditLoading = val;
     notifyListeners();
   }
 
   bool _isDeleteLoading = false;
+
   bool get isDeleteLoading => _isDeleteLoading;
+
   set isDeleteLoading(bool val) {
     _isDeleteLoading = val;
     notifyListeners();
@@ -53,10 +61,12 @@ class JobMonitoringProvider extends ChangeNotifier {
 
   // Store whether the user is a super admin
   bool _isSuperAdmin = false;
+
   bool get isSuperAdmin => _isSuperAdmin;
 
   // Store the fetched list of document IDs
   List<String> _docIds = [];
+
   List<String> get docIds => _docIds;
 
   // Get Job Monitoring Data Stream (based on user role and document IDs)
@@ -69,6 +79,7 @@ class JobMonitoringProvider extends ChangeNotifier {
       return _fireStore
           .collection('processes')
           .where(FieldPath.documentId, whereIn: _docIds)
+          .orderBy('created_at', descending: true)
           .snapshots();
     } else {
       // Return an empty stream if there are no document IDs
@@ -83,7 +94,8 @@ class JobMonitoringProvider extends ChangeNotifier {
   Future<void> fetchCompanyIds() async {
     try {
       isLoading = true;
-      ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING); // Replace with correct endpoint
+      ApiService apiService = ApiService(
+          AppConstant.GET_JOB_MONITORING); // Replace with correct endpoint
       var response = await apiService.get('?monitoring_processes=true');
       print(response);
 
@@ -106,15 +118,15 @@ class JobMonitoringProvider extends ChangeNotifier {
 
 
   // Add maintainance period
-  Future<String> addMaintainancePeriod(String processStartTime, String processEndTime) async {
-
+  Future<String> addMaintainancePeriod(String processStartTime,
+      String processEndTime) async {
     try {
       // Convert to UTC
       var body = {
-"data": {
-  'start_time': processStartTime,
-  'end_time': processEndTime
-}
+        "data": {
+          'start_time': processStartTime,
+          'end_time': processEndTime
+        }
       };
 
       isAddLoading = true;
@@ -150,7 +162,8 @@ class JobMonitoringProvider extends ChangeNotifier {
       var response = await apiService.get();
       isLoading = false;
       print(response);
-      MaintainanceResponse maintainanceResponse = MaintainanceResponse.fromJson(response);
+      MaintainanceResponse maintainanceResponse = MaintainanceResponse.fromJson(
+          response);
       maintainancePeriods = maintainanceResponse.results!;
       print(maintainancePeriods);
     } catch (e, stack) {
@@ -161,7 +174,8 @@ class JobMonitoringProvider extends ChangeNotifier {
   }
 
   // Edit maintainance period
-  Future<String> editMaintainancePeriod(String processStartTime, String processEndTime, String id) async {
+  Future<String> editMaintainancePeriod(String processStartTime,
+      String processEndTime, String id) async {
     try {
       var body = {
         "data": {
@@ -187,7 +201,8 @@ class JobMonitoringProvider extends ChangeNotifier {
   Future<bool> deleteMaintainancePeriod(String id) async {
     try {
       isDeleteLoading = true;
-      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING}/$id');
+      ApiService apiService = ApiService(
+          '${AppConstant.GET_JOB_MONITORING}/$id');
       var body = {
         "data": {
           'id': id
@@ -204,5 +219,8 @@ class JobMonitoringProvider extends ChangeNotifier {
       return false;
     }
   }
+
+
+
 
 }

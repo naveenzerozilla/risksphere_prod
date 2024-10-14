@@ -1947,7 +1947,7 @@ class _AccountListScreenState extends State<AccountListScreen>
               '${LanguageService.getTranslated(context, "account_list_app_title")} ',
               style: typography.Body1,
             ),
-            ElevatedButton(
+            /*ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryMain,
@@ -1987,7 +1987,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                   ],
                 ),
               ),
-            ),
+            ),*/
           ],
         ),
         SizedBox(height: CustomSpacing.four),

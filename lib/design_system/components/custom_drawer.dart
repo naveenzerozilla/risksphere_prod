@@ -127,6 +127,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
                     },
                   ),
+                  ListTile(
+                    leading: Icon(Icons.account_balance_wallet, color: iconColor),
+                    title: Text(LanguageService.getTranslated(context, "drawer_menu_my_locations"),
+                        style: typography.Body1.copyWith(color: iconColor)),
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                    },
+                  ),
                   ExpansionTile(
                     leading: Icon(Icons.feed, color: iconColor),
                     title: Text(LanguageService.getTranslated(context, "drawer_menu_news_feed"),
@@ -168,7 +176,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                     : Colors.white),),
                             ),
                           );
-                          //Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
                         },
                       ),
                     ],
