@@ -73,7 +73,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   Stream<QuerySnapshot> getJobMonitoringData() {
     if (_isSuperAdmin) {
       // Fetch all processes if the user is a super admin
-      return _fireStore.collection('processes').snapshots();
+      return _fireStore.collection('processes').orderBy('created_at', descending: true).snapshots();
     } else if (_docIds.isNotEmpty) {
       // Fetch processes matching the document IDs if not a super admin
       return _fireStore
