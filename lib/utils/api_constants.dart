@@ -79,6 +79,7 @@ class AppConstant {
   // Location
   static String get GET_LOCATION_LIST => '$baseURL/accounts';
   static String get ADD_LOCATION => '$baseURL/accounts';
+  static String get MY_LOCATION => '$baseURL/new_locations/my-locations';
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';

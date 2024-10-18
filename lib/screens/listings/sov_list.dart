@@ -95,6 +95,8 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
 
   Timer? autoCompleteDeBouncer;
 
+  ScrollController _scrollController = ScrollController();
+
   void debounce(VoidCallback callback, {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
       deBouncer!.cancel();
@@ -135,11 +137,30 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
     });
   }
 
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      _scrollController.offset - 100, // Scroll left by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      _scrollController.offset + 100, // Scroll right by 100 pixels
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _getData();
   }
+
+
 
   _getData() async {
     // Fetch data from API
@@ -251,141 +272,102 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                   ),
                 ),
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    SizedBox(height: CustomSpacing.two),
+                    Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHigh,
+                        borderRadius:
+                        BorderRadius.circular(16), // Rounded edges
+                      ),
+                      margin: EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 0),
+                      child: DefaultTabController(
+                        length: 3,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
-                              style: typography.H5_Regular,
-                            ),
-                            Text(
-                              LanguageService.getTranslated(
-                                  context, "sov_list_app_subtitle"),
-                              style: typography.Body2,
-                            ),
-                            SizedBox(height: CustomSpacing.four),
-                            // Search
-                            SizedBox(
+                          children: <Widget>[
+                            // Container for the TabBar with arrows
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
+                              ),
                               height: 50,
-                              child: TextField(
-                                controller: _textEditingController,
-                                onChanged: (query) {
-                                  sovSearchClient(query);
-                                },
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                              child: Row(
+                                children: <Widget>[
+                                  // Left arrow button
+                                  IconButton(
+                                    icon: Icon(Icons.arrow_left,
+                                        color: Colors.grey),
+                                    onPressed: _scrollLeft,
                                   ),
-                                  hintText: LanguageService.getTranslated(
-                                      context, "sov_list_search_hint"),
-                                  hintStyle: typography.Body2,
-                                  prefixIcon: Icon(Icons.search),
-                                ),
+                                  // Scrollable TabBar
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      controller: _scrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      child: TabBar(
+                                        controller: _tabController,
+                                        tabAlignment:
+                                        TabAlignment.start,
+                                        labelStyle:
+                                        typography.Subtitle2,
+                                        isScrollable: true,
+                                        indicatorColor:
+                                        Colors.lightBlueAccent,
+                                        labelColor:
+                                        Colors.lightBlueAccent,
+                                        unselectedLabelColor:
+                                        Colors.grey,
+                                        tabs: [
+                                          Tab(
+                                            text: 'SOVs',
+                                          ),
+                                          Tab(text: 'Shared'),
+                                          Tab(text: 'Access Requests'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Right arrow button
+                                  IconButton(
+                                    icon: Icon(Icons.arrow_right,
+                                        color: Colors.grey),
+                                    onPressed: _scrollRight,
+                                  ),
+                                ],
                               ),
                             ),
-                            SizedBox(height: CustomSpacing.four),
-                            // List of accounts
-                            Expanded(
-                              child: Consumer<SOVListProvider>(
-                                  builder: (context, sovListProvider, _) {
-                                    return sovListProvider.isLoading
-                                        ? Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 100,
-                                        ),
-                                        Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      ],
-                                    )
-                                        : sovListProvider.sovList.isEmpty
-                                        ? Center(
-                                      child: Text(
-                                        LanguageService.getTranslated(
-                                            context,
-                                            "sov_list_app_no_sov_text"),
-                                        style: typography.Body1,
-                                      ),
-                                    )
-                                        : ListView.builder(
-                                      itemCount: sovListProvider
-                                          .sovList.length,
-                                      itemBuilder: (context, index) {
-                                        if (index ==
-                                            sovListProvider
-                                                .sovList.length -
-                                                1) {
-                                          // Check if it's the last item
-                                          if (sovListProvider
-                                              .isNextPageLoading) {
-                                            // Display loading indicator
-                                            return Padding(
-                                              padding:
-                                              const EdgeInsets.all(8.0),
-                                              child: Center(
-                                                child:
-                                                CircularProgressIndicator(),
-                                              ),
-                                            );
-                                          } else if (sovListProvider.page >=
-                                              sovListProvider
-                                                  .totalPages &&
-                                              sovListProvider
-                                                  .sovList.isNotEmpty) {
-                                            // Display end of list message
-                                            return Column(
-                                              children: [
-                                                _buildSovCard(
-                                                    index,
-                                                    sovListProvider),
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(
-                                                      8.0),
-                                                  child: Center(
-                                                    child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "sov_list_app_end_of_list_text"),
-                                                      style:
-                                                      typography
-                                                          .Body1,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          } else {
-                                            // Trigger fetching the next page
-                                            sovListProvider.page =
-                                                sovListProvider.page + 1;
-                                            sovListProvider.fetchSovList(
-                                              context,
-                                              widget.accountId,
-                                              widget.subAccountId,
-                                              _sovQuery,
-                                              sovListProvider.page,
-                                              10, // Page size
-                                            );
-                                            return SizedBox();
-                                          }
-                                        }
 
-                                        return _buildSovCard(
-                                            index, sovListProvider);
-                                      },
-                                    );
-                                  }),
-                            ),
+
                           ],
                         ),
                       ),
                     ),
+                    // TabBarView for the tab content
+                    Expanded(
+                      child
+                          : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: sovBody(typography),
+                            ),
+                          ),
+                          _getComingSoonUI(),
+                          _getComingSoonUI(),
+                        ],
+                      ),
+                    ),
+
                   ],
                 ),
               ],
@@ -393,6 +375,166 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
           ),
         );
       }),
+    );
+  }
+
+  Widget sovBody(CustomTypography typography) {
+    return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: CustomSpacing.two),
+                          Text(
+                            '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
+                            style: typography.Body1,
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // Search
+                          SizedBox(
+                            height: 50,
+                            child: TextField(
+                              controller: _textEditingController,
+                              onChanged: (query) {
+                                sovSearchClient(query);
+                              },
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                hintText: LanguageService.getTranslated(
+                                    context, "sov_list_search_hint"),
+                                hintStyle: typography.Body2,
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // List of accounts
+                          Expanded(
+                            child: Consumer<SOVListProvider>(
+                                builder: (context, sovListProvider, _) {
+                                  return sovListProvider.isLoading
+                                      ? Column(
+                                    children: [
+                                      SizedBox(
+                                        height: 100,
+                                      ),
+                                      Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ],
+                                  )
+                                      : sovListProvider.sovList.isEmpty
+                                      ? Center(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context,
+                                          "sov_list_app_no_sov_text"),
+                                      style: typography.Body1,
+                                    ),
+                                  )
+                                      : ListView.builder(
+                                    itemCount: sovListProvider
+                                        .sovList.length,
+                                    itemBuilder: (context, index) {
+                                      if (index ==
+                                          sovListProvider
+                                              .sovList.length -
+                                              1) {
+                                        // Check if it's the last item
+                                        if (sovListProvider
+                                            .isNextPageLoading) {
+                                          // Display loading indicator
+                                          return Padding(
+                                            padding:
+                                            const EdgeInsets.all(8.0),
+                                            child: Center(
+                                              child:
+                                              CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        } else if (sovListProvider.page >=
+                                            sovListProvider
+                                                .totalPages &&
+                                            sovListProvider
+                                                .sovList.isNotEmpty) {
+                                          // Display end of list message
+                                          return Column(
+                                            children: [
+                                              _buildSovCard(
+                                                  index,
+                                                  sovListProvider),
+                                              Padding(
+                                                padding:
+                                                const EdgeInsets.all(
+                                                    8.0),
+                                                child: Center(
+                                                  child: Text(
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "sov_list_app_end_of_list_text"),
+                                                    style:
+                                                    typography
+                                                        .Body1,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        } else {
+                                          // Trigger fetching the next page
+                                          sovListProvider.page =
+                                              sovListProvider.page + 1;
+                                          sovListProvider.fetchSovList(
+                                            context,
+                                            widget.accountId,
+                                            widget.subAccountId,
+                                            _sovQuery,
+                                            sovListProvider.page,
+                                            10, // Page size
+                                          );
+                                          return SizedBox();
+                                        }
+                                      }
+
+                                      return _buildSovCard(
+                                          index, sovListProvider);
+                                    },
+                                  );
+                                }),
+                          ),
+                        ],
+                      );
+  }
+  _getComingSoonUI() {
+    var typography = CustomTypography(context);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'coming_soon_title'),
+                        style: typography.H4),
+                  ),
+                  SizedBox(
+                    height: CustomSpacing.two,
+                  ),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      style: typography.Body1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -436,6 +578,20 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                   "0",
             );
           }));
+        },
+        onLongPress: () {
+          setState(() {
+            if (showCheckbox) {
+              showCheckbox = false;
+              sOVListProvider.sovList[index].isChecked = false;
+            } else {
+              sOVListProvider.sovList.forEach((element) {
+                element.isChecked = false;
+              });
+              showCheckbox = true;
+              sOVListProvider.sovList[index].isChecked = true;
+            }
+          });
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

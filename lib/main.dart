@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:green/providers/job_monitoring_provier.dart';
+import 'package:green/providers/my_location_list_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -272,6 +273,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => LocationProfileProvider()),
           ChangeNotifierProvider(create: (_) => UploadSovProvider()),
           ChangeNotifierProvider(create: (_) => JobMonitoringProvider()),
+          ChangeNotifierProvider(create: (_) => MyLocationListProvider()),
         ],
         child: const MyApp(),
       ),

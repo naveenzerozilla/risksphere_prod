@@ -413,27 +413,34 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
     var subprocesses = Map<String, dynamic>.fromEntries(
         unsortedSubprocesses.entries.toList()
           ..sort((a, b) {
-            // Safely access the 'sub_process_name' field from each entry, or fallback to 'Location Set 0'
-            String subProcessNameA = (a.value as Map<String, dynamic>)['sub_process_name'] ?? 'Location Set 0';
-            String subProcessNameB = (b.value as Map<String, dynamic>)['sub_process_name'] ?? 'Location Set 0';
+            // Ensure a.value and b.value are maps and contain the key 'sub_process_name'
+            if (a.value is Map && b.value is Map &&
+                a.value.containsKey('sub_process_name') && b.value.containsKey('sub_process_name')) {
 
-            // Extract the numerical part from the 'sub_process_name'
-            RegExp regex = RegExp(r'(\d+)$');
-            var matchA = regex.firstMatch(subProcessNameA);
-            var matchB = regex.firstMatch(subProcessNameB);
+              var subProcessNameA = getSubProcessName(a.value['sub_process_name']);
+              var subProcessNameB = getSubProcessName(b.value['sub_process_name']);
 
-            // Convert the numerical part to an integer for comparison, fallback to 0 if not found
-            int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
-            int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
+              // Extract the numerical part from the 'sub_process_name'
+              RegExp regex = RegExp(r'(\d+)$');
+              var matchA = regex.firstMatch(subProcessNameA);
+              var matchB = regex.firstMatch(subProcessNameB);
 
-            // Compare the base part of the name (without numbers), then compare the numerical parts
-            int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+              // Convert the numerical part to an integer for comparison
+              int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
+              int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
 
-            // If the base names are the same, compare the numerical part
-            if (stringCompare == 0) {
-              return numberA.compareTo(numberB);
+              // First compare the base part of the name (without numbers), then compare the numbers
+              int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+
+              // If the base names are the same, compare the numerical part
+              if (stringCompare == 0) {
+                return numberA.compareTo(numberB);
+              }
+              return stringCompare;
             }
-            return stringCompare;
+
+            // If the structure doesn't match the expected type, just return 0 (no sorting change)
+            return 0;
           })
     );
 
@@ -614,6 +621,12 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
     );
   }
 
+  String getSubProcessName(dynamic value) {
+    if (value is String) return value;
+    print('Unexpected type for sub_process_name: ${value.runtimeType}');
+    return 'Location Set 0';
+  }
+
   Widget _buildTasks(Map<String, dynamic> subprocessData) {
     var typography = CustomTypography(context);
 
@@ -634,7 +647,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
       children: [
         // Geocoding Task (placeholder for now)
         _buildTaskCard(
-          geeTaskID: 'GEE-TaskID: '+assetUploadData?['task_id'] ?? "",
+          geeTaskID: 'GEE-TaskID: '+(assetUploadData?['task_id'] ?? ""),
           taskName: "Geocoding",
           description: "",
           successCount:

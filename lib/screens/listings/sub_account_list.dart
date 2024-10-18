@@ -1599,47 +1599,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               '${LanguageService.getTranslated(context, "sub_account_list_app_title")} ',
               style: typography.Body1,
             ),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Container(
-                height: 40,
-                // Adjust this value to match your desired button height
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18),
-                      child: Text(
-                        'Upload',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.surface,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: double.infinity,
-                      color: AppColors.primaryDark,
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Icon(
-                        Icons.arrow_drop_down,
-                        color: Theme.of(context).colorScheme.surface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
         SizedBox(height: CustomSpacing.four),

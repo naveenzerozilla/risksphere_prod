@@ -8,9 +8,11 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/rating_half_stars.dart';
 import 'package:green/design_system/components/rating_slider.dart';
+import 'package:green/models/my_location_list_model.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/location_list_provider.dart';
 import 'package:green/providers/location_profile_provider.dart';
+import 'package:green/providers/my_location_list_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
@@ -40,9 +42,9 @@ class MyLocationList extends StatefulWidget {
 
   const MyLocationList({
     super.key,
-    required this.userId,
-    required this.companyName,
-    required this.rating,
+    this.userId = '',
+    this.companyName = '',
+    this.rating = '',
   });
 
   @override
@@ -80,7 +82,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
 
   Timer? deBouncer;
 
-  List<Location> selectedLocations = [];
+  List<MyLocation> selectedLocations = [];
 
   String? _uploadedFileName;
   TextEditingController _sovNameController = TextEditingController();
@@ -164,11 +166,8 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
 
   _getData() async {
     // Fetch data from API
-    Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
+    Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
       context,
-      "widget.accountId",
-      "widget.subAccountId",
-      "widget.sovId",
       "",
       0,
       "forward",
@@ -181,7 +180,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
       hazard: [],
       rating: [],
     ).then((value) => setState(() {}));
-    Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
+   /* Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
       "widget.accountId",
       "widget.subAccountId",
@@ -189,7 +188,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
       "",
       0,
       40,
-    );
+    );*/
     Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
   }
 
@@ -328,7 +327,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                               //color: Theme.of(context).colorScheme.surfaceContainerHigh,
                             ),
 
-                            child: Consumer<LocationListProvider>(
+                            child: Consumer<MyLocationListProvider>(
                                 builder: (context, locationListProvider, child) {
                                   return Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -338,11 +337,16 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                                         child: Row(
                                           children: [
                                             //SizedBox(width: CustomSpacing.two),
-                                            RatingHalfStars(
-                                              rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
-                                              maxRating: 5,
-                                              iconSize: 18,
-                                            ),
+                                            Text(
+                                              "My Locations",
+                                              style: typography.Body1,
+                                              ),/*
+                                              RatingHalfStars(
+                                                rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
+                                                maxRating: 5,
+                                                iconSize: 18,
+                                              ),*/
+                                            Spacer(),
                                             SizedBox(width: CustomSpacing.two),
                                             TooltipTheme(
                                               data: TooltipThemeData(
@@ -497,15 +501,16 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                                             isScrollable: true,
                                             tabAlignment: TabAlignment.start,
                                             unselectedLabelColor: Colors.grey,
+                                            splashBorderRadius: BorderRadius.circular(8),
                                             tabs: [
                                               Tab(
-                                                icon: _buildTabIcon(context, 'assets/images/overall_tab_icon.svg', 'Overall Score', 0, ),
+                                                icon: _buildTabIcon(context, 'assets/images/location_list_icon.svg', 'Location List', 0, 18),
                                               ),
                                               Tab(
-                                                icon: _buildTabIcon(context, 'assets/images/geocoding_tab_icon.svg', 'Geocoding Score', 1),
+                                                icon: _buildTabIcon(context, 'assets/images/map_view_icon.svg', 'Map View', 1, 18),
                                               ),
                                               Tab(
-                                                icon: _buildTabIcon(context, 'assets/images/risk_tab_icon.svg', 'Risk Score', 2),
+                                                icon: _buildTabIcon(context, 'assets/images/overall_tab_icon.svg', 'Overall Score', 2, 30),
                                               ),
                                             ],
                                           ),
@@ -516,90 +521,33 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                               ),
                             ),
                           ),
-                          Consumer<LocationListProvider>(
-                            builder: (context, locationListProvider, child) {
-                              return TabBar(
-                                controller: _tabController,
-                                labelStyle: typography.BottomNavigationActiveLabel,
-                                tabs: [
-                                  Tab(
-                                    child: InkWell(
-                                      onTap: () {
-                                        _tabController?.animateTo(0);
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Tab(
-                                            text: LanguageService.getTranslated(
-                                                context, "locationlist_app_connections_tab_all"),
-                                          ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                              label: Text(
-                                                locationListProvider.locationHits.toString(),
-                                                style: typography.BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      if (locationListProvider.isCertifiedTabAllowed()) {
-                                        _tabController?.animateTo(1);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                          content: Text(
-                                            "Please include a rating of 5 in filter to view certified locations.",
-                                            style: typography.Body1,
-                                          ),
-                                        ));
-                                      }
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Tab(
-                                          text: LanguageService.getTranslated(
-                                              context, "locationlist_app_connections_tab_certified"),
-                                        ),
-                                        SizedBox(width: CustomSpacing.two),
-                                        SizedBox(
-                                          height: 25,
-                                          child: Chip(
-                                            labelPadding: EdgeInsets.all(0),
-                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                            label: Text(
-                                              locationListProvider.certifiedLocationHits.toString(),
-                                              style: typography.BottomNavigationActiveLabel
-                                                  .copyWith(height: -0.6),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-
 
                           SizedBox(height: CustomSpacing.four),
                           Expanded(
                             child: TabBarView(
-                              controller: _tabController,
+                              controller: _mainTabController,
                               children: [
-                                _getLocationListAllUI(),
-                                _getLocationListCertifiedUI(),
+                                TabBarView(
+                                  controller: _tabController,
+                                  children: [
+                                    _getLocationListAllUI(),
+                                    _getLocationListCertifiedUI(),
+                                  ],
+                                ),
+                                TabBarView(
+                                  controller: _tabController,
+                                  children: [
+                                    _getLocationListAllUI(),
+                                    _getLocationListCertifiedUI(),
+                                  ],
+                                ),
+                                TabBarView(
+                                  controller: _tabController,
+                                  children: [
+                                    _getLocationListAllUI(),
+                                    _getLocationListCertifiedUI(),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -626,23 +574,25 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
     );
   }
 
-  Widget _buildTabIcon(BuildContext context, String iconPath, String label, int tabIndex) {
+  Widget _buildTabIcon(BuildContext context, String iconPath, String label, int tabIndex, double iconSize) {
     // Check if TabController exists and whether this tab is selected
     bool isSelected = _mainTabController?.index == tabIndex;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding to control spacing
+      padding: const EdgeInsets.symmetric(horizontal: 6.0), // Adjust padding to control spacing
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          SizedBox(width: 12), // Add space between icon and label
           SvgPicture.asset(
             iconPath,
-            height: 36,
+            height: iconSize,
             colorFilter: ColorFilter.mode(
               isSelected ? AppColors.primaryMain : Colors.white.withOpacity(0.56),
               BlendMode.srcIn,
             ),
           ),
+          SizedBox(width: 8), // Add space between icon and label
           if (isSelected) ...[
             SizedBox(width: 4), // Reduce the space between icon and label
             Text(
@@ -662,7 +612,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
 
   _getLocationListAllUI() {
     var typography = CustomTypography(context);
-    return Consumer<LocationListProvider>(
+    return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
         return locationListProvider.isLoading
             ? Column(
@@ -675,7 +625,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
             ),
           ],
         )
-            : locationListProvider.locationList.isEmpty
+            : locationListProvider.myLocationList.isEmpty
             ? Center(
           child: Text(
             LanguageService.getTranslated(
@@ -686,9 +636,9 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
             : ListView.builder(
           physics: ClampingScrollPhysics(),
           shrinkWrap: true,
-          itemCount: locationListProvider.locationList.length,
+          itemCount: locationListProvider.myLocationList.length,
           itemBuilder: (context, index) {
-            if (index == locationListProvider.locationList.length - 1) {
+            if (index == locationListProvider.myLocationList.length - 1) {
               // Check if it's the last item
               if (locationListProvider.isNextPageLoading) {
                 // Display loading indicator
@@ -700,14 +650,14 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                 );
               } else if (locationListProvider.page >=
                   locationListProvider.totalPages &&
-                  locationListProvider.locationList.isNotEmpty) {
+                  locationListProvider.myLocationList.isNotEmpty) {
                 // Display end of list message
                 print(
-                    "location list: ${locationListProvider.locationList}");
+                    "location list: ${locationListProvider.myLocationList}");
                 return Column(
                   children: [
                     locationListCard(
-                        index, locationListProvider.locationList),
+                        index, locationListProvider.myLocationList),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Center(
@@ -729,9 +679,6 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                     "Query: $locationQuery, Page: ${locationListProvider.page}");
                 locationListProvider.fetchLocationList(
                   context,
-                  "widget.accountId",
-                  "widget.subAccountId",
-                  "widget.sovId",
                   locationQuery,
                   // Pass the search query if any
                   locationListProvider.page,
@@ -750,14 +697,14 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
             }
 
             return locationListCard(
-                index, locationListProvider.locationList);
+                index, locationListProvider.myLocationList);
           },
         );
       },
     );
   }
 
-  Widget locationListCard(int index, List<Location> locationList) {
+  Widget locationListCard(int index, List<MyLocation> locationList) {
     var typography = CustomTypography(context);
     return InkWell(
       onTap: () {
@@ -815,7 +762,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                 : null,
             title: Row(
               children: [
-                (locationList[index].score ?? 0) == 5
+                (locationList[index].geocodingScore ?? 0) == 5
                     ? Container(
                   margin: EdgeInsets.only(right: 8),
                   child: SvgPicture.asset(
@@ -829,10 +776,10 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      locationList[index].locationIdForRef ?? '',
+                      locationList[index].id ?? '',
                       style: typography.Body1,
                     ),
-                    locationList[index].campusId != null &&
+                   /* locationList[index].campusId != null &&
                         locationList[index].campusId!.isNotEmpty
                         ? Chip(
                       padding: EdgeInsets.all(0),
@@ -841,14 +788,14 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                         style: typography.Subtitle2,
                       ),
                     )
-                        : SizedBox(),
+                        : SizedBox(),*/
                   ],
                 ),
                 Spacer(),
 
                 SizedBox(width: CustomSpacing.four),
                 AnimatedProgressIndicator(
-                  percent: locationList[index].percent ?? "0",
+                  percent: locationList[index].geocodingScore.toString() ?? "0",
                 ),
               ],
             ),
@@ -859,7 +806,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                   children: [
                     Text('Geocoding', style: typography.Body1),
                     RatingSlider(
-                      progress: locationList[index].score ?? 0,
+                      progress: locationList[index].geocodingScore ?? 0,
                       total: 5,
                       width: MediaQuery.of(context).size.width * 0.5,
                       progressColor: [
@@ -868,14 +815,14 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                         Colors.blue[200]!,
                         Colors.green[200]!,
                         Colors.yellow[100]!
-                      ][(locationList[index].score ?? 1) - 1],
+                      ][(locationList[index].geocodingScore ?? 1) - 1],
                       thumbColor: [
                         Colors.red[800]!,
                         Colors.orange[800]!,
                         Colors.blue[700]!,
                         Colors.green[800]!,
                         Colors.yellow[700]!
-                      ][(locationList[index].score ?? 1) - 1],
+                      ][(locationList[index].geocodingScore ?? 1) - 1],
                       textColor: Colors.white,
                     ),
                   ],
@@ -977,9 +924,9 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
 
   _getLocationListCertifiedUI() {
     var typography = CustomTypography(context);
-    return Consumer<LocationListProvider>(
+    return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
-        return locationListProvider.isLoading
+        return locationListProvider.isCertifiedLoading
             ? Column(
           children: [
             SizedBox(height: 100),
@@ -1002,13 +949,13 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
             if (index ==
                 locationListProvider.certifiedLocationList.length -
                     1) {
-              if (locationListProvider.isNextPageLoading) {
+              if (locationListProvider.isNextPageCertifiedLoading) {
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Center(child: CircularProgressIndicator()),
                 );
-              } else if (locationListProvider.page >=
-                  locationListProvider.totalPages &&
+              } else if (locationListProvider.certifiedPage >=
+                  locationListProvider.certifiedTotalPages &&
                   locationListProvider.certifiedLocationList
                       .isNotEmpty) {
                 return Column(
@@ -1016,7 +963,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                     locationListCard(
                         index,
                         locationListProvider
-                            .certifiedLocationList),
+                            .myLocationList),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Center(
@@ -1028,15 +975,12 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                   ],
                 );
               } else {
-                locationListProvider.page =
-                    locationListProvider.page + 1;
+                locationListProvider.certifiedPage =
+                    locationListProvider.certifiedPage + 1;
                 locationListProvider.fetchCertifiedLocationList(
                   context,
-                  "widget.accountId",
-                  "widget.subAccountId",
-                  "widget.sovId",
-                  locationQuery,
-                  locationListProvider.page,
+                  "",
+                  locationListProvider.certifiedPage,
                   40,
                 );
                 return SizedBox();
@@ -1117,7 +1061,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
       // Construct the list of location details for deletion
       List<Map<String, String>> locationList = selectedLocations.map((location) {
         return {
-          "location_id": location.locationId ?? '',
+          "location_id": location.id ?? '',
           "owner_id": widget.userId, // Assuming owner_id is userId
         };
       }).toList();
@@ -1263,7 +1207,7 @@ class _MyLocationListState extends State<MyLocationList> with TickerProviderStat
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Consumer<LocationListProvider>(
+                          Consumer<MyLocationListProvider>(
                               builder: (_, locationListProvider, child) {
                                 return locationListProvider.isImageUploadLoading
                                     ? const Center(

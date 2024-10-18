@@ -695,7 +695,7 @@
 
     "sov_list_app_title": "SOV",
     "sov_list_app_subtitle": "Manage all SOV from this panel.",
-    "sov_list_search_hint": "Search by ID, Name...",
+    "sov_list_search_hint": "Search",
     "sov_list_app_no_sov_text": "No SOVs",
     "sov_list_app_end_of_list_text": "End of list",
     "sov_list_app_edit_sov_title": "Edit SOV",

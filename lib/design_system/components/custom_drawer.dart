@@ -8,6 +8,7 @@ import 'package:green/design_system/components/theme_switcher.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/jobMonitoringSystem/job_monitoring_screen.dart';
+import 'package:green/screens/listings/my_location_list.dart';
 import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:green/screens/userManagement/user_management.dart';
 import 'package:green/service/language_service.dart';
@@ -132,7 +133,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     title: Text(LanguageService.getTranslated(context, "drawer_menu_my_locations"),
                         style: typography.Body1.copyWith(color: iconColor)),
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => MyLocationList()));
                     },
                   ),
                   ExpansionTile(

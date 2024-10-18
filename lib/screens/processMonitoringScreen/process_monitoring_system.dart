@@ -5,6 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/providers/job_monitoring_provier.dart';
+import 'package:green/screens/listings/my_location_list.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -55,92 +56,98 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           },
         ),
         drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.3, // Change this value to set the desired opacity (0.0 to 1.0)
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
+        body: PopScope(
+          onPopInvokedWithResult: (a, b) {
+            log('Pop Invoked with result: $a, $b');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => MyLocationList()));
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.3, // Change this value to set the desired opacity (0.0 to 1.0)
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-
-            Consumer<JobMonitoringProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  // Handle different cases for is_super_admin
-                  Stream<QuerySnapshot> stream;
-
-                  if (provider.isSuperAdmin) {
-                    // Fetch all processes if the user is a super admin
-                    stream = FirebaseFirestore.instance
-                        .collection('processes')
-                        .orderBy('created_at', descending: true)
-                        .snapshots();
-                  } else if (provider.docIds.isNotEmpty) {
-                    // Fetch specific processes if the user is not a super admin
-                    stream = FirebaseFirestore.instance
-                        .collection('processes')
-                        .where(FieldPath.documentId, whereIn: provider.docIds)
-                        .orderBy('created_at', descending: true)
-                        .snapshots();
-                  } else {
-                    // If there are no document IDs, show no processes
-                    return Center(child: Text('No processes available'));
-                  }
-                return StreamBuilder<QuerySnapshot>(
-                  stream: stream,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
+          
+              Consumer<JobMonitoringProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
                       return Center(child: CircularProgressIndicator());
                     }
-
-                    var processes = snapshot.data!.docs;
-
-
-                    return ListView.builder(
-                      itemCount: processes.length,
-                      itemBuilder: (context, index) {
-                        var processData = processes[index].data() as Map<String, dynamic>;
-
-                // Dynamically fetch process ID from the key 'process_id'
-                        String processId = processData['process_id'] ?? 'Unknown ID';
-
-                // Dynamically fetch company name from the field 'location_data'
-                        String companyName = processData['location_data']?['account_name'] ?? 'Unknown Company';
-
-                // Dynamically fetch owner name from the field 'owner_name'
-                        String ownerName = processData['owner_name'] ?? 'Unknown Owner';
-
-                // Fetch total locations from 'total_locations'
-                        int totalLocations = processData['total_locations'] ?? 0;
-
-                // Fetch subprocesses map from the 'subprocesses' key
-                        var subProcesses = (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
-
-                        count = 0;
-
-                        return _buildProcessCard(
-                          processId: processId,
-                          companyName: companyName,
-                          ownerName: ownerName,
-                          totalLocations: totalLocations,
-                          subProcesses: subProcesses, // Now properly casted to Map<String, dynamic>
-                          typography: typography,
-                        );
-
-                      },
-                    );
-                  },
-                );
-              }
-            ),
-          ],
+          
+                    // Handle different cases for is_super_admin
+                    Stream<QuerySnapshot> stream;
+          
+                    if (provider.isSuperAdmin) {
+                      // Fetch all processes if the user is a super admin
+                      stream = FirebaseFirestore.instance
+                          .collection('processes')
+                          .orderBy('created_at', descending: true)
+                          .snapshots();
+                    } else if (provider.docIds.isNotEmpty) {
+                      // Fetch specific processes if the user is not a super admin
+                      stream = FirebaseFirestore.instance
+                          .collection('processes')
+                          .where(FieldPath.documentId, whereIn: provider.docIds)
+                          .orderBy('created_at', descending: true)
+                          .snapshots();
+                    } else {
+                      // If there are no document IDs, show no processes
+                      return Center(child: Text('No processes available'));
+                    }
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: stream,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+          
+                      var processes = snapshot.data!.docs;
+          
+          
+                      return ListView.builder(
+                        itemCount: processes.length,
+                        itemBuilder: (context, index) {
+                          var processData = processes[index].data() as Map<String, dynamic>;
+          
+                  // Dynamically fetch process ID from the key 'process_id'
+                          String processId = processData['process_id'] ?? 'Unknown ID';
+          
+                  // Dynamically fetch company name from the field 'location_data'
+                          String companyName = processData['location_data']?['account_name'] ?? 'Unknown Company';
+          
+                  // Dynamically fetch owner name from the field 'owner_name'
+                          String ownerName = processData['owner_name'] ?? 'Unknown Owner';
+          
+                  // Fetch total locations from 'total_locations'
+                          int totalLocations = processData['total_locations'] ?? 0;
+          
+                  // Fetch subprocesses map from the 'subprocesses' key
+                          var subProcesses = (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
+          
+                          count = 0;
+          
+                          return _buildProcessCard(
+                            processId: processId,
+                            companyName: companyName,
+                            ownerName: ownerName,
+                            totalLocations: totalLocations,
+                            subProcesses: subProcesses, // Now properly casted to Map<String, dynamic>
+                            typography: typography,
+                          );
+          
+                        },
+                      );
+                    },
+                  );
+                }
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -158,27 +165,36 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     // Sort the subprocesses by the 'sub_process_name'
     var sortedSubProcesses = subProcesses.entries.toList()
       ..sort((a, b) {
-        String subProcessNameA = a.value['sub_process_name'] ?? 'Location Set 0';
-        String subProcessNameB = b.value['sub_process_name'] ?? 'Location Set 0';
+        // Ensure a.value and b.value are maps and contain the key 'sub_process_name'
+        if (a.value is Map && b.value is Map &&
+            a.value.containsKey('sub_process_name') && b.value.containsKey('sub_process_name')) {
 
-        // Extract the numerical part from the 'sub_process_name'
-        RegExp regex = RegExp(r'(\d+)$');
-        var matchA = regex.firstMatch(subProcessNameA);
-        var matchB = regex.firstMatch(subProcessNameB);
+          var subProcessNameA = getSubProcessName(a.value['sub_process_name']);
+          var subProcessNameB = getSubProcessName(b.value['sub_process_name']);
 
-        // Convert the numerical part to an integer for comparison
-        int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
-        int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
+          // Extract the numerical part from the 'sub_process_name'
+          RegExp regex = RegExp(r'(\d+)$');
+          var matchA = regex.firstMatch(subProcessNameA);
+          var matchB = regex.firstMatch(subProcessNameB);
 
-        // First compare the base part of the name (without numbers), then compare the numbers
-        int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+          // Convert the numerical part to an integer for comparison
+          int numberA = matchA != null ? int.parse(matchA.group(0)!) : 0;
+          int numberB = matchB != null ? int.parse(matchB.group(0)!) : 0;
 
-        // If the base names are the same, compare the numerical part
-        if (stringCompare == 0) {
-          return numberA.compareTo(numberB);
+          // First compare the base part of the name (without numbers), then compare the numbers
+          int stringCompare = subProcessNameA.replaceAll(RegExp(r'\d+$'), '').compareTo(subProcessNameB.replaceAll(RegExp(r'\d+$'), ''));
+
+          // If the base names are the same, compare the numerical part
+          if (stringCompare == 0) {
+            return numberA.compareTo(numberB);
+          }
+          return stringCompare;
         }
-        return stringCompare;
+
+        // If the structure doesn't match the expected type, just return 0 (no sorting change)
+        return 0;
       });
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       padding: EdgeInsets.all(16.0),
@@ -310,6 +326,12 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
         ],
       ),
     );
+  }
+
+  String getSubProcessName(dynamic value) {
+    if (value is String) return value;
+    print('Unexpected type for sub_process_name: ${value.runtimeType}');
+    return 'Location Set 0';
   }
 
   // Build each Location Set card (Sub-PID) as ExpansionTile
