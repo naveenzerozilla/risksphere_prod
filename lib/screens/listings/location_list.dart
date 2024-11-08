@@ -295,6 +295,8 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                               accountId: widget.accountId,
                               subAccountId: widget.subAccountId,
                               sovId: widget.sovId,
+                              accountName: widget.companyName,
+                              subAccountName: widget.subAccountName,
                             ),
                           ));
                         },
@@ -307,9 +309,12 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
             body: Stack(
               children: [
                 Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/mesh.png',
-                    fit: BoxFit.cover,
+                  child: Opacity(
+                    opacity: 0.3,
+                    child: Image.asset(
+                      'assets/images/mesh.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 Column(
@@ -334,7 +339,7 @@ class _LocationListState extends State<LocationList> with TickerProviderStateMix
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest, // Set your border color here
+                                color: Theme.of(context).colorScheme.surfaceContainerHigh, // Set your border color here
                                 width: 1.0, // Set the width of the border
                               ),
                               //color: Theme.of(context).colorScheme.surfaceContainerHigh,

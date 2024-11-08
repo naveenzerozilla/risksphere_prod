@@ -36,6 +36,7 @@ import 'package:screenshot/screenshot.dart';
 import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/rating_slider.dart';
 import '../../models/location_profile_model.dart';
+import '../../providers/my_location_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
@@ -145,29 +146,35 @@ class _LocationProfileState extends State<LocationProfile>
 
   Future<void> _getData() async {
     // Make API call to get the data
-    await Provider.of<LocationProfileProvider>(context, listen: false)
-        .fetchLocationDetails(context, widget.accountId, widget.subAccountId,
-            widget.sovId, widget.searchQuery, widget.page, widget.totalPages);
+    Provider.of<MyLocationListProvider>(context, listen: false)
+        .fetchLocationListProfile(
+      context,
+      "",
+      int.parse(widget.page),
+  int.parse(    widget.totalPages),
+      widget.accountId,
+      widget.subAccountId,
+    );
     _addSubdestinationMarkers();
     _add();
   }
 
   void _add() {
     var controller =
-        Provider.of<LocationProfileProvider>(context, listen: false);
-    var markerIdVal = controller.result?.locationId ?? '1';
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    var markerIdVal = controller.locationProfile?.finalAddress?.locationId ?? '1';
     final MarkerId markerId = MarkerId(markerIdVal);
 
     print(
-        'Latitude: ${controller.result?.latitude}, Longitude: ${controller.result?.longitude}');
+        'Latitude: ${controller.locationProfile?.finalAddress?.latitude}, Longitude: ${controller.locationProfile?.finalAddress?.longitude}');
     final Marker marker = Marker(
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       markerId: markerId,
-      position: LatLng(controller.result?.latitude ?? 123.432432,
-          controller.result?.longitude ?? -111.889),
+      position: LatLng(controller.locationProfile?.finalAddress?.latitude ?? 123.432432,
+          controller.locationProfile?.finalAddress?.longitude ?? -111.889),
       infoWindow: InfoWindow(
-          title: controller.result?.locationName ?? "",
-          snippet: controller.result?.address ?? ""),
+          title: controller.locationProfile?.finalAddress?.locationName ?? "",
+          snippet: controller.locationProfile?.finalAddress?.address ?? ""),
       onTap: () {
         _onMarkerTapped(markerId);
       },
@@ -177,19 +184,19 @@ class _LocationProfileState extends State<LocationProfile>
       markers[markerId] = marker;
     });
     _controller.future.then((value) => value.animateCamera(
-        CameraUpdate.newLatLng(LatLng(controller.result?.latitude ?? 123.432432,
-            controller.result?.longitude ?? -111.889))));
+        CameraUpdate.newLatLng(LatLng(controller.locationProfile?.finalAddress?.latitude ?? 123.432432,
+            controller.locationProfile?.finalAddress?.longitude ?? -111.889))));
     // if rating is 3 or 4
-    if (controller.result?.score == 3 || controller.result?.score == 4) {
+    if (controller.locationProfile?.finalAddress?.score == 3 || controller.locationProfile?.finalAddress?.score == 4) {
       setState(() {
-        _searchController.text = controller.result?.address ?? "";
+        _searchController.text = controller.locationProfile?.finalAddress?.address ?? "";
       });
     }
   }
 
   void _addSubdestinationMarkers() {
-    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
-    for (var subdestination in provider.result?.subdestinations ?? []) {
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+    for (var subdestination in provider.locationProfile?.subdestinations ?? []) {
       var markerId = MarkerId(subdestination.id!);
       var isAdded = (subdestination.status ?? "").toLowerCase() == "added";
       var marker = Marker(
@@ -220,9 +227,9 @@ class _LocationProfileState extends State<LocationProfile>
     // Make API call to upload the images
     for (var file in pickedFiles) {
       var provider =
-          Provider.of<LocationProfileProvider>(context, listen: false);
+          Provider.of<MyLocationListProvider>(context, listen: false);
       await provider.uploadImage(context, file.path, widget.accountId,
-          widget.subAccountId, widget.sovId, provider.result!.locationId ?? "");
+          widget.subAccountId, widget.sovId, provider.locationProfile?.finalAddress!.locationId ?? "");
     }
   }
 
@@ -252,14 +259,14 @@ class _LocationProfileState extends State<LocationProfile>
         });
 
         var provider =
-            Provider.of<LocationProfileProvider>(context, listen: false);
+            Provider.of<MyLocationListProvider>(context, listen: false);
         await provider.uploadImage(
             context,
             filePath,
             widget.accountId,
             widget.subAccountId,
             widget.sovId,
-            provider.result!.locationId ?? "");
+            provider.locationProfile?.finalAddress!.locationId ?? "");
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -296,7 +303,7 @@ class _LocationProfileState extends State<LocationProfile>
     var typography = CustomTypography(context);
     return SafeArea(
       child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-        return Consumer<LocationProfileProvider>(builder: (context, locationProfileProvider, child) {
+        return Consumer<MyLocationListProvider>(builder: (context, locationProfileProvider, child) {
             return Scaffold(
               backgroundColor: themeProvider.getTheme.colorScheme.background,
               appBar: CustomAppBar(
@@ -406,14 +413,14 @@ class _LocationProfileState extends State<LocationProfile>
                                       children: [
                                         SizedBox(height: CustomSpacing.two,),
                                         Text(
-                                          locationProfileProvider.result?.locationName ??
+                                          locationProfileProvider.locationProfile?.finalAddress?.locationName ??
                                               '',
                                           style:
                                           typography.H6.copyWith(height: 1.2),
                                         ),
 
                                         Text(
-                                          '${locationProfileProvider.result?.locationIdForRef ?? ''}',
+                                          '${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}',
                                           style: typography.Subtitle2.copyWith(
                                               fontWeight: FontWeight.w500, color: AppColors.primaryMain),
                                         ),
@@ -470,13 +477,13 @@ class _LocationProfileState extends State<LocationProfile>
                                             children: [
                                               TextSpan(
                                                 text:
-                                                'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
+                                                'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}\n',
                                                 style: typography.Subtitle1,
                                               ),
                                               // Comma seperated
                                               TextSpan(
                                                 text:
-                                                'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
+                                                'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}\n',
                                                 style: typography.Subtitle1,
                                               ),
                                             ],
@@ -554,8 +561,8 @@ class _LocationProfileState extends State<LocationProfile>
                               textColor: Colors.white,
                             ),*/
                             RatingWidget(score: context
-                                .read<LocationProfileProvider>()
-                                .result
+                                .read<MyLocationListProvider>()
+                                .locationProfile?.finalAddress
                                 ?.score ??
                                 0),
                             SvgPicture.asset('assets/images/certified.svg'),
@@ -601,15 +608,15 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               ),
                             ),
-                            Consumer<LocationProfileProvider>(
+                            Consumer<MyLocationListProvider>(
                                 builder: (context, locationProfileProvider, child) {
                               return Positioned(
                                 top: 16,
                                 left: 28,
                                 right: 0,
-                                child: (locationProfileProvider.result?.score ?? 0) ==
+                                child: (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
                                             3 ||
-                                        (locationProfileProvider.result?.score ??
+                                        (locationProfileProvider.locationProfile?.finalAddress?.score ??
                                                 0) ==
                                             4
                                     ? Row(
@@ -668,15 +675,15 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               ),
                             ),
-                            Consumer<LocationProfileProvider>(
+                            Consumer<MyLocationListProvider>(
                                 builder: (context, locationProfileProvider, child) {
                               return Positioned(
                                 top: 16,
                                 left: 28,
                                 right: 0,
-                                child: (locationProfileProvider.result?.score ?? 0) ==
+                                child: (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
                                             3 ||
-                                        (locationProfileProvider.result?.score ??
+                                        (locationProfileProvider.locationProfile?.finalAddress?.score ??
                                                 0) ==
                                             4
                                     ? Row(
@@ -689,7 +696,7 @@ class _LocationProfileState extends State<LocationProfile>
                                     : SizedBox(),
                               );
                             }),
-                            Consumer<LocationProfileProvider>(
+                            Consumer<MyLocationListProvider>(
                                 builder: (context, locationProfileProvider, child) {
                               return Positioned(
                                 bottom: 16,
@@ -760,10 +767,10 @@ class _LocationProfileState extends State<LocationProfile>
                                                 .onSurface),
                                         tooltip: 'Go to Initial Pin',
                                       ),
-                                      (locationProfileProvider.result?.score ?? 0) ==
+                                      (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
                                                   5 &&
                                               (locationProfileProvider
-                                                      .result?.placeTypes
+                                                      .locationProfile?.finalAddress?.placeTypes
                                                       ?.any((placeType) => [
                                                             "premise",
                                                             "subpremise",
@@ -786,10 +793,10 @@ class _LocationProfileState extends State<LocationProfile>
                                               tooltip: 'Add Sub-Destination',
                                             )
                                           : SizedBox.shrink(),
-                                      (locationProfileProvider.result?.score ?? 0) ==
+                                      (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
                                                   1 ||
                                               (locationProfileProvider
-                                                          .result?.score ??
+                                                          .locationProfile?.finalAddress?.score ??
                                                       0) ==
                                                   2
                                           ? FloatingActionButton.small(
@@ -906,7 +913,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   Widget _buildBottomSheet() {
     var typography = CustomTypography(context);
-    return Consumer<LocationProfileProvider>(
+    return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
       return AnimatedContainer(
         duration: Duration(milliseconds: 300),
@@ -924,7 +931,7 @@ class _LocationProfileState extends State<LocationProfile>
               children: [
                 ListTile(
                   title: Text(
-                    '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
+                    '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
                     style: typography.Subtitle1.copyWith(
                         fontWeight: FontWeight.w500),
                   ),
@@ -978,9 +985,9 @@ class _LocationProfileState extends State<LocationProfile>
                   child: ListView(
                     children: [
                       Divider(),
-                      ListTile(
+                      /*ListTile(
                         title: Text(
-                          locationProfileProvider.result?.address ?? '',
+                          locationProfileProvider.locationProfile?.finalAddress?.address ?? '',
                           style: typography.Body1,
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -990,7 +997,7 @@ class _LocationProfileState extends State<LocationProfile>
                           onPressed: () =>
                               _editAddress(locationProfileProvider),
                         ),
-                      ),
+                      ),*/
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1003,9 +1010,9 @@ class _LocationProfileState extends State<LocationProfile>
                                   return ExportDialog(
                                     accountId: widget.accountId,
                                     subAccountId: widget.subAccountId,
-                                    sovId: [widget.sovId],
+                                    locationId: [widget.sovId],
                                     locationId: locationProfileProvider
-                                        .result?.locationId ??
+                                        .locationProfile?.finalAddress?.locationId ??
                                         '',
                                   );
                                 },
@@ -1027,7 +1034,7 @@ class _LocationProfileState extends State<LocationProfile>
                           ],
                         ),
                       ),
-                      (locationProfileProvider.result?.score ?? 0) == 5
+                      (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) == 5
                           ? SizedBox(height: 16)
                           : Padding(
                               padding:
@@ -1044,16 +1051,16 @@ class _LocationProfileState extends State<LocationProfile>
                                         subAccountId: widget.subAccountId,
                                         sovId: widget.sovId,
                                         locationId: locationProfileProvider
-                                                .result?.locationId ??
+                                                .locationProfile?.finalAddress?.locationId ??
                                             '',
                                         accountName: widget.accountName,
                                         subAccountName: widget.subAccountName,
                                         sovName: widget.sovName,
                                         locationName: locationProfileProvider
-                                                .result?.locationName ??
+                                                .locationProfile?.finalAddress?.locationName ??
                                             '',
                                         locationIdForRef:
-                                            locationProfileProvider.result
+                                            locationProfileProvider.locationProfile?.finalAddress
                                                     ?.locationIdForRef ??
                                                 '',
                                         searchQuery: widget.searchQuery,
@@ -1080,7 +1087,7 @@ class _LocationProfileState extends State<LocationProfile>
                                     typography.H6.copyWith(height: 1.2),
                               ),
                             ),
-                            locationProfileProvider.result?.score != 5
+                            locationProfileProvider.locationProfile?.finalAddress?.score != 5
                                 ? SizedBox()
                                 : IconButton(
                                     icon: Icon(Icons.add_location_alt),
@@ -1216,7 +1223,7 @@ class _LocationProfileState extends State<LocationProfile>
                           ? Center(child: CircularProgressIndicator())
                           : _images.isNotEmpty ||
                                   locationProfileProvider
-                                          .result?.screenShots?.isNotEmpty ==
+                                          .locationProfile?.screenshots?.isNotEmpty ==
                                       true
                               ? Column(
                                   children: [
@@ -1231,8 +1238,8 @@ class _LocationProfileState extends State<LocationProfile>
                                         controller: PageController(
                                             viewportFraction: 0.9),
                                         itemCount: _images.length +
-                                            (locationProfileProvider.result
-                                                    ?.screenShots?.length ??
+                                            (locationProfileProvider.locationProfile
+                                                    ?.screenshots?.length ??
                                                 0),
                                         itemBuilder: (BuildContext context,
                                             int itemIndex) {
@@ -1270,7 +1277,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                 itemIndex - _images.length;
                                             final screenshot =
                                                 locationProfileProvider
-                                                        .result?.screenShots?[
+                                                        .locationProfile?.screenshots?[
                                                     screenshotIndex];
                                             return GestureDetector(
                                               onTap: () =>
@@ -1316,7 +1323,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   Widget _locationProfileBody() {
     var typography = CustomTypography(context);
-    return Consumer<LocationProfileProvider>(
+    return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
       return Container(
         decoration: BoxDecoration(
@@ -1327,7 +1334,7 @@ class _LocationProfileState extends State<LocationProfile>
           children: [
             ListTile(
               title: Text(
-                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.result?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
+                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''} - (${formatLocationText((int.tryParse(widget.page)??0)+1, (int.tryParse(widget.totalPages)??0))})',
                 style: typography.H6.copyWith(height: 1.2),
               ),
               trailing: IconButton(
@@ -1348,7 +1355,7 @@ class _LocationProfileState extends State<LocationProfile>
                       children: [
                         Flexible(
                           child: Text(
-                            locationProfileProvider.result?.locationName ?? '',
+                            locationProfileProvider.locationProfile?.finalAddress?.locationName ?? '',
                             style: typography.H6.copyWith(height: 1.2),
                           ),
                         ),
@@ -1385,13 +1392,13 @@ class _LocationProfileState extends State<LocationProfile>
                             children: [
                               TextSpan(
                                 text:
-                                    'Geocode Type: ${locationProfileProvider.result?.locationType ?? 'Unknown'}\n',
+                                    'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}\n',
                                 style: typography.Subtitle1,
                               ),
                               // Comma seperated
                               TextSpan(
                                 text:
-                                    'Property Type: ${locationProfileProvider.result?.placeTypes?.join(', ') ?? 'Unknown'}\n',
+                                    'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}\n',
                                 style: typography.Subtitle1,
                               ),
                             ],
@@ -1411,8 +1418,8 @@ class _LocationProfileState extends State<LocationProfile>
                       SizedBox(width: 8),
                       RatingSlider(
                         progress: context
-                                .read<LocationProfileProvider>()
-                                .result
+                                .read<MyLocationListProvider>()
+                                .locationProfile?.finalAddress
                                 ?.score ??
                             0,
                         total: 5,
@@ -1444,9 +1451,9 @@ class _LocationProfileState extends State<LocationProfile>
                                     return ExportDialog(
                                       accountId: widget.accountId,
                                       subAccountId: widget.subAccountId,
-                                      sovId: [widget.sovId],
+                                      locationId: [widget.sovId],
                                       locationId: locationProfileProvider
-                                              .result?.locationId ??
+                                              .locationProfile?.finalAddress?.locationId ??
                                           '',
                                     );
                                   },
@@ -1472,7 +1479,7 @@ class _LocationProfileState extends State<LocationProfile>
                   ),
                   ListTile(
                     title: Text(
-                      locationProfileProvider.result?.address ?? '',
+                      locationProfileProvider.locationProfile?.finalAddress?.address ?? '',
                       style: typography.Body1,
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -1616,7 +1623,7 @@ class _LocationProfileState extends State<LocationProfile>
                   ),
                   _images.isNotEmpty ||
                           locationProfileProvider
-                                  .result?.screenShots?.isNotEmpty ==
+                                  .locationProfile?.screenshots?.isNotEmpty ==
                               true
                       ? Container(
                           height: 200,
@@ -1624,7 +1631,7 @@ class _LocationProfileState extends State<LocationProfile>
                             scrollDirection: Axis.horizontal,
                             itemCount: _images.length +
                                 (locationProfileProvider
-                                        .result?.screenShots?.length ??
+                                        .locationProfile?.screenshots?.length ??
                                     0),
                             itemBuilder: (BuildContext context, int itemIndex) {
                               if (itemIndex < _images.length) {
@@ -1654,7 +1661,7 @@ class _LocationProfileState extends State<LocationProfile>
                                 final screenshotIndex =
                                     itemIndex - _images.length;
                                 final screenshot = locationProfileProvider
-                                    .result?.screenShots?[screenshotIndex];
+                                    .locationProfile?.screenshots?[screenshotIndex];
                                 return Stack(
                                   children: [
                                     Image.network(
@@ -1746,11 +1753,11 @@ class _LocationProfileState extends State<LocationProfile>
 
     if (controller != null) {
       var provider =
-          Provider.of<LocationProfileProvider>(context, listen: false);
+          Provider.of<MyLocationListProvider>(context, listen: false);
       var mainMarkerPosition = CameraPosition(
         target: LatLng(
-          provider.result?.latitude ?? 0,
-          provider.result?.longitude ?? 0,
+          provider.locationProfile?.finalAddress?.latitude ?? 0,
+          provider.locationProfile?.finalAddress?.longitude ?? 0,
         ),
         zoom: 16,
       );
@@ -1896,7 +1903,7 @@ class _LocationProfileState extends State<LocationProfile>
   void _handleSubDestinationTap() {
     var typography = CustomTypography(context);
     var locationProfileProvider =
-        Provider.of<LocationProfileProvider>(context, listen: false);
+        Provider.of<MyLocationListProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1912,19 +1919,19 @@ class _LocationProfileState extends State<LocationProfile>
             ),
             TextButton(
               onPressed: () async {
-                var provider = Provider.of<LocationProfileProvider>(context,
+                var provider = Provider.of<MyLocationListProvider>(context,
                     listen: false);
-                await Provider.of<LocationProfileProvider>(context,
+                await Provider.of<MyLocationListProvider>(context,
                         listen: false)
                     .createSubdestination(
                   context,
                   widget.accountId,
                   widget.subAccountId,
                   widget.sovId,
-                  locationProfileProvider.result?.locationId ?? '',
-                  provider.result?.latitude ?? 0,
-                  provider.result?.longitude ?? 0,
-                  provider.result?.placeId ?? '',
+                  locationProfileProvider.locationProfile?.finalAddress?.locationId ?? '',
+                  provider.locationProfile?.finalAddress?.latitude ?? 0,
+                  provider.locationProfile?.finalAddress?.longitude ?? 0,
+                  provider.locationProfile?.finalAddress?.placeId ?? '',
                 )
                     .then((value) {
                       print('Subdestination created');
@@ -1945,14 +1952,14 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  void _editName(LocationProfileProvider provider) {
+  void _editName(MyLocationListProvider provider) {
     var typography = CustomTypography(context);
-    _nameController.text = provider.result?.locationName ?? '';
+    _nameController.text = provider.locationProfile?.finalAddress?.locationName ?? '';
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Consumer<LocationProfileProvider>(
+        return Consumer<MyLocationListProvider>(
             builder: (context, locationProfileProvider, child) {
           return AlertDialog(
             title: Text('Edit Name', style: typography.H6),
@@ -1983,7 +1990,7 @@ class _LocationProfileState extends State<LocationProfile>
                     widget.accountId,
                     widget.subAccountId,
                     widget.sovId,
-                    locationProfileProvider.result?.locationId ?? '',
+                    locationProfileProvider.locationProfile?.finalAddress?.locationId ?? '',
                     _nameController.text,
                   )
                       .then((value) {
@@ -2002,14 +2009,14 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  void _editAddress(LocationProfileProvider provider) {
+  void _editAddress(MyLocationListProvider provider) {
     var typography = CustomTypography(context);
-    _addressController.text = provider.result?.address ?? '';
+    _addressController.text = provider.locationProfile?.finalAddress?.address ?? '';
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Consumer<LocationProfileProvider>(
+        return Consumer<MyLocationListProvider>(
             builder: (context, locationProfileProvider, child) {
           return AlertDialog(
             title: Text('Edit address & run geocoding',
@@ -2035,7 +2042,7 @@ class _LocationProfileState extends State<LocationProfile>
                     widget.accountId,
                     widget.subAccountId,
                     widget.sovId,
-                    locationProfileProvider.result?.locationId ?? '',
+                    locationProfileProvider.locationProfile?.finalAddress?.locationId ?? '',
                     _addressController.text,
                   )
                       .then((value) {
@@ -2264,7 +2271,7 @@ class _LocationProfileState extends State<LocationProfile>
 
   void _addSelectedToSOV() async {
     var typography = CustomTypography(context);
-    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     var checkedSubdestinations =
         provider.subdestinations.where((sd) => sd.isChecked).toList();
     // Check for selections
@@ -2282,7 +2289,7 @@ class _LocationProfileState extends State<LocationProfile>
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      provider.result?.locationId ?? '',
+      provider.locationProfile?.finalAddress?.locationId ?? '',
       checkedSubdestinations.map((sd) => sd.id!).toList(),
     );
 
@@ -2296,14 +2303,14 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _addToSOV(String subdestinationId) async {
-    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     await provider
         .addSubdestinationToSOV(
       context,
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      provider.result?.locationId ?? '',
+      provider.locationProfile?.finalAddress?.locationId ?? '',
       subdestinationId,
     )
         .then((value) {
@@ -2312,13 +2319,13 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _removeFromSOV(String subdestinationId) async {
-    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     await provider.removeSubdestinationFromSOV(
       context,
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
-      provider.result?.locationId ?? '',
+      provider.locationProfile?.finalAddress?.locationId ?? '',
       subdestinationId,
     );
   }
@@ -2510,7 +2517,7 @@ class _LocationProfileState extends State<LocationProfile>
 
     // Create data payload
 
-    var provider = Provider.of<LocationProfileProvider>(context, listen: false);
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     final data = {
       "data": {
         "location_name": placeDetails['name'],
@@ -2524,7 +2531,7 @@ class _LocationProfileState extends State<LocationProfile>
         "latitude": geometry['lat'],
         "longitude": geometry['lng'],
         "by_search": true,
-        "location_id": provider.result?.locationId ?? "",
+        "location_id": provider.locationProfile?.finalAddress?.locationId ?? "",
         "place_id": placeDetails['place_id'],
       }
     };
@@ -2533,7 +2540,7 @@ class _LocationProfileState extends State<LocationProfile>
         widget.accountId,
         widget.subAccountId,
         widget.sovId,
-        provider.result?.locationId ?? '',
+        provider.locationProfile?.finalAddress?.locationId ?? '',
         data);
     if (result.toLowerCase() == 'true') {
 

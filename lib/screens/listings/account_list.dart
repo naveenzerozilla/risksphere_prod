@@ -65,6 +65,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   TextEditingController _messageController = TextEditingController();
   TextEditingController _sovNameController = TextEditingController();
 
+
   final TextEditingController _filePathController = TextEditingController();
 
   String? _uploadedFileName;
@@ -126,7 +127,7 @@ class _AccountListScreenState extends State<AccountListScreen>
       _accountQuery = query;
       print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
-      provider.page = 0;
+      provider.page = 1;
       await provider.fetchAccountList(
           context, _accountQuery, provider.page, 10);
     });
@@ -178,9 +179,9 @@ class _AccountListScreenState extends State<AccountListScreen>
   _getData() async {
     // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AccountListProvider>(context, listen: false).page = 0;
+      Provider.of<AccountListProvider>(context, listen: false).page = 1;
       Provider.of<AccountListProvider>(context, listen: false)
-          .fetchAccountList(context, "", 0, 10);
+          .fetchAccountList(context, "", 1, 10);
     });
   }
 
@@ -855,7 +856,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                               //SizedBox(),
 
                               const Spacer(),
-                              IconButton(
+                              /*IconButton(
                                 icon: const Icon(Icons.upload_rounded),
                                 color: AppColors.primaryMain,
                                 onPressed: () async {
@@ -869,7 +870,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 },
                                 tooltip: LanguageService.getTranslated(context,
                                     "account_list_app_export_tooltip_text"),
-                              ),
+                              ),*/
                               IconButton(
                                 icon: const Icon(Icons.file_copy_rounded),
                                 color: AppColors.primaryMain,
@@ -1386,13 +1387,15 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   void _showUploadDialog(String accountId) {
     var typography = CustomTypography(context);
+    bool addToSoV = false; // New variable for checkbox state
     showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(builder: (context, StateSetter setState) {
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, StateSetter setState) {
             return WillPopScope(
               onWillPop: () async {
-                return false; // Disable the back button
+                return false;
               },
               child: AlertDialog(
                 backgroundColor: Colors.black87,
@@ -1401,301 +1404,186 @@ class _AccountListScreenState extends State<AccountListScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Text(
-                          LanguageService.getTranslated(
-                              context, "account_list_app_account_upload_sov"),
-                          textAlign: TextAlign.start,
-                          style: typography.Body1),
                       SizedBox(height: 20),
-                      _uploadedFileName == null
-                          ? GestureDetector(
-                              onTap: () async {
-                                FilePickerResult? result =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: ['xls', 'xlsx'],
-                                );
-                                if (result != null) {
-                                  File file = File(result.files.single.path!);
-                                  setState(() {
-                                    files = file;
-                                    _uploadedFileName =
-                                        file.path.split('/').last;
-                                    _sovNameController.text =
-                                        _uploadedFileName!;
-                                  });
-                                }
-                              },
-                              child: Container(
-                                height: 150,
-                                width: MediaQuery.of(context).size.width / 1.2,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
+                      GestureDetector(
+                        onTap: () async {
+                          FilePickerResult? result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['xls', 'xlsx'],
+                          );
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            setState(() {
+                              files = file;
+                              _uploadedFileName = file.path.split('/').last;
+                              _sovNameController.text = _uploadedFileName!;
+                            });
+                          }
+                        },
+                        child: _uploadedFileName == null
+                            ? Container(
+                          height: 150,
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined, color: Colors.white),
+                                SizedBox(height: 10),
+                                Text(
+                                  LanguageService.getTranslated(context, "account_list_app_account_upload_drag_and_drop"),
+                                  style: typography.Body1,
                                 ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.cloud_upload_outlined,
-                                          color: Colors.white),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_account_upload_drag_and_drop"),
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.info_outline,
-                                              color: Colors.white54),
-                                          SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
-                                              style: typography.Body1),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                SizedBox(height: 5),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.white54),
+                                    SizedBox(width: 3),
+                                    Text('Max file size is 200 MB', style: typography.Body1),
+                                  ],
                                 ),
-                              ),
-                            )
-                          : Container(
-                              height: 150,
-                              width: MediaQuery.of(context).size.width / 1.2,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.description, size: 25),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    _sovNameController.text,
-                                    style: typography.Body1,
-                                  ),
-                                  SizedBox(height: 10),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _uploadedFileName = null;
-                                        _sovNameController.clear();
-                                      });
-                                    },
-                                    child: Text(
-                                      LanguageService.getTranslated(context,
-                                          "account_list_app_cancel_text"),
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          fontSize: 14),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                ],
-                              ),
+                              ],
                             ),
-                      SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Text(
-                              LanguageService.getTranslated(context,
-                                  "account_list_app_account_sov_name_1"),
-                              textAlign: TextAlign.start,
-                              style: typography.Body1),
-                          Text(
-                              LanguageService.getTranslated(context,
-                                  "account_list_app_account_sov_name_2"),
-                              textAlign: TextAlign.start,
-                              style: typography.Body1),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        controller: _sovNameController,
-                        readOnly: _uploadedFileName != null,
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(
-                              context, "account_list_app_sov_name"),
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue),
+                        )
+                            : Container(
+                          height: 150,
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          hintText: LanguageService.getTranslated(
-                              context, "account_list_app_account_name_of_sov"),
-                          hintStyle: TextStyle(color: Colors.white54),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(Icons.description, size: 25),
+                              SizedBox(height: 10),
+                              Text(
+                                _sovNameController.text,
+                                style: typography.Body1,
+                              ),
+                              SizedBox(height: 10),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _uploadedFileName = null;
+                                    _sovNameController.clear();
+                                  });
+                                },
+                                child: Text(
+                                  LanguageService.getTranslated(context, "account_list_app_cancel_text"),
+                                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 14),
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                            ],
+                          ),
                         ),
                       ),
-                      SizedBox(height: 20),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      SizedBox(height: 15),
+                      Row(
                         children: [
-                          Consumer<AccountListProvider>(
-                              builder: (_, accountProvider, child) {
-                            return accountProvider.isImageUploadLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : Container(
-                                    width:
-                                        MediaQuery.of(context).size.width / 1.2,
-                                    child: CustomButton(
-                                      onPressed: () async {
-                                        String success = (await Provider.of<
-                                                    AccountListProvider>(
-                                                context,
-                                                listen: false)
-                                            .uploadSovAccount(
-                                                context,
-                                                files,
-                                                accountId,
-                                                _sovNameController.text));
-                                        print('Success: $success');
-                                        // contain symbol +
-                                        if (success.isNotEmpty &&
-                                            success.contains('+')) {
-                                          print('Inside + success: $success');
-                                          // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                          showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                  title: Text(
-                                                    /*LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_empty_sov_title")*/
-                                                    'Empty SOV',
-                                                    style:
-                                                        typography.H5_Regular,
-                                                  ),
-                                                  content: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        /* LanguageService.getTranslated(
-                                                            context,
-                                                            "account_list_app_empty_sov_text"),*/
-                                                        'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                        style: typography.Body1,
-                                                      ),
-                                                      SizedBox(
-                                                        height:
-                                                            CustomSpacing.two,
-                                                      ),
-                                                      Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .stretch,
-                                                        children: [
-                                                          Consumer<
-                                                                  UploadSovProvider>(
-                                                              builder: (context,
-                                                                  uploadSovProvider,
-                                                                  child) {
-                                                            return uploadSovProvider
-                                                                    .isLoading
-                                                                ? const Center(
-                                                                    child:
-                                                                        CircularProgressIndicator(),
-                                                                  )
-                                                                : CustomButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      // Create empty SOV
-                                                                      var provider = Provider.of<
-                                                                              UploadSovProvider>(
-                                                                          context,
-                                                                          listen:
-                                                                              false);
-                                                                      await provider.createEmptySov(
-                                                                          context,
-                                                                          success);
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                    },
-                                                                    child: Text(
-                                                                      /*LanguageService.getTranslated(
-                                                                      context,
-                                                                      "account_list_app_empty_sov_create"),*/
-                                                                      'Create',
-                                                                      style: typography
-                                                                          .ButtonLarge,
-                                                                    ),
-                                                                    type: ButtonType
-                                                                        .elevated,
-                                                                  );
-                                                          }),
-                                                          CustomButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: Text(
-                                                              /*LanguageService.getTranslated(
-                                                                  context,
-                                                                  "account_list_app_empty_sov_abort")*/
-                                                              'Abort',
-                                                              style: typography
-                                                                  .ButtonLarge,
-                                                            ),
-                                                            type:
-                                                                ButtonType.text,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              });
-                                        } else if (success.isNotEmpty) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => MappingScreen(
-                                                        tempId: success,
-                                                      )));
-                                        }
-                                      },
-                                      type: ButtonType.filled,
-                                      child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "login_submit_button"),
-                                        style: typography.ButtonLarge,
-                                      ),
-                                    ),
-                                  );
-                          }),
-                          Container(
-                            width: MediaQuery.of(context).size.width / 1.2,
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _uploadedFileName = null;
-                                  _sovNameController.clear();
-                                });
-                                Navigator.of(context).pop();
-                              },
-                              child: Text(
-                                  LanguageService.getTranslated(
-                                      context, "account_list_app_cancel_text"),
-                                  style: typography.Body1),
-                            ),
+                          Checkbox(
+                            value: addToSoV,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                addToSoV = value!;
+                              });
+                            },
                           ),
-                          SizedBox(width: 10),
+                          Text(
+                            'Add to SoV',
+                            style: typography.Body1,
+                          ),
+                        ],
+                      ),
+                      if (!addToSoV) ...[
+                        TextField(
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Tags (separated by comma)",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                      ],
+                      if (addToSoV) ...[
+                        // Fields displayed only if checkbox is checked
+                        TextField(
+                          controller: _sovNameController,
+                          readOnly: _uploadedFileName != null,
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Name of the SoV",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Tags (separated by comma)",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Account Name",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Sub-account Name",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _uploadedFileName = null;
+                                _sovNameController.clear();
+                              });
+                              Navigator.of(context).pop();
+                            },
+                            child: Text("Close", style: typography.Body1),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              // Upload action
+                            },
+                            child: Text("Upload", style: typography.ButtonLarge),
+                          ),
                         ],
                       ),
                     ],
@@ -1703,8 +1591,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                 ),
               ),
             );
-          });
-        });
+          },
+        );
+      },
+    );
   }
 
   Future<void> _showAddAccountDialog(BuildContext context) async {
@@ -1873,6 +1763,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                         CustomButton(
                           onPressed: () {
                             // Cancel
+                            _uploadedFileName = null;
+                            _sovNameController.clear();
                             Navigator.pop(context);
                           },
                           child: Text(

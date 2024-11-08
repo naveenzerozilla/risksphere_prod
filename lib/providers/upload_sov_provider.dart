@@ -319,7 +319,7 @@ class UploadSovProvider extends ChangeNotifier {
 
       log('Response: $response');
 
-      if (response['results'] != null) {
+      if (response['message'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? "SOV submitted successfully"),

@@ -128,7 +128,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
                     },
                   ),
-                  ListTile(
+                  /*ListTile(
                     leading: Icon(Icons.account_balance_wallet, color: iconColor),
                     title: Text(LanguageService.getTranslated(context, "drawer_menu_my_locations"),
                         style: typography.Body1.copyWith(color: iconColor)),
@@ -203,7 +203,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         },
                       ),
                     ],
-                  ),
+                  ),*/
                 ],
               ),
             ),

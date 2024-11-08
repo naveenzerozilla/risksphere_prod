@@ -32,7 +32,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   set isUploadingImage(bool value) {
     _isUploadingImage = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -43,7 +43,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   set result(LocationProfileModel? value) {
     _result = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -68,15 +68,17 @@ class LocationProfileProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> fetchLocationDetails(BuildContext context, String accountId,
+ /* Future<void> fetchLocationDetails(BuildContext context, String accountId,
       String subAccountId, String sovId, String searchQuery, String page, String totalPages) async {
     var typography = CustomTypography(context);
     try {
       print('page: $page');
       print('totalPages: $totalPages');
-    /*  if (((int.tryParse(page)??0)) >= (int.tryParse(totalPages)?? 1)) {
+    */
+  /*  if (((int.tryParse(page)??0)) >= (int.tryParse(totalPages)?? 1)) {
         return;
       }*/
+  /*
       isLoading = true;
       var locationListProvider  = Provider.of<LocationListProvider>(context, listen: false);
       var headers =  await CommonHeaders.createHeaders();
@@ -175,9 +177,10 @@ class LocationProfileProvider extends ChangeNotifier {
         content: Text(e.toString(), style: typography.Body1),
       ));
     }
-  }
+  }*/
 
-  Future<void> uploadImage(
+
+/*  Future<void> uploadImage(
       BuildContext context,
       String filePath,
       String accountId,
@@ -186,7 +189,7 @@ class LocationProfileProvider extends ChangeNotifier {
       String locationId) async {
     try {
       isUploadingImage = true;
-      ApiService apiService = ApiService(AppConstant.GET_LOCATION_PROFILE/*"https://da10-49-205-131-127.ngrok-free.app/project-green-f4d78/us-central1/accounts"*/ +
+      ApiService apiService = ApiService(AppConstant.GET_LOCATION_PROFILE +
           "/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId");
 
       print("Uploading image to ${apiService.url}");
@@ -209,9 +212,9 @@ class LocationProfileProvider extends ChangeNotifier {
     } finally {
       isUploadingImage = false;
     }
-  }
+  }*/
 
-  Future<void> createSubdestination(
+  /*Future<void> createSubdestination(
       BuildContext context,
       String accountId,
       String subAccountId,
@@ -258,8 +261,8 @@ class LocationProfileProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<void> addSubdestinationToSOV(BuildContext context, String accountId,
+*/
+  /*Future<void> addSubdestinationToSOV(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String subDestinationId) async {
     var typography = CustomTypography(context);
     try {
@@ -438,121 +441,10 @@ class LocationProfileProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
-  }
+  }*/
 
-  Future<String> updateLocationDetails(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, Map<String, dynamic> data) async {
-    var typography = CustomTypography(context);
-    try {
-      isLoading = true;
-      notifyListeners();
-      String url =
-          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
-      ApiService apiService = ApiService(url);
-      var body = data;
-      var response = await apiService.patch(body);
-      if (response.containsKey('result')) {
-        //result = LocationProfileModel.fromJson(response['result']);
-        subdestinations = result?.subdestinations ?? [];
-      } else {
-        result = null;
-        subdestinations = [];
-      }
 
-      isLoading = false;
-      notifyListeners();
-      return true.toString();
-    } on BackendException catch (e, stackTrace) {
-
-      if (e.statusCode == 422) {
-        try {
-          print("Error 422: ${e.message}");
-          // convert e.message to map
-          print(e.message);
-          var resultLocation = json.decode(e.message);
-          var toDeleteLocationId = resultLocation["to_delete_location"];
-          result?.locationId = resultLocation["location_data"]["location_id"];
-          result?.locationName =
-          resultLocation["location_data"]["location_name"];
-          result?.locationType =
-          resultLocation["location_data"]["location_type"];
-          result?.description = resultLocation["location_data"]["description"];
-          result?.address = resultLocation["location_data"]["address"];
-          result?.city = resultLocation["location_data"]["city"];
-          result?.state = resultLocation["location_data"]["state"];
-          result?.zip = resultLocation["location_data"]["zip"];
-          result?.country = resultLocation["location_data"]["country"];
-          result?.latitude = resultLocation["location_data"]["latitude"];
-          result?.longitude = resultLocation["location_data"]["longitude"];
-          result?.ownerId = resultLocation["location_data"]["owner_id"];
-          result?.ownerName = resultLocation["location_data"]["owner_name"];
-          result?.ownerEmail = resultLocation["location_data"]["owner_email"];
-          result?.autoCertified =
-          resultLocation["location_data"]["auto_certified"];
-          result?.campusId = resultLocation["location_data"]["campus_id"];
-          result?.percent = resultLocation["location_data"]["percent"];
-          result?.score = resultLocation["location_data"]["score"];
-
-          result?.placeTypes = resultLocation["location_data"]["place_types"] is String
-          ? [resultLocation["location_data"]["place_types"]]
-              : (resultLocation["location_data"]["place_types"] as List?)?.map((item) => item as String).toList();
-          result?.screenShots = resultLocation["location_data"]["screen_shots"]??[];
-          subdestinations = result?.subdestinations ?? [];
-          String accountName = resultLocation["location_data"]["account_name"];
-          String subAccountName = resultLocation["location_data"]["sub_account_name"];
-          String sovName = resultLocation["location_data"]["sov_name"];
-          String page = "0";
-          String totalPages = "1";
-          String searchQuery = "";
-          Navigator.push(context, MaterialPageRoute(builder: (_) =>
-              LocationProfilePreview(accountId: accountId,
-                  accountName: accountName,
-                  subAccountId: subAccountId,
-                  subAccountName: subAccountName,
-                  sovId: sovId,
-                  sovName: sovName,
-                  page: page,
-                  totalPages: totalPages,
-                  searchQuery: searchQuery,
-                toDeleteLocationId: toDeleteLocationId,
-              )));
-        } catch (e, stackTrace) {
-          isLoading = false;
-          print(e);
-          print(stackTrace);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString(), style: typography.Body1),
-          ));
-          return false.toString();
-        }
-      }
-
-      isLoading = false;
-      print(e);
-      print(stackTrace);
-      // Todo: Add condition based on response
-      if (e.statusCode != 422) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.message, style: typography.Body1),
-        ));
-      }
-
-      return false.toString();
-    } catch (e, stackTrace) {
-      isLoading = false;
-      print(e);
-      print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
-      return false.toString();
-    } finally {
-      isLoading = false;
-      notifyListeners();
-      return true.toString();
-    }
-  }
-
+/*
   Future<bool> autocompleteUserConfirmation(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId) async {
     var typography = CustomTypography(context);
@@ -609,9 +501,10 @@ class LocationProfileProvider extends ChangeNotifier {
       return true;
     }
   }
+*/
 
 
-  Future<bool> updateLocationName(BuildContext context, String accountId,
+  /*Future<bool> updateLocationName(BuildContext context, String accountId,
       String subAccountId, String sovId, String locationId, String locationName) async {
     var typography = CustomTypography(context);
     try {
@@ -732,4 +625,118 @@ class LocationProfileProvider extends ChangeNotifier {
       return true;
     }
   }
+
+  Future<String> updateLocationDetails(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, Map<String, dynamic> data) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
+      ApiService apiService = ApiService(url);
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = result?.subdestinations ?? [];
+      } else {
+        result = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true.toString();
+    } on BackendException catch (e, stackTrace) {
+
+      if (e.statusCode == 422) {
+        try {
+          print("Error 422: ${e.message}");
+          // convert e.message to map
+          print(e.message);
+          var resultLocation = json.decode(e.message);
+          var toDeleteLocationId = resultLocation["to_delete_location"];
+          result?.locationId = resultLocation["location_data"]["location_id"];
+          result?.locationName =
+          resultLocation["location_data"]["location_name"];
+          result?.locationType =
+          resultLocation["location_data"]["location_type"];
+          result?.description = resultLocation["location_data"]["description"];
+          result?.address = resultLocation["location_data"]["address"];
+          result?.city = resultLocation["location_data"]["city"];
+          result?.state = resultLocation["location_data"]["state"];
+          result?.zip = resultLocation["location_data"]["zip"];
+          result?.country = resultLocation["location_data"]["country"];
+          result?.latitude = resultLocation["location_data"]["latitude"];
+          result?.longitude = resultLocation["location_data"]["longitude"];
+          result?.ownerId = resultLocation["location_data"]["owner_id"];
+          result?.ownerName = resultLocation["location_data"]["owner_name"];
+          result?.ownerEmail = resultLocation["location_data"]["owner_email"];
+          result?.autoCertified =
+          resultLocation["location_data"]["auto_certified"];
+          result?.campusId = resultLocation["location_data"]["campus_id"];
+          result?.percent = resultLocation["location_data"]["percent"];
+          result?.score = resultLocation["location_data"]["score"];
+
+          result?.placeTypes = resultLocation["location_data"]["place_types"] is String
+              ? [resultLocation["location_data"]["place_types"]]
+              : (resultLocation["location_data"]["place_types"] as List?)?.map((item) => item as String).toList();
+          result?.screenShots = resultLocation["location_data"]["screen_shots"]??[];
+          subdestinations = result?.subdestinations ?? [];
+          String accountName = resultLocation["location_data"]["account_name"];
+          String subAccountName = resultLocation["location_data"]["sub_account_name"];
+          String sovName = resultLocation["location_data"]["sov_name"];
+          String page = "0";
+          String totalPages = "1";
+          String searchQuery = "";
+          Navigator.push(context, MaterialPageRoute(builder: (_) =>
+              LocationProfilePreview(accountId: accountId,
+                accountName: accountName,
+                subAccountId: subAccountId,
+                subAccountName: subAccountName,
+                sovId: sovId,
+                sovName: sovName,
+                page: page,
+                totalPages: totalPages,
+                searchQuery: searchQuery,
+                toDeleteLocationId: toDeleteLocationId,
+              )));
+        } catch (e, stackTrace) {
+          isLoading = false;
+          print(e);
+          print(stackTrace);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString(), style: typography.Body1),
+          ));
+          return false.toString();
+        }
+      }
+
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      // Todo: Add condition based on response
+      if (e.statusCode != 422) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message, style: typography.Body1),
+        ));
+      }
+
+      return false.toString();
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+      return false.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      return true.toString();
+    }
+  }
+*/
 }

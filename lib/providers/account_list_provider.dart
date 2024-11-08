@@ -155,7 +155,7 @@ class AccountListProvider extends ChangeNotifier {
   }
 
   // Pagination
-  int _page = 0;
+  int _page = 1;
   int get page => _page;
   set page(int value) {
     _page = value;
@@ -171,6 +171,8 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
+  int accountHits = 0;
 
   List<Accounts> _accountList = [];
   List<Accounts> get accountList => _accountList;
@@ -204,7 +206,7 @@ class AccountListProvider extends ChangeNotifier {
     var typography = CustomTypography(context);
     try {
       if(isLoading || isNextPageLoading) return;
-      if (page == 0) {
+      if (page == 1) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
@@ -225,8 +227,10 @@ class AccountListProvider extends ChangeNotifier {
       showSOVCount = accountListModel.settings?.sovCount ?? true;
       showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
       showOverallScore = accountListModel.settings?.overallScore ?? true;
-      totalPages = accountListModel.totalPages??1;
-      if (page == 0) {
+      accountHits = accountListModel.totalRecords??0;
+      totalPages = accountHits~/pageSize;
+     // totalPages = accountListModel.totalPages??1;
+      if (page == 1) {
         accountList = accountListModel.results ?? [];
       } else {
         addToAccountList(accountListModel.results ?? []);
@@ -305,7 +309,7 @@ class AccountListProvider extends ChangeNotifier {
       log(response.toString());
 
       // Parse the response to get the duplicated account
-      Accounts duplicatedAccount = Accounts.fromJson(response['updated_record']);
+      Accounts duplicatedAccount = Accounts.fromJson(response['updated_record']["duplicatedAccountData"]);
 
       // Prepend the duplicated account to the beginning of the list
       accountList = [duplicatedAccount, ...accountList];
@@ -563,10 +567,10 @@ class AccountListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+      ApiService apiService = ApiService(AppConstant.TRANSFER);
       var response = await apiService.post({
         'data': {
-          'new_owner': newOwnerId,
+          'to_user_id': newOwnerId,
           'account_id': accountId,
         },
       });

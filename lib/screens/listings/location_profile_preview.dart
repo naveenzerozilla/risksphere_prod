@@ -1,3 +1,4 @@
+/*
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -125,11 +126,13 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
   Future<void> _getData() async {
     // Make API call to get the data
-   /* await Provider.of<LocationProfileProvider>(context, listen: false)
+   */
+/* await Provider.of<LocationProfileProvider>(context, listen: false)
         .fetchLocationDetails(context, widget.accountId, widget.subAccountId,
         widget.sovId, widget.searchQuery, widget.page, widget.totalPages);
     _addSubdestinationMarkers();
-    _add();*/
+    _add();*//*
+
     _add();
   }
 
@@ -400,11 +403,13 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
               Positioned.fill(
                 child: _locationProfileBody(),
               ),
-            /*Consumer<LocationProfileProvider>(
+            */
+/*Consumer<LocationProfileProvider>(
               builder: (context, provider, child) {
                 return provider.isUploadingImage ? Center(child: CircularProgressIndicator()) : SizedBox.shrink();
               },
-            ),*/
+            ),*//*
+
             if (_selectedMarker != null) _buildCustomInfoWindow(),
           ],
         ),
@@ -481,7 +486,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   void _addCustomMarker(LatLng position, String title, String address,
       bool isSubdestination, bool isAdded,
       {VoidCallback? onAddToSOV, VoidCallback? onRemoveFromSOV}) async {
-    /* Uint8List markerBitmap = await createCustomMarkerBitmap(isSubdestination ? _subdestinationMarkerKey : _mainMarkerKey);
+    */
+/* Uint8List markerBitmap = await createCustomMarkerBitmap(isSubdestination ? _subdestinationMarkerKey : _mainMarkerKey);
 
     final Marker marker = Marker(
       markerId: MarkerId("custom_marker_${markers.length}"),
@@ -500,7 +506,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
 
     setState(() {
       markers[marker.markerId] = marker;
-    });*/
+    });*//*
+
   }
 
   Widget _buildBottomSheet() {
@@ -992,7 +999,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
         },
       );
     } else {
-      /*var mainLocation = provider.result;
+      */
+/*var mainLocation = provider.result;
       showDialog(
         context: context,
         builder: (context) {
@@ -1003,7 +1011,8 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
             ),
           );
         },
-      );*/
+      );*//*
+
     }
   }
 
@@ -1836,3 +1845,4 @@ class _LocationProfilePreviewState extends State<LocationProfilePreview>
   }
 
 }
+*/

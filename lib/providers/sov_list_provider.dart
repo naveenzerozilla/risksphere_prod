@@ -148,16 +148,16 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
-  List<SovAccount> _accountList = [];
-  List<SovAccount> get sovList => _accountList;
+  List<SovAccount> _sovList = [];
+  List<SovAccount> get sovList => _sovList;
   set sovList(List<SovAccount> value) {
-    _accountList = value;
+    _sovList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
-  void addToAccountList(List<SovAccount> newAccounts) {
-    _accountList.addAll(newAccounts);
+  void addToSovList(List<SovAccount> newAccounts) {
+    _sovList.addAll(newAccounts);
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -175,6 +175,9 @@ class SOVListProvider extends ChangeNotifier {
     autoCompleteSovList = [];
   }
 
+
+  List<SovAccount> filteredAutoCompleteList = [];
+
   /// Fetch sov list with pagination and search query
   Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
     var typography = CustomTypography(context);
@@ -185,10 +188,10 @@ class SOVListProvider extends ChangeNotifier {
         isNextPageLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST+"/$selectedAccountId/subaccount/$selectedSubAccountId/sov/mobile");
-      String url = '?page=$page&pageSize=$pageSize';
+      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV+"?account_id=$selectedAccountId&sub_account_id=$selectedSubAccountId");
+      String url = '&page=$page&pageSize=$pageSize';
       if (searchQuery.isNotEmpty) {
-        url += '?search=$searchQuery';
+        url += '&search=$searchQuery';
       }
 
       var response = await apiService.get(url);
@@ -202,23 +205,27 @@ class SOVListProvider extends ChangeNotifier {
       if (page == 0) {
         sovList = sovListModel.results ?? [];
       } else {
-        addToAccountList(sovListModel.results ?? []);
+        addToSovList(sovListModel.results ?? []);
       }
       log(sovList.toString());
       log(totalPages.toString());
       log(page.toString());
       isLoading = false;
       isNextPageLoading = false;
-    } on BackendException catch (e) {
+    } on BackendException catch (e, stack) {
       isLoading = false;
       isNextPageLoading = false;
+      print(e.message);
+      print(stack);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: typography.Body1,),
 
       ));
-    } catch (e) {
+    } catch (e, stack) {
       isLoading = false;
       isNextPageLoading = false;
+      print(e);
+      print(stack);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: typography.Body1,),
 
@@ -337,13 +344,13 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Fetch autocomplete sov list
-  Future<void> fetchAutoCompleteSubAccountList(BuildContext context, String searchQuery) async {
+  Future<void> fetchAutoCompleteSovList(BuildContext context, String searchQuery) async {
     var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
 
       print("Fetching autocomplete list for query: $searchQuery");
-      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST);
+      ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
       String url = '?sub_account_name=$searchQuery';  // Updated field
       var response = await apiService.get(url);
       log(response.toString());
@@ -365,6 +372,51 @@ class SOVListProvider extends ChangeNotifier {
       isAutoCompleteLoading = false;
     }
   }
+
+  /// Fetch autocomplete sov list
+  Future<void> fetchAutoCompleteSovListLocations(BuildContext context, String accountId, String subAccountId) async {
+    var typography = CustomTypography(context);
+    try {
+      isAutoCompleteLoading = true;
+      WidgetsBinding.instance!.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
+      String url = '?account_id=$accountId&sub_account_id=$subAccountId&show_full_list=true';  // Updated field
+      var response = await apiService.get(url);
+      log(response.toString());
+
+      SovListModel accountListModel = SovListModel.fromJson(response);
+      autoCompleteSovList = accountListModel.results ?? [];
+      filteredAutoCompleteList = autoCompleteSovList; // Initialize with the full list
+      log(autoCompleteSovList.toString());
+      print("Updated autoCompleteAccountList: $autoCompleteSovList");
+    } on BackendException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isAutoCompleteLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void updateFilteredList(String query) {
+    if (query.isEmpty) {
+      filteredAutoCompleteList = autoCompleteSovList;
+    } else {
+      filteredAutoCompleteList = autoCompleteSovList
+          .where((sov) => sov.name?.toLowerCase().contains(query.toLowerCase()) ?? false)
+          .toList();
+    }
+    notifyListeners();
+  }
+
 
   /// Add sov
   Future<void> addSubAccount(BuildContext context, String accountId, String subAccountId, String accountName) async {
@@ -427,7 +479,7 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> exportData(BuildContext context, String accountId, String subAccountId, Map<String, dynamic> exportData) async {
+  Future<void> exportData(BuildContext context, String accountId, String subAccountId, Map<String, dynamic> exportData, String sovId) async {
     try {
       _isExportLoading = true;
       notifyListeners();
@@ -437,7 +489,7 @@ class SOVListProvider extends ChangeNotifier {
       print('SubAccount ID: $subAccountId');
       print('Export Data: $exportData');
 
-      final URL = '${AppConstant.GET_SOV_LIST}/$accountId/subaccount/$subAccountId/sov/download';
+      final URL = '${AppConstant.EXPORT}/$accountId/$subAccountId/${sovId.isEmpty?null:sovId}';
       print('Request URL: $URL');
 
       final dio = Dio();
@@ -542,12 +594,10 @@ class SOVListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST+"/$accountId/subaccount/$subAccountId/sov");
+      ApiService apiService = ApiService(AppConstant.TRANSFER);
       var response = await apiService.post({
         'data': {
-          'new_owner': newOwnerId,
-          'account_id': accountId,
-          'sub_account_id': subAccountId,
+          'to_user_id': newOwnerId,
           'sov_id': sovId,
         },
       });

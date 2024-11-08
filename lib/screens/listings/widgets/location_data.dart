@@ -101,7 +101,6 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
           widget.targetHeaders);
     }
   }
-
   void _showOptionsDialog() {
     var typography = CustomTypography(context);
     showDialog(
@@ -112,20 +111,34 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(
-                LanguageService.getTranslated(context, "app_options"),
-                style: typography.H5_Regular,
+              backgroundColor: Color(0xFF1C1C1E), // Dark background color
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
+              title: Column(
+                children: [
+                  Text(
+                    'Just one more step before\nsubmitting the locations!',
+                    style: typography.Body1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+              contentPadding: EdgeInsets.symmetric(vertical: 8),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   RadioListTile<String>(
                     title: Text(
-                      LanguageService.getTranslated(context, "app_use_sov_data"),
+                      'Use Locations Data',
                       style: typography.Body1,
                     ),
                     subtitle: Text(
-                      LanguageService.getTranslated(context, "app_only_missing_data_processed"),
+                      'Only missing data will be processed!',
                       style: typography.Caption,
                     ),
                     value: "Use SOV Data",
@@ -135,10 +148,11 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                         _selectedOption = value!;
                       });
                     },
+                    activeColor: Colors.blue,
                   ),
                   RadioListTile<String>(
                     title: Text(
-                      LanguageService.getTranslated(context, "app_refresh_all_data"),
+                      'Refresh All Data',
                       style: typography.Body1,
                     ),
                     value: "Refresh All Data",
@@ -148,67 +162,77 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                         _selectedOption = value!;
                       });
                     },
+                    activeColor: Colors.blue,
                   ),
                 ],
               ),
               actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        type: ButtonType.elevated,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _commitSelectedLocations();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Commit Selected Locations',
+                            style: typography.Body1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _commitAllLocations();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[900],
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Commit All Locations',
+                            style: typography.Body1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w300,),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      TextButton(
                         onPressed: () {
-                          _commitSelectedLocations();
                           Navigator.pop(context);
                         },
                         child: Text(
-                          LanguageService.getTranslated(context, "app_commit_selected_locations"),
-                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
-                          textAlign: TextAlign.center,
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        type: ButtonType.elevated,
-                        onPressed: () {
-                          _commitAllLocations();
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          LanguageService.getTranslated(context, "app_commit_all_locations"),
-                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        type: ButtonType.text,
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          LanguageService.getTranslated(context, "app_cancel"),
-                          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             );
@@ -227,7 +251,7 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
       appBar: AppBar(
         title: Text(
           LanguageService.getTranslated(context, "app_upload_preview"),
-          style: typography.H5_Regular,
+          style: typography.Body1.copyWith(fontWeight: FontWeight.w300),
         ),
       ),
       body: Stack(
@@ -257,10 +281,12 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                     ),
                     Text(
                       LanguageService.getTranslated(context, "app_select_all"),
-                      style: typography.Body1,
+                      style: typography.Body2,
                     ),
                   ],
                 ),
+                SizedBox(height: 10),
+                Divider(),
                 SizedBox(height: 10),
                 Expanded(
                   child: ListView.builder(
@@ -271,37 +297,75 @@ class _LocationDataScreenState extends State<LocationDataScreen> {
                               .any((field) => field['value'].toLowerCase().contains(_searchQuery.toLowerCase()))) {
                         return Container();
                       }
-                      return Card(
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: locations[index]['isChecked'],
-                            onChanged: (bool? value) {
-                              _toggleCheckbox(value, index);
-                            },
+                      return  Container(
+                        margin: EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           ),
-                          title: Text(
-                            locations[index]['fields']
-                                .firstWhere((field) => field['key'] == 'formatted_address', orElse: () => {'value': 'No address available'})['value'],
-                            style: typography.Body1,
-                          ),
-                          subtitle: Text(
-                            locations[index]['fields']
-                                .firstWhere((field) => field['key'] == 'Address', orElse: () => {'value': 'No address available'})['value'],
-                            style: typography.Body2,
-                          ),
-                          trailing: IconButton(
-                            icon: Icon(Icons.arrow_forward),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LocationHeadersScreen(location: locations[index]),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IntrinsicHeight( // Add this wrapper
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: locations[index]['isChecked'],
+                                onChanged: (bool? value) {
+                                  _toggleCheckbox(value, index);
+                                },
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(height: 10),
+                                    Text(
+                                      locations[index]['fields']
+                                          .firstWhere((field) => field['key'] == 'formatted_address', orElse: () => {'value': 'No address available'})['value'],
+                                      style: typography.Body1,
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      locations[index]['fields']
+                                          .firstWhere((field) => field['key'] == 'Address', orElse: () => {'value': 'No address available'})['value'],
+                                      style: typography.Caption,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 10),
+                                  ],
                                 ),
-                              );
-                            },
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                  ),
+                                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                ),
+                                width: 50,
+                                height: double.infinity,
+                                child: IconButton(
+                                  icon: Icon(Icons.info, color: Theme.of(context).colorScheme.primary),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LocationHeadersScreen(location: locations[index]),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
+
                     },
                   ),
                 ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:green/design_system/primitives/app_colors.dart';
+import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:provider/provider.dart';
 import '../../../service/language_service.dart';
 import '../../../providers/upload_sov_provider.dart';
-import 'location_data.dart';
 
 class MappingScreen extends StatefulWidget {
   final String tempId;
@@ -29,7 +30,6 @@ class _MappingScreenState extends State<MappingScreen> {
   }
 
   void _getData() async {
-    // Fetch data from API
     await Provider.of<UploadSovProvider>(context, listen: false).fetchSovHeaders(context, widget.tempId);
     _initializeFields();
   }
@@ -50,7 +50,6 @@ class _MappingScreenState extends State<MappingScreen> {
         };
       }).toList();
 
-      // Create a set to track unique values
       Set<String> uniqueDropdownValues = {};
 
       _dropdownItems = provider.sovUploadModel!.result!.expand((result) {
@@ -61,96 +60,14 @@ class _MappingScreenState extends State<MappingScreen> {
             'matchPercent': match.percentage ?? 0,
           };
         }).where((item) {
-          // Only include items with unique values
           return uniqueDropdownValues.add(item['value'] as String);
         }).toList();
       }).toList();
 
-      _dropdownItems.sort((a, b) => (b['matchPercent'] as int).compareTo(a['matchPercent'] as int)); // Sort by matchPercent in descending order
+      _dropdownItems.sort((a, b) => (b['matchPercent'] as int).compareTo(a['matchPercent'] as int));
 
       setState(() {});
     }
-  }
-
-  void _showMappingDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            LanguageService.getTranslated(context, "app_map_field_title"),
-          ),
-          content: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: DropdownButton<String>(
-              isExpanded: true,
-              borderRadius: BorderRadius.circular(8),
-              underline: Container(),
-              value: _fields[index]['spreadsheet'] != '' ? _fields[index]['spreadsheet'] : null,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _fields[index]['spreadsheet'] = newValue!;
-                  _fields[index]['status'] = 'Manual Mapped';
-                  _fields[index]['isUserEdited'] = true; // Mark as user edited
-                });
-                Navigator.of(context).pop();
-              },
-              items: _dropdownItems.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
-                return DropdownMenuItem<String>(
-                  value: item['value'],
-                  child: Text(
-                    '${item['label']} (${item['matchPercent']}% ${LanguageService.getTranslated(context, "app_match")})',
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showActionMenu(int index) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: Icon(Icons.edit),
-              title: Text(
-                LanguageService.getTranslated(context, "app_edit_mapping"),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showMappingDialog(index);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.refresh),
-              title: Text(
-                LanguageService.getTranslated(context, "app_revert_mapping"),
-              ),
-              onTap: () {
-                setState(() {
-                  if (_fields[index]['isUserEdited']) {
-                    _fields[index]['spreadsheet'] = _fields[index]['initialSpreadsheet'];
-                    _fields[index]['status'] = _fields[index]['initialStatus'];
-                    _fields[index]['isChecked'] = false;
-                    _fields[index]['isUserEdited'] = false; // Reset user edited flag
-                  }
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   List<Map<String, dynamic>> _filterFields() {
@@ -163,46 +80,45 @@ class _MappingScreenState extends State<MappingScreen> {
     }).toList();
   }
 
-  void _handleNext() {
-    bool hasUnmappedFields = _fields.any((field) => field['status'] == 'Unmapped');
-    if (hasUnmappedFields) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(LanguageService.getTranslated(context, "app_unmapped_fields_warning")),
-        ),
-      );
-    } else {
-      final provider = Provider.of<UploadSovProvider>(context, listen: false);
-      if(widget.accountId != '' && widget.accountName != '') {
-        provider.submitSovHeadersSubAccounts(context, widget.tempId, provider.sovUploadModel?.url ?? "", _fields, widget.accountId, widget.accountName);
-      } else {
-        provider.submitSovHeadersAccounts(context, widget.tempId, provider.sovUploadModel?.url ?? "", _fields);
-      }
+  Widget _buildStatusChip(String status) {
+    Color color;
+    switch (status) {
+      case 'Unmapped':
+        color = Colors.red.withOpacity(0.4);
+        break;
+      case 'Manual Mapped':
+        color = Colors.orange.withOpacity(0.4);
+        break;
+      case 'Auto Mapped':
+        color = Colors.green.withOpacity(0.4);
+        break;
+      default:
+        color = Colors.grey;
     }
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8), topRight: Radius.circular(8)),
+      ),
+      child: Text(status, style: TextStyle(color: color == Colors.grey ? Colors.black : Colors.white)),
+    );
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          LanguageService.getTranslated(context, "app_sov_upload_title"),
-        ),
+
+        title: Text(LanguageService.getTranslated(context, "app_sov_upload_title"), style: CustomTypography(context).Body1,),
       ),
       body: Consumer<UploadSovProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
+            return Center(child: CircularProgressIndicator());
           }
           if (provider.sovUploadModel == null || provider.sovUploadModel!.result == null) {
-            return Center(
-              child: Text(
-                LanguageService.getTranslated(context, "app_no_data_available"),
-              ),
-            );
+            return Center(child: Text(LanguageService.getTranslated(context, "app_no_data_available")));
           }
           return Padding(
             padding: const EdgeInsets.all(8.0),
@@ -210,14 +126,10 @@ class _MappingScreenState extends State<MappingScreen> {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    LanguageService.getTranslated(context, "app_jp_morgan_sov"),
-                  ),
+                  title: Text(LanguageService.getTranslated(context, "app_jp_morgan_sov")),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      LanguageService.getTranslated(context, "app_select_columns_to_import"),
-                    ),
+                    child: Text(LanguageService.getTranslated(context, "app_select_columns_to_import")),
                   ),
                 ),
                 SizedBox(height: 10),
@@ -237,7 +149,6 @@ class _MappingScreenState extends State<MappingScreen> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
                   ],
                 ),
                 SizedBox(height: 10),
@@ -245,9 +156,7 @@ class _MappingScreenState extends State<MappingScreen> {
                   spacing: 5,
                   children: [
                     FilterChip(
-                      label: Text(
-                        LanguageService.getTranslated(context, "app_all"),
-                      ),
+                      label: Text(LanguageService.getTranslated(context, "app_all")),
                       selected: _selectedFilter == 'All',
                       onSelected: (bool selected) {
                         setState(() {
@@ -256,9 +165,7 @@ class _MappingScreenState extends State<MappingScreen> {
                       },
                     ),
                     FilterChip(
-                      label: Text(
-                        LanguageService.getTranslated(context, "app_auto_mapped"),
-                      ),
+                      label: Text(LanguageService.getTranslated(context, "app_auto_mapped")),
                       selected: _selectedFilter == 'Auto Mapped',
                       onSelected: (bool selected) {
                         setState(() {
@@ -267,9 +174,7 @@ class _MappingScreenState extends State<MappingScreen> {
                       },
                     ),
                     FilterChip(
-                      label: Text(
-                        LanguageService.getTranslated(context, "app_manual_mapped"),
-                      ),
+                      label: Text(LanguageService.getTranslated(context, "app_manual_mapped")),
                       selected: _selectedFilter == 'Manual Mapped',
                       onSelected: (bool selected) {
                         setState(() {
@@ -278,9 +183,7 @@ class _MappingScreenState extends State<MappingScreen> {
                       },
                     ),
                     FilterChip(
-                      label: Text(
-                        LanguageService.getTranslated(context, "app_unmapped"),
-                      ),
+                      label: Text(LanguageService.getTranslated(context, "app_unmapped")),
                       selected: _selectedFilter == 'Unmapped',
                       onSelected: (bool selected) {
                         setState(() {
@@ -295,70 +198,137 @@ class _MappingScreenState extends State<MappingScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: _filterFields().map((field) {
-                        int index = _fields.indexOf(field);
-                        return Card(
-                          margin: EdgeInsets.symmetric(vertical: 5),
-                          child: ListTile(
-                            leading: Checkbox(
-                              value: field['isChecked'],
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  field['isChecked'] = value!;
-                                });
-                              },
-                            ),
-                            title: Text(
-                              field['target'],
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${LanguageService.getTranslated(context, "app_mapped_to")}: ${field['spreadsheet']}',
+                        return Stack(
+                          clipBehavior: Clip.hardEdge,
+                          children: [
+                            Card(
+                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        // rotate 90 to right
+                                        Transform(transform: Matrix4.rotationZ(1.5708), alignment: Alignment.center, child: Icon(Icons.subdirectory_arrow_right, size: 20,)),
+                                        
+                                        SizedBox(width: 8),
+                                        Text(field['target'], style: CustomTypography(context).Subtitle1),
+
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.grey),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: DropdownButton<String>(
+                                              isExpanded: true,
+                                              padding: EdgeInsets.symmetric(horizontal: 10),
+                                              menuMaxHeight: 300,
+                                              borderRadius: BorderRadius.circular(8),
+                                              style: CustomTypography(context).Subtitle1,
+                                              underline: SizedBox(),
+                                              menuWidth: 250,
+
+
+                                              value: field['spreadsheet'] != '' ? field['spreadsheet'] : null,
+                                              hint: Text("Select mapping", style: CustomTypography(context).Subtitle1,),
+                                              items: _dropdownItems.map((item) {
+                                                return DropdownMenuItem<String>(
+                                                  value: item['value'],
+                                                  child: Row(
+                                                    children: [
+                                                      Text('${item['label']}', style: CustomTypography(context).Subtitle2,),
+                                                      Spacer(),
+                                                      Text('${item['matchPercent']}% Match', style: CustomTypography(context).Caption,),
+                                                    ],
+                                                  ),
+                                                );
+                                              }).toList(),
+                                              selectedItemBuilder: (context) {
+                                                return _dropdownItems.map((item) {
+                                                  return Align(
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text('${item['label']}', style: CustomTypography(context).Subtitle1,),
+                                                  );
+                                                }).toList();
+                                              },
+                                              onChanged: (newValue) {
+                                                setState(() {
+                                                  field['spreadsheet'] = newValue!;
+                                                  field['status'] = 'Manual Mapped';
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                        ),
+
+                                        SizedBox(width: 10),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              field['status'] = 'Submitted';
+                                            });
+                                          },
+
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.check_circle_outline, color: field['status'] == 'Unmapped' ? Colors.grey : AppColors.primaryMain),
+                                              SizedBox(width: 5),
+                                              Text(
+                                                'Submit',
+                                                style: TextStyle(color: field['status'] == 'Unmapped' ? Colors.grey : AppColors.primaryMain),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+
+                                  ],
                                 ),
-                                Chip(
-                                  label: Text(
-                                    LanguageService.getTranslated(context, field['status']),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                            trailing: Wrap(
-                              spacing: 8,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.more_vert),
-                                  onPressed: () => _showActionMenu(index),
-                                ),
-                              ],
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4.0, right: 4.0),
+                                child: _buildStatusChip(field['status']),
+                              ),
                             ),
-                          ),
+                          ],
                         );
                       }).toList(),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          LanguageService.getTranslated(context, "app_back"),
+                Consumer<UploadSovProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return CircularProgressIndicator();
+                    }
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryMain,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            onPressed: _handleNext,
+                            child: Text("Submit All", style: CustomTypography(context).ButtonLarge.copyWith(color: Colors.white)),
+                          ),
                         ),
-                      ),
-                      Spacer(),
-                      ElevatedButton(
-                        onPressed: _handleNext,
-                        child: Text(
-                          LanguageService.getTranslated(context, "app_next"),
-                        ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  }
                 ),
               ],
             ),
@@ -367,4 +337,39 @@ class _MappingScreenState extends State<MappingScreen> {
       ),
     );
   }
+
+  void _handleNext() {
+    bool hasUnmappedFields = _fields.any((field) => field['status'] == 'Unmapped');
+
+    if (hasUnmappedFields) {
+      // Show a warning if there are unmapped fields
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(LanguageService.getTranslated(context, "app_unmapped_fields_warning")),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } else {
+      // Proceed with the submission process if all fields are mapped
+      final provider = Provider.of<UploadSovProvider>(context, listen: false);
+      if (widget.accountId != '' && widget.accountName != '') {
+        provider.submitSovHeadersSubAccounts(
+          context,
+          widget.tempId,
+          provider.sovUploadModel?.url ?? "",
+          _fields,
+          widget.accountId,
+          widget.accountName,
+        );
+      } else {
+        provider.submitSovHeadersAccounts(
+          context,
+          widget.tempId,
+          provider.sovUploadModel?.url ?? "",
+          _fields,
+        );
+      }
+    }
+  }
+
 }

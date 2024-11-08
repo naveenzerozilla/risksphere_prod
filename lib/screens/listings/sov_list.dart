@@ -242,7 +242,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                           return ExportDialog(
                             accountId: widget.accountId,
                             subAccountId: widget.subAccountId,
-                            sovId: selectedSovIds,
+                            locationId: selectedSovIds,
                           );
                         },
                       );
@@ -642,7 +642,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                     children: [
                                       Flexible(
                                         child: Text(
-                                          (sOVListProvider.sovList[index].name ??
+                                          /*(sOVListProvider.sovList[index].name ??
                                               "")
                                               .isNotEmpty
                                               ? sOVListProvider.sovList[index]
@@ -652,7 +652,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                               sOVListProvider.sovList[index]
                                                   .name!
                                                   .substring(1)
-                                              : "",
+                                              : ""*/sOVListProvider.sovList[index].id??"",
                                           style:
                                           typography.Body2.copyWith(
                                             color: Theme.of(context)

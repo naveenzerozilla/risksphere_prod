@@ -1,13 +1,18 @@
+import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart';
+import 'package:google_maps_flutter_platform_interface/src/types/location.dart';
+
+import 'location_profile_model.dart';
+
 class MyLocationModel {
   int? totalRecords;
-  int? totalAutoCertified;
+  int? totalCertified;
   int? page;
   int? pageSize;
   List<MyLocation>? results;
 
   MyLocationModel({
     this.totalRecords,
-    this.totalAutoCertified,
+    this.totalCertified,
     this.page,
     this.pageSize,
     this.results,
@@ -15,7 +20,7 @@ class MyLocationModel {
 
   MyLocationModel.fromJson(Map<String, dynamic> json) {
     totalRecords = json['totalRecords'];
-    totalAutoCertified = json['totalAutoCertified'];
+    totalCertified = json['totalCertified'];
     page = json['page'];
     pageSize = json['pageSize'];
     if (json['result'] != null) {
@@ -29,7 +34,7 @@ class MyLocationModel {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['totalRecords'] = totalRecords;
-    data['totalAutoCertified'] = totalAutoCertified;
+    data['totalCertified'] = totalCertified;
     data['page'] = page;
     data['pageSize'] = pageSize;
     if (results != null) {
@@ -40,19 +45,34 @@ class MyLocationModel {
 
   @override
   String toString() {
-    return 'MyLocation, totalRecords: $totalRecords, totalAutoCertified: $totalAutoCertified, page: $page, pageSize: $pageSize, results: $results';
+    return 'MyLocationModel(totalRecords: $totalRecords, totalCertified: $totalCertified, page: $page, pageSize: $pageSize, results: $results)';
   }
 }
 
-class MyLocation {
+class MyLocation with ClusterItem{
   String? id;
   FinalAddress? finalAddress;
   int? geocodingScore;
+  bool? isSelected;
+  List<String>? tags;
+  int? overallScore;
+  Map<String, Hazard>? hazard;
+  String? geocodedAddress;
+  List<Subdestination>? subdestinations;
+  List<Screenshots>? screenshots;
+
 
   MyLocation({
     this.id,
     this.finalAddress,
     this.geocodingScore,
+    this.isSelected = false,
+    this.tags,
+    this.overallScore,
+    this.hazard,
+    this.geocodedAddress,
+    this.subdestinations,
+    this.screenshots,
   });
 
   MyLocation.fromJson(Map<String, dynamic> json) {
@@ -60,7 +80,35 @@ class MyLocation {
     finalAddress = json['final_address'] != null
         ? FinalAddress.fromJson(json['final_address'])
         : null;
-    geocodingScore = json['gecoding_score'];
+    geocodingScore = json['geocoding_score'] is int
+        ? json['geocoding_score']
+        : int.tryParse(json['geocoding_score']?.toString() ?? '');
+    tags = json['tags'] != null ? List<String>.from(json['tags']) : null;
+    if (json['overall_score'] is int) {
+      overallScore = json['overall_score'];
+    } else {
+      overallScore = int.tryParse(json['overallScore']?.toString() ?? '');
+    }
+    geocodedAddress = json['geocoded_address']??'';
+    if (json['hazard'] != null) {
+      hazard = {};
+      json['hazard'].forEach((key, value) {
+        hazard![key] = Hazard.fromJson(value);
+      });
+    }
+    if (json['subdestinations'] != null) {
+      subdestinations = <Subdestination>[];
+      json['subdestinations'].forEach((v) {
+        subdestinations!.add(Subdestination.fromJson(v));
+      });
+    }
+
+    if (json['screenshots'] != null) { // Corrected condition here
+      screenshots = <Screenshots>[];
+      json['screenshots'].forEach((v) {
+        screenshots!.add(Screenshots.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -69,17 +117,79 @@ class MyLocation {
     if (finalAddress != null) {
       data['final_address'] = finalAddress!.toJson();
     }
-    data['gecoding_score'] = geocodingScore;
+    data['geocoding_score'] = geocodingScore;
+    data['tags'] = tags;
+    data['overall_score'] = overallScore;
+    data['geocoded_address'] = geocodedAddress;
+    if (hazard != null) {
+      data['hazard'] = hazard!.map((key, value) => MapEntry(key, value.toJson()));
+    }
+    if (subdestinations != null) {
+      data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
+    }
+    if (screenshots != null) {
+      data['screenshots'] = screenshots!.map((v) => v.toJson()).toList();
+    }
     return data;
   }
 
   @override
   String toString() {
-    return 'MyLocation, id: $id, finalAddress: $finalAddress, geocodingScore: $geocodingScore';
+    return 'MyLocation(id: $id, finalAddress: $finalAddress, overallScore: $overallScore, geocodingScore: $geocodingScore, hazard: $hazard, tags: $tags, geocodedAddress: $geocodedAddress, subdestinations: $subdestinations, screenshots: $screenshots)';
+  }
+
+  @override
+  LatLng get location => LatLng(
+    finalAddress?.latitude ?? 0.0,
+    finalAddress?.longitude ?? 0.0,
+  );
+}
+
+class Hazard {
+  int? priority;
+  String? vendorName;
+  dynamic value; // Can be a String, double, or "No Rating" etc.
+  int? rating;
+  //Date? date;
+
+  Hazard({
+    this.priority,
+    this.vendorName,
+    this.value,
+    this.rating,
+   // this.date,
+  });
+
+  Hazard.fromJson(Map<String, dynamic> json) {
+    priority = json['priority'] is int
+        ? json['priority']
+        : int.tryParse(json['priority']?.toString() ?? '');
+    vendorName = json['vendor_name'];
+    value = json['value'];
+    rating = json['rating'];
+   // date = json['date'] != null ? Date.fromJson(json['date']) : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['priority'] = priority;
+    data['vendor_name'] = vendorName;
+    data['value'] = value;
+    data['rating'] = rating;
+  /*  if (date != null) {
+      data['date'] = date!.toJson();
+    }*/
+    return data;
+  }
+
+  @override
+  String toString() {
+    return 'Hazard(priority: $priority, vendorName: $vendorName, value: $value, rating: $rating)';
   }
 }
 
 class FinalAddress {
+  String? campusId;
   String? country;
   String? locationIdForRef;
   bool? autoCertified;
@@ -93,6 +203,7 @@ class FinalAddress {
   int? score;
   String? sovName;
   String? accountName;
+  String? state;
   List<String>? placeTypes;
   String? placeId;
   String? ownerEmail;
@@ -140,6 +251,8 @@ class FinalAddress {
     this.accountId,
     this.countryIsoCode,
     this.longitude,
+    this.state,
+    this.campusId,
   });
 
   FinalAddress.fromJson(Map<String, dynamic> json) {
@@ -153,7 +266,9 @@ class FinalAddress {
     percent = json['percent'];
     subAccountId = json['sub_account_id'];
     locationId = json['location_id'];
-    score = json['score'];
+    score = json['score'] is int
+        ? json['score']
+        : int.tryParse(json['score']?.toString() ?? '');
     sovName = json['sov_name'];
     accountName = json['account_name'];
     placeTypes = json['place_types'] != null
@@ -174,6 +289,8 @@ class FinalAddress {
     accountId = json['account_id'];
     countryIsoCode = json['country_iso_code'];
     longitude = json['longitude']?.toDouble();
+    state = json['state'];
+    campusId = json['campus_id'];
   }
 
   Map<String, dynamic> toJson() {
@@ -209,30 +326,29 @@ class FinalAddress {
     data['account_id'] = accountId;
     data['country_iso_code'] = countryIsoCode;
     data['longitude'] = longitude;
+    data['state'] = state;
+    data['campus_id'] = campusId;
     return data;
   }
 
   @override
   String toString() {
-    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude)';
+    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude, state: $state)';
   }
 }
 
 class Owner {
-  String? date;
   String? name;
   String? id;
   String? email;
 
   Owner({
-    this.date,
     this.name,
     this.id,
     this.email,
   });
 
   Owner.fromJson(Map<String, dynamic> json) {
-    date = json['date'];
     name = json['name'];
     id = json['id'];
     email = json['email'];
@@ -240,7 +356,6 @@ class Owner {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['date'] = date;
     data['name'] = name;
     data['id'] = id;
     data['email'] = email;
@@ -249,6 +364,6 @@ class Owner {
 
   @override
   String toString() {
-    return 'Owner(date: $date, name: $name, id: $id, email: $email)';
+    return 'Owner(name: $name, id: $id, email: $email)';
   }
 }

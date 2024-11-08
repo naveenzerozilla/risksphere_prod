@@ -153,7 +153,7 @@ class LocationListProvider extends ChangeNotifier {
   List<Location> get locationList => _locationList;
   set locationList(List<Location> value) {
     _locationList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -161,7 +161,7 @@ class LocationListProvider extends ChangeNotifier {
   List<Location> get certifiedLocationList => _certifiedLocationList;
   set certifiedLocationList(List<Location> value) {
     _certifiedLocationList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -484,8 +484,7 @@ class LocationListProvider extends ChangeNotifier {
       ) async {
     try {
       isAddLocationLoading = true;
-      ApiService apiService = ApiService(AppConstant.ADD_LOCATION +
-          "/$accountId/subaccount/$subAccountId/sov/$sovId/location");
+      ApiService apiService = ApiService("${AppConstant.GET_LOCATION_PROFILE_NEW+"/addlocation"}");
       var response = await apiService.post(body);
       log(response.toString());
       CustomToast.success(context, response['message']);
@@ -574,7 +573,7 @@ class LocationListProvider extends ChangeNotifier {
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
       print(apiService);
       // Send a POST request to the API to upload the image
-      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId);
+      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId, "", "");
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);

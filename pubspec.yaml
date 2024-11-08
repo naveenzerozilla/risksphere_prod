@@ -76,6 +76,8 @@ dependencies:
   flutter_local_notifications: ^17.2.2
   markers_cluster_google_maps_flutter: ^0.1.0+2
   lottie: ^3.1.2
+  data_table_2: ^2.5.15
+  google_maps_cluster_manager_2: ^3.2.0
 
 dev_dependencies:
   flutter_test:

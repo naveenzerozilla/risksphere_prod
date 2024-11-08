@@ -3,8 +3,9 @@ class AccountListModel {
   List<Accounts>? results;
   int? totalPages;
   Settings? settings;
+  int? totalRecords;
 
-  AccountListModel({this.totalHits, this.results, this.totalPages, this.settings});
+  AccountListModel({this.totalHits, this.results, this.totalPages, this.settings, this.totalRecords});
 
   AccountListModel.fromJson(Map<String, dynamic> json) {
     totalHits = json['totalHits'];
@@ -14,6 +15,8 @@ class AccountListModel {
         results!.add(Accounts.fromJson(v));
       });
     }
+
+    totalRecords = json['totalRecords'];
     totalPages = json['totalPages'];
     settings = json['settings'] != null ? Settings.fromJson(json['settings']) : null;
   }
@@ -28,6 +31,7 @@ class AccountListModel {
     if (settings != null) {
       data['settings'] = settings!.toJson();
     }
+    data['totalRecords'] = totalRecords;
     return data;
   }
 }
@@ -95,14 +99,14 @@ class Owner {
   Owner({this.date, this.id, this.name});
 
   Owner.fromJson(Map<String, dynamic> json) {
-    date = json['date'];
+    //date = json['date'];
     id = json['id'];
     name = json['name'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['date'] = date;
+    //data['date'] = date;
     data['id'] = id;
     data['name'] = name;
     return data;

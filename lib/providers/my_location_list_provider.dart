@@ -4,11 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/account_list_model.dart';
 import 'package:green/models/location_list_model.dart';
+import 'package:green/models/location_profile_model.dart';
 import 'package:green/models/my_location_list_model.dart';
 import 'package:green/models/sov_list_model.dart';
+import 'package:green/providers/sov_list_provider.dart';
+import 'package:green/screens/listings/widgets/auto_complete_options_sovs.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
 import 'package:green/utils/common_headers.dart';
+import 'package:provider/provider.dart';
+import '../constants/enums.dart';
+import '../design_system/components/custom_button.dart';
 import '../design_system/components/custom_toast.dart';
 
 import 'dart:async';
@@ -22,6 +28,7 @@ import 'package:green/models/location_list_model.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/utils/api_constants.dart';
 
+import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/language_service.dart';
 
 class MyLocationListProvider extends ChangeNotifier {
@@ -29,6 +36,15 @@ class MyLocationListProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   set isLoading(bool value) {
     _isLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isAllLocationLoading = false;
+  bool get isAllLocationLoading => _isAllLocationLoading;
+  set isAllLocationLoading(bool value) {
+    _isAllLocationLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -70,6 +86,33 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isAddTagsLoading = false;
+  bool get isAddTagsLoading => _isAddTagsLoading;
+  set isAddTagsLoading(bool value) {
+    _isAddTagsLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
+  bool _isDeleteTagLoading = false;
+  bool get isDeleteTagLoading => _isDeleteTagLoading;
+  set isDeleteTagLoading(bool value) {
+    _isDeleteTagLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
+  bool _isHeatMapGenerating = false;
+  bool get isHeatMapGenerating => _isHeatMapGenerating;
+  set isHeatMapGenerating(bool value) {
+    _isHeatMapGenerating = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
   bool _isDeleteLocationLoading = false;
   bool get isDeleteLocationLoading => _isDeleteLocationLoading;
   set isDeleteLocationLoading(bool value) {
@@ -88,6 +131,24 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isAddToSOVLoading = false;
+  bool get isAddToSOVLoading => _isAddToSOVLoading;
+  set isAddToSOVLoading(bool value) {
+    _isAddToSOVLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isUploadingImage = false;
+  bool get isUploadingImage => _isUploadingImage;
+  set isUploadingImage(bool value) {
+    _isUploadingImage = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   List<String> _countries = [];
   String _state = '';
   List<String> _propertyType = [];
@@ -95,6 +156,25 @@ class MyLocationListProvider extends ChangeNotifier {
   List<String> _certifications = [];
   List<String> _hazard = [];
   List<int> _rating = [];
+
+  List<String> _countryList = [];
+  List<String> _hazardList = [];
+
+  // Getter for the country and hazard list
+  List<String> get countryList => _countryList;
+  List<String> get hazardList => _hazardList;
+
+  // Setters for country and hazard lists
+  set countryList(List<String> value) {
+    _countryList = value;
+    notifyListeners();
+  }
+
+  set hazardList(List<String> value) {
+    _hazardList = value;
+    notifyListeners();
+  }
+
 
   // Getters for the filter values
   List<String> get countries => _countries;
@@ -204,19 +284,39 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  List<Location> _certifiedLocationList = [];
-  List<Location> get certifiedLocationList => _certifiedLocationList;
-  set certifiedLocationList(List<Location> value) {
+  List<MyLocation> _certifiedLocationList = [];
+  List<MyLocation> get certifiedLocationList => _certifiedLocationList;
+  set certifiedLocationList(List<MyLocation> value) {
     _certifiedLocationList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
-  // Method to add to the certified location list
-  void addToCertifiedLocationList(List<Location> newLocations) {
-    _certifiedLocationList.addAll(newLocations);
+  MyLocation? _locationProfile;
+  MyLocation? get locationProfile => _locationProfile;
+  set locationProfile(MyLocation? value) {
+    _locationProfile = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  List<MyLocation> _fullLocationList = [];
+  List<MyLocation> get fullLocationList => _fullLocationList;
+  set fullLocationList(List<MyLocation> value) {
+    _fullLocationList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+
+
+  // Method to add to the certified location list
+  void addToCertifiedLocationList(List<MyLocation> newLocations) {
+    _certifiedLocationList.addAll(newLocations);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -263,8 +363,12 @@ class MyLocationListProvider extends ChangeNotifier {
 
 
   bool isCertifiedTabAllowed() {
-    return _rating.isEmpty || _rating.contains(5);
+    return certifiedLocationHits > 0;
   }
+
+  Map<String, dynamic>? hazardData;
+  Map<String, dynamic>? geocodingData;
+
 
   /// Pagination variables
   String? locationListPageToken;
@@ -275,52 +379,339 @@ class MyLocationListProvider extends ChangeNotifier {
   String? certifiedLocationListDirection;
   bool certifiedLocationListNextPageExists = true;
 
+  Map<String, List<int>> _hazardRatings = {};
+
+  Map<String, List<int>> get hazardRatings => _hazardRatings;
+
+  set hazardRatings(Map<String, List<int>> value) {
+    _hazardRatings = value;
+    notifyListeners();
+  }
+
+  // Clear all hazard filters
+  void clearAllHazardFilters() {
+    _hazardRatings = {};
+    notifyListeners();
+  }
+
+  // Example of clearing other filters
+  void clearCountryFilter() {
+    _countries = [];
+    notifyListeners();
+  }
+
+  void clearCertificationsFilter() {
+    _certifications = [];
+    notifyListeners();
+  }
+
+  void clearHazardFilter(String hazardName) {
+    _hazardRatings.remove(hazardName);
+    notifyListeners();
+  }
+
+  void clearRatingsFilter() {
+    _rating = [];
+    notifyListeners();
+  }
+
+  // Method to clear all filters
+  void clearAllFilters() {
+    _countries = [];
+    _certifications = [];
+    _hazardRatings = {};
+    _propertyType = [];
+    _constructionType = [];
+    _rating = [];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool hasAnyFilterApplied() {
+    return _countries.isNotEmpty ||
+        _certifications.isNotEmpty ||
+        _hazardRatings.isNotEmpty ||
+        _propertyType.isNotEmpty ||
+        _constructionType.isNotEmpty ||
+        _rating.isNotEmpty;
+  }
 
 
-  Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
-    final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+  /// Selection mode
+
+  // Selected Locations Set
+  final Set<MyLocation> _selectedLocations = {};
+
+  // Getter for selected locations
+  Set<MyLocation> get selectedLocations => _selectedLocations;
+
+  // Add to selection
+  void addToSelection(MyLocation? location) {
+    if (location != null) {
+      _selectedLocations.add(location);
+      notifyListeners();
+    }
+  }
+
+  // Remove from selection
+  void removeFromSelection(MyLocation? location) {
+    if (location != null) {
+      _selectedLocations.remove(location);
+      notifyListeners();
+    }
+  }
+
+  // Toggle selection
+  void toggleSelection(MyLocation location) {
+    if (_selectedLocations.contains(location)) {
+      _selectedLocations.remove(location);
+    } else {
+      _selectedLocations.add(location);
+    }
+    notifyListeners();
+  }
+
+  // Select all locations (you might want to replace `getAllLocations()` with the actual location list)
+  void selectAllLocations(bool isCertified) {
+    if (isCertified) {
+      _selectedLocations.addAll(certifiedLocationList);
+    } else {
+      _selectedLocations.addAll(myLocationList);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  // Clear selection
+  void clearSelection() {
+    _selectedLocations.clear();
+    notifyListeners();
+  }
+
+  /// Location profile variables
+  List<Subdestination> _subdestinations = [];
+
+  List<Subdestination> get subdestinations => _subdestinations;
+
+  set subdestinations(List<Subdestination> value) {
+    _subdestinations = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+
+  // Delete selected locations
+  Future<void> deleteSelectedLocations(BuildContext context, String accountId, String subAccountId) async {
+    // get the list of ids
+    List<String> locationIds = _selectedLocations.map((location) => location.id??"").toList();
+    deleteLocations(context, accountId, subAccountId, locationIds);
+    clearSelection();
+  }
+
+  // Add selected locations to SOV
+  Future<void> addSelectedToSOV(BuildContext context, String accountID, String subAccountID, String accountName, String subAccountName, TabController? masterTabController, [String? locationId]) async {
+    // Implement your add to SOV logic here
+    // Show pop up with account name an sub account name prefilled an non editable.. and user will select the sov name from autocomplete dropdown and enter comma separated location tags (optional)
+    // On submit, call the addLocationToSOV method with the selected sov id and location ids
+    await showAddToSOVDialog(context, accountID, subAccountID, accountName, subAccountName, masterTabController, locationId);
+    clearSelection();
+  }
+
+  // Add tags to selected locations
+  Future<void> addTagsToSelectedLocations(BuildContext context, String accountId, String subAccountId, [String? locationId]) async {
+    // get the list of ids
+    await showAddTagDialog(context, accountId, subAccountId, locationId == null?_selectedLocations.map((location) => location.id??"").toList():[locationId]);
+
+    clearSelection();
+  }
+
+
+  Future<void> addLocationToSOV(BuildContext context, Map <String, dynamic> body) async {
+    // Your logic for adding a location to SOV
+    log("Adding location to SOV: $body");
+    isAddToSOVLoading = true;
+    try {
+      ApiService apiService = ApiService(AppConstant.ADD_TO_SOV);
+      var response = await apiService.post(body);
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+      Navigator.pop(context);
+    } on BackendException catch (e, stackTrace) {
+      log("Error adding location to SOV: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+    } catch (e, stackTrace) {
+      log("Error adding location to SOV: $e");
+      log(e.toString());
+      log(stackTrace.toString());
+      CustomToast.error(context, e.toString());
+    } finally {
+      isAddToSOVLoading = false;
+    }
+
+  }
+
+  // Add Tags to location
+  Future<void> addTagsToLocation(BuildContext context, String accountId, String subAccountId, List<String> locationId, List<String> tags) async {
+    try {
+      isAddTagsLoading = true;
+      ApiService apiService = ApiService(AppConstant.MY_LOCATION + "/tags");
+      var body = {
+        "data": {
+          "account_id": accountId,
+          "sub_account_id": subAccountId,
+          "location_list": locationId,
+          "tags": tags
+        }
+      };
+      var response = await apiService.post(body);
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+      Navigator.pop(context);
+    } on BackendException catch (e, stackTrace) {
+      log("Error adding tags to location: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+    } catch (e, stackTrace) {
+      log("Error adding tags to location: $e");
+      log(e.toString());
+      log(stackTrace.toString());
+      CustomToast.error(context, e.toString());
+    } finally {
+      isAddTagsLoading = false;
+    }
+  }
+
+  // Delete Tags from location
+  Future<void> deleteTagFromLocation(BuildContext context, String accountId, String subAccountId, String locationId, String tag) async {
+    // {{locations_base_url}}/tags/OGUlME8NFKzmesfo3j1S/garden
+    try {
+      isDeleteTagLoading = true;
+      ApiService apiService = ApiService("${AppConstant.MY_LOCATION}/tags/$locationId/$tag");
+      var response = await apiService.delete({});
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+    } on BackendException catch (e, stackTrace) {
+      log("Error deleting tag from location: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+    } catch (e, stackTrace) {
+      log("Error deleting tag from location: $e");
+      log(e.toString());
+      log(stackTrace.toString());
+      CustomToast.error(context, e.toString());
+    } finally {
+      isDeleteTagLoading = false;
+    }
+  }
+
+  // Method to fetch filter options
+  Future<void> fetchInitialFilterOptions(String accountId, String subAccountId) async {
+    final url = Uri.parse("${AppConstant.MY_LOCATION}/filter_options?account_id=$accountId&sub_account_id=$subAccountId");
+    print(url);
 
     try {
       var headers = await CommonHeaders.createHeaders();
       final response = await http.get(url, headers: headers);
-      print(response.body);
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body); // Parse as a Map
+        final data = json.decode(response.body);
         print(data);
 
-        // Extracting the list from the "result" field
-        campusIds = List<String>.from(data['result']);
+        // Update countryList and hazardList from the API response
+        countryList = List<String>.from(data['countryList']);
+        hazardList = List<String>.from(data['hazardList']);
+        print("Country List: $countryList");
+        print("Hazard List: $hazardList");
       } else {
-        print("Failed to load campus IDs");
-        print(response.body);
-        throw Exception("Failed to load campus IDs");
+        throw Exception("Failed to load filter options");
       }
-    } on BackendException catch (e, stackTrace) {
-      print(stackTrace);
-      print("Error fetching campus IDs: ${e.message}");
-    }
-    catch (e, stackTrace) {
-      print(stackTrace);
-      print("Error fetching campus IDs: $e");
+    } catch (e) {
+      print("Error fetching filter options: $e");
     }
   }
+
+  /// Fetch all sov list
+  Future<void> fetchAllLocationList(
+      BuildContext context,
+      String? accountID,
+      String? subAccountID,
+      ) async {
+    var typography = CustomTypography(context);
+    try {
+
+        isAllLocationLoading = true;
+
+
+      var headers =  await CommonHeaders.createHeaders();
+
+      print("Rating for all tab: $_rating. $rating");
+      log(headers.toString());
+
+      var url = AppConstant.MY_LOCATION +
+          "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
+
+      print(url);
+      var uri = Uri.parse(url);
+
+      var response = await http.get(
+        uri,
+        headers: headers,
+        //body: body,
+      );
+      log(response.body);
+      print(response.statusCode);
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        //summaryList = locationListModel.summaryList ?? [];
+        //mainSovRating = locationListModel. ?? 0.0;
+
+          fullLocationList = locationListModel.results ?? [];
+
+        log(fullLocationList.toString());
+      } else {
+        print(json.decode(response.body)["error"]);
+        throw Exception('Failed to load data');
+      }
+        isAllLocationLoading = false;
+    } on BackendException catch (e, stackTrace) {
+      isAllLocationLoading = false;
+      print(stackTrace);
+      print(e.message);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
+      ));
+    } catch (e, stackTrace) {
+      isAllLocationLoading = false;
+      print(stackTrace);
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          "Error fetching data",
+          style: typography.Body1,
+        ),
+      ));
+    }
+  }
+
 
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchLocationList(
       BuildContext context,
       String searchQuery,
       int page,
-      String direction,
-      int pageSize, {
-        String type = "",
-        List<String> countries = const [],
-        String state = "",
-        List<String> propertyType = const [],
-        List<String> constructionType = const [],
-        List<String> certifications = const [],
-        List<String> hazard = const [],
-        List<int> rating = const [],
-      }) async {
+      int pageSize,
+      String? accountID,
+      String? subAccountID,
+      ) async {
     var typography = CustomTypography(context);
     try {
       // Check if api is already working
@@ -336,41 +727,43 @@ class MyLocationListProvider extends ChangeNotifier {
 
       var headers =  await CommonHeaders.createHeaders();
 
-      print("Rating for all tab: $_rating");
+      print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
       var url = AppConstant.MY_LOCATION +
-          "?page=$page&pageSize=$pageSize";
+          "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
 
       if (countries.isNotEmpty) {
-        url+= "&countryOptions=${countries.join(",")}";
-      }
-      if (state.isNotEmpty) {
-        url+= "&state=$state";
-      }
-      if (propertyType.isNotEmpty) {
-        url+= "&propertyType=${propertyType.join(",")}";
-      }
-      if (constructionType.isNotEmpty) {
-        url+= "&constructionType=${constructionType.join(",")}";
-      }
-      if (certifications.isNotEmpty) {
-        url+= "&certifications=${certifications.join(",")}";
-      }
-      if (hazard.isNotEmpty) {
-        url+= "&hazard=${hazard.join(",")}";
-      }
-      if (rating.isNotEmpty) {
-        url+= "&rating=${rating.join(",")}";
+        url+= "&country=${countries.join(",")}";
       }
       if (zipcode.isNotEmpty) {
-        url+= "&zipcode=$zipcode";
+        url+= "&zip=$state";
       }
+
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if(cert == "Manual Certified") {
+            url+= "&manual_certified=true";
+          } else if(cert == "Auto Certified") {
+            url+= "&auto_certified=true";
+          }
+        }
+      }
+      if(hazardRatings.isNotEmpty) {
+        for (var hazard in hazardRatings.keys) {
+          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+        }
+      }
+      if (rating.isNotEmpty) {
+        url+= "&score=${rating.join(",")}";
+      }
+
       if (_selectedCampusIds.isNotEmpty) {
         url+= "&campus_id=${_selectedCampusIds.join(",")}";
       }
 
 
+      print(url);
       var uri = Uri.parse(url);
 
       var response = await http.get(
@@ -385,7 +778,7 @@ class MyLocationListProvider extends ChangeNotifier {
         var jsonResponse = json.decode(response.body);
         MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
         locationHits = locationListModel.totalRecords ?? 0;
-        certifiedLocationHits = locationListModel.totalAutoCertified ?? 1;
+        certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationHits ~/ pageSize;
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
@@ -420,7 +813,7 @@ class MyLocationListProvider extends ChangeNotifier {
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          e.toString(),
+          "Error fetching data",
           style: typography.Body1,
         ),
       ));
@@ -432,92 +825,72 @@ class MyLocationListProvider extends ChangeNotifier {
       BuildContext context,
       String searchQuery,
       int page,
-      int pageSize, {
-        String type = "",
-      }) async {
+      int pageSize,
+      String? accountID,
+      String? subAccountID,
+    ) async {
     var typography = CustomTypography(context);
     try {
-      print("condition: ${rating.isNotEmpty && !rating.contains(5)}");
-      print("rating: $rating");
-     /* if (rating.isNotEmpty && !rating.contains(5)) {
-        // If the rating filter is not set to 5, set certifiedLocationHits to 0 and skip fetching
-        certifiedLocationHits = 0;
-        certifiedLocationList = [];
-        notifyListeners();
-        return;
-      }*/
-      if(page>certifiedTotalPages) return;
+      print("Condition: Certified fetch with rating 5");
+      print("Rating: 5");
+
+      if (page > certifiedTotalPages) return;
       if (page == 0) {
         isCertifiedLoading = true;
       } else {
         isNextPageCertifiedLoading = true;
       }
 
-      var headers =  await CommonHeaders.createHeaders();
-
+      var headers = await CommonHeaders.createHeaders();
       log(headers.toString());
-      /*  var ratingLocal = [];
-      if (ratingLocal.isEmpty) {
-        ratingLocal = [5];
-      }else if (!ratingLocal.contains(5)) {
-        ratingLocal.add(5);
-      }*/
-      print(_countries);
-      /*var body = json.encode({
-        "data": {
-          "search": searchQuery,
-          "countryOptions": _countries,
-          "state": _state,
-          "propertyType": _propertyType,
-          "constructionType": _constructionType,
-          "certifications": _certifications,
-          "hazard": _hazard,
-          //if rating 5 not present, we add 5 as default
-          "rating": ratingLocal,
-          "zipcode": zipcode,
-          "campus_id": _selectedCampusIds,
-        }
-      });*/
+
+      // Construct the URL with default rating=5
       var url = AppConstant.MY_LOCATION +
-          "?page=$page&pageSize=$pageSize&rating=5";
+          "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID";
+
       if (countries.isNotEmpty) {
-        url+= "&countryOptions=${countries.join(",")}";
-      }
-      if (state.isNotEmpty) {
-        url+= "&state=$state";
-      }
-      if (propertyType.isNotEmpty) {
-        url+= "&propertyType=${propertyType.join(",")}";
-      }
-      if (constructionType.isNotEmpty) {
-        url+= "&constructionType=${constructionType.join(",")}";
-      }
-      if (hazard.isNotEmpty) {
-        url+= "&hazard=${hazard.join(",")}";
+        url+= "&country=${countries.join(",")}";
       }
       if (zipcode.isNotEmpty) {
-        url+= "&zipcode=$zipcode";
+        url+= "&zip=$state";
       }
+      print("Certifications: $certifications");
+
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if(cert == "Manual Certified") {
+            url+= "&manual_certified=true";
+          } else if(cert == "Auto Certified") {
+            url+= "&auto_certified=true";
+          }
+        }
+      }
+      print("Hazard Ratings: $hazardRatings");
+      if(hazardRatings.isNotEmpty) {
+        for (var hazard in hazardRatings.keys) {
+          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+        }
+      }
+
       if (_selectedCampusIds.isNotEmpty) {
         url+= "&campus_id=${_selectedCampusIds.join(",")}";
       }
+
+
+
       print(url);
       var uri = Uri.parse(url);
 
-
-      var response = await http.get(
-        uri,
-        headers: headers,
-      );
+      var response = await http.get(uri, headers: headers);
       print(response.body);
       print(response.statusCode);
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        LocationListModel locationListModel = LocationListModel.fromJson(jsonResponse);
-        certifiedLocationHits = locationListModel.totalHits ?? 0;
-        totalPages = locationListModel.totalPages ?? 1;
-        summaryList = locationListModel.summaryList ?? [];
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        certifiedLocationHits = locationListModel.totalCertified ?? 0;
+        totalPages = locationListModel.totalRecords ?? 1;
+        //summaryList = locationListModel.summaryList ?? [];
         if (page == 0) {
           certifiedLocationList = locationListModel.results ?? [];
         } else {
@@ -556,6 +929,82 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
+
+
+
+  // Add this method for deleting locations
+  Future<void> deleteLocations(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      List<String> locationList, // Now a list of strings (location_id)
+      ) async {
+    try {
+      isDeleteLocationLoading = true;
+
+      var headers = await CommonHeaders.createHeaders();
+
+      // Prepare the body as a list of objects with individual location_id
+      var body = json.encode({
+        "data": locationList.map((locationId) {
+          return {
+            "location_id": locationId,
+            // Uncomment the following if needed when `from_location_list` is false:
+            // "account_id": accountId,
+            // "sub_account_id": subAccountId,
+            // "sov_id": "REqI5iQpNzA2qFQ7A4Uo", // Add sov_id when necessary
+          };
+        }).toList(),
+      });
+      print(body);
+
+      // URL with the parameter from_location_list=true
+      var url = Uri.parse(AppConstant.MY_LOCATION + "?from_location_list=true");
+      log(url.toString());
+
+      // Make the DELETE request
+      var response = await http.delete(
+        url,
+        headers: headers,
+        body: body,
+      );
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        log("Locations deleted successfully.");
+        CustomToast.success(context, jsonDecode(response.body)?["message"]??"Success");
+
+        // Remove the deleted locations from the local list and update respective counters
+        locationList.forEach((locationId) {
+          // Remove locations from the list if they match any in _locationListOld
+          if (_myLocationList.any((location) => location.id == locationId)) {
+            // Decrement the hit counter if the location exists
+            locationHits--;
+            _myLocationList.removeWhere((location) => location.id == locationId);
+          }
+        });
+        notifyListeners();
+      } else {
+        log("Failed to delete locations: ${response.body}");
+        CustomToast.error(context, jsonDecode(response.body)["message"]);
+      }
+      isDeleteLocationLoading = false;
+    } on BackendException catch (e) {
+      isDeleteLocationLoading = false;
+      log("Error deleting locations: ${e.message}");
+      CustomToast.error(context, jsonDecode(e.message));
+      throw e;
+    } catch (e) {
+      isDeleteLocationLoading = false;
+      log("Error deleting locations: $e");
+      CustomToast.error(context, "Error deleting locations: $e");
+      throw e;
+    } finally {
+      isDeleteLocationLoading = false;
+    }
+  }
+
+
   // Add Location
   Future<bool> addLocation(
       BuildContext context,
@@ -566,8 +1015,7 @@ class MyLocationListProvider extends ChangeNotifier {
       ) async {
     try {
       isAddLocationLoading = true;
-      ApiService apiService = ApiService(AppConstant.ADD_LOCATION +
-          "/$accountId/subaccount/$subAccountId/sov/$sovId/location");
+      ApiService apiService = ApiService("${AppConstant.GET_LOCATION_PROFILE_NEW+"/addlocation"}");
       var response = await apiService.post(body);
       log(response.toString());
       CustomToast.success(context, response['message']);
@@ -585,87 +1033,541 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  // Add this method for deleting locations
-  Future<void> deleteLocations(
+  // Generate Heatmap
+  Future<Map<String, dynamic>?> generateHeatMapForLocationsGeocoding(
       BuildContext context,
       String accountId,
-      String subAccountId,
-      String sovId,
-      List<Map<String, String>> locationList,
-      ) async {
+      String subAccountId, bool isGeocoding, bool regenerate,
+      [String? sovId]) async {
+    isHeatMapGenerating = true;
     try {
-      isDeleteLocationLoading = true;
-      var headers = await CommonHeaders.createHeaders();
-      var body = json.encode({"data": {"location_list": locationList}});
+      ApiService apiService = ApiService("${AppConstant.MY_LOCATION}/generateheatmap");
+      final body = {
+        "data": {
+          "account_id": accountId,
+          "sub_account_id": subAccountId,
+          "sov_id": sovId == null || sovId.isEmpty ? false : true,
+          "is_geocoding": isGeocoding,
+          "is_all_locations": true,
+          "regenerate": regenerate,
+        }
+      };
 
-      var url = Uri.parse(AppConstant.ADD_ACCOUNT +
-          "?bulk_delete_location_list=true");
-      log(url.toString());
+      var response = await apiService.post(body);
+      log("Heatmap generation response: ${response.toString()}");
 
-      var response = await http.delete(
-        url,
-        headers: headers,
-        body: body,
-      );
+      // Assuming the response is JSON and can be parsed to a Map
+      final Map<String, dynamic> responseData = response;
+      //Navigator.pop(context);
 
-      if (response.statusCode == 200) {
-        log("Locations deleted successfully.");
-        CustomToast.success(context, jsonDecode(response.body)["message"]);
-        // remove the deleted locations from the list and update respective list counters
-        locationList.forEach((element) {
-          if (_locationListOld.any((location) => location.locationId == element["location_id"])) {
-            // only decrement if present in the location list
-            if (_locationListOld.any((location) => location.locationId == element["location_id"])) {
-              locationHits--;
-            }
-            _locationListOld.removeWhere((location) => location.locationId == element["location_id"]);
-            if (_certifiedLocationList.any((location) => location.locationId == element["location_id"])) {
-              certifiedLocationHits--;
-            }
-
-            _certifiedLocationList.removeWhere((location) => location.locationId == element["location_id"]);
-
-          }
-        });
-        notifyListeners();
-
+      if (isGeocoding) {
+        geocodingData = responseData;
       } else {
-        log("Failed to delete locations: ${response.body}");
-        CustomToast.success(context, jsonDecode(response.body)["message"]);
+        hazardData = responseData;
       }
-    } on BackendException catch (e) {
-      log("Error deleting locations: ${e.message}");
-      CustomToast.success(context, jsonDecode(e.message));
-      throw e;
-    }
-    catch (e) {
-      log("Error deleting locations: $e");
-      CustomToast.success(context, "Error deleting locations: $e");
-      throw e;
+
+      return responseData; // Return the parsed response data
+    } on BackendException catch (e, stack) {
+      log("BackendException in heatmap generation: ${e.message}");
+      print(stack);
+      return null; // Return null in case of BackendException
+    } catch (e, stack) {
+      log("Exception in heatmap generation: $e");
+      print(stack);
+      return null; // Return null in case of other errors
     } finally {
-      isDeleteLocationLoading = false;
+      isHeatMapGenerating = false; // Ensuring state is reset
     }
   }
 
 
+
+
+  Future<void> showAddToSOVDialog(
+      BuildContext context, String accountID, String subAccountID, String accountName, String subAccountName, TabController? masterTabController, [String? locationId]) async {
+    var typography = CustomTypography(context);
+    TextEditingController sovController = TextEditingController();
+    TextEditingController tagsController = TextEditingController();
+    String selectedSovId = ""; // To hold the SoV ID when user selects from autocomplete
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Add to SoV",
+                      style: typography.H5_Regular,
+                    ),
+                    SizedBox(height: 16.0),
+                    // Account Name (Pre-filled and non-editable)
+                    TextField(
+                      controller: TextEditingController(text: accountName),
+                      enabled: false,
+                      decoration: InputDecoration(
+                        labelText: "Account Name",
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    // Sub-account Name (Pre-filled and non-editable)
+                    TextField(
+                      controller: TextEditingController(text: subAccountName),
+                      enabled: false,
+                      decoration: InputDecoration(
+                        labelText: "Sub-account Name",
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    // SoV Autocomplete Dropdown
+                    Consumer<SOVListProvider>(
+                      builder: (context, sovProvider, child) {
+                        return Column(
+                          children: [
+                            TextField(
+                              controller: sovController,
+                              onChanged: (value) {
+                                setState(() {
+                                  // Reset SoV ID when typing
+                                  selectedSovId = "";
+
+                                  // Filter the autocomplete list based on user input
+                                  sovProvider.updateFilteredList(value);
+                                });
+                              },
+
+                              decoration: InputDecoration(
+                                labelText: "Name of the SoV",
+                                border: const OutlineInputBorder(),
+                                suffixIcon: Icon(Icons.search),
+                              ),
+                            ),
+                            if (sovController.text.isNotEmpty)
+                              AutocompleteOptionsSovs(
+                                options: sovProvider.filteredAutoCompleteList,
+                                onSelected: (SovAccount selection) {
+                                  setState(() {
+                                    selectedSovId = selection.id ?? "";
+                                    sovController.text = selection.name ?? "";
+                                    sovProvider.clearAutoCompleteList();
+                                  });
+                                },
+                                isLoading: sovProvider.isAutoCompleteLoading,
+
+                              ),
+
+                          ],
+                        );
+                      },
+                    ),/*
+                    SizedBox(height: 8.0),
+                    // Comma-separated Tags (Optional)
+                    TextField(
+                      controller: tagsController,
+                      decoration: InputDecoration(
+                        labelText: "Enter comma-separated tags (optional)",
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),*/
+                    SizedBox(height: 16.0),
+                    // Add/Cancel Buttons
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: isAddToSOVLoading?
+                              Center(
+                                child: CircularProgressIndicator(),
+                              ):
+                              CustomButton(
+                                onPressed: () async {
+                                  if (sovController.text.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text(
+                                        "Please select or enter an SoV name.",
+                                        style: typography.Body1,
+                                      ),
+                                    ));
+                                    return;
+                                  }
+
+                                  // Prepare the body with location, account, sub-account, and sov details
+                                  Map<String, dynamic> body = {
+                                    "location_list": locationId==null?_selectedLocations.map((location) => location.id).toList():[locationId],
+                                    "account_id": accountID,
+                                    "sub_account_id": subAccountID,
+                                    "sov": {
+                                      "sov_id": selectedSovId, // Empty if creating new SoV
+                                      "sov_name": sovController.text, // Mandatory if creating new SoV
+                                    }
+                                  };
+
+                                  // Call your method to add the location to the SoV
+                                  await addLocationToSOV(context, body);
+
+                                  setState(() {
+                                    masterTabController?.animateTo(1);
+                                  });
+                                },
+                                child: Text(
+                                  "Add",
+                                  style: typography.ButtonLarge,
+                                ),
+                                type: ButtonType.elevated,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 8.0),
+                        CustomButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            "Cancel",
+                            style: typography.ButtonLarge,
+                          ),
+                          type: ButtonType.text,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Clear the input fields after dialog is closed
+      sovController.clear();
+      tagsController.clear();
+      selectedSovId = "";
+    });
+  }
+
+  Future<void> showAddTagDialog(
+      BuildContext context, String accountId, String subAccountId, List<String> locationId) async {
+    var typography = CustomTypography(context);
+    TextEditingController tagsController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Add Tags",
+                      style: typography.H5_Regular.copyWith(height: 1.5),
+                    ),
+                    SizedBox(height: 16.0),
+                    // Comma-separated Tags (Optional)
+                    TextField(
+                      controller: tagsController,
+                      decoration: InputDecoration(
+                        labelText: "Enter comma-separated tags",
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    // Add/Cancel Buttons
+                    Consumer<MyLocationListProvider>(
+                        builder: (context, myLocationListProvider, child) {
+                          return Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: myLocationListProvider.isAddTagsLoading?
+                                    Center(
+                                      child: CircularProgressIndicator(),
+                                    ):
+                                    CustomButton(
+                                      onPressed: () async {
+                                        if (tagsController.text.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                            content: Text(
+                                              "Please enter tags.",
+                                              style: typography.Body1,
+                                            ),
+                                          ));
+                                          return;
+                                        }
+
+                                        // Call your method to add the location to the SoV
+                                        await addTagsToLocation(context, accountId, subAccountId, locationId, tagsController.text.split(","));
+                                        //Locally update the tags
+                                        locationId.forEach((element) {
+                                          MyLocation location = getLocationById(element);
+                                          // Check if already empty or add to the existing tags
+                                          if(location.tags == null) {
+                                            location.tags = tagsController.text.split(",");
+                                          } else {
+                                            location.tags?.addAll(tagsController.text.split(","));
+                                          }
+                                        });
+                                        locationId.forEach((element) {
+                                          MyLocation location = getCertifiedLocationById(element);
+                                          if(location.tags == null) {
+                                            location.tags = tagsController.text.split(",");
+                                          } else {
+                                            location.tags?.addAll(tagsController.text.split(","));
+                                          }
+                                        });
+                                        fullLocationList.forEach((element) {
+                                          MyLocation location = element;
+                                          if(location.tags == null) {
+                                            location.tags = tagsController.text.split(",");
+                                          } else {
+                                            location.tags?.addAll(tagsController.text.split(","));
+                                          }
+                                        });
+
+
+                                      },
+                                      child: Text(
+                                        "Add",
+                                        style: typography.ButtonLarge,
+                                      ),
+                                      type: ButtonType.elevated,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(width: 8.0),
+                              CustomButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text(
+                                  "Cancel",
+                                  style: typography.ButtonLarge,
+                                ),
+                                type: ButtonType.text,
+                              ),
+                            ],
+                          );
+                        }
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Clear the input fields after dialog is closed
+      tagsController.clear();
+    });
+  }
+
+  Future<void> showDeleteTagDialog(
+      BuildContext context, String accountId, String subAccountId, String locationId, String tag) async {
+    var typography = CustomTypography(context);
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Delete Tag",
+                      style: typography.H5_Regular.copyWith(height: 1.5),
+                    ),
+                    SizedBox(height: 16.0),
+                    // Comma-separated Tags (Optional)
+                    Text(
+                      "Are you sure you want to delete the tag '$tag'?",
+                      style: typography.Body1,
+                    ),
+                    SizedBox(height: 16.0),
+                    // Add/Cancel Buttons
+                    Consumer<MyLocationListProvider>(
+                        builder: (context, myLocationListProvider, child) {
+                          return Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: myLocationListProvider.isDeleteTagLoading?
+                                    Center(
+                                      child: CircularProgressIndicator(),
+                                    ):
+                                    CustomButton(
+                                      onPressed: () async {
+                                        // Call your method to add the location to the SoV
+                                        await deleteTagFromLocation(context, accountId, subAccountId, locationId, tag);
+                                        //Locally update the tags
+                                        MyLocation location = getLocationById(locationId);
+                                        location.tags?.remove(tag);
+                                        MyLocation certifiedLocation = getCertifiedLocationById(locationId);
+                                        certifiedLocation.tags?.remove(tag);
+                                        fullLocationList.forEach((element) {
+                                          MyLocation location = element;
+                                          location.tags?.remove(tag);
+                                        });
+                                      },
+                                      child: Text(
+                                        "Delete",
+                                        style: typography.ButtonLarge,
+                                      ),
+                                      type: ButtonType.elevated,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(width: 8.0),
+                              CustomButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text(
+                                  "Cancel",
+                                  style: typography.ButtonLarge,
+                                ),
+                                type: ButtonType.text,
+                              ),
+                            ],
+                          );
+                        }
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Show dialog for generating heatmap as it is a paid service.. we ask user and on the button we show 2 Credits
+  Future<void> showGenerateHeatMapDialog(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      [String? sovId]
+      ) async {
+    var typography = CustomTypography(context);
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Generate Heatmap",
+                      style: typography.H5_Regular,
+                    ),
+                    SizedBox(height: 16.0),
+                    // Warning Message
+                    Text(
+                      "Generating a heatmap is a paid service. Are you sure you want to proceed?",
+                      style: typography.Body1,
+                    ),
+                    SizedBox(height: 16.0),
+                    // Add/Cancel Buttons
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: isHeatMapGenerating?
+                              Center(
+                                child: CircularProgressIndicator(),
+                              ):
+                              CustomButton(
+                                onPressed: () async {
+                                  // Call your method to generate the heatmap
+                                  await generateHeatMapForLocationsGeocoding(context, accountId, subAccountId, false, false, sovId);
+                                },
+                                child: Text(
+                                  "Generate Heatmap (2 Credits)",
+                                  style: typography.ButtonLarge,
+                                ),
+                                type: ButtonType.elevated,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 8.0),
+                        CustomButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            "Cancel",
+                            style: typography.ButtonLarge,
+                          ),
+                          type: ButtonType.text,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+
+
   /// Upload SOV
-  Future<String> uploadSovAccount(BuildContext context, File sovFile,String accountId, String subAccountId, String sovId) async {
+  Future<String> uploadSov(BuildContext context, File sovFile,String accountId, String subAccountId, String sovId, String tags, String sovName) async {
     var typography = CustomTypography(context);
     try {
       isImageUploadLoading = true;
-      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_SUB_ACCOUNT + '/upload');
-      print(apiService);
+      ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_LOCATIONS);
+
+      print("Uploading SOV: $sovFile");
+      print("Uploading SOV: $accountId");
+      print("Uploading SOV: $subAccountId");
+      print("Uploading SOV: $sovId");
+      print("Uploading SOV: $tags");
+      print("Uploading SOV: $sovName");
+      print("url: ${AppConstant.UPLOAD_SOV_LOCATIONS}");
       // Send a POST request to the API to upload the image
-      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId);
+      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId, tags, sovName);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+/*      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           response['message']??LanguageService.getTranslated(context, "sub_account_list_app_sov_upload_success"),
           style: typography.Body1,
         ),
-      ));
+      ));*/
       print("total records: "+response['total_records'].toString());
       if(response['total_records'] == 0){
         print("total records: "+response['total_records'].toString());
@@ -674,9 +1576,10 @@ class MyLocationListProvider extends ChangeNotifier {
         return tempId;
       }
       return response['temp_id']??'';
-    }on BackendException catch (e) {
+    }on BackendException catch (e, stack) {
+      print(stack);
+
       isImageUploadLoading = false;
-      Navigator.pop(context);
 
       print("Raw Backend Exception Message: ${e.message}");
 
@@ -695,9 +1598,10 @@ class MyLocationListProvider extends ChangeNotifier {
           // If it's not JSON, use the message as-is
           message = e.message;
         }
-      } catch (decodeError) {
+      } catch (decodeError, stackTrace) {
         // Handle any JSON parsing errors
         print('JSON Decode Error: $decodeError');
+        print(stackTrace);
 
         // Fallback to the raw message or a generic error message
         message = e.message ?? 'An unexpected error occurred. Please try again later.';
@@ -716,7 +1620,9 @@ class MyLocationListProvider extends ChangeNotifier {
       return ''; // Return an empty string or handle the error as needed
     }
 
-    catch (e) {
+    catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error uploading SOV: $e");
       // Handle other unexpected exceptions
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -731,6 +1637,641 @@ class MyLocationListProvider extends ChangeNotifier {
       return ''; // Return empty string or handle the error as needed
     }
   }
+
+  MyLocation getLocationById(String locationId) {
+    return myLocationList.firstWhere((element) => element.id == locationId);
+  }
+
+  MyLocation getCertifiedLocationById(String locationId) {
+    return certifiedLocationList.firstWhere((element) => element.id == locationId);
+  }
+
+  Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
+    final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+
+    try {
+      var headers = await CommonHeaders.createHeaders();
+      final response = await http.get(url, headers: headers);
+      print(response.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body); // Parse as a Map
+        print(data);
+
+        // Extracting the list from the "result" field
+        campusIds = List<String>.from(data['result']);
+      } else {
+        print("Failed to load campus IDs");
+        print(response.body);
+        throw Exception("Failed to load campus IDs");
+      }
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: ${e.message}");
+    }
+    catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: $e");
+    }
+  }
+
+
+  /// Profile apis
+
+  /// Fetch location with pagination, search query, and filters
+  Future<void> fetchLocationListProfile(
+      BuildContext context,
+      String searchQuery,
+      int page,
+      int totalPages,
+      String? accountID,
+      String? subAccountID,
+      ) async {
+    var typography = CustomTypography(context);
+    try {
+      // Check if api is already working
+      if (isLoading) return;
+      // dont call api is next page does not exist
+      if (page>totalPages) return;
+
+      isLoading = true;
+
+
+      var headers =  await CommonHeaders.createHeaders();
+
+      print("Rating for all tab: $_rating. $rating");
+      log(headers.toString());
+
+      var url = AppConstant.MY_LOCATION +
+          "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID";
+
+      if (countries.isNotEmpty) {
+        url+= "&country=${countries.join(",")}";
+      }
+      if (zipcode.isNotEmpty) {
+        url+= "&zip=$state";
+      }
+
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if(cert == "Manual Certified") {
+            url+= "&manual_certified=true";
+          } else if(cert == "Auto Certified") {
+            url+= "&auto_certified=true";
+          }
+        }
+      }
+      if(hazardRatings.isNotEmpty) {
+        for (var hazard in hazardRatings.keys) {
+          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+        }
+      }
+      if (rating.isNotEmpty) {
+        url+= "&score=${rating.join(",")}";
+      }
+
+      if (_selectedCampusIds.isNotEmpty) {
+        url+= "&campus_id=${_selectedCampusIds.join(",")}";
+      }
+
+
+      print(url);
+      var uri = Uri.parse(url);
+
+      var response = await http.get(
+        uri,
+        headers: headers,
+        //body: body,
+      );
+      log(response.body);
+      print(response.statusCode);
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        //summaryList = locationListModel.summaryList ?? [];
+        //mainSovRating = locationListModel. ?? 0.0;
+
+        locationProfile = locationListModel.results?.first;
+
+        log(myLocationList.toString());
+        print("totalPages: $totalPages");
+        log(page.toString());
+      } else {
+        print(json.decode(response.body)["error"]);
+        throw Exception('Failed to load data');
+      }
+      isLoading = false;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      print(e.message);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          "Error fetching data",
+          style: typography.Body1,
+        ),
+      ));
+    }
+  }
+
+  Future<void> uploadImage(
+      BuildContext context,
+      String filePath,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId) async {
+    try {
+      isUploadingImage = true;
+      ApiService apiService = ApiService(AppConstant.UPLOAD_IMAGES_NEW +
+          "/$locationId");
+
+      print("Uploading image to ${apiService.url}");
+      var response = await apiService.postMultiPartLocationProfile(
+          File(filePath),
+          accountId,
+          subAccountId,
+          sovId,
+          locationId,
+          "file_${DateTime.now().millisecondsSinceEpoch}.jpg}");
+
+      isUploadingImage = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(response['message'] ?? "Image uploaded successfully"),
+      ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+      ));
+    } finally {
+      isUploadingImage = false;
+    }
+  }
+
+
+  Future<void> createSubdestination(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      double lat,
+      double lng,
+      String placeId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId&lat=$lat&lng=$lng&subdestination=true&place_id=$placeId";
+      ApiService apiService = ApiService(url);
+
+      var response = await apiService.get();
+
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addSubdestinationToSOV(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, String subDestinationId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId";
+      ApiService apiService = ApiService(url);
+      // Retrieve the subdestination details from the list using the provided ID
+      var subdestination = _subdestinations.firstWhere((sd) => sd.id == subDestinationId);
+
+      var body = {
+        "data": {
+          "add_location": true,
+          "location_id": locationId,
+          "locations": [
+            {
+              "id": subdestination.id,
+              "lat": subdestination.lat,
+              "lng": subdestination.lng,
+              "title": subdestination.name,
+              "icon": "",
+              "name": subdestination.name,
+              "place_id": subdestination.placeId,
+              "address": subdestination.address,
+              "types": subdestination.types,
+              "isMainLocation": false,
+              "status": ""
+            }
+          ]
+        }
+      };
+
+      var response = await apiService.post(body);
+
+      if (response.containsKey('processed')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to add subdestination", style: typography.Body1),
+        ));
+      }
+
+      isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addSelectedSubdestinationToSOV(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, List<String> subDestinationId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId";
+      ApiService apiService = ApiService(url);
+      // Retrieve the subdestination details from the list using the provided ID
+      var subdestinations = _subdestinations.where((sd) => subDestinationId.contains(sd.id)).toList();
+      var body = {
+        "data": {
+          "add_location": true,
+          "location_id": locationId,
+          "locations": subdestinations.map((sd) {
+            return {
+              "id": sd.id,
+              "lat": sd.lat,
+              "lng": sd.lng,
+              "title": sd.name,
+              "icon": "",
+              "name": sd.name,
+              "place_id": sd.placeId,
+              "address": sd.address,
+              "types": sd.types,
+              "isMainLocation": false,
+              "status": ""
+            };
+          }).toList()
+        }
+      };
+
+      var response = await apiService.post(body);
+
+      if (response.containsKey('processed')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to add subdestination", style: typography.Body1),
+        ));
+      }
+
+      isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> removeSubdestinationFromSOV(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, String subDestinationId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId";
+      ApiService apiService = ApiService(url);
+
+      var body = {
+        "data": {
+          "location_id": locationId,
+          "subdestination_id": subDestinationId,
+        }
+      };
+
+      var response = await apiService.delete(body);
+
+      //result = LocationProfileModel.fromJson(response['result']);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(response['message'] ?? "Subdestination removed successfully", style: typography.Body1),
+      ));
+
+
+      isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateLocationName(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, String locationName) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
+      ApiService apiService = ApiService(url);
+      // Create data payload
+      final data = {
+        "data": {
+
+          "location_name": locationName,
+          "location_type": locationProfile?.finalAddress?.locationType,
+          "description": locationProfile?.finalAddress?.description,
+          "address": locationProfile?.finalAddress?.address,
+          "city": locationProfile?.finalAddress?.city,
+          "state": locationProfile?.finalAddress?.state,
+          "zip": locationProfile?.finalAddress?.zip,
+          "country": locationProfile?.finalAddress?.country,
+          "latitude": locationProfile?.finalAddress?.latitude,
+          "longitude": locationProfile?.finalAddress?.longitude,
+          "location_id": locationProfile?.finalAddress?.locationId,
+        }
+      };
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile?.finalAddress = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+      return false;
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  Future<bool> updateLocationAddress(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, String locationAddress) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
+      ApiService apiService = ApiService(url);
+      // Create data payload
+      final data = {
+        "data": {
+          "location_name": locationProfile?.finalAddress?.locationName,
+          "location_type": locationProfile?.finalAddress?.locationType,
+          "description": locationProfile?.finalAddress?.description,
+          "address": locationAddress,
+          "city": locationProfile?.finalAddress?.city,
+          "state": locationProfile?.finalAddress?.state,
+          "zip": locationProfile?.finalAddress?.zip,
+          "country": locationProfile?.finalAddress?.country,
+          "latitude": locationProfile?.finalAddress?.latitude,
+          "longitude": locationProfile?.finalAddress?.longitude,
+          "location_id": locationProfile?.finalAddress?.locationId,
+        }
+      };
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+      return false;
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  Future<String> updateLocationDetails(BuildContext context, String accountId,
+      String subAccountId, String sovId, String locationId, Map<String, dynamic> data) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url =
+          "${AppConstant.GET_LOCATION_PROFILE_NEW+"/editlocation"}";
+      ApiService apiService = ApiService(url);
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true.toString();
+    } on BackendException catch (e, stackTrace) {
+
+      if (e.statusCode == 422) {
+        try {
+          print("Error 422: ${e.message}");
+          // convert e.message to map
+          print(e.message);
+          var resultLocation = json.decode(e.message);
+          var toDeleteLocationId = resultLocation["to_delete_location"];
+          locationProfile?.finalAddress?.locationId = resultLocation["location_data"]["location_id"];
+          locationProfile?.finalAddress?.locationName =
+          resultLocation["location_data"]["location_name"];
+          locationProfile?.finalAddress?.locationType =
+          resultLocation["location_data"]["location_type"];
+          locationProfile?.finalAddress?.description = resultLocation["location_data"]["description"];
+          locationProfile?.finalAddress?.address = resultLocation["location_data"]["address"];
+          locationProfile?.finalAddress?.city = resultLocation["location_data"]["city"];
+          locationProfile?.finalAddress?.state = resultLocation["location_data"]["state"];
+          locationProfile?.finalAddress?.zip = resultLocation["location_data"]["zip"];
+          locationProfile?.finalAddress?.country = resultLocation["location_data"]["country"];
+          locationProfile?.finalAddress?.latitude = resultLocation["location_data"]["latitude"];
+          locationProfile?.finalAddress?.longitude = resultLocation["location_data"]["longitude"];
+          locationProfile?.finalAddress?.ownerId = resultLocation["location_data"]["owner_id"];
+          locationProfile?.finalAddress?.ownerName = resultLocation["location_data"]["owner_name"];
+          locationProfile?.finalAddress?.ownerEmail = resultLocation["location_data"]["owner_email"];
+          locationProfile?.finalAddress?.autoCertified =
+          resultLocation["location_data"]["auto_certified"];
+          locationProfile?.finalAddress?.campusId = resultLocation["location_data"]["campus_id"];
+          locationProfile?.finalAddress?.percent = resultLocation["location_data"]["percent"];
+          locationProfile?.finalAddress?.score = resultLocation["location_data"]["score"];
+
+          locationProfile?.finalAddress?.placeTypes = resultLocation["location_data"]["place_types"] is String
+              ? [resultLocation["location_data"]["place_types"]]
+              : (resultLocation["location_data"]["place_types"] as List?)?.map((item) => item as String).toList();
+          locationProfile?.screenshots = resultLocation["location_data"]["screen_shots"]??[];
+          subdestinations = locationProfile?.subdestinations ?? [];
+          String accountName = resultLocation["location_data"]["account_name"];
+          String subAccountName = resultLocation["location_data"]["sub_account_name"];
+          String sovName = resultLocation["location_data"]["sov_name"];
+          String page = "0";
+          String totalPages = "1";
+          String searchQuery = "";
+
+        } catch (e, stackTrace) {
+          isLoading = false;
+          print(e);
+          print(stackTrace);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString(), style: typography.Body1),
+          ));
+          return false.toString();
+        }
+      }
+
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      // Todo: Add condition based on response
+      if (e.statusCode != 422) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message, style: typography.Body1),
+        ));
+      }
+
+      return false.toString();
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+      return false.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      return true.toString();
+    }
+  }
+
 
 }
 

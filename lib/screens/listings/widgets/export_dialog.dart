@@ -11,10 +11,10 @@ import '../../../providers/sov_list_provider.dart';
 class ExportDialog extends StatefulWidget {
   final String accountId;
   final String subAccountId;
-  final String locationId;
-  final List<String> sovId;
+  final List<String> locationId;
+  final String sovId;
 
-  const ExportDialog({Key? key, required this.accountId, required this.subAccountId, this.locationId = "", required this.sovId}) : super(key: key);
+  const ExportDialog({Key? key, required this.accountId, required this.subAccountId, required this.locationId, this.sovId = ''}) : super(key: key);
 
   @override
   _ExportDialogState createState() => _ExportDialogState();
@@ -125,33 +125,34 @@ class _ExportDialogState extends State<ExportDialog> {
                   final exportData = //{
                   // "data":
                   {
-                    "format": _format.toLowerCase(),
+                    /*"format": _format.toLowerCase(),
                     "fileType":
                     _exportType == ExportType.Profile ? "profile" : "table",
                     "includeImage": _includeImagesAsUrl,
                     "downloadImagesInZip": _downloadImagesInZip,
                     "sov_id": widget.sovId,
+                    "location_id": widget.locationId,*/
                     "location_id": widget.locationId,
                     // }
                   };
                   await provider.exportData(
                       context, widget.accountId, widget.subAccountId,
-                      exportData);
+                      exportData, widget.sovId);
                 } else {
                   final exportData = //{
                   // "data":
                   {
-                    "format": _format.toLowerCase(),
+                    /*"format": _format.toLowerCase(),
                     "fileType":
                     _exportType == ExportType.Profile ? "profile" : "table",
                     "includeImage": _includeImagesAsUrl,
-                    "downloadImagesInZip": _downloadImagesInZip,
-                    "sov_id": widget.sovId,
+                    "downloadImagesInZip": _downloadImagesInZip,*/
+                    "location_id": widget.locationId,
                     // }
                   };
                   await provider.exportData(
                       context, widget.accountId, widget.subAccountId,
-                      exportData);
+                      exportData, widget.sovId);
                 }
               },
               child: Text(LanguageService.getTranslated(context, "export_dialog_download"), style: typography.Body1),

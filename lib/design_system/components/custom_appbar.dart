@@ -21,6 +21,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function(bool) onExpandPressed;
   final Function() onSearchPressed;
   final bool showDropdown;
+  final double margin;
 
   const CustomAppBar({
     Key? key,
@@ -29,6 +30,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onExpandPressed,
     required this.onSearchPressed,
     this.showDropdown = false,
+    this.margin = 16.0,
+
   }) : super(key: key);
 
   @override
@@ -39,7 +42,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     var typography = CustomTypography(context); // Use context to initialize typography
 
     return Container(
-      margin: EdgeInsets.fromLTRB(16, 8, 16, 8),
+      margin: EdgeInsets.fromLTRB(margin, 8, margin, 8),
       padding: EdgeInsets.fromLTRB(0, 1, 0, 1),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

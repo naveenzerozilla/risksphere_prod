@@ -1,3 +1,4 @@
+/*
 class LocationProfileModel {
   String? locationIdForRef;
   String? country;
@@ -138,6 +139,364 @@ class LocationProfileModel {
     return data;
   }
 }
+
+class FinalAddress {
+  String? country;
+  String? locationIdForRef;
+  bool? autoCertified;
+  String? city;
+  String? ownerId;
+  double? latitude;
+  String? description;
+  String? percent;
+  String? subAccountId;
+  String? locationId;
+  int? score;
+  String? sovName;
+  String? accountName;
+  List<String>? placeTypes;
+  String? placeId;
+  String? ownerEmail;
+  String? zip;
+  Owner? owner;
+  String? address;
+  String? ownerName;
+  String? subAccountName;
+  String? companyId;
+  int? lineNo;
+  String? locationType;
+  String? sovId;
+  String? locationName;
+  String? accountId;
+  String? countryIsoCode;
+  double? longitude;
+
+  FinalAddress({
+    this.country,
+    this.locationIdForRef,
+    this.autoCertified,
+    this.city,
+    this.ownerId,
+    this.latitude,
+    this.description,
+    this.percent,
+    this.subAccountId,
+    this.locationId,
+    this.score,
+    this.sovName,
+    this.accountName,
+    this.placeTypes,
+    this.placeId,
+    this.ownerEmail,
+    this.zip,
+    this.owner,
+    this.address,
+    this.ownerName,
+    this.subAccountName,
+    this.companyId,
+    this.lineNo,
+    this.locationType,
+    this.sovId,
+    this.locationName,
+    this.accountId,
+    this.countryIsoCode,
+    this.longitude,
+  });
+
+  FinalAddress.fromJson(Map<String, dynamic> json) {
+    country = json['country'];
+    locationIdForRef = json['location_id_for_ref'];
+    autoCertified = json['auto_certified'];
+    city = json['city'];
+    ownerId = json['owner_id'];
+    latitude = json['latitude']?.toDouble();
+    description = json['description'];
+    percent = json['percent'];
+    subAccountId = json['sub_account_id'];
+    locationId = json['location_id'];
+    score = json['score'];
+    sovName = json['sov_name'];
+    accountName = json['account_name'];
+    placeTypes = json['place_types'] != null ? List<String>.from(json['place_types']) : null;
+    placeId = json['place_id'];
+    ownerEmail = json['owner_email'];
+    zip = json['zip'];
+    owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
+    address = json['address'];
+    ownerName = json['owner_name'];
+    subAccountName = json['sub_account_name'];
+    companyId = json['company_id'];
+    lineNo = json['line_no'];
+    locationType = json['location_type'];
+    sovId = json['sov_id'];
+    locationName = json['location_name'];
+    accountId = json['account_id'];
+    countryIsoCode = json['country_iso_code'];
+    longitude = json['longitude']?.toDouble();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['country'] = country;
+    data['location_id_for_ref'] = locationIdForRef;
+    data['auto_certified'] = autoCertified;
+    data['city'] = city;
+    data['owner_id'] = ownerId;
+    data['latitude'] = latitude;
+    data['description'] = description;
+    data['percent'] = percent;
+    data['sub_account_id'] = subAccountId;
+    data['location_id'] = locationId;
+    data['score'] = score;
+    data['sov_name'] = sovName;
+    data['account_name'] = accountName;
+    data['place_types'] = placeTypes;
+    data['place_id'] = placeId;
+    data['owner_email'] = ownerEmail;
+    data['zip'] = zip;
+    if (owner != null) {
+      data['owner'] = owner!.toJson();
+    }
+    data['address'] = address;
+    data['owner_name'] = ownerName;
+    data['sub_account_name'] = subAccountName;
+    data['company_id'] = companyId;
+    data['line_no'] = lineNo;
+    data['location_type'] = locationType;
+    data['sov_id'] = sovId;
+    data['location_name'] = locationName;
+    data['account_id'] = accountId;
+    data['country_iso_code'] = countryIsoCode;
+    data['longitude'] = longitude;
+    return data;
+  }
+}
+*/
+
+class LocationProfileModel {
+  int? totalRecords;
+  int? totalCertified;
+  int? page;
+  int? pageSize;
+  List<LocationResult>? results;
+
+  LocationProfileModel({
+    this.totalRecords,
+    this.totalCertified,
+    this.page,
+    this.pageSize,
+    this.results,
+  });
+
+  LocationProfileModel.fromJson(Map<String, dynamic> json) {
+    totalRecords = json['totalRecords'];
+    totalCertified = json['totalCertified'];
+    page = json['page'];
+    pageSize = json['pageSize'];
+    if (json['result'] != null) {
+      results = <LocationResult>[];
+      json['result'].forEach((v) {
+        results!.add(LocationResult.fromJson(v));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['totalRecords'] = totalRecords;
+    data['totalCertified'] = totalCertified;
+    data['page'] = page;
+    data['pageSize'] = pageSize;
+    if (results != null) {
+      data['result'] = results!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class LocationResult {
+  String? id;
+  FinalAddress? finalAddress;
+  int? geocodingScore;
+  List<String>? tags;
+  String? geocodedAddress;
+  List<Screenshots>? screenShots;
+  List<Subdestination>? subdestinations;
+
+  LocationResult({
+    this.id,
+    this.finalAddress,
+    this.geocodingScore,
+    this.tags,
+    this.geocodedAddress,
+    this.screenShots,
+    this.subdestinations,
+  });
+
+  LocationResult.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    finalAddress = json['final_address'] != null
+        ? FinalAddress.fromJson(json['final_address'])
+        : null;
+    geocodingScore = json['geocoding_score'];
+    tags = json['tags'] != null ? List<String>.from(json['tags']) : null;
+    geocodedAddress = json['geocoded_address'];
+    screenShots = (json['screen_shots'] as List?)?.map((item) => Screenshots.fromJson(item)).toList();
+    subdestinations = (json['subdestinations'] as List?)?.map((item) => Subdestination.fromJson(item)).toList();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    if (finalAddress != null) {
+      data['final_address'] = finalAddress!.toJson();
+    }
+    data['geocoding_score'] = geocodingScore;
+    data['tags'] = tags;
+    data['geocoded_address'] = geocodedAddress;
+    if (screenShots != null) {
+      data['screen_shots'] = screenShots!.map((v) => v.toJson()).toList();
+    }
+    if (subdestinations != null) {
+      data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class FinalAddress {
+  String? country;
+  String? locationIdForRef;
+  bool? autoCertified;
+  String? city;
+  String? ownerId;
+  double? latitude;
+  String? description;
+  String? percent;
+  String? subAccountId;
+  String? locationId;
+  int? score;
+  String? sovName;
+  String? accountName;
+  List<String>? placeTypes;
+  String? placeId;
+  String? ownerEmail;
+  String? zip;
+  Owner? owner;
+  String? address;
+  String? ownerName;
+  String? subAccountName;
+  String? companyId;
+  int? lineNo;
+  String? locationType;
+  String? sovId;
+  String? locationName;
+  String? accountId;
+  String? countryIsoCode;
+  double? longitude;
+
+  FinalAddress({
+    this.country,
+    this.locationIdForRef,
+    this.autoCertified,
+    this.city,
+    this.ownerId,
+    this.latitude,
+    this.description,
+    this.percent,
+    this.subAccountId,
+    this.locationId,
+    this.score,
+    this.sovName,
+    this.accountName,
+    this.placeTypes,
+    this.placeId,
+    this.ownerEmail,
+    this.zip,
+    this.owner,
+    this.address,
+    this.ownerName,
+    this.subAccountName,
+    this.companyId,
+    this.lineNo,
+    this.locationType,
+    this.sovId,
+    this.locationName,
+    this.accountId,
+    this.countryIsoCode,
+    this.longitude,
+  });
+
+  FinalAddress.fromJson(Map<String, dynamic> json) {
+    country = json['country'];
+    locationIdForRef = json['location_id_for_ref'];
+    autoCertified = json['auto_certified'];
+    city = json['city'];
+    ownerId = json['owner_id'];
+    latitude = json['latitude']?.toDouble();
+    description = json['description'];
+    percent = json['percent'];
+    subAccountId = json['sub_account_id'];
+    locationId = json['location_id'];
+    score = json['score'];
+    sovName = json['sov_name'];
+    accountName = json['account_name'];
+    placeTypes = json['place_types'] != null ? List<String>.from(json['place_types']) : null;
+    placeId = json['place_id'];
+    ownerEmail = json['owner_email'];
+    zip = json['zip'];
+    owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
+    address = json['address'];
+    ownerName = json['owner_name'];
+    subAccountName = json['sub_account_name'];
+    companyId = json['company_id'];
+    lineNo = json['line_no'];
+    locationType = json['location_type'];
+    sovId = json['sov_id'];
+    locationName = json['location_name'];
+    accountId = json['account_id'];
+    countryIsoCode = json['country_iso_code'];
+    longitude = json['longitude']?.toDouble();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['country'] = country;
+    data['location_id_for_ref'] = locationIdForRef;
+    data['auto_certified'] = autoCertified;
+    data['city'] = city;
+    data['owner_id'] = ownerId;
+    data['latitude'] = latitude;
+    data['description'] = description;
+    data['percent'] = percent;
+    data['sub_account_id'] = subAccountId;
+    data['location_id'] = locationId;
+    data['score'] = score;
+    data['sov_name'] = sovName;
+    data['account_name'] = accountName;
+    data['place_types'] = placeTypes;
+    data['place_id'] = placeId;
+    data['owner_email'] = ownerEmail;
+    data['zip'] = zip;
+    if (owner != null) {
+      data['owner'] = owner!.toJson();
+    }
+    data['address'] = address;
+    data['owner_name'] = ownerName;
+    data['sub_account_name'] = subAccountName;
+    data['company_id'] = companyId;
+    data['line_no'] = lineNo;
+    data['location_type'] = locationType;
+    data['sov_id'] = sovId;
+    data['location_name'] = locationName;
+    data['account_id'] = accountId;
+    data['country_iso_code'] = countryIsoCode;
+    data['longitude'] = longitude;
+    return data;
+  }
+}
+
+// Owner, Subdestination, and Screenshots classes can remain the same.
 
 class Owner {
   String? date;

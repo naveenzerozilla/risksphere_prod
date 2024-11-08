@@ -55,6 +55,7 @@ class SharedPreferenceService {
   static const String NCMMT = 'NCMMT'; // My Teams for NCM
   static const String EMPMT = 'EMPMT'; // My Teams for EMP
   static const String FCMTK = 'FCMTK'; // FCM Token
+  static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS'; // Schedule In Progress
 
   // Save and get FCM Token
   static Future<void> saveFcmToken(String fcmToken) async {
@@ -269,5 +270,18 @@ class SharedPreferenceService {
       print('Error retrieving claim for $subfeature: $e');
       return null;
     }
+  }
+
+  static Future<void> setScheduleInProgress(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(SCHEDULE_INPROGRESS, value);
+    print('Set Schedule In Progress to $value');
+  }
+
+  static Future<bool?> getScheduleInProgress() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool? value = prefs.getBool(SCHEDULE_INPROGRESS);
+    print('Retrieved Schedule In Progress with value $value');
+    return value;
   }
 }

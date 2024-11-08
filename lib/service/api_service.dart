@@ -192,20 +192,39 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> postMultiPartSOVPartial(File filePath, String accountId, String subAccountId, String sovId) async {
+  Future<Map<String, dynamic>> postMultiPartSOVPartial(File filePath, String accountId, String subAccountId, String sovId, String tags, String sovName) async {
     await FirebaseAuth.instance.currentUser?.reload();
     IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
     var headers = {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
-    var body = {
-      //  'data': {
-      'account_id': accountId,
-      'sov_id': sovId,
-      //   }
-    };
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_LOCATIONS));
+    var body;
+    if(sovName.isNotEmpty) {
+      body = {
+        //  'data': {
+        'account_id': accountId,
+        'sub_account_id': subAccountId,
+        "name": sovName,
+        "new": 'true',
+        "add_to_sov": sovName.isNotEmpty ? 'true' : 'false',
+        'sov_id': sovId,
+        'tags': tags,
+        //   }
+      };
+    } else {
+      body = {
+        //  'data': {
+        'account_id': accountId,
+        'sub_account_id': subAccountId,
+        "name": sovName,
+        "new": 'false',
+        "add_to_sov": 'false',
+        'sov_id': sovId,
+        //   }
+      };
+    }
     request.fields.addAll(body);
     print("Request Fields: ${request.fields}");
     print("Request Files path: ${filePath.path}");
@@ -213,6 +232,8 @@ class ApiService {
     print("Request Files: ${request.files}");
     request.headers.addAll(headers);
     log("Request headers: ${request.headers}");
+    print('url: ${request.url}');
+
 
     http.StreamedResponse streamedResponse = await request.send();
 
@@ -236,7 +257,7 @@ class ApiService {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.GET_LOCATION_PROFILE + "/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId"));
+    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_IMAGES_NEW + "/$locationId"));
     request.fields.addAll({
       'location_id': locationId,
     });

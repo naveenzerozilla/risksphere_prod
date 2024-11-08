@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:green/providers/location_list_provider.dart';
 import 'package:green/providers/location_profile_provider.dart';
+import 'package:green/providers/my_location_list_provider.dart';
 import 'package:green/screens/listings/location_profile.dart';
+import 'package:green/screens/listings/widgets/auto_complete_options_sovs.dart';
 import 'package:green/screens/listings/widgets/map_full_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/country_picker_flag_name.dart';
@@ -14,6 +20,9 @@ import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
+import '../../models/sov_list_model.dart';
+import '../../providers/place_api_provider.dart';
+import '../../providers/sov_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../service/language_service.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
@@ -66,518 +75,908 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       TextEditingController();
   String _selectedCountry = "United States";
 
+  final Completer<GoogleMapController> _mapController = Completer();
+  static const CameraPosition _defaultLocation = CameraPosition(
+    target: LatLng(37.42796133580664, -122.085749655962),
+    zoom: 14.4746,
+  );
+  Map<MarkerId, Marker> markers = {};
+  final sessionToken = const Uuid().v4();
+  bool _isSelectedFromAutocomplete = false;
+
+  Key countryPickerKey = UniqueKey(); // Unique key to force rebuild
+  bool addToSOVCheck = false;
+  bool disableToggle = false;
+  String selectedSovId = "";
+  TextEditingController sovController = TextEditingController();
+  // radio group for rented and leased
+  bool rented = false;
+  bool leased = false;
+
   initState() {
     super.initState();
     if (widget.locationId.isNotEmpty) {
       // get location details
       var provider =
-          Provider.of<LocationProfileProvider>(context, listen: false);
-      _locationNameController.text = provider.result?.locationName ?? "";
-      _locationAddressController.text = provider.result?.address ?? "";
-      _selectedCountry = provider.result?.country ?? "";
-      _locationZipCodeController.text = provider.result?.zip ?? "";
+          Provider.of<MyLocationListProvider>(context, listen: false);
+      _locationNameController.text =
+          provider.locationProfile?.finalAddress?.locationName ?? "";
+      _locationAddressController.text =
+          provider.locationProfile?.finalAddress?.address ?? "";
+      _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
+      _locationZipCodeController.text =
+          provider.locationProfile?.finalAddress?.zip ?? "";
       //_selectedLocationType = provider.result?.locationType??"";
-      _locationCityController.text = provider.result?.city ?? "";
-      _locationStateController.text = provider.result?.state ?? "";
-      _locationDescriptionController.text = provider.result?.description ?? "";
+      _locationCityController.text =
+          provider.locationProfile?.finalAddress?.city ?? "";
+      _locationStateController.text =
+          provider.locationProfile?.finalAddress?.state ?? "";
+      _locationDescriptionController.text =
+          provider.locationProfile?.finalAddress?.description ?? "";
+      if (provider.locationProfile?.finalAddress?.sovId != null) {
+        addToSOVCheck = true;
+        selectedSovId = provider.locationProfile!.finalAddress!.sovId!;
+        sovController.text = provider.locationProfile!.finalAddress!.sovName!;
+        disableToggle = true;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (provider.locationProfile?.finalAddress?.latitude != null &&
+            provider.locationProfile?.finalAddress?.longitude != null) {
+          final MarkerId markerId = MarkerId("location_marker");
+          final marker = Marker(
+            markerId: markerId,
+            position: LatLng(
+              double.parse(
+                  provider.locationProfile!.finalAddress!.latitude!.toString()),
+              double.parse(provider.locationProfile!.finalAddress!.longitude!
+                  .toString()),
+            ),
+            infoWindow: InfoWindow(
+                title: provider.locationProfile?.finalAddress?.locationName),
+          );
+          setState(() {
+            markers[markerId] = marker;
+          });
+
+          // Move camera to marker position
+          final GoogleMapController controller = await _mapController.future;
+          controller.animateCamera(CameraUpdate.newLatLng(
+            LatLng(
+              double.parse(
+                  provider.locationProfile!.finalAddress!.latitude!.toString()),
+              double.parse(provider.locationProfile!.finalAddress!.longitude!
+                  .toString()),
+            ),
+          ));
+        }
+      });
     }
+    print("account name: ${widget.accountName}");
+    print("sub account name: ${widget.subAccountName}");
   }
 
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
-    return Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            // Background image
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/mesh.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Column(
-              children: [
-                SizedBox(height: CustomSpacing.four),
-                Stack(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Image.asset(
-                            'assets/images/loginImage.png',
-                            fit: BoxFit.fitWidth,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Positioned.fill(
-                      child: Center(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Image.asset(
-                                'assets/images/addLocationImage.png',
-                                scale: 0.5,
-                                height: 100,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+    return SafeArea(
+      child: Consumer<ThemeProvider>(
+          builder: (buildContext, themeProvider, child) {
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            margin: 8,
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
+              setState(() {
+                _isExpanded = isExpanded;
+              });
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          drawer: CustomDrawer(),
+          body: Stack(
+            children: [
+              // Background image
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/mesh.png',
+                  fit: BoxFit.cover,
                 ),
-                SizedBox(height: CustomSpacing.four),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
-                            widget.locationId.isEmpty
-                                ? LanguageService.getTranslated(
-                                    context, "addlocation_app_title")
-                                : "Edit Location",
-                            style: typography.H5_Regular),
+              ),
+              Column(
+                children: [
+                  SizedBox(height: CustomSpacing.four),
+                  Container(
+
+                    margin: EdgeInsets.only(left: 8, right: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        topRight: Radius.circular(8),
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
-                          widget.locationId.isEmpty
-                              ? LanguageService.getTranslated(
-                                  context, "addlocation_app_subtitle")
-                              : "Please provide the necessary information to update the location details",
-                          style: typography.Subtitle1,
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        height: 140,
+                        width: double.infinity,
+                        child: GoogleMap(
+                          mapType: MapType.normal,
+                          initialCameraPosition: _defaultLocation,
+                          onMapCreated: (GoogleMapController controller) {
+                            _mapController.complete(controller);
+                          },
+                          markers: Set<Marker>.of(markers.values),
                         ),
                       ),
-                      SizedBox(
-                        height: CustomSpacing.four,
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        //color: Theme.of(context).hoverColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
                       ),
-                      // Form
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Location Name
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    controller: _locationNameController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_location_name"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          "addlocation_location_name_hint"),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: CustomSpacing.four),
+                          // Form
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0),
+                                      child: Text(
+                                          widget.locationId.isEmpty
+                                              ? LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_app_title")
+                                              : "Edit Location",
+                                          style: typography.H5_Regular),
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return LanguageService.getTranslated(
-                                            context,
-                                            "addlocation_location_name_error");
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.four),
-                                // Location Address
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    controller: _locationAddressController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_address1"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context, "addlocation_address1_hint"),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0),
+                                      child: Text(
+                                        widget.locationId.isEmpty
+                                            ? LanguageService.getTranslated(
+                                                context,
+                                                "addlocation_app_subtitle")
+                                            : "Please provide the necessary information to update the location details",
+                                        style: typography.Subtitle1,
+                                      ),
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return LanguageService.getTranslated(
-                                            context,
-                                            "addlocation_address_error");
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Country just show flag and country name
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: CountryPickerFlagName(
-                                          onCountryChange: (country) {
-                                            setState(() {
-                                              _selectedCountry = country.name;
-                                            });
-                                          },
-                                          initialValue: country_picker.Country(
-                                            phoneCode: '1',
-                                            countryCode: getCountryCodeFromName(
-                                                    _selectedCountry) ??
-                                                "",
-                                            e164Sc: 1,
-                                            geographic: true,
-                                            level: 1,
-                                            name: _selectedCountry,
-                                            example: '',
-                                            displayName: '',
-                                            displayNameNoCountryCode: '',
-                                            e164Key: '',
+                                    SizedBox(
+                                      height: CustomSpacing.four,
+                                    ),
+                                    // Location Name
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TypeAheadField<Suggestion>(
+                                        hideOnEmpty: true,
+                                        controller: _locationNameController,
+                                        suggestionsCallback: (pattern) async {
+                                          if (pattern.isEmpty) return [];
+                                          final apiProvider =
+                                              PlaceApiProvider(sessionToken);
+                                          return await apiProvider
+                                              .fetchSuggestions(pattern, 'en');
+                                        },
+                                        loadingBuilder: (context) {
+                                          /*return ListTile(
+                                            title: Text('Loading...'),
+                                          );*/
+                                          return SizedBox(
+                                            height: 0,
+                                          );
+                                        },
+                                        itemBuilder: (context, suggestion) {
+                                          return ListTile(
+                                            title: Text(
+                                              suggestion.description,
+                                              style: typography.Body1,
+                                            ),
+                                          );
+                                        },
+                                        builder:
+                                            (context, controller, focusNode) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
+                                                  blurRadius: 8,
+                                                  offset: Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: TextField(
+                                              controller: controller,
+                                              focusNode: focusNode,
+                                              onChanged: (value) {
+                                                if (_isSelectedFromAutocomplete) {
+                                                  _isSelectedFromAutocomplete =
+                                                      false;
+                                                  return;
+                                                }
+                                                if (value.isEmpty) {
+                                                  markers.clear();
+                                                  return;
+                                                }
+                                              },
+                                              decoration: InputDecoration(
+                                                labelText:
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "addlocation_location_name"),
+                                                border: OutlineInputBorder(),
+                                                prefixIcon: Icon(Icons.search),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        onSelected: _handlePlaceSelection,
+                                      ),
+                                    ),
+
+                                    SizedBox(height: CustomSpacing.four),
+                                    // Location Address
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        controller: _locationAddressController,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_address1"),
+                                          border: OutlineInputBorder(),
+                                          hintText: LanguageService.getTranslated(
+                                              context,
+                                              "addlocation_address1_hint"),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return LanguageService.getTranslated(
+                                                context,
+                                                "addlocation_address_error");
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Country just show flag and country name
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: StatefulBuilder(builder:
+                                                (BuildContext context,
+                                                    StateSetter setState) {
+                                              return CountryPickerFlagName(
+                                                key: countryPickerKey,
+                                                onCountryChange: (country) {
+                                                  setState(() {
+                                                    _selectedCountry =
+                                                        country.name;
+                                                  });
+                                                },
+                                                initialValue:
+                                                    country_picker.Country(
+                                                  phoneCode: '1',
+                                                  countryCode:
+                                                      getCountryCodeFromName(
+                                                              _selectedCountry) ??
+                                                          "",
+                                                  e164Sc: 1,
+                                                  geographic: true,
+                                                  level: 1,
+                                                  name: _selectedCountry,
+                                                  example: '',
+                                                  displayName: '',
+                                                  displayNameNoCountryCode: '',
+                                                  e164Key: '',
+                                                ),
+                                              );
+                                            }),
                                           ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Location Zip/Postal Code
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        controller: _locationZipCodeController,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context, "addlocation_zip"),
+                                          border: OutlineInputBorder(),
+                                          hintText: LanguageService.getTranslated(
+                                              context, "addlocation_zip_hint"),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return LanguageService.getTranslated(
+                                                context, "addlocation_zip_error");
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Optional Details text with divider in row
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Row(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Text(
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_optional_details"),
+                                              style: typography.Body1,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Divider(
+                                              color: themeProvider
+                                                  .getTheme.colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Selecting whether rented or leased
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: Row(
+                                        children: [
+                                          Checkbox(
+                                            value: rented,
+                                            onChanged: disableToggle?null:(bool? value) {
+                                              setState(() {
+                                                rented = !rented;
+                                                if(rented){
+                                                  leased = false;
+                                                }
+                                              });
+                                            },
+                                          ),
+                                          SizedBox(width: 8,),
+                                          Text(
+                                            "Rented",
+                                            style: typography.Body1,
+                                          ),
+                                          SizedBox(width: 16,),
+                                          Checkbox(
+                                            value: leased,
+                                            onChanged: disableToggle?null:(bool? value) {
+                                              setState(() {
+                                                leased = !leased;
+                                                if(leased){
+                                                  rented = false;
+                                                }
+                                              });
+                                            },
+                                          ),
+                                          SizedBox(width: 8,),
+                                          Text(
+                                            "Leased",
+                                            style: typography.Body1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Location Type Dropdown
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: DropdownButtonFormField<String>(
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_location_type"),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        value: _selectedLocationType,
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            _selectedLocationType = newValue;
+                                          });
+                                        },
+                                        items: <String>[
+                                          'Residential',
+                                          'Commercial',
+                                          'Industrial',
+                                        ].map<DropdownMenuItem<String>>(
+                                            (String value) {
+                                          return DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Location City
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        controller: _locationCityController,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context, "addlocation_city"),
+                                          border: OutlineInputBorder(),
+                                          hintText: LanguageService.getTranslated(
+                                              context, "addlocation_city_hint"),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Location Zip/Postal Code
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    controller: _locationZipCodeController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_zip"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context, "addlocation_zip_hint"),
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return LanguageService.getTranslated(
-                                            context, "addlocation_zip_error");
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Optional Details text with divider in row
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Location State/Province/Region
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        controller: _locationStateController,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context, "addlocation_state"),
+                                          border: OutlineInputBorder(),
+                                          hintText: LanguageService.getTranslated(
+                                              context, "addlocation_state_hint"),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Description
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        maxLines: 3,
+                                        controller:
+                                            _locationDescriptionController,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_description"),
+                                          border: OutlineInputBorder(),
+                                          hintText: LanguageService.getTranslated(
+                                              context,
+                                              "addlocation_description_hint"),
+                                        ),
+                                      ),
+                                    ),
+
+                                    SizedBox(height: CustomSpacing.three),
+                                    Padding(
+                                      padding: EdgeInsets.all(0.0),
+                                      child: Row(
+                                        children: [
+                                          Checkbox(
+                                            value: addToSOVCheck,
+                                            onChanged: disableToggle?null:(bool? value) {
+                                              setState(() {
+                                                addToSOVCheck = !addToSOVCheck;
+                                              });
+                                            },
+                                          ),
+                                          SizedBox(width: 8,),
+                                          Text(
+                                            "Add to SOV",
+                                            style: typography.Body1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if(addToSOVCheck)
                                       Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "addlocation_optional_details"),
-                                          style: typography.Body1,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Account Name (Pre-filled and non-editable)
+                                            TextField(
+                                              controller: TextEditingController(text: widget.accountName),
+                                              enabled: false,
+                                              decoration: InputDecoration(
+                                                labelText: "Account Name",
+                                                border: const OutlineInputBorder(),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8.0),
+                                            // Sub-account Name (Pre-filled and non-editable)
+                                            TextField(
+                                              controller: TextEditingController(text: widget.subAccountName),
+                                              enabled: false,
+                                              decoration: InputDecoration(
+                                                labelText: "Sub-account Name",
+                                                border: const OutlineInputBorder(),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8.0),
+                                            // SoV Autocomplete Dropdown
+                                            Consumer<SOVListProvider>(
+                                              builder: (context, sovProvider, child) {
+                                                return Column(
+                                                  children: [
+                                                    TextField(
+                                                      controller: sovController,
+                                                      onChanged: (value) {
+                                                        setState(() {
+                                                          // Reset SoV ID when typing
+                                                          selectedSovId = "";
+
+                                                          // Filter the autocomplete list based on user input
+                                                          sovProvider.updateFilteredList(value);
+                                                        });
+                                                      },
+
+                                                      decoration: InputDecoration(
+                                                        labelText: "Name of the SoV",
+                                                        border: const OutlineInputBorder(),
+                                                        suffixIcon: Icon(Icons.search),
+                                                      ),
+                                                    ),
+                                                    if (sovController.text.isNotEmpty)
+                                                      AutocompleteOptionsSovs(
+                                                        options: sovProvider.filteredAutoCompleteList,
+                                                        onSelected: (SovAccount selection) {
+                                                          setState(() {
+                                                            selectedSovId = selection.id ?? "";
+                                                            sovController.text = selection.name ?? "";
+                                                            sovProvider.clearAutoCompleteList();
+                                                          });
+                                                        },
+                                                        isLoading: sovProvider.isAutoCompleteLoading,
+
+                                                      ),
+
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      Expanded(
-                                        child: Divider(
-                                          color: themeProvider
-                                              .getTheme.colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Location Type Dropdown
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_location_type"),
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    value: _selectedLocationType,
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedLocationType = newValue;
+                                    SizedBox(height: CustomSpacing.three),
+                                    // Save Button
+                                    Consumer<MyLocationListProvider>(builder:
+                                        (context, locationProfileProvider,
+                                            child) {
+                                      return Consumer<LocationListProvider>(
+                                          builder: (context, locationListProvider,
+                                              child) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8.0),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: CustomButton(
+                                                  type: ButtonType.elevated,
+                                                  onPressed: () async {
+                                                    if (widget
+                                                        .locationId.isEmpty) {
+                                                      // add location api
+                                                      // Required fields are location name, address, zip, country others are optional
+
+                                                      if (_formKey.currentState!
+                                                          .validate()) {
+                                                        var body = {
+                                                          "data": {
+                                                            "account_id":
+                                                                widget.accountId,
+                                                            "sub_account_id":
+                                                                widget
+                                                                    .subAccountId,
+                                                            "sov_id":
+                                                                widget.sovId,
+                                                            "by_search": false,
+                                                            "location_name":
+                                                                _locationNameController
+                                                                    .text,
+                                                            "location_type":
+                                                                _selectedLocationType,
+                                                            "description":
+                                                                _locationDescriptionController
+                                                                    .text,
+                                                            "address":
+                                                                _locationAddressController
+                                                                    .text,
+                                                            "city":
+                                                                _locationCityController
+                                                                    .text,
+                                                            "state":
+                                                                _locationStateController
+                                                                    .text,
+                                                            "zip":
+                                                                _locationZipCodeController
+                                                                    .text,
+                                                            "country":
+                                                                _selectedCountry,
+                                                            "new":
+                                                                _isSelectedFromAutocomplete,
+                                                            "rented": rented.toString(),
+                                                            "leased": leased.toString(),
+                                                          }
+                                                        };
+                                                        locationListProvider
+                                                            .addLocation(
+                                                                context,
+                                                                widget.accountId,
+                                                                widget
+                                                                    .subAccountId,
+                                                                widget.sovId,
+                                                                body);
+                                                      }
+                                                    } else {
+                                                      // update location api
+                                                      // Required fields are location name, address, zip, country others are optional
+
+                                                      if (_formKey.currentState!
+                                                          .validate()) {
+                                                        var body = {
+                                                          "data": {
+                                                            "account_id":
+                                                                widget.accountId,
+                                                            "sub_account_id":
+                                                                widget
+                                                                    .subAccountId,
+                                                            "sov_id":
+                                                                widget.sovId,
+                                                            "by_search": false,
+                                                            "location_name":
+                                                                _locationNameController
+                                                                    .text,
+                                                            "location_type":
+                                                                _selectedLocationType,
+                                                            "description":
+                                                                _locationDescriptionController
+                                                                    .text,
+                                                            "address":
+                                                                _locationAddressController
+                                                                    .text,
+                                                            "city":
+                                                                _locationCityController
+                                                                    .text,
+                                                            "state":
+                                                                _locationStateController
+                                                                    .text,
+                                                            "zip":
+                                                                _locationZipCodeController
+                                                                    .text,
+                                                            "country":
+                                                                _selectedCountry,
+                                                            "location_id":
+                                                                widget.locationId,
+                                                            "new":
+                                                                _isSelectedFromAutocomplete,
+                                                            "rented": rented.toString(),
+                                                            "leased": leased.toString(),
+                                                          }
+                                                        };
+
+                                                        var success = await locationProfileProvider
+                                                            .updateLocationDetails(
+                                                                context,
+                                                                widget.accountId,
+                                                                widget
+                                                                    .subAccountId,
+                                                                widget.sovId,
+                                                                widget.locationId,
+                                                                body);
+                                                        if (success
+                                                                .toLowerCase() ==
+                                                            'true') {
+                                                          Navigator
+                                                              .pushReplacement(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (_) =>
+                                                                  LocationProfile(
+                                                                accountId: widget
+                                                                    .accountId,
+                                                                accountName: widget
+                                                                    .accountName,
+                                                                subAccountId: widget
+                                                                    .subAccountId,
+                                                                subAccountName: widget
+                                                                    .subAccountName,
+                                                                sovId:
+                                                                    widget.sovId,
+                                                                sovName: widget
+                                                                    .sovName,
+                                                                searchQuery: widget
+                                                                    .searchQuery,
+                                                                page: widget.page,
+                                                                totalPages: widget
+                                                                    .totalPages,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  child: locationListProvider
+                                                              .isAddLocationLoading ||
+                                                          locationProfileProvider
+                                                              .isLoading
+                                                      ? Center(
+                                                          child: SizedBox(
+                                                              height: 25,
+                                                              width: 25,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    color: themeProvider
+                                                                    .getTheme
+                                                                    .colorScheme
+                                                                    .onPrimary,
+                                                                  )))
+                                                      : Text(
+                                                          widget.locationId
+                                                                  .isEmpty
+                                                              ? LanguageService
+                                                                  .getTranslated(
+                                                                      context,
+                                                                      "addlocation_create_button_text")
+                                                              : "Update",
+                                                          style: typography
+                                                              .ButtonLarge),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
                                       });
-                                    },
-                                    items: <String>[
-                                      'Residential',
-                                      'Commercial',
-                                      'Industrial',
-                                    ].map<DropdownMenuItem<String>>(
-                                        (String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Location City
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    controller: _locationCityController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_city"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context, "addlocation_city_hint"),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Location State/Province/Region
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    controller: _locationStateController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_state"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context, "addlocation_state_hint"),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                // Description
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: TextFormField(
-                                    maxLines: 3,
-                                    controller: _locationDescriptionController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "addlocation_description"),
-                                      border: OutlineInputBorder(),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          "addlocation_description_hint"),
-                                    ),
-                                  ),
-                                ),
-                                // Save Button
-                                Consumer<LocationProfileProvider>(builder:
-                                    (context, locationProfileProvider, child) {
-                                  return Consumer<LocationListProvider>(builder:
-                                      (context, locationListProvider, child) {
-                                    return Padding(
+                                    }),
+                                    SizedBox(height: CustomSpacing.two),
+                                    Padding(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8.0),
                                       child: Row(
                                         children: [
                                           Expanded(
                                             child: CustomButton(
-                                              type: ButtonType.elevated,
-                                              onPressed: () async {
-                                                if (widget.locationId.isEmpty) {
-                                                  // add location api
-                                                  // Required fields are location name, address, zip, country others are optional
-
-                                                  if (_formKey.currentState!
-                                                      .validate()) {
-                                                    var body = {
-                                                      "data": {
-                                                        "location_name":
-                                                            _locationNameController
-                                                                .text,
-                                                        "location_type":
-                                                            _selectedLocationType,
-                                                        "description":
-                                                            _locationDescriptionController
-                                                                .text,
-                                                        "address":
-                                                            _locationAddressController
-                                                                .text,
-                                                        "city":
-                                                            _locationCityController
-                                                                .text,
-                                                        "state":
-                                                            _locationStateController
-                                                                .text,
-                                                        "zip":
-                                                            _locationZipCodeController
-                                                                .text,
-                                                        "country":
-                                                            _selectedCountry
-                                                      }
-                                                    };
-                                                    locationListProvider
-                                                        .addLocation(
-                                                            context,
-                                                            widget.accountId,
-                                                            widget.subAccountId,
-                                                            widget.sovId,
-                                                            body);
-                                                  }
-                                                } else {
-                                                  // update location api
-                                                  // Required fields are location name, address, zip, country others are optional
-
-                                                  if (_formKey.currentState!
-                                                      .validate()) {
-                                                    var body = {
-                                                      "data": {
-                                                        "location_name":
-                                                            _locationNameController
-                                                                .text,
-                                                        "location_type":
-                                                            _selectedLocationType,
-                                                        "description":
-                                                            _locationDescriptionController
-                                                                .text,
-                                                        "address":
-                                                            _locationAddressController
-                                                                .text,
-                                                        "city":
-                                                            _locationCityController
-                                                                .text,
-                                                        "state":
-                                                            _locationStateController
-                                                                .text,
-                                                        "zip":
-                                                            _locationZipCodeController
-                                                                .text,
-                                                        "country":
-                                                            _selectedCountry,
-                                                        "location_id":
-                                                            widget.locationId
-                                                      }
-                                                    };
-
-                                                    var success =
-                                                        await locationProfileProvider
-                                                            .updateLocationDetails(
-                                                                context,
-                                                                widget
-                                                                    .accountId,
-                                                                widget
-                                                                    .subAccountId,
-                                                                widget.sovId,
-                                                                widget
-                                                                    .locationId,
-                                                                body);
-                                                    if (success.toLowerCase()=='true') {
-                                                      Navigator.pushReplacement(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              LocationProfile(
-                                                            accountId: widget
-                                                                .accountId,
-                                                            accountName: widget
-                                                                .accountName,
-                                                            subAccountId: widget
-                                                                .subAccountId,
-                                                            subAccountName: widget
-                                                                .subAccountName,
-                                                            sovId: widget.sovId,
-                                                            sovName:
-                                                                widget.sovName,
-                                                            searchQuery: widget
-                                                                .searchQuery,
-                                                            page: widget.page,
-                                                            totalPages: widget
-                                                                .totalPages,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                }
+                                              type: ButtonType.outlined,
+                                              onPressed: () {
+                                                Navigator.pop(context);
                                               },
-                                              child: locationListProvider
-                                                          .isAddLocationLoading ||
-                                                      locationProfileProvider
-                                                          .isLoading
-                                                  ? Center(
-                                                      child: SizedBox(
-                                                          height: 25,
-                                                          width: 25,
-                                                          child:
-                                                              CircularProgressIndicator()))
-                                                  : Text(
-                                                      widget.locationId.isEmpty
-                                                          ? LanguageService
-                                                              .getTranslated(
-                                                                  context,
-                                                                  "addlocation_create_button_text")
-                                                          : "Update",
-                                                      style: typography
-                                                          .ButtonLarge),
+                                              child: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "addlocation_cancel_button_text"),
+                                                  style: typography.ButtonLarge),
                                             ),
                                           ),
                                         ],
                                       ),
-                                    );
-                                  });
-                                }),
-                                SizedBox(height: CustomSpacing.three),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: CustomButton(
-                                          type: ButtonType.outlined,
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text(
-                                              LanguageService.getTranslated(
-                                                  context,
-                                                  "addlocation_cancel_button_text"),
-                                              style:
-                                                  typography.ButtonLarge),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
+                ],
+              ),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   String? getCountryCodeFromName(String countryName) {
     return countryNameToCodeMap[countryName];
+  }
+
+  // Add method to handle place selection
+  void _handlePlaceSelection(Suggestion suggestion) async {
+    final placeApiProvider = PlaceApiProvider(sessionToken);
+    try {
+      final placeDetails =
+          await placeApiProvider.getPlaceDetails(suggestion.placeId);
+
+      // Extract address components
+      final addressComponents = placeDetails['address_components'] as List;
+      String? city, state, country, postalCode;
+
+      for (var component in addressComponents) {
+        final types = component['types'] as List;
+        if (types.contains('locality')) {
+          city = component['long_name'];
+        } else if (types.contains('administrative_area_level_1')) {
+          state = component['long_name'];
+        } else if (types.contains('country')) {
+          country = component['long_name'];
+        } else if (types.contains('postal_code')) {
+          postalCode = component['long_name'];
+        }
+      }
+
+      // Update form fields
+      setState(() {
+        _locationNameController.text = placeDetails['name'] ?? '';
+        _locationAddressController.text =
+            placeDetails['formatted_address'] ?? '';
+        if (city != null) _locationCityController.text = city;
+        if (state != null) _locationStateController.text = state;
+
+        if (postalCode != null) _locationZipCodeController.text = postalCode;
+      });
+      if (country != null) _updateSelectedCountry(country);
+
+      // Add marker
+      final geometry = placeDetails['geometry']['location'];
+      final MarkerId markerId = MarkerId("selected_location");
+      final marker = Marker(
+        markerId: markerId,
+        position: LatLng(geometry['lat'], geometry['lng']),
+        infoWindow: InfoWindow(
+          title: placeDetails['name'],
+          snippet: placeDetails['formatted_address'],
+        ),
+      );
+
+      setState(() {
+        markers[markerId] = marker;
+      });
+
+      // Move camera to selected location
+      final GoogleMapController controller = await _mapController.future;
+      controller.animateCamera(CameraUpdate.newLatLng(
+        LatLng(geometry['lat'], geometry['lng']),
+      ));
+
+      // Set flag to true
+      _isSelectedFromAutocomplete = true;
+    } catch (e) {
+      // Handle error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to get place details: $e')),
+      );
+    }
+  }
+
+  // Method to handle country update
+  void _updateSelectedCountry(String country) {
+    setState(() {
+      _selectedCountry = country;
+      countryPickerKey = UniqueKey(); // Update key to force rebuild
+    });
   }
 }

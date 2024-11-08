@@ -167,6 +167,8 @@ class SubAccountListProvider extends ChangeNotifier {
     });
   }
 
+  int totalRecords = 0;
+
   List<SubAccounts> _subAccountList = [];
   List<SubAccounts> get subAccountList => _subAccountList;
   set subAccountList(List<SubAccounts> value) {
@@ -175,7 +177,7 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
-  void addToAccountList(List<SubAccounts> newAccounts) {
+  void addToSubAccountList(List<SubAccounts> newAccounts) {
     _subAccountList.addAll(newAccounts);
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
@@ -198,31 +200,33 @@ class SubAccountListProvider extends ChangeNotifier {
   Future<void> fetchSubAccountList(BuildContext context, String selectedAccountId, String searchQuery, int page, int pageSize) async {
     var typography = CustomTypography(context);
     try {
-      if (page == 0) {
+      if (page == 1) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST+"/$selectedAccountId/subaccount/mobile");
-      String url = '?page=$page&pageSize=$pageSize';
+      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST+"/sub_accounts?account_id=$selectedAccountId");
+      String url = '&page=$page&pageSize=$pageSize';
       if (searchQuery.isNotEmpty) {
-        url += '?search=$searchQuery';
+        url += '&search=$searchQuery';
       }
 
       var response = await apiService.get(url);
       log(response.toString());
 
-      SubAccountListModel accountListModel = SubAccountListModel.fromJson(response);
+      SubAccountListModel subAccountListModel = SubAccountListModel.fromJson(response);
 
-      showOwner = accountListModel.settings?.owner ?? true;
-      showSovCount = accountListModel.settings?.sovCount ?? true;
+      showOwner = subAccountListModel.settings?.owner ?? true;
+      showSovCount = subAccountListModel.settings?.sovCount ?? true;
+      totalRecords = subAccountListModel.totalHits??0;
+      totalPages = totalRecords ~/ pageSize;
 
-      totalPages = accountListModel.totalPages??1;
-      if (page == 0) {
-        subAccountList = accountListModel.results ?? [];
+      //totalPages = subAccountListModel.totalPages??1;
+      if (page == 1) {
+        subAccountList = subAccountListModel.results ?? [];
       } else {
-        addToAccountList(accountListModel.results ?? []);
+        addToSubAccountList(subAccountListModel.results ?? []);
       }
       log(subAccountList.toString());
       log(totalPages.toString());
@@ -549,10 +553,10 @@ class SubAccountListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST+"/$accountId/subaccount");
+      ApiService apiService = ApiService(AppConstant.TRANSFER);
       var response = await apiService.post({
         'data': {
-          'new_owner': newOwnerId,
+          'to_user_id': newOwnerId,
           'account_id': accountId,
           'sub_account_id': subAccountId,
         },

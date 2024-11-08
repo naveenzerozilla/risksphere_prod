@@ -43,6 +43,7 @@ import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
+import 'my_location_list.dart';
 import 'widgets/auto_complete_options.dart';
 
 class SubAccountListScreen extends StatefulWidget {
@@ -128,7 +129,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
       _subAccountQuery = query;
       print("Query set to: $_subAccountQuery");
       var provider = Provider.of<SubAccountListProvider>(context, listen: false);
-      provider.page = 0;
+      provider.page = 1;
       await provider.fetchSubAccountList(context, widget.accountId, _subAccountQuery, provider.page, 2);
     });
   }
@@ -172,9 +173,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   _getData() async {
     // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SubAccountListProvider>(context, listen: false).page = 0;
+      Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
-          .fetchSubAccountList(context, widget.accountId, "", 0, 10);
+          .fetchSubAccountList(context, widget.accountId, "", 1, 10);
     });
   }
 
@@ -429,7 +430,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
             return /* LocationProfile(
               account: accountListProvider.accountList[index],
             );*/
-                SovListScreen(accountId: widget.accountId, subAccountId: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
+              MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
           }));
           /*LocationList(
             userId: subAccountListProvider.subAccountList[index].sub ?? "",
@@ -771,7 +772,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                         ),
                         //SizedBox(),
                         const Spacer(),
-                        IconButton(
+                        /*IconButton(
                           icon: const Icon(Icons.upload_rounded),
                           color: AppColors.primaryMain,
                           onPressed: () async {
@@ -783,7 +784,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           },
                           tooltip: LanguageService.getTranslated(
                               context, "sub_account_list_app_export_tooltip_text"),
-                        ),
+                        ),*/
                         IconButton(
                           icon: const Icon(Icons.file_copy_rounded),
                           color: AppColors.primaryMain,
@@ -1702,7 +1703,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           _subAccountQuery,
                           // Pass the search query if any
                           subAccountListProvider.page,
-                          2, // Page size
+                          10, // Page size
                         );
                         return SizedBox();
                       }

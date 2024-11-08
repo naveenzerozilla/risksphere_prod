@@ -1,630 +1,167 @@
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:green/screens/listings/widgets/vertical_flat_bar_indicator.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
+import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../../design_system/components/custom_button.dart';
-import '../../../design_system/components/rating_slider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/location_list_provider.dart';
+import '../../../providers/my_location_list_provider.dart';
 import 'multi_select_dropdown.dart';
+import 'vertical_bar_indicator.dart';
 
 class ListingsFilterScreen extends StatefulWidget {
   final String accountId;
   final String subAccountId;
   final String sovId;
   final String? searchQuery;
+  final bool showGeoRatings;
 
-  const ListingsFilterScreen(
-      {super.key,
-      required this.accountId,
-      required this.subAccountId,
-      required this.sovId,
-      required this.searchQuery});
+  const ListingsFilterScreen({
+    super.key,
+    required this.accountId,
+    required this.subAccountId,
+    required this.sovId,
+    required this.searchQuery,
+    this.showGeoRatings = true,
+  });
 
   @override
   _ListingsFilterScreenState createState() => _ListingsFilterScreenState();
 }
 
 class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
-  // List of titles to be displayed in the filter list.
-  // Property Type and Construction Type are excluded.
-  List<String> expansionTitles = [
-    'Geographical',
-    'Ratings',
-    // 'Property Type',  // Excluded
-    // 'Construction Type',  // Excluded
-    //'Certifications',
-    //'Hazard',
-  ];
+  bool isLoading = true;
 
-  Map<String, List<String>> subValues = {
-    'Geographical': ['Select Country', 'Select State'],
-    'Ratings': List.generate(5, (index) => 'Rating ${index + 1}'),
-    // 'Property Type': ['Commercial', 'Residential', 'Industrial', 'Other'],  // Excluded
-    // 'Construction Type': ['Merceise', 'Wood', 'Concrete', 'Steel', 'Others'],  // Excluded
-    //'Certifications': ['Manually Certified', 'Auto Certified'],
-    //'Hazard': ['Earthquake', 'Hurricane', 'Fire', 'Flood', 'Tornado', 'Others'],
-  };
-
-  String searchQuery = "";
-
-  bool showGeographical = true;
-  bool showRatings = true;
-
-  // bool showPropertyType = true; // Excluded
-  // bool showConstructionType = true; // Excluded
-  bool showCertifications = true;
-  bool showHazard = true;
-
+  // Geographical
   String? selectedCountry;
-  String? selectedState;
   String? zipcode;
 
-  List<String> countries = [
-    'Afghanistan',
-    'Albania',
-    'Algeria',
-    'Andorra',
-    'Angola',
-    'Antigua and Barbuda',
-    'Argentina',
-    'Armenia',
-    'Australia',
-    'Austria',
-    'Azerbaijan',
-    'Bahamas',
-    'Bahrain',
-    'Bangladesh',
-    'Barbados',
-    'Belarus',
-    'Belgium',
-    'Belize',
-    'Benin',
-    'Bhutan',
-    'Bolivia',
-    'Bosnia and Herzegovina',
-    'Botswana',
-    'Brazil',
-    'Brunei',
-    'Bulgaria',
-    'Burkina Faso',
-    'Burundi',
-    'Cabo Verde',
-    'Cambodia',
-    'Cameroon',
-    'Canada',
-    'Central African Republic',
-    'Chad',
-    'Chile',
-    'China',
-    'Colombia',
-    'Comoros',
-    'Congo, Democratic Republic of the',
-    'Congo, Republic of the',
-    'Costa Rica',
-    'Croatia',
-    'Cuba',
-    'Cyprus',
-    'Czech Republic',
-    'Denmark',
-    'Djibouti',
-    'Dominica',
-    'Dominican Republic',
-    'Ecuador',
-    'Egypt',
-    'El Salvador',
-    'Equatorial Guinea',
-    'Eritrea',
-    'Estonia',
-    'Eswatini',
-    'Ethiopia',
-    'Fiji',
-    'Finland',
-    'France',
-    'Gabon',
-    'Gambia',
-    'Georgia',
-    'Germany',
-    'Ghana',
-    'Greece',
-    'Grenada',
-    'Guatemala',
-    'Guinea',
-    'Guinea-Bissau',
-    'Guyana',
-    'Haiti',
-    'Honduras',
-    'Hungary',
-    'Iceland',
-    'India',
-    'Indonesia',
-    'Iran',
-    'Iraq',
-    'Ireland',
-    'Israel',
-    'Italy',
-    'Jamaica',
-    'Japan',
-    'Jordan',
-    'Kazakhstan',
-    'Kenya',
-    'Kiribati',
-    'Korea, North',
-    'Korea, South',
-    'Kosovo',
-    'Kuwait',
-    'Kyrgyzstan',
-    'Laos',
-    'Latvia',
-    'Lebanon',
-    'Lesotho',
-    'Liberia',
-    'Libya',
-    'Liechtenstein',
-    'Lithuania',
-    'Luxembourg',
-    'Madagascar',
-    'Malawi',
-    'Malaysia',
-    'Maldives',
-    'Mali',
-    'Malta',
-    'Marshall Islands',
-    'Mauritania',
-    'Mauritius',
-    'Mexico',
-    'Micronesia',
-    'Moldova',
-    'Monaco',
-    'Mongolia',
-    'Montenegro',
-    'Morocco',
-    'Mozambique',
-    'Myanmar',
-    'Namibia',
-    'Nauru',
-    'Nepal',
-    'Netherlands',
-    'New Zealand',
-    'Nicaragua',
-    'Niger',
-    'Nigeria',
-    'North Macedonia',
-    'Norway',
-    'Oman',
-    'Pakistan',
-    'Palau',
-    'Panama',
-    'Papua New Guinea',
-    'Paraguay',
-    'Peru',
-    'Philippines',
-    'Poland',
-    'Portugal',
-    'Qatar',
-    'Romania',
-    'Russia',
-    'Rwanda',
-    'Saint Kitts and Nevis',
-    'Saint Lucia',
-    'Saint Vincent and the Grenadines',
-    'Samoa',
-    'San Marino',
-    'Sao Tome and Principe',
-    'Saudi Arabia',
-    'Senegal',
-    'Serbia',
-    'Seychelles',
-    'Sierra Leone',
-    'Singapore',
-    'Slovakia',
-    'Slovenia',
-    'Solomon Islands',
-    'Somalia',
-    'South Africa',
-    'South Sudan',
-    'Spain',
-    'Sri Lanka',
-    'Sudan',
-    'Suriname',
-    'Sweden',
-    'Switzerland',
-    'Syria',
-    'Taiwan',
-    'Tajikistan',
-    'Tanzania',
-    'Thailand',
-    'Timor-Leste',
-    'Togo',
-    'Tonga',
-    'Trinidad and Tobago',
-    'Tunisia',
-    'Turkey',
-    'Turkmenistan',
-    'Tuvalu',
-    'Uganda',
-    'Ukraine',
-    'United Arab Emirates',
-    'United Kingdom',
-    'USA',
-    'Uruguay',
-    'Uzbekistan',
-    'Vanuatu',
-    'Vatican City',
-    'Venezuela',
-    'Vietnam',
-    'Yemen',
-    'Zambia',
-    'Zimbabwe'
-  ];
-
-  List<bool> ratings = [false, false, false, false, false];
+  // Campus
   List<String> selectedCampusIds = [];
-  int selectedRating = 3;
 
-  // Excluded Property Type
-  // Map<String, bool> propertyTypes = {
-  //   'Commercial': false,
-  //   'Residential': false,
-  //   'Industrial': false,
-  //   'Other': false,
-  // };
+  // Certifications
+  bool manualCertified = false;
+  bool autoCertified = false;
 
-  // Excluded Construction Type
-  // Map<String, bool> constructionTypes = {
-  //   'Merceise': false,
-  //   'Wood': false,
-  //   'Concrete': false,
-  //   'Steel': false,
-  //   'Others': false,
-  // };
+  // Geo Ratings
+  List<int> geoRatings = [1, 2, 3, 4, 5]; // Assuming 1 to 5 ratings
 
-  // Map<String, bool> certifications = {
-  //   'Manually Certified': false,
-  //   'Auto Certified': false,
-  // };
-  //
-  // Map<String, bool> hazards = {
-  //   'Earthquake': false,
-  //   'Hurricane': false,
-  //   'Fire': false,
-  //   'Flood': false,
-  //   'Tornado': false,
-  //   'Others': false,
-  // };
+  // To store selected geo ratings
+  List<int> selectedGeoRatings = [];
 
-  void toggleCategory(String category, bool isSelected) {
-    switch (category) {
-      case 'Geographical':
-        showGeographical = isSelected;
-        break;
-      case 'Ratings':
-        showRatings = isSelected;
-        break;
-      // case 'Property Type':  // Excluded
-      //   showPropertyType = isSelected;
-      //   break;
-      // case 'Construction Type':  // Excluded
-      //   showConstructionType = isSelected;
-      //   break;
-      //   case 'Certifications':
-      //     showCertifications = isSelected;
-      //     break;
-      //   case 'Hazard':
-      //     showHazard = isSelected;
-      //     break;
-    }
+  // Hazard Ratings (with multiple selections possible)
+  Map<String, List<int>> hazardRatings = {
+    'Earthquake': [],
+    'Fire': [],
+    'Flood': [],
+    'Tornado': [],
+    'Others': [],
+  };
+
+  // Search query
+  String searchQuery = '';
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    fetchFilterOptions();
+    super.initState();
   }
 
+  // Fetch the initial filter options
+  void fetchFilterOptions() async {
+    final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+    await locationListProvider.fetchInitialFilterOptions(widget.accountId, widget.subAccountId);
+    setState(() {
+      isLoading = false; // Stop showing loader once data is fetched
+      // add a list of hazards to hazardRatings (refresh all hazardRatings keys with the provider hazard list)
+      hazardRatings = Map.fromIterable(locationListProvider.hazardList, key: (hazard) => hazard, value: (hazard) => []);
+
+    });
+    loadInitialFilters();
+  }
+
+  // Update search query
   void updateSearchQuery(String newQuery) {
     setState(() {
       searchQuery = newQuery.toLowerCase();
     });
   }
 
-  void removeFilter(String filterCategory, String filterValue) {
-    setState(() {
-      switch (filterCategory) {
-        case 'Geographical':
-          if (filterValue == selectedCountry) selectedCountry = null;
-          if (filterValue == selectedState) selectedState = null;
-          if (filterValue == zipcode) zipcode = null;
-          break;
-        case 'Ratings':
-          int ratingIndex = int.parse(filterValue.split(' ').last) - 1;
-          ratings[ratingIndex] = false;
-          break;
-        case 'Campus Ids':
-          selectedCampusIds.remove(filterValue);
-          break;
-        // case 'Property Type':  // Excluded
-        //   propertyTypes[filterValue] = false;
-        //   break;
-        // case 'Construction Type':  // Excluded
-        //   constructionTypes[filterValue] = false;
-        //   break;
-        //   case 'Certifications':
-        //     certifications[filterValue] = false;
-        //     break;
-        //   case 'Hazard':
-        //     hazards[filterValue] = false;
-        //     break;
+  // Apply filters
+  void applyFilters(BuildContext context) {
+    final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+    locationListProvider.countries = selectedCountry != null ? [selectedCountry!] : [];
+    locationListProvider.zipcode = zipcode ?? '';
+    locationListProvider.certifications = [
+      if (manualCertified) 'Manual Certified',
+      if (autoCertified) 'Auto Certified'
+    ];
+    print("certifications are: ${locationListProvider.certifications}");
+
+    // API Format for hazard ratings
+    Map<String, List<int>> hazardsForApi = {};
+    hazardRatings.forEach((hazard, ratings) {
+      if (ratings.isNotEmpty) {
+        hazardsForApi[hazard] = ratings;
       }
     });
-  }
+    locationListProvider.hazardRatings = hazardsForApi;
+    // Pass selected geo ratings to the provider or API
+    locationListProvider.rating = selectedGeoRatings;
+    print(hazardsForApi);  // Pass this to the API
+    locationListProvider.selectedCampusIds = selectedCampusIds;
 
-  void clearAllFilters() {
-    setState(() {
-      selectedCountry = null;
-      selectedState = null;
-      ratings = [false, false, false, false, false];
-      // propertyTypes.updateAll((key, value) => false);  // Excluded
-      // constructionTypes.updateAll((key, value) => false);  // Excluded
-      // certifications.updateAll((key, value) => false);
-      // hazards.updateAll((key, value) => false);
-    });
+    if(widget.showGeoRatings) {
+      Provider.of<MyLocationListProvider>(context, listen: false)
+          .fetchLocationList(context, "", 0, 40, widget.accountId,
+          widget.subAccountId);
+    } else {
+      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 0, 40, widget.accountId, widget.subAccountId);
+    }
 
-    // Clear filters in the provider
-    final locationListProvider =
-        Provider.of<LocationListProvider>(context, listen: false);
-    locationListProvider.countries = [];
-    locationListProvider.state = '';
-    locationListProvider.zipcode = '';
-    locationListProvider.propertyType =
-        []; // Still need to clear even though it's excluded
-    locationListProvider.constructionType =
-        []; // Still need to clear even though it's excluded
-    locationListProvider.certifications = [];
-    locationListProvider.hazard = [];
-    locationListProvider.rating = [];
-    locationListProvider.selectedCampusIds = [];
 
-    locationListProvider.page = 0; // Reset page to 0
-
-    // Fetch the unfiltered location list
-    locationListProvider.fetchLocationList(
-      context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
-      "",
-      // No search query
-      0,
-      "forward",
-      // Reset page to 0
-      40, // Page size
-    );
-    locationListProvider.fetchCertifiedLocationList(
-      context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
-      "",
-      // No search query
-      0,
-      // Reset page to 0
-      40, // Page size
-    );
     Navigator.of(context).pop(); // Close the filter screen
   }
 
-  void applyFilters(BuildContext context) {
-    List<String> selectedCountries =
-        selectedCountry != null ? [selectedCountry!] : [];
-    List<int> selectedRatings = [];
-    for (int i = 0; i < ratings.length; i++) {
-      if (ratings[i]) selectedRatings.add(i + 1);
-    }
-    print('Selected ratings: $selectedRatings');
-    print('After loop: $ratings');
-
-    // List<String> selectedPropertyTypes = [];  // Excluded
-    // propertyTypes.forEach((key, value) {
-    //   if (value) selectedPropertyTypes.add(key);
-    // });
-
-    // List<String> selectedConstructionTypes = [];  // Excluded
-    // constructionTypes.forEach((key, value) {
-    //   if (value) selectedConstructionTypes.add(key);
-    // });
-
-    // List<String> selectedCertifications = [];
-    // certifications.forEach((key, value) {
-    //   if (value) selectedCertifications.add(key);
-    // });
-    //
-    // List<String> selectedHazards = [];
-    // hazards.forEach((key, value) {
-    //   if (value) selectedHazards.add(key);
-    // });
-
-    // Update the provider with the selected filters
-    Provider.of<LocationListProvider>(context, listen: false).countries =
-        selectedCountries;
-    Provider.of<LocationListProvider>(context, listen: false).state =
-        selectedState ?? "";
-    Provider.of<LocationListProvider>(context, listen: false).propertyType =
-        []; // Empty as excluded
-    Provider.of<LocationListProvider>(context, listen: false).constructionType =
-        []; // Empty as excluded
-    Provider.of<LocationListProvider>(context, listen: false).certifications =
-        []; //selectedCertifications;
-    Provider.of<LocationListProvider>(context, listen: false).hazard =
-        []; //selectedHazards;
-    Provider.of<LocationListProvider>(context, listen: false).rating =
-        selectedRatings;
-
-    Provider.of<LocationListProvider>(context, listen: false).zipcode = zipcode ?? "";
-    Provider.of<LocationListProvider>(context, listen: false).selectedCampusIds = selectedCampusIds;
-
-    // Reset page and fetch the location list with updated filters
-    Provider.of<LocationListProvider>(context, listen: false).page = 0;
-    Provider.of<LocationListProvider>(context, listen: false).fetchLocationList(
-      context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
-      widget.searchQuery ?? "",
-      0,
-      // Reset page to 0
-      "forward",
-      40,
-    );
-    Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
-      context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
-      widget.searchQuery ?? "",
-      0,
-      // Reset page to 0
-      40, // Page size
-    );
-
-    Navigator.of(context).pop(); // Close the drawer
-  }
-
-  List<Widget> getFilterChips() {
-    List<Widget> chips = [];
-
-    // Add a chip only if a country is selected
-    if (selectedCountry != null && selectedCountry!.isNotEmpty) {
-      chips.add(
-        Chip(
-          label: Text(selectedCountry!),
-          onDeleted: () => removeFilter('Geographical', selectedCountry!),
-        ),
-      );
-    }
-
-    // Add a chip only if a state is entered
-    if (selectedState != null && selectedState!.isNotEmpty) {
-      chips.add(
-        Chip(
-          label: Text(selectedState!),
-          onDeleted: () => removeFilter('Geographical', selectedState!),
-        ),
-      );
-    }
-
-    // Add a chip only if a zipcode is entered
-    if (zipcode != null && zipcode!.isNotEmpty) {
-      chips.add(
-        Chip(
-          label: Text(zipcode!),
-          onDeleted: () => removeFilter('Geographical', zipcode!),
-        ),
-      );
-    }
-
-    // Add chips for each selected rating
-    for (int i = 0; i < ratings.length; i++) {
-      if (ratings[i]) {
-        chips.add(
-          Chip(
-            label: Text('Rating ${i + 1}'),
-            onDeleted: () => removeFilter('Ratings', 'Rating ${i + 1}'),
-          ),
-        );
-      }
-    }
-
-    // Add chips for each selected campus ID
-    selectedCampusIds.forEach((campusId) {
-      chips.add(
-        Chip(
-          label: Text(campusId),
-          onDeleted: () => setState(() {
-            selectedCampusIds.remove(campusId);
-          }),
-        ),
-      );
-    });
-
-    // Excluded Property Type
-    // propertyTypes.forEach((key, value) {
-    //   if (value) {
-    //     chips.add(
-    //       Chip(
-    //         label: Text(key),
-    //         onDeleted: () => removeFilter('Property Type', key),
-    //       ),
-    //     );
-    //   }
-    // });
-
-    // Excluded Construction Type
-    // constructionTypes.forEach((key, value) {
-    //   if (value) {
-    //     chips.add(
-    //       Chip(
-    //         label: Text(key),
-    //         onDeleted: () => removeFilter('Construction Type', key),
-    //       ),
-    //     );
-    //   }
-    // });
-
-    // Add chips for each selected certification
-    /*certifications.forEach((key, value) {
-      if (value) {
-        chips.add(
-          Chip(
-            label: Text(key),
-            onDeleted: () => removeFilter('Certifications', key),
-          ),
-        );
-      }
-    });
-
-    // Add chips for each selected hazard
-    hazards.forEach((key, value) {
-      if (value) {
-        chips.add(
-          Chip(
-            label: Text(key),
-            onDeleted: () => removeFilter('Hazard', key),
-          ),
-        );
-      }
-    });*/
-
-    return chips;
-  }
-
-  @override
-  void initState() {
+  // Load initial filters from the provider
+  void loadInitialFilters() {
     final locationListProvider =
-        Provider.of<LocationListProvider>(context, listen: false);
+    Provider.of<MyLocationListProvider>(context, listen: false);
 
-    // Initialize filter values from provider
-    selectedCountry = locationListProvider.countries.isNotEmpty
-        ? locationListProvider.countries.first
-        : null;
-    selectedState = locationListProvider.state;
-    zipcode = locationListProvider.zipcode;
-    ratings = List.generate(
-        5, (index) => locationListProvider.rating.contains(index + 1));
-    print('Campus IDs: ${locationListProvider.campusIds}');
-    selectedCampusIds = locationListProvider.selectedCampusIds;
-    // Excluded Property Type
-    // propertyTypes = Map.fromIterable(locationListProvider.propertyType, key: (e) => e, value: (e) => true);
-    // Excluded Construction Type
-    // constructionTypes = Map.fromIterable(locationListProvider.constructionType, key: (e) => e, value: (e) => true);
-    //certifications = Map.fromIterable(locationListProvider.certifications, key: (e) => e, value: (e) => true);
-    //hazards = Map.fromIterable(locationListProvider.hazard, key: (e) => e, value: (e) => true);
-    super.initState();
+    setState(() {
+      selectedCountry = locationListProvider.countries.isNotEmpty
+          ? locationListProvider.countries.first
+          : null;
+      zipcode = locationListProvider.zipcode;
+      manualCertified =
+          locationListProvider.certifications.contains('Manual Certified');
+      autoCertified =
+          locationListProvider.certifications.contains('Auto Certified');
+      selectedGeoRatings = locationListProvider.rating;
+
+      // Load hazard ratings
+      hazardRatings = Map<String, List<int>>.from(
+          locationListProvider.hazardRatings);
+    });
   }
 
+  // UI for Geographical, Campus, Certifications, and other filters
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
-    List<String> filteredTitles = expansionTitles.where((title) {
-      return title.toLowerCase().contains(searchQuery) ||
-          subValues[title]!
-              .any((sub) => sub.toLowerCase().contains(searchQuery));
-    }).toList();
-    final campusIds = Provider.of<LocationListProvider>(context).campusIds;
+    if (isLoading) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: CircularProgressIndicator(), // Loader
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,15 +173,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         ),
         Padding(
           padding: EdgeInsets.all(CustomSpacing.four),
-          child: Text('Apply filters to table data',
-              style: typography.Subtitle2),
+          child: Text('Apply filters to table data', style: typography.Subtitle2),
         ),
         SizedBox(height: CustomSpacing.two),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
           child: TextFormField(
             decoration: InputDecoration(
-              labelText: 'Search filter categories',
+              labelText: 'Search',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -654,245 +190,29 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
           ),
         ),
         SizedBox(height: CustomSpacing.two),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-          child: Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
-            children: getFilterChips(),
-          ),
-        ),
-        SizedBox(height: CustomSpacing.two),
         Expanded(
-          child: ListView(
-            children: filteredTitles.map((title) {
-              switch (title) {
-                case 'Geographical':
-                  return ExpansionTile(
-                    title: Text('Geographical', style: typography.Body1),
-                    children: [
-                      Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-                            child: MultiSelectDropdown(
-                              items: campusIds,
-                              selectedItems: selectedCampusIds,
-                              onChanged: (newSelection) {
-                                setState(() {
-                                  selectedCampusIds = newSelection;
-                                });
-                              },
-                            ),
-                          ),
-                          // Add zipcode input field here
-                          Padding(
-                            padding: EdgeInsets.only(left: CustomSpacing.four, right: CustomSpacing.four, top: CustomSpacing.two),
-                            child: TextFormField(
-                              decoration: InputDecoration(
-                                counterText: '',
-                                labelText: 'Enter Zipcode',
-                                hintText: 'Enter Zipcode',
-                                hintStyle: typography.Body1,
-                                labelStyle: typography.Body1,
-                                border: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(8)),
-                                ),
-                              ),
-                              style: typography.Body1,
-                              maxLength: 10,
-                              initialValue: zipcode,
-                              // Pre-fill with selected zipcode if available
-                              onChanged: (newValue) {
-                                setState(() {
-                                  zipcode =
-                                      newValue; // Update zipcode state as user types
-                                });
-                              },
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.four,
-                                right: CustomSpacing.four,
-                                top: CustomSpacing.two),
-                            child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              // Ensures the dropdown expands to fit available space
-                              decoration: InputDecoration(
-                                labelText: 'Select Country',
-                                hintText: 'Select Country',
-                                hintStyle: typography.Body1,
-                                labelStyle: typography.Body1,
-                                border: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(8)),
-                                ),
-                              ),
-                              style: typography.Body1,
-                              value: selectedCountry,
-                              onChanged: (newValue) {
-                                setState(() {
-                                  selectedCountry = newValue;
-                                });
-                              },
-                              items: countries.map((country) {
-                                return DropdownMenuItem(
-                                  child: Text(
-                                    country,
-                                    style: typography.Body1,
-                                    overflow: TextOverflow
-                                        .ellipsis, // Handle overflow with ellipsis
-                                  ),
-                                  value: country,
-                                );
-                              }).toList(),
-                            ),
-                          ),
+          child: Consumer<MyLocationListProvider>(
+            builder: (context, locationListProvider, child) {
+              return ListView(
+                children: [
+                  // Geographical Filter
+                  buildGeographicalFilter(context, typography, locationListProvider.countryList),
 
-                          SizedBox(height: CustomSpacing.two),
-                          /*Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: CustomSpacing.four),
-                            child: TextFormField(
-                              decoration: InputDecoration(
-                                labelText: 'Enter State',
-                                hintText: 'Enter State',
-                                hintStyle: typography.Body1,
-                                labelStyle: typography.Body1,
-                                border: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(8)),
-                                ),
-                              ),
-                              style: typography.Body1,
-                              initialValue: selectedState,
-                              // Pre-fill with selected state if available
-                              onChanged: (newValue) {
-                                setState(() {
-                                  selectedState =
-                                      newValue; // Update state as user types
-                                });
-                              },
-                            ),
-                          ),*/
-                          SizedBox(height: CustomSpacing.two),
-                        ],
-                      ),
-                    ],
-                  );
-                case 'Ratings':
-                  return ExpansionTile(
-                    title: Text('Ratings', style: typography.Body1),
-                    children: List.generate(5, (index) {
-                      return CheckboxListTile(
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: ratings[index],
-                        onChanged: (bool? value) {
-                          setState(() {
-                            ratings[index] = value!;
-                          });
-                        },
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: RatingSlider(
-                                width: 200,
-                                progress: index + 1,
-                                total: 5,
-                                progressColor: [
-                                  Colors.red[800]!,
-                                  Colors.orange[100]!,
-                                  Colors.blue[200]!,
-                                  Colors.green[200]!,
-                                  Colors.yellow[100]!
-                                ][index],
-                                thumbColor: [
-                                  Colors.red[800]!,
-                                  Colors.orange[800]!,
-                                  Colors.blue[700]!,
-                                  Colors.green[800]!,
-                                  Colors.yellow[700]!
-                                ][index],
-                                textColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  );
-                // Excluded Property Type
-                // case 'Property Type':
-                //   return ExpansionTile(
-                //     title: Text('Property Type', style: typography.Body1),
-                //     children: propertyTypes.keys.map((type) {
-                //       return CheckboxListTile(
-                //         controlAffinity: ListTileControlAffinity.leading,
-                //         title: Text(type),
-                //         value: propertyTypes[type],
-                //         onChanged: (bool? value) {
-                //           setState(() {
-                //             propertyTypes[type] = value!;
-                //           });
-                //         },
-                //       );
-                //     }).toList(),
-                //   );
-                // Excluded Construction Type
-                // case 'Construction Type':
-                //   return ExpansionTile(
-                //     title: Text('Construction Type', style: typography.Body1),
-                //     children: constructionTypes.keys.map((type) {
-                //       return CheckboxListTile(
-                //         controlAffinity: ListTileControlAffinity.leading,
-                //         title: Text(type, style: typography.Body1),
-                //         value: constructionTypes[type],
-                //         onChanged: (bool? value) {
-                //           setState(() {
-                //             constructionTypes[type] = value!;
-                //           });
-                //         },
-                //       );
-                //     }).toList(),
-                //   );
-                //   case 'Certifications':
-                //     return ExpansionTile(
-                //       title: Text('Certifications', style: typography.Body1),
-                //       children: certifications.keys.map((type) {
-                //         return CheckboxListTile(
-                //           controlAffinity: ListTileControlAffinity.leading,
-                //           title: Text(type, style: typography.Body1),
-                //           value: certifications[type],
-                //           onChanged: (bool? value) {
-                //             setState(() {
-                //               certifications[type] = value!;
-                //             });
-                //           },
-                //         );
-                //       }).toList(),
-                //     );
-                //   case 'Hazard':
-                //     return ExpansionTile(
-                //       title: Text('Hazard', style: typography.Body1),
-                //       children: hazards.keys.map((type) {
-                //         return CheckboxListTile(
-                //           controlAffinity: ListTileControlAffinity.leading,
-                //           title: Text(type, style: typography.Body1),
-                //           value: hazards[type],
-                //           onChanged: (bool? value) {
-                //             setState(() {
-                //               hazards[type] = value!;
-                //             });
-                //           },
-                //         );
-                //       }).toList(),
-                //     );
-                default:
-                  return Container();
-              }
-            }).toList(),
+                  // Campus Filter
+                  buildCampusFilter(context, typography),
+
+                  // Certifications Filter
+                  buildCertificationsFilter(typography),
+
+                  // Geo Ratings Filter with VerticalBarIndicator
+                  if (widget.showGeoRatings)
+                  buildGeoRatingsFilter(typography),
+
+                  // Hazard Filter with dropdown and multiple rating checkboxes
+                  buildHazardFilterWithDropdown(typography, locationListProvider.hazardList),
+                ],
+              );
+            }
           ),
         ),
         Padding(
@@ -909,7 +229,15 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  clearAllFilters();
+                  Provider.of<MyLocationListProvider>(context, listen: false).clearAllFilters();
+                  if(widget.showGeoRatings) {
+                    Provider.of<MyLocationListProvider>(context, listen: false)
+                        .fetchLocationList(context, "", 0, 40, widget.accountId,
+                        widget.subAccountId);
+                  } else {
+                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 0, 40, widget.accountId, widget.subAccountId);
+                  }
+
                 },
                 child: Text('Clear All', style: typography.ButtonLarge),
               ),
@@ -918,5 +246,308 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         ),
       ],
     );
+  }
+
+  // Geographical Filter Section
+  Widget buildGeographicalFilter(BuildContext context, CustomTypography typography, List<String> countryList) {
+    return ExpansionTile(
+      title: Text('Geographical', style: typography.Body1),
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
+          child: DropdownButtonFormField<String>(
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Choose country',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            value: selectedCountry,
+            onChanged: (value) {
+              setState(() {
+                selectedCountry = value;
+              });
+            },
+            items: countryList.map((country) => DropdownMenuItem<String>(
+              value: country,
+              child: Text(country, style: typography.Body1),
+            )).toList(),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
+          child: TextFormField(
+            decoration: InputDecoration(
+              labelText: 'Zipcode',
+              counterText: '',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+
+            ),
+            maxLength: 15,
+            style: typography.Body1,
+            onChanged: (value) {
+              setState(() {
+                zipcode = value;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+
+  }
+
+  // Campus Filter Section
+  Widget buildCampusFilter(BuildContext context, CustomTypography typography) {
+    final campusIds = Provider.of<LocationListProvider>(context).campusIds;
+    return ExpansionTile(
+      title: Text('Campus', style: typography.Body1),
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
+          child: MultiSelectDropdown(
+            items: campusIds,
+            selectedItems: selectedCampusIds,
+            onChanged: (newSelection) {
+              setState(() {
+                selectedCampusIds = newSelection;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Certifications Filter Section
+  Widget buildCertificationsFilter(CustomTypography typography) {
+    return ExpansionTile(
+      title: Text('Certifications', style: typography.Body1),
+      children: [
+        CheckboxListTile(
+          title: Text('Manual Certified', style: typography.Body1),
+          value: manualCertified,
+          onChanged: (bool? value) {
+            setState(() {
+              manualCertified = value!;
+            });
+          },
+        ),
+        CheckboxListTile(
+          title: Text('Auto Certified', style: typography.Body1),
+          value: autoCertified,
+          onChanged: (bool? value) {
+            setState(() {
+              autoCertified = value!;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // Geo Ratings Filter Section with VerticalBarIndicator
+  Widget buildGeoRatingsFilter(CustomTypography typography) {
+    return ExpansionTile(
+      title: Text('Geo Ratings', style: typography.Body1),
+      children: geoRatings.map((rating) {
+        return CheckboxListTile(
+          title: Row(
+            children: [
+              VerticalFlatBarIndicator(score: rating), // Displays the rating bars
+              SizedBox(width: 1),
+              manualCertified
+                  ? SvgPicture.asset('assets/images/certified_five.svg', width: 24, height: 24)
+                  : Container(
+                margin: EdgeInsets.only(left: 4),
+                child: CircleAvatar(
+                  radius: 10,
+                  backgroundColor: Colors.green.withOpacity(0.6),
+                  child: Center(
+                    child: Text(
+                      rating.toString(),
+                      style: typography.Body1.copyWith(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          value: selectedGeoRatings.contains(rating),
+          onChanged: (bool? value) {
+            setState(() {
+              if (value == true) {
+                selectedGeoRatings.add(rating);
+              } else {
+                selectedGeoRatings.remove(rating);
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+
+  // Hazard Filter Section with dropdown and multiple rating checkboxes
+  Widget buildHazardFilterWithDropdown(CustomTypography typography, List<String> hazardList) {
+
+    return ExpansionTile(
+      title: Text('Hazard', style: typography.Body1),
+      children: hazardRatings.keys.map((hazard) {
+        return ListTile(
+          leading: Checkbox(
+            value: hazardRatings[hazard]!.isNotEmpty,
+            onChanged: (bool? value) {
+              setState(() {
+                if (value == true && hazardRatings[hazard]!.isEmpty) {
+                  hazardRatings[hazard] = [1]; // Default selection if checked
+                } else {
+                  hazardRatings[hazard] = [];
+                }
+              });
+            },
+          ),
+          title: Text(hazard, style: typography.Body1, overflow: TextOverflow.ellipsis, maxLines: 1),
+          trailing: PopupMenuButton<List<int>>(
+            offset: Offset(-160, 0), // Offset to make menu appear on the left
+            position: PopupMenuPosition.under,
+            constraints: BoxConstraints(maxWidth: 200),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hazardRatings[hazard]!.isEmpty)
+                    Text('All', style: typography.Body1)
+                  else
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: hazardRatings[hazard]!.map((rating) =>
+                          Padding(
+                            padding: EdgeInsets.only(right: 4),
+                            child: _buildRatingCircle(rating, _getRatingColor(rating)),
+                          ),
+                      ).toList(),
+                    ),
+                  Icon(Icons.arrow_drop_down),
+                ],
+              ),
+            ),
+            itemBuilder: (context) => [
+              PopupMenuItem<List<int>>(
+                value: [],
+                child: Text('All', style: typography.Body1),
+                onTap: () {
+                  setState(() {
+                    hazardRatings[hazard] = [];
+                  });
+                },
+              ),
+              PopupMenuItem<List<int>>(
+                enabled: false, // Prevents the menu from closing on tap
+                height: 200, // Adjust based on your needs
+                child: StatefulBuilder(
+                  builder: (context, setStatePopup) {
+                    return Container(
+                      width: 150,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(5, (index) {
+                          int score = index + 1;
+                          return Row(
+                            children: [
+                              Checkbox(
+                                value: hazardRatings[hazard]!.contains(score),
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    setStatePopup(() {
+                                      if (value == true) {
+                                        hazardRatings[hazard]!.add(score);
+                                      } else {
+                                        hazardRatings[hazard]!.remove(score);
+                                      }
+                                      // If no ratings are selected, revert to "All"
+                                      if (hazardRatings[hazard]!.isEmpty) {
+                                        hazardRatings[hazard] = [];
+                                      }
+                                    });
+                                  });
+                                },
+                              ),
+                              _buildRatingCircle(score, _getRatingColor(score)),
+                            ],
+                          );
+                        }),
+                      ),
+                    );
+                  },
+                ),
+                value: null,
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+// Helper method to build rating circle
+  Widget _buildRatingCircle(int rating, Color color) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          rating.toString(),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+// Helper method to get rating color
+  Color _getRatingColor(int rating) {
+    switch (rating) {
+      case 1:
+        return Colors.green;
+      case 2:
+        return Colors.lightGreen;
+      case 3:
+        return Colors.yellow;
+      case 4:
+        return Colors.orange;
+      case 5:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

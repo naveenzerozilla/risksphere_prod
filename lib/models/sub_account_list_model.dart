@@ -4,10 +4,11 @@ class SubAccountListModel {
   int? totalPages;
   Settings? settings;
 
+
   SubAccountListModel({this.totalHits, this.results, this.totalPages, this.settings});
 
   SubAccountListModel.fromJson(Map<String, dynamic> json) {
-    totalHits = json['totalHits'];
+    totalHits = json['totalRecords'];
     if (json['results'] != null) {
       results = <SubAccounts>[];
       json['results'].forEach((v) {

@@ -48,17 +48,18 @@ class AppConstant {
   static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/user_management';
 
   // R2 APIS
-  static String get GET_ACCOUNT_LIST => '$baseURL/accounts/mobile';
+  static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
   static String get RENAME_ACCOUNT => '$baseURL/accounts';
-  static String get DUPLICATE_ACCOUNT => 'https://eb2e-49-207-208-98.ngrok-free.app/project-green-f4d78/us-central1/accounts';//'$baseURL/accounts';
+  static String get DUPLICATE_ACCOUNT => '$baseURL/accounts';//'$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts';
   static String get AUTO_COMPLETE_ACCOUNT_LIST => '$baseURL/accounts';
   static String get ADD_ACCOUNT => '$baseURL/accounts';
   static String get REQUEST_ACCESS => '$baseURL/accounts';
   static String get UPLOAD_SOV_ACCOUNT => '$baseURL/sov';
+  static String get TRANSFER => '$baseURL/locations/transfer_sov';
 
   // Sub Accounts
-  static String get GET_SUB_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get GET_SUB_ACCOUNT_LIST => '$baseURL/locations';
   static String get RENAME_SUB_ACCOUNT => '$baseURL/accounts';
   static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT => '$baseURL/accounts';
@@ -69,6 +70,8 @@ class AppConstant {
 
   // Sov
   static String get GET_SOV_LIST => '$baseURL/accounts';
+  static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/sov';
+  static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations/sov';
   static String get RENAME_SOV => '$baseURL/accounts';
   static String get DUPLICATE_SOV => '$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY_SOV => '$baseURL/accounts';
@@ -79,12 +82,21 @@ class AppConstant {
   // Location
   static String get GET_LOCATION_LIST => '$baseURL/accounts';
   static String get ADD_LOCATION => '$baseURL/accounts';
-  static String get MY_LOCATION => '$baseURL/new_locations/my-locations';
+  static String get MY_LOCATION => '$baseURL/locations';
+  static String get ADD_TO_SOV=> '$baseURL/locations/add_to_sov';
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
 
+  // Location Profile New
+  static String get GET_LOCATION_PROFILE_NEW => '$baseURL/locations';
+
+  // Upload Images New
+  static String get UPLOAD_IMAGES_NEW => '$baseURL/locations/location_profile_images';
+
   /// R3 APIS
   static String get GET_JOB_MONITORING => '$baseURL/job_monitoring';
+  static String get UPLOAD_SOV_LOCATIONS => '$baseURL/sov/upload';
+  static String get EXPORT => '$baseURL/locations/export';
 
 }

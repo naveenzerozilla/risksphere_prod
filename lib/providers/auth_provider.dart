@@ -1059,6 +1059,7 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<String> getAllClaims() async {
     try {
+      
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('assignClaims');
       String? token = await _auth.currentUser!.getIdToken(true);
@@ -1067,6 +1068,7 @@ class AuthNotifier extends ChangeNotifier {
         'Authorization': 'Bearer ${token ?? ""}',
       });
       print("update claims response: ${response.data["is_user_exists"]}");
+      SharedPreferenceService.setScheduleInProgress(response.data['schedule_inprogress']??false);
       String? newToken = await _auth.currentUser!
           .getIdTokenResult(true)
           .then((value) => value.token);

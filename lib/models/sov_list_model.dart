@@ -41,7 +41,7 @@ class SovAccount {
   String? accountId;
   String? subAccountId;
   String? objectID;
-  int? overAllScore;
+  double? overAllScore;
   int? locationCount;
   bool isChecked = false; // Local variable, not part of JSON serialization
   bool disabled = false;
@@ -66,11 +66,15 @@ class SovAccount {
     path = json['path'];
     name = json['name'];
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
-    createdAt = json['created_at'];
+    //createdAt = json['created_at'];
     accountId = json['account_id'];
     subAccountId = json['sub_account_id'];
     objectID = json['objectID'];
-    overAllScore = json['over_all_score'];
+    if(json['over_all_score'].runtimeType == int) {
+      overAllScore = json['over_all_score'].toDouble();
+    } else {
+      overAllScore = json['over_all_score'];
+    }
     locationCount = json['location_count'];
     disabled = json['is_disabled'] ?? false;
   }
@@ -82,7 +86,7 @@ class SovAccount {
     if (owner != null) {
       data['owner'] = owner!.toJson();
     }
-    data['created_at'] = createdAt;
+    //data['created_at'] = createdAt;
     data['account_id'] = accountId;
     data['sub_account_id'] = subAccountId;
     data['objectID'] = objectID;
