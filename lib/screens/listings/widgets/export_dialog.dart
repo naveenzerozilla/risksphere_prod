@@ -21,7 +21,7 @@ class ExportDialog extends StatefulWidget {
 }
 
 class _ExportDialogState extends State<ExportDialog> {
-  String _format = 'doc';
+  String _format = 'excel';
   ExportType _exportType = ExportType.Profile;
   bool _includeImagesAsUrl = true;
   bool _downloadImagesInZip = false;
@@ -42,13 +42,14 @@ class _ExportDialogState extends State<ExportDialog> {
                 value: _format,
                 items: [
                   DropdownMenuItem(
-                    value: 'doc',
-                    child: Text('Word(.doc)', style: typography.Body1),
-                  ),
-                  DropdownMenuItem(
                     value: 'excel',
                     child: Text('Excel(.xls)',style: typography.Body1),
                   ),
+                  DropdownMenuItem(
+                    value: 'doc',
+                    child: Text('Word(.doc)', style: typography.Body1),
+                  ),
+
                   DropdownMenuItem(
                     value: 'pdf',
                     child: Text('PDF', style: typography.Body1),

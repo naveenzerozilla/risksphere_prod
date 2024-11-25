@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/profile_image_widget.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
+import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:green/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
 
@@ -76,10 +77,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         actions: <Widget>[
-          GestureDetector(
+          /*GestureDetector(
             child: Icon(Icons.search, size: 28, color: Colors.grey),
             onTap: onSearchPressed,
-          ),
+          ),*/
           SizedBox(
             width: CustomSpacing.two,
           ),
@@ -90,7 +91,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   content: Text('Coming Soon!'),
                   duration: Duration(seconds: 2),
                 );*/
-                ScaffoldMessenger.of(context).showSnackBar(
+                /*ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       'Coming Soon!',
@@ -99,11 +100,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           : Colors.white), // Use the typography instance
                     ),
                   ),
-                );
-               /* Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => MapScreen()),
                 );*/
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()),
+                );
               },
               child: Stack(
                 clipBehavior: Clip.none,

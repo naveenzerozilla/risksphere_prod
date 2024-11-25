@@ -83,9 +83,38 @@ class CompanyProvider with ChangeNotifier {
   }
 
   ///Pagination variables
-  String? companyListPageToken;
+ /* String? companyListPageToken;
   String? companyListDirection;
-  bool companyListNextPageExists = true;
+  bool companyListNextPageExists = true;*/
+
+  /// Pagination variables
+  int _page = 1;
+  int get page => _page;
+  set page(int value) {
+    _page = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalPages = 1;
+  int get totalPages => _totalPages;
+  set totalPages(int value) {
+    _totalPages = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  bool _isNextPageLoading = false;
+  bool get isNextPageLoading => _isNextPageLoading;
+  set isNextPageLoading(bool value) {
+    _isNextPageLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
 
   /// Data variables
   List<Companies> _companies = [];
@@ -101,115 +130,78 @@ class CompanyProvider with ChangeNotifier {
   Companies get company => _company;
 
   /// Fetches all companies from the API based on search text and filter criteria.
-  Future<List<Companies>> getAllCompanies(BuildContext context,
-      String searchText, String companyTypeFilter, String role, [bool isSearch = false]) async {
+  Future<List<Companies>> getAllCompanies(
+      BuildContext context,
+      String searchText,
+      String companyTypeFilter,
+      String role, {
+        bool isSearch = false,
+      }) async {
     try {
-      // Clear normal pagination is isSearch is true
       if (isSearch) {
-        companyListPageToken = null;
-        companyListNextPageExists = true;
+        _page = 1;
+        _companies.clear();
       }
-      // Check if api is already working
-      if (isLoading||isCompanyListLoading) return _companies;
-      // dont call api is next page does not exist
-      if (!companyListNextPageExists) return _companies;
-      // Set loading state to true
-      if(companyListPageToken == null && companyListNextPageExists) {
-        _companies = [];
+
+      // Prevent loading if already in progress or no more pages
+      if (isLoading || isNextPageLoading || _page > _totalPages) return _companies;
+
+      // Set loading state
+      if (_page == 1) {
+        _companies.clear();
         isLoading = true;
       } else {
-        isCompanyListLoading = true;
-      }
-      // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
-      String additionalParams = "";
-      if (searchText.isNotEmpty) {
-        additionalParams += "&search=$searchText";
-      }
-      if (companyTypeFilter.isNotEmpty) {
-        additionalParams += "&company_filter=$companyTypeFilter";
-      }
-      if (role.isNotEmpty) {
-        additionalParams += "&role_filter=$role";
-      }
-      if (companyListPageToken != null) {
-        additionalParams += "&pagetoken=$companyListPageToken&direction=forward";
+        isNextPageLoading = true;
       }
 
-      additionalParams += "&pageSize=10";
+      // Build query parameters
+      String url = AppConstant.CORPORATE_MANAGEMENT_URL_NEW;
+      String additionalParams = "?page=$_page&pageSize=10";
+      if (searchText.isNotEmpty) additionalParams += "&search=$searchText";
+      if (companyTypeFilter.isNotEmpty) additionalParams += "&company_filter=$companyTypeFilter";
+      if (role.isNotEmpty) additionalParams += "&role_filter=$role";
 
-      // Construct the URL with correct formatting
-      String url = AppConstant.CORPORATE_MANAGEMENT_URL;
-      if (additionalParams.isNotEmpty) {
-        // Check if the base URL already contains a "?"
-        final bool hasQueryParams = url.contains("?");
+      // Make API call
+      ApiService apiService = ApiService(url + additionalParams);
+      Map<String, dynamic> response = await apiService.get();
 
-        // If the base URL already contains a "?", use "&" to append additionalParams
-        // Otherwise, use "?"
-        final String separator = hasQueryParams ? "&" : "?";
-
-        // If additionalParams starts with "&" or "?", remove the first character
-        final String formattedParams =
-        additionalParams.startsWith("&") || additionalParams.startsWith("?")
-            ? additionalParams.substring(1)
-            : additionalParams;
-
-        // Construct the final URL with additional parameters
-        print("Formatted Params: $formattedParams");
-        print("URL: $url");
-        print("Separator: $separator");
-        url = "$separator$formattedParams";
-      } else {
-        url = "";
-      }
-
-
-      // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get(url);
-
-      // Parse the response into a list of companies
-      List<Companies> companiesLocal = [];
-      if (response.containsKey('companies')) {
-        companiesLocal = (response['companies'] as List)
+      // Parse response
+      if (response.containsKey('result')) {
+        List<Companies> companiesLocal = (response['result'] as List)
             .map((company) => Companies.fromJson(company))
             .toList();
+        _companies.addAll(companiesLocal);
       }
-      if (response.containsKey('pageToken')) {
-        companyListPageToken = response['pageToken'];
-      } else {
-        companyListPageToken = null;
-      }
-      if (response.containsKey('nextPageExists')) {
-        companyListNextPageExists = response['nextPageExists'];
-        if (!companyListNextPageExists) {
-          companyListPageToken = null;
-        }
-      } else {
-        companyListNextPageExists = false;
-      }
-      // Update the list of companies and notify listeners
-      _companies.addAll(companiesLocal);
 
+      // Update pagination
+      if (response.containsKey('totalRecords')) {
+        int totalRecords = response['totalRecords'];
+        _totalPages = (totalRecords / 10).ceil(); // Assuming pageSize is 10
+      } else {
+        _totalPages = 1; // Default to 1 if not provided
+      }
+
+      // Reset loading states
       isLoading = false;
-      isCompanyListLoading = false;
-        notifyListeners();
+      isNextPageLoading = false;
 
+      notifyListeners();
       return _companies;
     } catch (e, stackTrace) {
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: $e'); // Log the error
-      // Show a generic error message to the user
-      // TODO: Display a generic error message to the user
+      log('Error: $e');
+      print('Stack Trace: $stackTrace');
 
+      // Reset loading states
       isLoading = false;
-      isCompanyListLoading = false;
-      if (!context.mounted) return [];
-      CustomToast.error(
-          context, 'Error fetching companies. Please try again later.');
-      return []; // Return an empty list in case of error
+      isNextPageLoading = false;
+
+      if (context.mounted) {
+        CustomToast.error(context, 'Error fetching companies. Please try again later.');
+      }
+      return [];
     }
   }
+
 
   /// Changes status of a company based on the company ID and new status.
   Future<bool> changeCompanyStatus(

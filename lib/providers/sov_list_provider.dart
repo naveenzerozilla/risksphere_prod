@@ -182,7 +182,7 @@ class SOVListProvider extends ChangeNotifier {
   Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
     var typography = CustomTypography(context);
     try {
-      if (page == 0) {
+      if (page == 1) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
@@ -202,7 +202,7 @@ class SOVListProvider extends ChangeNotifier {
       showLocationCount = sovListModel.settings?.locationCount ?? true;
       showOverallScore = sovListModel.settings?.overAllScore ?? true;
       totalPages = sovListModel.totalPages??1;
-      if (page == 0) {
+      if (page == 1) {
         sovList = sovListModel.results ?? [];
       } else {
         addToSovList(sovListModel.results ?? []);
@@ -248,7 +248,7 @@ class SOVListProvider extends ChangeNotifier {
       log(response.toString());
 
       // Update account name in the list
-      int index = sovList.indexWhere((element) => element.accountId == accountId);
+      int index = sovList.indexWhere((element) => element.id == sovId);
       if (index != -1) {
         sovList[index].name = newName;
       }
@@ -487,6 +487,7 @@ class SOVListProvider extends ChangeNotifier {
       print('Starting export data process...');
       print('Account ID: $accountId');
       print('SubAccount ID: $subAccountId');
+      print('SOV ID: $sovId');
       print('Export Data: $exportData');
 
       final URL = '${AppConstant.EXPORT}/$accountId/$subAccountId/${sovId.isEmpty?null:sovId}';
@@ -539,7 +540,7 @@ class SOVListProvider extends ChangeNotifier {
       }
 
       final contentDisposition = response.headers.value('content-disposition');
-      var filename = 'downloaded_file.docx';
+      var filename = 'downloaded_file.xlsx';
       if (contentDisposition != null) {
         final filenameMatch = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
         if (filenameMatch != null) {
@@ -594,7 +595,7 @@ class SOVListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.TRANSFER);
+      ApiService apiService = ApiService(AppConstant.TRANSFER_SOV);
       var response = await apiService.post({
         'data': {
           'to_user_id': newOwnerId,

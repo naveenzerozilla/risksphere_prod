@@ -408,7 +408,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                             ),
                           ),
                           SizedBox(height: CustomSpacing.four),
-                          // List of accounts
+                          // List of sovs
                           Expanded(
                             child: Consumer<SOVListProvider>(
                                 builder: (context, sovListProvider, _) {
@@ -895,21 +895,16 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                               child: CustomGradientCircularProgressBar(
                                 radius: 23,
                                 value: double.parse(
-                                    sOVListProvider.sovList[index]
-                                        .overAllScore
-                                        ?.toString() ??
-                                        "0"),
+                                  (sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(3),
+                                ),
                                 strokeWidth: 6,
                                 showText: true,
-                                textColor: Theme.of(context).brightness ==
-                                    Brightness.dark
+                                textColor: Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
                                     : AppColors.black,
-                                text: sOVListProvider.sovList[index]
-                                    .overAllScore
-                                    ?.toString() ??
-                                    "0",
+                                text: (sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(2),
                               ),
+
                             ),
                             SizedBox(
                               width: CustomSpacing.four,

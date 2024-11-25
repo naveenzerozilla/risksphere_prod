@@ -77,7 +77,7 @@ class CustomGradientCircularProgressBar extends StatelessWidget {
             child: showText
                 ? Text(
               text,
-              style: typography.Subtitle2.copyWith(
+              style: typography.Caption.copyWith(
                 color: textColor,
               ),
             )

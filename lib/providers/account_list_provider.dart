@@ -567,7 +567,7 @@ class AccountListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.TRANSFER);
+      ApiService apiService = ApiService(AppConstant.TRANSFER_ACCOUNT);
       var response = await apiService.post({
         'data': {
           'to_user_id': newOwnerId,
@@ -586,7 +586,13 @@ class AccountListProvider extends ChangeNotifier {
       }
 
       isTransferLoading = false;
-    } catch (e) {
+    } on BackendException catch (e) {
+      isTransferLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message),
+      ));
+    }
+    catch (e) {
       isTransferLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to transfer account: ${e.toString()}'),

@@ -33,7 +33,9 @@ import '../service/language_service.dart';
 
 class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -41,8 +43,19 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isSearchLoading = false;
+  bool get isSearchLoading => _isSearchLoading;
+  set isSearchLoading(bool value) {
+    _isSearchLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isAllLocationLoading = false;
+
   bool get isAllLocationLoading => _isAllLocationLoading;
+
   set isAllLocationLoading(bool value) {
     _isAllLocationLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -51,7 +64,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isCertifiedLoading = false;
+
   bool get isCertifiedLoading => _isCertifiedLoading;
+
   set isCertifiedLoading(bool value) {
     _isCertifiedLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -60,7 +75,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isNextPageLoading = false;
+
   bool get isNextPageLoading => _isNextPageLoading;
+
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -69,7 +86,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isNextPageCertifiedLoading = false;
+
   bool get isNextPageCertifiedLoading => _isNextPageCertifiedLoading;
+
   set isNextPageCertifiedLoading(bool value) {
     _isNextPageCertifiedLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -78,7 +97,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isAddLocationLoading = false;
+
   bool get isAddLocationLoading => _isAddLocationLoading;
+
   set isAddLocationLoading(bool value) {
     _isAddLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -87,7 +108,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isAddTagsLoading = false;
+
   bool get isAddTagsLoading => _isAddTagsLoading;
+
   set isAddTagsLoading(bool value) {
     _isAddTagsLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -96,7 +119,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isDeleteTagLoading = false;
+
   bool get isDeleteTagLoading => _isDeleteTagLoading;
+
   set isDeleteTagLoading(bool value) {
     _isDeleteTagLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -105,7 +130,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isHeatMapGenerating = false;
+
   bool get isHeatMapGenerating => _isHeatMapGenerating;
+
   set isHeatMapGenerating(bool value) {
     _isHeatMapGenerating = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -114,7 +141,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isDeleteLocationLoading = false;
+
   bool get isDeleteLocationLoading => _isDeleteLocationLoading;
+
   set isDeleteLocationLoading(bool value) {
     _isDeleteLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -123,7 +152,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isImageUploadLoading = false;
+
   bool get isImageUploadLoading => _isImageUploadLoading;
+
   set isImageUploadLoading(bool value) {
     _isImageUploadLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -132,7 +163,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isAddToSOVLoading = false;
+
   bool get isAddToSOVLoading => _isAddToSOVLoading;
+
   set isAddToSOVLoading(bool value) {
     _isAddToSOVLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,7 +174,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isUploadingImage = false;
+
   bool get isUploadingImage => _isUploadingImage;
+
   set isUploadingImage(bool value) {
     _isUploadingImage = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -162,6 +197,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
   // Getter for the country and hazard list
   List<String> get countryList => _countryList;
+
   List<String> get hazardList => _hazardList;
 
   // Setters for country and hazard lists
@@ -175,17 +211,24 @@ class MyLocationListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   // Getters for the filter values
   List<String> get countries => _countries;
+
   String get state => _state;
+
   List<String> get propertyType => _propertyType;
+
   List<String> get constructionType => _constructionType;
+
   List<String> get certifications => _certifications;
+
   List<String> get hazard => _hazard;
+
   List<int> get rating => _rating;
   String _zipcode = '';
+
   String get zipcode => _zipcode;
+
   set zipcode(String value) {
     _zipcode = value;
     notifyListeners();
@@ -229,7 +272,9 @@ class MyLocationListProvider extends ChangeNotifier {
 
   // Pagination
   int _page = 1;
+
   int get page => _page;
+
   set page(int value) {
     _page = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -238,7 +283,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   int _totalPages = 1;
+
   int get totalPages => _totalPages;
+
   set totalPages(int value) {
     _totalPages = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -247,7 +294,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   int _certifiedPage = 1;
+
   int get certifiedPage => _certifiedPage;
+
   set certifiedPage(int value) {
     _certifiedPage = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -256,7 +305,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   int _certifiedTotalPages = 1;
+
   int get certifiedTotalPages => _certifiedTotalPages;
+
   set certifiedTotalPages(int value) {
     _certifiedTotalPages = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -267,7 +318,9 @@ class MyLocationListProvider extends ChangeNotifier {
   double mainSovRating = 0;
 
   List<Location> _locationListOld = [];
+
   List<Location> get locationListOld => _locationListOld;
+
   set locationListOld(List<Location> value) {
     _locationListOld = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -276,7 +329,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<MyLocation> _myLocationList = [];
+
   List<MyLocation> get myLocationList => _myLocationList;
+
   set myLocationList(List<MyLocation> value) {
     _myLocationList = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -285,7 +340,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<MyLocation> _certifiedLocationList = [];
+
   List<MyLocation> get certifiedLocationList => _certifiedLocationList;
+
   set certifiedLocationList(List<MyLocation> value) {
     _certifiedLocationList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -293,8 +350,19 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  List<MyLocation> _searchLocationList = [];
+  List<MyLocation> get searchLocationList => _searchLocationList;
+  set searchLocationList(List<MyLocation> value) {
+    _searchLocationList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   MyLocation? _locationProfile;
+
   MyLocation? get locationProfile => _locationProfile;
+
   set locationProfile(MyLocation? value) {
     _locationProfile = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -303,15 +371,15 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<MyLocation> _fullLocationList = [];
+
   List<MyLocation> get fullLocationList => _fullLocationList;
+
   set fullLocationList(List<MyLocation> value) {
     _fullLocationList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
-
-
 
   // Method to add to the certified location list
   void addToCertifiedLocationList(List<MyLocation> newLocations) {
@@ -322,7 +390,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<String> _summaryList = [];
+
   List<String> get summaryList => _summaryList;
+
   set summaryList(List<String> value) {
     _summaryList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -345,14 +415,18 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<String> _campusIds = [];
+
   List<String> get campusIds => _campusIds;
+
   set campusIds(List<String> value) {
     _campusIds = value;
     notifyListeners();
   }
 
   List<String> _selectedCampusIds = [];
+
   List<String> get selectedCampusIds => _selectedCampusIds;
+
   set selectedCampusIds(List<String> value) {
     _selectedCampusIds = value;
     notifyListeners();
@@ -361,14 +435,12 @@ class MyLocationListProvider extends ChangeNotifier {
   int locationHits = 0;
   int certifiedLocationHits = 0;
 
-
   bool isCertifiedTabAllowed() {
     return certifiedLocationHits > 0;
   }
 
   Map<String, dynamic>? hazardData;
   Map<String, dynamic>? geocodingData;
-
 
   /// Pagination variables
   String? locationListPageToken;
@@ -437,7 +509,6 @@ class MyLocationListProvider extends ChangeNotifier {
         _rating.isNotEmpty;
   }
 
-
   /// Selection mode
 
   // Selected Locations Set
@@ -502,34 +573,65 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool isHazardProcessed = false;
+  MyLocation? selectedLocation;
+
+  bool _isIndividualLocationLoading = false;
+
+  bool get isIndividualLocationLoading => _isIndividualLocationLoading;
+
+  set isIndividualLocationLoading(bool value) {
+    _isIndividualLocationLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
   // Delete selected locations
-  Future<void> deleteSelectedLocations(BuildContext context, String accountId, String subAccountId) async {
+  Future<void> deleteSelectedLocations(
+      BuildContext context, String accountId, String subAccountId) async {
     // get the list of ids
-    List<String> locationIds = _selectedLocations.map((location) => location.id??"").toList();
-    deleteLocations(context, accountId, subAccountId, locationIds);
+    List<String> locationIds =
+        _selectedLocations.map((location) => location.id ?? "").toList();
+    deleteLocations(context, accountId, subAccountId, "", locationIds);
     clearSelection();
   }
 
   // Add selected locations to SOV
-  Future<void> addSelectedToSOV(BuildContext context, String accountID, String subAccountID, String accountName, String subAccountName, TabController? masterTabController, [String? locationId]) async {
+  Future<void> addSelectedToSOV(
+      BuildContext context,
+      String accountID,
+      String subAccountID,
+      String accountName,
+      String subAccountName,
+      TabController? masterTabController,
+      [String? locationId]) async {
     // Implement your add to SOV logic here
     // Show pop up with account name an sub account name prefilled an non editable.. and user will select the sov name from autocomplete dropdown and enter comma separated location tags (optional)
     // On submit, call the addLocationToSOV method with the selected sov id and location ids
-    await showAddToSOVDialog(context, accountID, subAccountID, accountName, subAccountName, masterTabController, locationId);
+    await showAddToSOVDialog(context, accountID, subAccountID, accountName,
+        subAccountName, masterTabController, locationId);
     clearSelection();
   }
 
   // Add tags to selected locations
-  Future<void> addTagsToSelectedLocations(BuildContext context, String accountId, String subAccountId, [String? locationId]) async {
+  Future<void> addTagsToSelectedLocations(
+      BuildContext context, String accountId, String subAccountId,
+      [String? locationId]) async {
     // get the list of ids
-    await showAddTagDialog(context, accountId, subAccountId, locationId == null?_selectedLocations.map((location) => location.id??"").toList():[locationId]);
+    await showAddTagDialog(
+        context,
+        accountId,
+        subAccountId,
+        locationId == null
+            ? _selectedLocations.map((location) => location.id ?? "").toList()
+            : [locationId]);
 
     clearSelection();
   }
 
-
-  Future<void> addLocationToSOV(BuildContext context, Map <String, dynamic> body) async {
+  Future<void> addLocationToSOV(
+      BuildContext context, Map<String, dynamic> body) async {
     // Your logic for adding a location to SOV
     log("Adding location to SOV: $body");
     isAddToSOVLoading = true;
@@ -551,11 +653,11 @@ class MyLocationListProvider extends ChangeNotifier {
     } finally {
       isAddToSOVLoading = false;
     }
-
   }
 
   // Add Tags to location
-  Future<void> addTagsToLocation(BuildContext context, String accountId, String subAccountId, List<String> locationId, List<String> tags) async {
+  Future<void> addTagsToLocation(BuildContext context, String accountId,
+      String subAccountId, List<String> locationId, List<String> tags) async {
     try {
       isAddTagsLoading = true;
       ApiService apiService = ApiService(AppConstant.MY_LOCATION + "/tags");
@@ -586,11 +688,13 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   // Delete Tags from location
-  Future<void> deleteTagFromLocation(BuildContext context, String accountId, String subAccountId, String locationId, String tag) async {
+  Future<void> deleteTagFromLocation(BuildContext context, String accountId,
+      String subAccountId, String locationId, String tag) async {
     // {{locations_base_url}}/tags/OGUlME8NFKzmesfo3j1S/garden
     try {
       isDeleteTagLoading = true;
-      ApiService apiService = ApiService("${AppConstant.MY_LOCATION}/tags/$locationId/$tag");
+      ApiService apiService =
+          ApiService("${AppConstant.MY_LOCATION}/tags/$locationId/$tag");
       var response = await apiService.delete({});
       log(response.toString());
       CustomToast.success(context, response['message']);
@@ -608,9 +712,60 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<MyLocation>> performGlobalSearch(BuildContext context, String query) async {
+    if (query.isEmpty) {
+      searchLocationList = []; // Clear the search results if query is empty
+      notifyListeners();
+      return [];
+    }
+
+    try {
+      isSearchLoading = true; // Notify UI that loading has started
+
+      // Construct the API Service for the global search endpoint
+      ApiService apiService = ApiService(
+          '${AppConstant.GLOBAL_SEARCH}/$query');
+
+      // Fetch the search results
+      final response = await apiService.get();
+
+      if(response.containsKey('result')) {
+        // Parse the response and update locationList
+        List<MyLocation> searchResults = (response['result'] as List).map((e) =>
+            MyLocation.fromJson(e)).toList();
+
+        searchLocationList = searchResults; // Update the provider state
+        return searchResults;
+      } else {
+        print("Failed to load search results");
+        return [];
+
+
+      }
+    } on BackendException catch (e) {
+      //CustomToast.error(context, e.message); // Show error toast
+      log("Global search backend error: ${e.message}");
+      return [];
+    } catch (e) {
+     // CustomToast.error(context, "An unexpected error occurred."); // Show generic error
+      log("Global search error: $e");
+      return [];
+    } finally {
+      isSearchLoading = false; // Notify UI that loading has stopped
+    }
+  }
+
+
+  void updateCampusIds(List<String> campusIds) {
+    _campusIds = campusIds;
+    notifyListeners();
+  }
+
   // Method to fetch filter options
-  Future<void> fetchInitialFilterOptions(String accountId, String subAccountId) async {
-    final url = Uri.parse("${AppConstant.MY_LOCATION}/filter_options?account_id=$accountId&sub_account_id=$subAccountId");
+  Future<void> fetchInitialFilterOptions(
+      String accountId, String subAccountId) async {
+    final url = Uri.parse(
+        "${AppConstant.MY_LOCATION}/filter_options?account_id=$accountId&sub_account_id=$subAccountId");
     print(url);
 
     try {
@@ -624,6 +779,7 @@ class MyLocationListProvider extends ChangeNotifier {
         // Update countryList and hazardList from the API response
         countryList = List<String>.from(data['countryList']);
         hazardList = List<String>.from(data['hazardList']);
+        campusIds = List<String>.from(data['campusList']);
         print("Country List: $countryList");
         print("Hazard List: $hazardList");
       } else {
@@ -636,17 +792,15 @@ class MyLocationListProvider extends ChangeNotifier {
 
   /// Fetch all sov list
   Future<void> fetchAllLocationList(
-      BuildContext context,
-      String? accountID,
-      String? subAccountID,
-      ) async {
+    BuildContext context,
+    String? accountID,
+    String? subAccountID,
+  ) async {
     var typography = CustomTypography(context);
     try {
+      isAllLocationLoading = true;
 
-        isAllLocationLoading = true;
-
-
-      var headers =  await CommonHeaders.createHeaders();
+      var headers = await CommonHeaders.createHeaders();
 
       print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
@@ -667,18 +821,19 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
 
-          fullLocationList = locationListModel.results ?? [];
+        fullLocationList = locationListModel.results ?? [];
 
         log(fullLocationList.toString());
       } else {
         print(json.decode(response.body)["error"]);
         throw Exception('Failed to load data');
       }
-        isAllLocationLoading = false;
+      isAllLocationLoading = false;
     } on BackendException catch (e, stackTrace) {
       isAllLocationLoading = false;
       print(stackTrace);
@@ -702,66 +857,64 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
   /// Fetch sov list with pagination, search query, and filters
-  Future<void> fetchLocationList(
-      BuildContext context,
-      String searchQuery,
-      int page,
-      int pageSize,
-      String? accountID,
-      String? subAccountID,
-      ) async {
+  Future<void> fetchLocationList(BuildContext context, String searchQuery,
+      int page, int pageSize, String? accountID, String? subAccountID,
+      [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
       // Check if api is already working
-      if (isLoading||isNextPageLoading) return;
+     // if (isLoading || isNextPageLoading) return;
       // dont call api is next page does not exist
-      if (page>totalPages) return;
-      if (page == 0) {
+      if (page > totalPages) return;
+      if (page == 1) {
         myLocationList = [];
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      var headers =  await CommonHeaders.createHeaders();
+      var headers = await CommonHeaders.createHeaders();
 
       print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
-      var url = AppConstant.MY_LOCATION +
-          "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-
+      var url;
+      if (sovID != null) {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+      } else {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+      }
       if (countries.isNotEmpty) {
-        url+= "&country=${countries.join(",")}";
+        url += "&country=${countries.join(",")}";
       }
       if (zipcode.isNotEmpty) {
-        url+= "&zip=$state";
+        url += "&zip=$state";
       }
 
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
-          if(cert == "Manual Certified") {
-            url+= "&manual_certified=true";
-          } else if(cert == "Auto Certified") {
-            url+= "&auto_certified=true";
+          if (cert == "Manual Certified") {
+            url += "&manual_certified=true";
+          } else if (cert == "Auto Certified") {
+            url += "&auto_certified=true";
           }
         }
       }
-      if(hazardRatings.isNotEmpty) {
+      if (hazardRatings.isNotEmpty) {
         for (var hazard in hazardRatings.keys) {
-          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
         }
       }
       if (rating.isNotEmpty) {
-        url+= "&score=${rating.join(",")}";
+        url += "&score=${rating.join(",")}";
       }
 
       if (_selectedCampusIds.isNotEmpty) {
-        url+= "&campus_id=${_selectedCampusIds.join(",")}";
+        url += "&campus_id=${_selectedCampusIds.join(",")}";
       }
-
 
       print(url);
       var uri = Uri.parse(url);
@@ -776,7 +929,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationHits ~/ pageSize;
@@ -828,14 +982,14 @@ class MyLocationListProvider extends ChangeNotifier {
       int pageSize,
       String? accountID,
       String? subAccountID,
-    ) async {
+      [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
       print("Condition: Certified fetch with rating 5");
       print("Rating: 5");
 
       if (page > certifiedTotalPages) return;
-      if (page == 0) {
+      if (page == 1) {
         isCertifiedLoading = true;
       } else {
         isNextPageCertifiedLoading = true;
@@ -845,38 +999,42 @@ class MyLocationListProvider extends ChangeNotifier {
       log(headers.toString());
 
       // Construct the URL with default rating=5
-      var url = AppConstant.MY_LOCATION +
-          "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID";
+      var url;
+      if (sovID != null) {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+      } else {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID";
+      }
 
       if (countries.isNotEmpty) {
-        url+= "&country=${countries.join(",")}";
+        url += "&country=${countries.join(",")}";
       }
       if (zipcode.isNotEmpty) {
-        url+= "&zip=$state";
+        url += "&zip=$state";
       }
       print("Certifications: $certifications");
 
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
-          if(cert == "Manual Certified") {
-            url+= "&manual_certified=true";
-          } else if(cert == "Auto Certified") {
-            url+= "&auto_certified=true";
+          if (cert == "Manual Certified") {
+            url += "&manual_certified=true";
+          } else if (cert == "Auto Certified") {
+            url += "&auto_certified=true";
           }
         }
       }
       print("Hazard Ratings: $hazardRatings");
-      if(hazardRatings.isNotEmpty) {
+      if (hazardRatings.isNotEmpty) {
         for (var hazard in hazardRatings.keys) {
-          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
         }
       }
 
       if (_selectedCampusIds.isNotEmpty) {
-        url+= "&campus_id=${_selectedCampusIds.join(",")}";
+        url += "&campus_id=${_selectedCampusIds.join(",")}";
       }
-
-
 
       print(url);
       var uri = Uri.parse(url);
@@ -887,7 +1045,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationListModel.totalRecords ?? 1;
         //summaryList = locationListModel.summaryList ?? [];
@@ -929,23 +1088,21 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
-
-
   // Add this method for deleting locations
   Future<void> deleteLocations(
-      BuildContext context,
-      String accountId,
-      String subAccountId,
-      List<String> locationList, // Now a list of strings (location_id)
-      ) async {
+    BuildContext context,
+    String accountId,
+    String subAccountId,
+    String sovId,
+    List<String> locationList, // Now a list of strings (location_id)
+  ) async {
     try {
       isDeleteLocationLoading = true;
 
       var headers = await CommonHeaders.createHeaders();
 
       // Prepare the body as a list of objects with individual location_id
-      var body = json.encode({
+      var body; /*= json.encode({
         "data": locationList.map((locationId) {
           return {
             "location_id": locationId,
@@ -955,7 +1112,36 @@ class MyLocationListProvider extends ChangeNotifier {
             // "sov_id": "REqI5iQpNzA2qFQ7A4Uo", // Add sov_id when necessary
           };
         }).toList(),
-      });
+      });*/
+      if (sovId == '') {
+        body = json.encode({
+          "data": locationList.map((locationId) {
+            return {
+              "location_id": locationId,
+              // Uncomment the following if needed when `from_location_list` is false:
+              // "account_id": accountId,
+              // "sub_account_id": subAccountId,
+              // "sov_id": "REqI5iQpNzA2qFQ7A4Uo", // Add sov_id when necessary
+            };
+          }).toList(),
+        });
+      } else {
+        body = json.encode({
+          "data": locationList.map((locationId) {
+            return {
+              "location_id": locationId,
+              "account_id": accountId,
+              "sub_account_id": subAccountId,
+              "sov_id": sovId,
+              "from_location_list": false,
+              // Uncomment the following if needed when `from_location_list` is false:
+              // "account_id": accountId,
+              // "sub_account_id": subAccountId,
+              // "sov_id": "REqI5iQpNzA2qFQ7A4Uo", // Add sov_id when necessary
+            };
+          }).toList(),
+        });
+      }
       print(body);
 
       // URL with the parameter from_location_list=true
@@ -972,7 +1158,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         log("Locations deleted successfully.");
-        CustomToast.success(context, jsonDecode(response.body)?["message"]??"Success");
+        CustomToast.success(
+            context, jsonDecode(response.body)?["message"] ?? "Success");
 
         // Remove the deleted locations from the local list and update respective counters
         locationList.forEach((locationId) {
@@ -980,7 +1167,8 @@ class MyLocationListProvider extends ChangeNotifier {
           if (_myLocationList.any((location) => location.id == locationId)) {
             // Decrement the hit counter if the location exists
             locationHits--;
-            _myLocationList.removeWhere((location) => location.id == locationId);
+            _myLocationList
+                .removeWhere((location) => location.id == locationId);
           }
         });
         notifyListeners();
@@ -1004,18 +1192,18 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
   // Add Location
   Future<bool> addLocation(
-      BuildContext context,
-      String accountId,
-      String subAccountId,
-      String sovId,
-      Map<String, dynamic> body,
-      ) async {
+    BuildContext context,
+    String accountId,
+    String subAccountId,
+    String sovId,
+    Map<String, dynamic> body,
+  ) async {
     try {
       isAddLocationLoading = true;
-      ApiService apiService = ApiService("${AppConstant.GET_LOCATION_PROFILE_NEW+"/addlocation"}");
+      ApiService apiService = ApiService(
+          "${AppConstant.GET_LOCATION_PROFILE_NEW + "/addlocation"}");
       var response = await apiService.post(body);
       log(response.toString());
       CustomToast.success(context, response['message']);
@@ -1037,11 +1225,14 @@ class MyLocationListProvider extends ChangeNotifier {
   Future<Map<String, dynamic>?> generateHeatMapForLocationsGeocoding(
       BuildContext context,
       String accountId,
-      String subAccountId, bool isGeocoding, bool regenerate,
+      String subAccountId,
+      bool isGeocoding,
+      bool regenerate,
       [String? sovId]) async {
     isHeatMapGenerating = true;
     try {
-      ApiService apiService = ApiService("${AppConstant.MY_LOCATION}/generateheatmap");
+      ApiService apiService =
+          ApiService("${AppConstant.MY_LOCATION}/generateheatmap");
       final body = {
         "data": {
           "account_id": accountId,
@@ -1080,15 +1271,19 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
-
-
   Future<void> showAddToSOVDialog(
-      BuildContext context, String accountID, String subAccountID, String accountName, String subAccountName, TabController? masterTabController, [String? locationId]) async {
+      BuildContext context,
+      String accountID,
+      String subAccountID,
+      String accountName,
+      String subAccountName,
+      TabController? masterTabController,
+      [String? locationId]) async {
     var typography = CustomTypography(context);
     TextEditingController sovController = TextEditingController();
     TextEditingController tagsController = TextEditingController();
-    String selectedSovId = ""; // To hold the SoV ID when user selects from autocomplete
+    String selectedSovId =
+        ""; // To hold the SoV ID when user selects from autocomplete
 
     await showDialog(
       context: context,
@@ -1141,7 +1336,6 @@ class MyLocationListProvider extends ChangeNotifier {
                                   sovProvider.updateFilteredList(value);
                                 });
                               },
-
                               decoration: InputDecoration(
                                 labelText: "Name of the SoV",
                                 border: const OutlineInputBorder(),
@@ -1159,13 +1353,12 @@ class MyLocationListProvider extends ChangeNotifier {
                                   });
                                 },
                                 isLoading: sovProvider.isAutoCompleteLoading,
-
                               ),
-
                           ],
                         );
                       },
-                    ),/*
+                    ),
+                    /*
                     SizedBox(height: 8.0),
                     // Comma-separated Tags (Optional)
                     TextField(
@@ -1183,46 +1376,54 @@ class MyLocationListProvider extends ChangeNotifier {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: isAddToSOVLoading?
-                              Center(
-                                child: CircularProgressIndicator(),
-                              ):
-                              CustomButton(
-                                onPressed: () async {
-                                  if (sovController.text.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text(
-                                        "Please select or enter an SoV name.",
-                                        style: typography.Body1,
+                              child: isAddToSOVLoading
+                                  ? Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : CustomButton(
+                                      onPressed: () async {
+                                        if (sovController.text.isEmpty) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                            content: Text(
+                                              "Please select or enter an SoV name.",
+                                              style: typography.Body1,
+                                            ),
+                                          ));
+                                          return;
+                                        }
+
+                                        // Prepare the body with location, account, sub-account, and sov details
+                                        Map<String, dynamic> body = {
+                                          "location_list": locationId == null
+                                              ? _selectedLocations
+                                                  .map(
+                                                      (location) => location.id)
+                                                  .toList()
+                                              : [locationId],
+                                          "account_id": accountID,
+                                          "sub_account_id": subAccountID,
+                                          "sov": {
+                                            "sov_id": selectedSovId,
+                                            // Empty if creating new SoV
+                                            "sov_name": sovController.text,
+                                            // Mandatory if creating new SoV
+                                          }
+                                        };
+
+                                        // Call your method to add the location to the SoV
+                                        await addLocationToSOV(context, body);
+
+                                        setState(() {
+                                          masterTabController?.animateTo(1);
+                                        });
+                                      },
+                                      child: Text(
+                                        "Add",
+                                        style: typography.ButtonLarge,
                                       ),
-                                    ));
-                                    return;
-                                  }
-
-                                  // Prepare the body with location, account, sub-account, and sov details
-                                  Map<String, dynamic> body = {
-                                    "location_list": locationId==null?_selectedLocations.map((location) => location.id).toList():[locationId],
-                                    "account_id": accountID,
-                                    "sub_account_id": subAccountID,
-                                    "sov": {
-                                      "sov_id": selectedSovId, // Empty if creating new SoV
-                                      "sov_name": sovController.text, // Mandatory if creating new SoV
-                                    }
-                                  };
-
-                                  // Call your method to add the location to the SoV
-                                  await addLocationToSOV(context, body);
-
-                                  setState(() {
-                                    masterTabController?.animateTo(1);
-                                  });
-                                },
-                                child: Text(
-                                  "Add",
-                                  style: typography.ButtonLarge,
-                                ),
-                                type: ButtonType.elevated,
-                              ),
+                                      type: ButtonType.elevated,
+                                    ),
                             ),
                           ],
                         ),
@@ -1254,8 +1455,8 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> showAddTagDialog(
-      BuildContext context, String accountId, String subAccountId, List<String> locationId) async {
+  Future<void> showAddTagDialog(BuildContext context, String accountId,
+      String subAccountId, List<String> locationId) async {
     var typography = CustomTypography(context);
     TextEditingController tagsController = TextEditingController();
 
@@ -1286,83 +1487,101 @@ class MyLocationListProvider extends ChangeNotifier {
                     // Add/Cancel Buttons
                     Consumer<MyLocationListProvider>(
                         builder: (context, myLocationListProvider, child) {
-                          return Column(
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: myLocationListProvider.isAddTagsLoading?
-                                    Center(
-                                      child: CircularProgressIndicator(),
-                                    ):
-                                    CustomButton(
-                                      onPressed: () async {
-                                        if (tagsController.text.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                            content: Text(
-                                              "Please enter tags.",
-                                              style: typography.Body1,
-                                            ),
-                                          ));
-                                          return;
-                                        }
-
-                                        // Call your method to add the location to the SoV
-                                        await addTagsToLocation(context, accountId, subAccountId, locationId, tagsController.text.split(","));
-                                        //Locally update the tags
-                                        locationId.forEach((element) {
-                                          MyLocation location = getLocationById(element);
-                                          // Check if already empty or add to the existing tags
-                                          if(location.tags == null) {
-                                            location.tags = tagsController.text.split(",");
-                                          } else {
-                                            location.tags?.addAll(tagsController.text.split(","));
+                              Expanded(
+                                child: myLocationListProvider.isAddTagsLoading
+                                    ? Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                    : CustomButton(
+                                        onPressed: () async {
+                                          if (tagsController.text.isEmpty) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                              content: Text(
+                                                "Please enter tags.",
+                                                style: typography.Body1,
+                                              ),
+                                            ));
+                                            return;
                                           }
-                                        });
-                                        locationId.forEach((element) {
-                                          MyLocation location = getCertifiedLocationById(element);
-                                          if(location.tags == null) {
-                                            location.tags = tagsController.text.split(",");
-                                          } else {
-                                            location.tags?.addAll(tagsController.text.split(","));
-                                          }
-                                        });
-                                        fullLocationList.forEach((element) {
-                                          MyLocation location = element;
-                                          if(location.tags == null) {
-                                            location.tags = tagsController.text.split(",");
-                                          } else {
-                                            location.tags?.addAll(tagsController.text.split(","));
-                                          }
-                                        });
 
-
-                                      },
-                                      child: Text(
-                                        "Add",
-                                        style: typography.ButtonLarge,
+                                          // Call your method to add the location to the SoV
+                                          await addTagsToLocation(
+                                              context,
+                                              accountId,
+                                              subAccountId,
+                                              locationId,
+                                              tagsController.text.split(","));
+                                          //Locally update the tags
+                                          locationId.forEach((element) {
+                                            MyLocation location =
+                                                getLocationById(element);
+                                            // Check if already empty or add to the existing tags
+                                            if (location.tags == null) {
+                                              location.tags = tagsController
+                                                  .text
+                                                  .split(",");
+                                            } else {
+                                              location.tags?.addAll(
+                                                  tagsController.text
+                                                      .split(","));
+                                            }
+                                          });
+                                          locationId.forEach((element) {
+                                            MyLocation location =
+                                                getCertifiedLocationById(
+                                                    element);
+                                            if (location.tags == null) {
+                                              location.tags = tagsController
+                                                  .text
+                                                  .split(",");
+                                            } else {
+                                              location.tags?.addAll(
+                                                  tagsController.text
+                                                      .split(","));
+                                            }
+                                          });
+                                          fullLocationList.forEach((element) {
+                                            MyLocation location = element;
+                                            if (location.tags == null) {
+                                              location.tags = tagsController
+                                                  .text
+                                                  .split(",");
+                                            } else {
+                                              location.tags?.addAll(
+                                                  tagsController.text
+                                                      .split(","));
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          "Add",
+                                          style: typography.ButtonLarge,
+                                        ),
+                                        type: ButtonType.elevated,
                                       ),
-                                      type: ButtonType.elevated,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(width: 8.0),
-                              CustomButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                  "Cancel",
-                                  style: typography.ButtonLarge,
-                                ),
-                                type: ButtonType.text,
                               ),
                             ],
-                          );
-                        }
-                    ),
+                          ),
+                          SizedBox(width: 8.0),
+                          CustomButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: typography.ButtonLarge,
+                            ),
+                            type: ButtonType.text,
+                          ),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1376,8 +1595,8 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> showDeleteTagDialog(
-      BuildContext context, String accountId, String subAccountId, String locationId, String tag) async {
+  Future<void> showDeleteTagDialog(BuildContext context, String accountId,
+      String subAccountId, String locationId, String tag) async {
     var typography = CustomTypography(context);
 
     await showDialog(
@@ -1404,54 +1623,61 @@ class MyLocationListProvider extends ChangeNotifier {
                     // Add/Cancel Buttons
                     Consumer<MyLocationListProvider>(
                         builder: (context, myLocationListProvider, child) {
-                          return Column(
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: myLocationListProvider.isDeleteTagLoading?
-                                    Center(
-                                      child: CircularProgressIndicator(),
-                                    ):
-                                    CustomButton(
-                                      onPressed: () async {
-                                        // Call your method to add the location to the SoV
-                                        await deleteTagFromLocation(context, accountId, subAccountId, locationId, tag);
-                                        //Locally update the tags
-                                        MyLocation location = getLocationById(locationId);
-                                        location.tags?.remove(tag);
-                                        MyLocation certifiedLocation = getCertifiedLocationById(locationId);
-                                        certifiedLocation.tags?.remove(tag);
-                                        fullLocationList.forEach((element) {
-                                          MyLocation location = element;
+                              Expanded(
+                                child: myLocationListProvider.isDeleteTagLoading
+                                    ? Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                    : CustomButton(
+                                        onPressed: () async {
+                                          // Call your method to add the location to the SoV
+                                          await deleteTagFromLocation(
+                                              context,
+                                              accountId,
+                                              subAccountId,
+                                              locationId,
+                                              tag);
+                                          //Locally update the tags
+                                          MyLocation location =
+                                              getLocationById(locationId);
                                           location.tags?.remove(tag);
-                                        });
-                                      },
-                                      child: Text(
-                                        "Delete",
-                                        style: typography.ButtonLarge,
+                                          MyLocation certifiedLocation =
+                                              getCertifiedLocationById(
+                                                  locationId);
+                                          certifiedLocation.tags?.remove(tag);
+                                          fullLocationList.forEach((element) {
+                                            MyLocation location = element;
+                                            location.tags?.remove(tag);
+                                          });
+                                        },
+                                        child: Text(
+                                          "Delete",
+                                          style: typography.ButtonLarge,
+                                        ),
+                                        type: ButtonType.elevated,
                                       ),
-                                      type: ButtonType.elevated,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(width: 8.0),
-                              CustomButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                  "Cancel",
-                                  style: typography.ButtonLarge,
-                                ),
-                                type: ButtonType.text,
                               ),
                             ],
-                          );
-                        }
-                    ),
+                          ),
+                          SizedBox(width: 8.0),
+                          CustomButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: typography.ButtonLarge,
+                            ),
+                            type: ButtonType.text,
+                          ),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1464,11 +1690,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
   // Show dialog for generating heatmap as it is a paid service.. we ask user and on the button we show 2 Credits
   Future<void> showGenerateHeatMapDialog(
-      BuildContext context,
-      String accountId,
-      String subAccountId,
-      [String? sovId]
-      ) async {
+      BuildContext context, String accountId, String subAccountId,
+      [String? sovId]) async {
     var typography = CustomTypography(context);
 
     await showDialog(
@@ -1499,21 +1722,27 @@ class MyLocationListProvider extends ChangeNotifier {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: isHeatMapGenerating?
-                              Center(
-                                child: CircularProgressIndicator(),
-                              ):
-                              CustomButton(
-                                onPressed: () async {
-                                  // Call your method to generate the heatmap
-                                  await generateHeatMapForLocationsGeocoding(context, accountId, subAccountId, false, false, sovId);
-                                },
-                                child: Text(
-                                  "Generate Heatmap (2 Credits)",
-                                  style: typography.ButtonLarge,
-                                ),
-                                type: ButtonType.elevated,
-                              ),
+                              child: isHeatMapGenerating
+                                  ? Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : CustomButton(
+                                      onPressed: () async {
+                                        // Call your method to generate the heatmap
+                                        await generateHeatMapForLocationsGeocoding(
+                                            context,
+                                            accountId,
+                                            subAccountId,
+                                            false,
+                                            false,
+                                            sovId);
+                                      },
+                                      child: Text(
+                                        "Generate Heatmap (2 Credits)",
+                                        style: typography.ButtonLarge,
+                                      ),
+                                      type: ButtonType.elevated,
+                                    ),
                             ),
                           ],
                         ),
@@ -1540,11 +1769,9 @@ class MyLocationListProvider extends ChangeNotifier {
     );
   }
 
-
-
-
   /// Upload SOV
-  Future<String> uploadSov(BuildContext context, File sovFile,String accountId, String subAccountId, String sovId, String tags, String sovName) async {
+  Future<String> uploadSov(BuildContext context, File sovFile, String accountId,
+      String subAccountId, String sovId, String tags, String sovName) async {
     var typography = CustomTypography(context);
     try {
       isImageUploadLoading = true;
@@ -1558,7 +1785,8 @@ class MyLocationListProvider extends ChangeNotifier {
       print("Uploading SOV: $sovName");
       print("url: ${AppConstant.UPLOAD_SOV_LOCATIONS}");
       // Send a POST request to the API to upload the image
-      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(sovFile, accountId, subAccountId, sovId, tags, sovName);
+      Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(
+          sovFile, accountId, subAccountId, sovId, tags, sovName);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);
@@ -1568,15 +1796,15 @@ class MyLocationListProvider extends ChangeNotifier {
           style: typography.Body1,
         ),
       ));*/
-      print("total records: "+response['total_records'].toString());
-      if(response['total_records'] == 0){
-        print("total records: "+response['total_records'].toString());
-        String tempId = (response['temp_id']??'') + "+";
-        print("tempIdLocal: "+tempId);
+      print("total records: " + response['total_records'].toString());
+      if (response['total_records'] == 0) {
+        print("total records: " + response['total_records'].toString());
+        String tempId = (response['temp_id'] ?? '') + "+";
+        print("tempIdLocal: " + tempId);
         return tempId;
       }
-      return response['temp_id']??'';
-    }on BackendException catch (e, stack) {
+      return response['temp_id'] ?? '';
+    } on BackendException catch (e, stack) {
       print(stack);
 
       isImageUploadLoading = false;
@@ -1588,7 +1816,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       try {
         // Check if the message is a JSON string
-        if (e.message.trim().startsWith('{') && e.message.trim().endsWith('}')) {
+        if (e.message.trim().startsWith('{') &&
+            e.message.trim().endsWith('}')) {
           // Attempt to parse the message as JSON
           final Map<String, dynamic> errorJson = jsonDecode(e.message.trim());
 
@@ -1604,7 +1833,8 @@ class MyLocationListProvider extends ChangeNotifier {
         print(stackTrace);
 
         // Fallback to the raw message or a generic error message
-        message = e.message ?? 'An unexpected error occurred. Please try again later.';
+        message = e.message ??
+            'An unexpected error occurred. Please try again later.';
       }
 
       // Display the error message in a SnackBar
@@ -1618,9 +1848,7 @@ class MyLocationListProvider extends ChangeNotifier {
       );
 
       return ''; // Return an empty string or handle the error as needed
-    }
-
-    catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       print(stackTrace);
       print("Error uploading SOV: $e");
       // Handle other unexpected exceptions
@@ -1643,11 +1871,14 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   MyLocation getCertifiedLocationById(String locationId) {
-    return certifiedLocationList.firstWhere((element) => element.id == locationId);
+    return certifiedLocationList
+        .firstWhere((element) => element.id == locationId);
   }
 
-  Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
-    final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+  Future<void> fetchCampusIds(
+      String accountId, String subAccountId, String sovId) async {
+    final url = Uri.parse(
+        "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
 
     try {
       var headers = await CommonHeaders.createHeaders();
@@ -1667,72 +1898,75 @@ class MyLocationListProvider extends ChangeNotifier {
     } on BackendException catch (e, stackTrace) {
       print(stackTrace);
       print("Error fetching campus IDs: ${e.message}");
-    }
-    catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       print(stackTrace);
       print("Error fetching campus IDs: $e");
     }
   }
 
-
   /// Profile apis
 
   /// Fetch location with pagination, search query, and filters
   Future<void> fetchLocationListProfile(
-      BuildContext context,
-      String searchQuery,
-      int page,
-      int totalPages,
-      String? accountID,
-      String? subAccountID,
-      ) async {
+    BuildContext context,
+    String searchQuery,
+    int page,
+    int totalPages,
+    String? accountID,
+    String? subAccountID,
+    String? sovID,
+  ) async {
     var typography = CustomTypography(context);
     try {
       // Check if api is already working
       if (isLoading) return;
       // dont call api is next page does not exist
-      if (page>totalPages) return;
+      if (page > totalPages) return;
 
       isLoading = true;
 
-
-      var headers =  await CommonHeaders.createHeaders();
+      var headers = await CommonHeaders.createHeaders();
 
       print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
-      var url = AppConstant.MY_LOCATION +
-          "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID";
+      var url;
+      if (sovID != null && sovID.isNotEmpty) {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+      } else {
+        url = AppConstant.MY_LOCATION +
+            "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID";
+      }
 
       if (countries.isNotEmpty) {
-        url+= "&country=${countries.join(",")}";
+        url += "&country=${countries.join(",")}";
       }
       if (zipcode.isNotEmpty) {
-        url+= "&zip=$state";
+        url += "&zip=$state";
       }
 
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
-          if(cert == "Manual Certified") {
-            url+= "&manual_certified=true";
-          } else if(cert == "Auto Certified") {
-            url+= "&auto_certified=true";
+          if (cert == "Manual Certified") {
+            url += "&manual_certified=true";
+          } else if (cert == "Auto Certified") {
+            url += "&auto_certified=true";
           }
         }
       }
-      if(hazardRatings.isNotEmpty) {
+      if (hazardRatings.isNotEmpty) {
         for (var hazard in hazardRatings.keys) {
-          url+= "&hazard=${jsonEncode(hazardRatings[hazard])}";
+          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
         }
       }
       if (rating.isNotEmpty) {
-        url+= "&score=${rating.join(",")}";
+        url += "&score=${rating.join(",")}";
       }
 
       if (_selectedCampusIds.isNotEmpty) {
-        url+= "&campus_id=${_selectedCampusIds.join(",")}";
+        url += "&campus_id=${_selectedCampusIds.join(",")}";
       }
-
 
       print(url);
       var uri = Uri.parse(url);
@@ -1747,7 +1981,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
 
@@ -1783,6 +2018,48 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
+  // Fetch Location By ID
+  Future<void> fetchIndividualLocationProfile(
+      BuildContext context, String locationId) async {
+    var typography = CustomTypography(context);
+    try {
+      isIndividualLocationLoading = true;
+      notifyListeners();
+
+      ApiService apiService = ApiService(
+          "${AppConstant.GET_LOCATION_PROFILE_INDIVIDUAL_NEW}?location_id=$locationId");
+
+      var response = await apiService.get();
+      print("Response: $response");
+      if (response.containsKey('result')) {
+        selectedLocation = MyLocation.fromJson(response['result']);
+        isHazardProcessed = response['result']['is_hazard_processed'] ?? false;
+        print("isHazardProcessed: $isHazardProcessed");
+      } else {
+        selectedLocation = null;
+        isHazardProcessed = false;
+      }
+
+      isIndividualLocationLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isIndividualLocationLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isIndividualLocationLoading = false;
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isIndividualLocationLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> uploadImage(
       BuildContext context,
       String filePath,
@@ -1792,8 +2069,8 @@ class MyLocationListProvider extends ChangeNotifier {
       String locationId) async {
     try {
       isUploadingImage = true;
-      ApiService apiService = ApiService(AppConstant.UPLOAD_IMAGES_NEW +
-          "/$locationId");
+      ApiService apiService =
+          ApiService(AppConstant.UPLOAD_IMAGES_NEW + "/$locationId");
 
       print("Uploading image to ${apiService.url}");
       var response = await apiService.postMultiPartLocationProfile(
@@ -1817,7 +2094,6 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
   Future<void> createSubdestination(
       BuildContext context,
       String accountId,
@@ -1833,12 +2109,12 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
 
       String url =
-          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId&lat=$lat&lng=$lng&subdestination=true&place_id=$placeId";
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/${sovId.isEmpty ? "undefined" : sovId}/location?location_id=$locationId&lat=$lat&lng=$lng&subdestination=true&place_id=$placeId";
       ApiService apiService = ApiService(url);
 
       var response = await apiService.get();
 
-      if (response.containsKey('result')) {
+      if (response.containsKey('results')) {
         //result = LocationProfileModel.fromJson(response['result']);
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
@@ -1866,36 +2142,52 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addSubdestinationToSOV(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, String subDestinationId) async {
+  Future<void> addSubdestinationToSOV({
+    required BuildContext context,
+    required String accountId,
+    required String subAccountId,
+    required String campusName,
+    required String userId,
+    required String locationId,
+    required String subDestinationId,
+    required String occupancy,
+  }) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
 
-      String url =
-          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId";
+      String url = "${AppConstant.ADD_SUBDESTINATION}";
       ApiService apiService = ApiService(url);
+
       // Retrieve the subdestination details from the list using the provided ID
-      var subdestination = _subdestinations.firstWhere((sd) => sd.id == subDestinationId);
+      var subdestination = locationProfile?.subdestinations
+          ?.firstWhere((sd) => sd.id == subDestinationId);
 
       var body = {
         "data": {
-          "add_location": true,
+          "account_id": accountId,
+          "sub_account_id": subAccountId,
+          "campus_name": campusName,
+          "user_id": userId,
           "location_id": locationId,
+          "add_location": true,
           "locations": [
             {
-              "id": subdestination.id,
-              "lat": subdestination.lat,
-              "lng": subdestination.lng,
-              "title": subdestination.name,
+              "id": subdestination?.id,
+              "lat": subdestination?.lat,
+              "lng": subdestination?.lng,
+              "title": subdestination?.name,
               "icon": "",
-              "name": subdestination.name,
-              "place_id": subdestination.placeId,
-              "address": subdestination.address,
-              "types": subdestination.types,
+              "name": subdestination?.name,
+              "place_id": subdestination?.placeId,
+              "address": subdestination?.address,
+              "types": subdestination?.types,
               "isMainLocation": false,
-              "status": ""
+              "status": "",
+              "rented": occupancy.toLowerCase() == "Rented".toLowerCase()
+                  ? true
+                  : false,
             }
           ]
         }
@@ -1904,13 +2196,15 @@ class MyLocationListProvider extends ChangeNotifier {
       var response = await apiService.post(body);
 
       if (response.containsKey('processed')) {
-        //result = LocationProfileModel.fromJson(response['result']);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
+          content: Text(
+              response['message'] ?? "Subdestination added successfully",
+              style: typography.Body1),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to add subdestination", style: typography.Body1),
+          content:
+              Text("Failed to add subdestination", style: typography.Body1),
         ));
       }
 
@@ -1934,8 +2228,13 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addSelectedSubdestinationToSOV(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, List<String> subDestinationId) async {
+  Future<void> addSelectedSubdestinationToSOV(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      List<String> subDestinationId) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
@@ -1945,7 +2244,9 @@ class MyLocationListProvider extends ChangeNotifier {
           "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location?location_id=$locationId";
       ApiService apiService = ApiService(url);
       // Retrieve the subdestination details from the list using the provided ID
-      var subdestinations = _subdestinations.where((sd) => subDestinationId.contains(sd.id)).toList();
+      var subdestinations = _subdestinations
+          .where((sd) => subDestinationId.contains(sd.id))
+          .toList();
       var body = {
         "data": {
           "add_location": true,
@@ -1973,11 +2274,14 @@ class MyLocationListProvider extends ChangeNotifier {
       if (response.containsKey('processed')) {
         //result = LocationProfileModel.fromJson(response['result']);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message'] ?? "Subdestination added successfully", style: typography.Body1),
+          content: Text(
+              response['message'] ?? "Subdestination added successfully",
+              style: typography.Body1),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to add subdestination", style: typography.Body1),
+          content:
+              Text("Failed to add subdestination", style: typography.Body1),
         ));
       }
 
@@ -2001,8 +2305,13 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> removeSubdestinationFromSOV(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, String subDestinationId) async {
+  Future<void> removeSubdestinationFromSOV(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      String subDestinationId) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
@@ -2023,9 +2332,10 @@ class MyLocationListProvider extends ChangeNotifier {
 
       //result = LocationProfileModel.fromJson(response['result']);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(response['message'] ?? "Subdestination removed successfully", style: typography.Body1),
+        content: Text(
+            response['message'] ?? "Subdestination removed successfully",
+            style: typography.Body1),
       ));
-
 
       isLoading = false;
       notifyListeners();
@@ -2047,19 +2357,23 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateLocationName(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, String locationName) async {
+  Future<bool> updateLocationName(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      String locationName) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
       String url =
-          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
+          "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/${sovId.isEmpty ? "undefined" : sovId}/location";
       ApiService apiService = ApiService(url);
       // Create data payload
       final data = {
         "data": {
-
           "location_name": locationName,
           "location_type": locationProfile?.finalAddress?.locationType,
           "description": locationProfile?.finalAddress?.description,
@@ -2109,8 +2423,13 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateLocationAddress(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, String locationAddress) async {
+  Future<bool> updateLocationAddress(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      String locationAddress) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
@@ -2170,14 +2489,18 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  Future<String> updateLocationDetails(BuildContext context, String accountId,
-      String subAccountId, String sovId, String locationId, Map<String, dynamic> data) async {
+  Future<String> updateLocationDetails(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      Map<String, dynamic> data) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
-      String url =
-          "${AppConstant.GET_LOCATION_PROFILE_NEW+"/editlocation"}";
+      String url = "${AppConstant.GET_LOCATION_PROFILE_NEW + "/editlocation"}";
       ApiService apiService = ApiService(url);
       var body = data;
       var response = await apiService.patch(body);
@@ -2193,7 +2516,6 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
       return true.toString();
     } on BackendException catch (e, stackTrace) {
-
       if (e.statusCode == 422) {
         try {
           print("Error 422: ${e.message}");
@@ -2201,40 +2523,59 @@ class MyLocationListProvider extends ChangeNotifier {
           print(e.message);
           var resultLocation = json.decode(e.message);
           var toDeleteLocationId = resultLocation["to_delete_location"];
-          locationProfile?.finalAddress?.locationId = resultLocation["location_data"]["location_id"];
+          locationProfile?.finalAddress?.locationId =
+              resultLocation["location_data"]["location_id"];
           locationProfile?.finalAddress?.locationName =
-          resultLocation["location_data"]["location_name"];
+              resultLocation["location_data"]["location_name"];
           locationProfile?.finalAddress?.locationType =
-          resultLocation["location_data"]["location_type"];
-          locationProfile?.finalAddress?.description = resultLocation["location_data"]["description"];
-          locationProfile?.finalAddress?.address = resultLocation["location_data"]["address"];
-          locationProfile?.finalAddress?.city = resultLocation["location_data"]["city"];
-          locationProfile?.finalAddress?.state = resultLocation["location_data"]["state"];
-          locationProfile?.finalAddress?.zip = resultLocation["location_data"]["zip"];
-          locationProfile?.finalAddress?.country = resultLocation["location_data"]["country"];
-          locationProfile?.finalAddress?.latitude = resultLocation["location_data"]["latitude"];
-          locationProfile?.finalAddress?.longitude = resultLocation["location_data"]["longitude"];
-          locationProfile?.finalAddress?.ownerId = resultLocation["location_data"]["owner_id"];
-          locationProfile?.finalAddress?.ownerName = resultLocation["location_data"]["owner_name"];
-          locationProfile?.finalAddress?.ownerEmail = resultLocation["location_data"]["owner_email"];
+              resultLocation["location_data"]["location_type"];
+          locationProfile?.finalAddress?.description =
+              resultLocation["location_data"]["description"];
+          locationProfile?.finalAddress?.address =
+              resultLocation["location_data"]["address"];
+          locationProfile?.finalAddress?.city =
+              resultLocation["location_data"]["city"];
+          locationProfile?.finalAddress?.state =
+              resultLocation["location_data"]["state"];
+          locationProfile?.finalAddress?.zip =
+              resultLocation["location_data"]["zip"];
+          locationProfile?.finalAddress?.country =
+              resultLocation["location_data"]["country"];
+          locationProfile?.finalAddress?.latitude =
+              resultLocation["location_data"]["latitude"];
+          locationProfile?.finalAddress?.longitude =
+              resultLocation["location_data"]["longitude"];
+          locationProfile?.finalAddress?.ownerId =
+              resultLocation["location_data"]["owner_id"];
+          locationProfile?.finalAddress?.ownerName =
+              resultLocation["location_data"]["owner_name"];
+          locationProfile?.finalAddress?.ownerEmail =
+              resultLocation["location_data"]["owner_email"];
           locationProfile?.finalAddress?.autoCertified =
-          resultLocation["location_data"]["auto_certified"];
-          locationProfile?.finalAddress?.campusId = resultLocation["location_data"]["campus_id"];
-          locationProfile?.finalAddress?.percent = resultLocation["location_data"]["percent"];
-          locationProfile?.finalAddress?.score = resultLocation["location_data"]["score"];
+              resultLocation["location_data"]["auto_certified"];
+          locationProfile?.finalAddress?.campusId =
+              resultLocation["location_data"]["campus_id"];
+          locationProfile?.finalAddress?.percent =
+              resultLocation["location_data"]["percent"];
+          locationProfile?.finalAddress?.score =
+              resultLocation["location_data"]["score"];
 
-          locationProfile?.finalAddress?.placeTypes = resultLocation["location_data"]["place_types"] is String
-              ? [resultLocation["location_data"]["place_types"]]
-              : (resultLocation["location_data"]["place_types"] as List?)?.map((item) => item as String).toList();
-          locationProfile?.screenshots = resultLocation["location_data"]["screen_shots"]??[];
+          locationProfile?.finalAddress?.placeTypes =
+              resultLocation["location_data"]["place_types"] is String
+                  ? [resultLocation["location_data"]["place_types"]]
+                  : (resultLocation["location_data"]["place_types"] as List?)
+                      ?.map((item) => item as String)
+                      .toList();
+          locationProfile?.screenshots =
+              resultLocation["location_data"]["screen_shots"] ?? [];
           subdestinations = locationProfile?.subdestinations ?? [];
           String accountName = resultLocation["location_data"]["account_name"];
-          String subAccountName = resultLocation["location_data"]["sub_account_name"];
+          String subAccountName =
+              resultLocation["location_data"]["sub_account_name"];
           String sovName = resultLocation["location_data"]["sov_name"];
           String page = "0";
           String totalPages = "1";
           String searchQuery = "";
-
         } catch (e, stackTrace) {
           isLoading = false;
           print(e);
@@ -2272,6 +2613,116 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
+  // Edit Campus Id
+  Future<void> updateCampusId(
+      BuildContext context, String campusKey, String campusId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url = "${AppConstant.EDIT_CAMPUS}";
+      ApiService apiService = ApiService(url);
+      // Create data payload
+      final data = {
+        "data": {
+          "campus_name": campusId,
+          "campus_id": campusKey,
+        }
+      };
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile = null;
+        subdestinations = [];
+      }
+
+      isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Change Occupancy
+
+/*
+Request URL:
+https://us-central1-project-green-f4d78.cloudfunctions.net/locations/rented
+Request Method:
+PATCH
+{
+  "data": {
+    "location_id": "bUysRMYYFTaQJiti48u1",
+    "rented": true,
+    "base_location_id": "B6tQ2lb3MRwirg9LtKJl"
+  }
+}
+ */
+  Future<bool> changeOccupancy(BuildContext context, String locationId,
+      bool rented, String baseLocationId) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url = "${AppConstant.CHANGE_OCCUPANCY}";
+      ApiService apiService = ApiService(url);
+
+      // Create data payload
+      final data = {
+        "data": {
+          "location_id": locationId,
+          "rented": rented,
+          "base_location_id": baseLocationId,
+        }
+      };
+      var body = data;
+      var response = await apiService.patch(body);
+
+      if (response.containsKey('subdestination')) {
+        // Process the result if present
+        subdestinations = locationProfile?.subdestinations ?? [];
+        return true; // Indicate success
+      } else {
+        locationProfile = null;
+        subdestinations = [];
+        return false; // Indicate failure
+      }
+    } on BackendException catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+      return false; // Indicate failure
+    } catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.Body1),
+      ));
+      return false; // Indicate failure
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 
 }
-

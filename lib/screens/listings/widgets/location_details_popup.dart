@@ -13,6 +13,9 @@ class LocationDetailsPopup extends StatelessWidget {
   final int geocodingScore;
   final int riskScore;
   final Map<String, Hazard> hazards;
+  final List<String> geocodedAt;
+  final List<String> occupancy;
+  final String? campus;
 
   LocationDetailsPopup({
     required this.address,
@@ -20,6 +23,9 @@ class LocationDetailsPopup extends StatelessWidget {
     required this.geocodingScore,
     required this.riskScore,
     required this.hazards,
+    required this.geocodedAt,
+    required this.occupancy,
+    this.campus,
   });
 
   @override
@@ -50,7 +56,7 @@ class LocationDetailsPopup extends StatelessWidget {
                 SizedBox(height: 8),
 
                 Text(
-                  locationId,
+                  campus??"",
                   style: typography.Body2,
                 ),
                 SizedBox(height: 8),
@@ -104,9 +110,10 @@ class LocationDetailsPopup extends StatelessWidget {
 
   // Method to build the new information section
   Widget _buildInformationSection(CustomTypography typography) {
+
     final information = {
-      'Location Geocoded at': '--',
-      'Occupancy': '--',
+      'Location Geocoded at': geocodedAt.join(', '),
+      'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
       'Construction': '--',
       'Floor Area': '--',
       'Year of construction': '--',

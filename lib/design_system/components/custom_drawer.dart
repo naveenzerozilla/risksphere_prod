@@ -14,8 +14,12 @@ import 'package:green/screens/userManagement/user_management.dart';
 import 'package:green/service/language_service.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/my_location_list_provider.dart';
 import '../../screens/listings/account_list.dart';
+import '../../screens/listings/location_profile.dart';
+import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/onboarding/splash_screen.dart';
 import '../../service/shared_preference_service.dart';
 
@@ -36,6 +40,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showCorporateUserListDropdown = true;
   bool showCorporateVerificationTab = true;
   bool showCorporateProfile = true;
+
+  final TextEditingController searchController = TextEditingController();
+
 
   @override
   void initState() {
@@ -88,20 +95,62 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   const SizedBox(height: 20),
                   // Search bar added
-                  TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search, color: iconColor),
-                      hintText: 'Search',
-                      hintStyle: typography.Body1,
-                      filled: true,
-                      fillColor: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.grey[200], // Use a lighter color for light theme
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
+                  Column(
+                    children: [
+                      TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          if (value.isNotEmpty && value.length > 2) {
+                            Provider.of<MyLocationListProvider>(context, listen: false)
+                                .performGlobalSearch(context, value);
+                          } else {
+                            Provider.of<MyLocationListProvider>(context, listen: false).searchLocationList = [];
+                          }
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.search, color: iconColor),
+                          hintText: 'Search',
+
+                          hintStyle: typography.Body1,
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]
+                              : Colors.grey[200], // Use a lighter color for light theme
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
                       ),
-                    ),
+                      Consumer<MyLocationListProvider>(
+                        builder: (context, provider, child) {
+                          return AutocompleteOptionsLocation(
+                            options: provider.searchLocationList,
+                            isLoading: provider.isSearchLoading,
+                            onSelected: (MyLocation selectedLocation) {
+                              // Handle location selection
+                              //searchController.text = selectedLocation.finalAddress?.address ?? '';
+                              provider.searchLocationList = []; // Clear results after selection
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => LocationProfile(
+                                  accountId: selectedLocation.finalAddress?.accountId??"",
+                                  accountName: selectedLocation.finalAddress?.accountName??"",
+                                  subAccountId: selectedLocation.finalAddress?.subAccountId??"",
+                                  subAccountName: selectedLocation.finalAddress?.subAccountName??"",
+                                  sovId: selectedLocation.finalAddress?.sovId??"",
+                                  sovName: selectedLocation.finalAddress?.sovName??"",
+                                  searchQuery: "",
+                                  page: "0",
+                                  totalPages: "0",
+                                ),
+                              ));
+
+                              //onExpandPressed(false); // Collapse the search bar
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   SizedBox(height: 20),
                 ],

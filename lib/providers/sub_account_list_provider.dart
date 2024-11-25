@@ -388,14 +388,18 @@ class SubAccountListProvider extends ChangeNotifier {
       autoCompleteSubAccountList = accountListModel.results ?? [];
       log(autoCompleteSubAccountList.toString());
       print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
-    } on BackendException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    } on BackendException catch (e, stack) {
+      /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: typography.Body1,),
-      ));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ));*/
+      print(e.message);
+      print(stack);
+    } catch (e, stack) {
+      print(e.toString());
+      print(stack);
+      /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString(), style: typography.Body1,),
-      ));
+      ));*/
     } finally {
       isAutoCompleteLoading = false;
     }
@@ -553,7 +557,7 @@ class SubAccountListProvider extends ChangeNotifier {
     try {
       isTransferLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.TRANSFER);
+      ApiService apiService = ApiService(AppConstant.TRANSFER_SUBACCOUNT);
       var response = await apiService.post({
         'data': {
           'to_user_id': newOwnerId,
@@ -573,7 +577,13 @@ class SubAccountListProvider extends ChangeNotifier {
       }
 
       isTransferLoading = false;
-    } catch (e) {
+    } on BackendException catch (e) {
+      isTransferLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message),
+      ));
+    }
+    catch (e) {
       isTransferLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to transfer sub account: ${e.toString()}'),

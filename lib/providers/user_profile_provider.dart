@@ -139,7 +139,7 @@ class UserProfileProvider with ChangeNotifier {
       // Catch any errors that occur during the process
       print('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.message);
+     // if (context.mounted) CustomToast.error(context, e.message);
       isLoading = false;
       return null; // Return an empty list in case of error
     }
@@ -152,8 +152,8 @@ class UserProfileProvider with ChangeNotifier {
 
       isLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(
-          context, 'Error fetching companies. Please try again later.');
+     /* CustomToast.error(
+          context, 'Error fetching companies. Please try again later.');*/
       return null; // Return an empty list in case of error
     }
   }

@@ -55,12 +55,16 @@ class Companies {
   bool? isEnabled;
   UpdatedAt? updatedAt;
   String? name;
-  Admins? admins;
+  //Admins? admins;
   bool? status;
   String? id;
   bool? isSelected = false;
   bool? enableDomainCheck;
   String? countryName;
+  String? adminName;
+  String? adminEmail;
+  String? adminMobile;
+  String? adminCountryCode;
 
   Companies(
       {this.companyType,
@@ -71,7 +75,7 @@ class Companies {
         this.isEnabled,
         this.updatedAt,
         this.name,
-        this.admins,
+        //this.admins,
         this.status,
         this.id, this.isSelected,
         this.enableDomainCheck, this.countryName});
@@ -85,8 +89,8 @@ class Companies {
     isEnabled = json['is_enabled'];
 
     name = json['company_name'];
-    admins =
-    json['admins'] != null ? Admins.fromJson(json['admins']) : null;
+/*    admins =
+    json['admins'] != null ? Admins.fromJson(json['admins']) : null;*/
     status = json['status'];
     id = json['id'];
     enableDomainCheck = json['enable_domain_check'];
@@ -98,6 +102,10 @@ class Companies {
     } else {
       countryName = json['country']['name'];
     }
+    adminName = json['admin_name'];
+    adminEmail = json['admin_email'];
+    adminMobile = json['admin_phone'];
+    adminCountryCode = json['admin_country_code'];
   }
 
   Map<String, dynamic> toJson() {
@@ -112,9 +120,9 @@ class Companies {
       data['updated_at'] = updatedAt!.toJson();
     }
     data['company_name'] = name;
-    if (admins != null) {
+    /*if (admins != null) {
       data['admins'] = admins!.toJson();
-    }
+    }*/
     data['status'] = status;
     data['enable_domain_check'] = enableDomainCheck;
     data['id'] = id;

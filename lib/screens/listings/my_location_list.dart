@@ -26,10 +26,12 @@ import 'package:green/screens/listings/widgets/location_list_map_view.dart';
 import 'package:green/screens/listings/widgets/maintenance_widget.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:green/screens/listings/widgets/overall_score_table.dart';
+import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:green/service/shared_preference_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,6 +47,7 @@ import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../models/location_list_model.dart';
 import '../../models/sov_list_model.dart';
 import '../../models/transfer_autocomplete_model.dart';
+import '../../providers/job_monitoring_provier.dart';
 import '../../providers/sov_list_provider.dart';
 import '../../providers/sub_account_list_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -248,7 +251,7 @@ class _MyLocationListState extends State<MyLocationList>
         .fetchLocationList(
           context,
           "",
-          0,
+          1,
           40,
           widget.accountID,
           widget.subAccountID,
@@ -275,6 +278,8 @@ class _MyLocationListState extends State<MyLocationList>
             context, widget.accountID, widget.subAccountID);
     Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchAllLocationList(context, widget.accountID, widget.subAccountID);
+    // Initialize the JobMonitoringProvider and fetch the company IDs
+    Provider.of<JobMonitoringProvider>(context, listen: false).fetchCompanyIds();
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -895,6 +900,17 @@ class _MyLocationListState extends State<MyLocationList>
                           leading: Icon(Icons.download),
                           title: Text('Export Locations', style: typography.Body1),
                           onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return ExportDialog(
+                                  accountId: widget.accountID,
+                                  subAccountId: widget.subAccountID,
+                                  sovId: "",
+                                  locationId: selectedMainTab==0?myLocationListProvider.myLocationList.map((location) => location.id??"").toList():myLocationListProvider.certifiedLocationList.map((location) => location.id??"").toList(),
+                                );
+                              },
+                            );
 
                           },
                         ),
@@ -910,8 +926,12 @@ class _MyLocationListState extends State<MyLocationList>
         Container(
           child: MaintenanceUI(isMaintenance: isMaintenance),
         ),
-        Container(
-          child: _getLiveUI(),
+        Consumer<JobMonitoringProvider>(
+          builder: (context, jobMonitoringProvider, child) {
+            return Container(
+              child: _getLiveUI(jobMonitoringProvider),
+            );
+          }
         ),
         showSelectAll
             ? Row(
@@ -1173,63 +1193,153 @@ class _MyLocationListState extends State<MyLocationList>
 
 
 
-
-  Widget _getLiveUI() {
-    // Handle different cases for is_super_admin
-    Stream<DocumentSnapshot> stream;
-
-    // Fetch specific processes if the user is not a super admin
-    stream = FirebaseFirestore.instance
-        .collection('subaccount')
-        .doc(widget.subAccountID)
-        .snapshots();
-
-    var heatmapStatus = stream.map((event) => event['heatmap_status']);
-
+  Widget _getLiveUI(JobMonitoringProvider provider) {
     var typography = CustomTypography(context);
-    return heatmapStatus.toString().toLowerCase() == 'Initiated'.toLowerCase()?Container(
-      /*decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: Offset(0, 1), // changes position of shadow
-          ),
-        ],
-      ),*/
-      child: Column(
-        children: [
-          Row(
+
+    // Define the secondary stream
+    Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
+
+    if (provider.isSuperAdmin) {
+      processStream = FirebaseFirestore.instance
+          .collection('processes')
+          .orderBy('created_at', descending: true)
+          .limit(5)
+          .snapshots();
+    } else if (provider.docIds.isNotEmpty) {
+      // Split docIds into chunks of 30 to avoid Firestore's 'whereIn' limit
+      List<List<String>> chunks = [];
+      for (var i = 0; i < provider.docIds.length; i += 30) {
+        chunks.add(provider.docIds.sublist(
+          i,
+          i + 30 > provider.docIds.length ? provider.docIds.length : i + 30,
+        ));
+      }
+
+      // Combine streams for each chunk
+      List<Stream<QuerySnapshot<Map<String, dynamic>>>> chunkStreams = chunks
+          .map((chunk) => FirebaseFirestore.instance
+          .collection('processes')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .orderBy('created_at', descending: true)
+          .limit(5)
+          .snapshots())
+          .toList();
+
+      // Merge all chunk streams into a single stream
+      processStream = Rx.merge(chunkStreams);
+    } else {
+      processStream = Stream.empty();
+    }
+
+    // Combine both streams using Rx.combineLatest2
+    var combinedStream = Rx.combineLatest2<
+        DocumentSnapshot<Map<String, dynamic>>,
+        QuerySnapshot<Map<String, dynamic>>,
+        Map<String, dynamic>>(
+      FirebaseFirestore.instance
+          .collection('subaccount')
+          .doc(widget.subAccountID)
+          .snapshots(),
+      processStream,
+          (heatmapSnapshot, processSnapshot) {
+        return {
+          'heatmapData': heatmapSnapshot.data(),
+          'processData': processSnapshot.docs.isNotEmpty
+              ? processSnapshot.docs.first.data()
+              : null,
+        };
+      },
+    );
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: combinedStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Display a loading indicator while waiting for data
+          return const SizedBox.shrink(); // Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          // Handle error case
+          return const SizedBox.shrink();
+        }
+
+        if (snapshot.hasData) {
+          var data = snapshot.data!;
+          var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+          var processStatus = data['processData']?['status'] ?? '';
+
+          print('Heatmap status: $heatmapStatus');
+          print('Process status: $processStatus');
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Lottie.asset(
-                        'assets/lottie/loading.json',  // Lottie file for 'in-progress' animation
-                        width: 24,
-                        height: 24,
-                      ),
-                      SizedBox(width: 8.0),
-                      Text(
-                        'Generating Heatmap',
-                        style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+              // Priority given to "Processing"
+              if (processStatus.toString().toLowerCase() != 'completed')
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ProcessMonitoringScreen(),
+                    )).then((value) => _getData());
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Lottie.asset(
+                          'assets/lottie/loading.json', // Lottie file for 'in-progress' animation
+                          width: 24,
+                          height: 24,
+                        ),
+                        SizedBox(width: 8.0),
+                        Text(
+                          'Processing',
+                          style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
                   ),
+                )
+              // "Generating Heatmap" is only shown if "Processing" is completed
+              else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Lottie.asset(
+                            'assets/lottie/loading.json', // Lottie file for 'in-progress' animation
+                            width: 24,
+                            height: 24,
+                          ),
+                          SizedBox(width: 8.0),
+                          Text(
+                            'Generating Heatmap',
+                            style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+              SizedBox(height: CustomSpacing.two),
             ],
-          ),
-          SizedBox(height: CustomSpacing.two),
-        ],
-      ),
-    ):SizedBox();
+          );
+        }
+
+        // Return an empty widget if no data is available
+        return SizedBox();
+      },
+    );
   }
+
+
+
+
 
   _getComingSoonUI() {
     var typography = CustomTypography(context);
@@ -1286,7 +1396,7 @@ class _MyLocationListState extends State<MyLocationList>
               BlendMode.srcIn,
             ),
           ),
-          SizedBox(width: 8), // Add space between icon and label
+          SizedBox(width: 8), // Add spacejjjjjjjj between icon and label
           if (isSelected) ...[
             SizedBox(width: 4), // Reduce the space between icon and label
             Text(
@@ -1332,7 +1442,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1355,7 +1465,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1412,7 +1522,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     locationListProvider.fetchLocationList(
                                       context,
                                       locationQuery,
-                                      0,
+                                      1,
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
@@ -1434,7 +1544,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1458,7 +1568,7 @@ class _MyLocationListState extends State<MyLocationList>
                           locationListProvider.fetchLocationList(
                             context,
                             locationQuery,
-                            0,
+                            1,
                             40,
                             widget.accountID,
                             widget.subAccountID,
@@ -1521,7 +1631,16 @@ class _MyLocationListState extends State<MyLocationList>
                                 return Column(
                                   children: [
                                     MyLocationCard(
+                                      imageUrl: (locationListProvider.myLocationList[index].screenshots?.isNotEmpty ?? false)
+                                          ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
+                                          : '',
+
                                       index: index,
+                                      campusId: locationListProvider
+                                              .myLocationList[index]
+                                              .finalAddress
+                                              ?.campusId ??
+                                          '',
                                       accountId: widget.accountID,
                                       subAccountId: widget.subAccountID,
                                       locationId: locationListProvider
@@ -1578,6 +1697,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                     context,
                                                     widget.accountID,
                                                     widget.subAccountID,
+                                                    "",
                                                     [locationId]);
 
                                             // Refresh the list after deletion
@@ -1587,7 +1707,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .fetchLocationList(
                                               context,
                                               locationQuery,
-                                              0,
+                                              1,
                                               40,
                                               widget.accountID,
                                               widget.subAccountID,
@@ -1652,7 +1772,15 @@ class _MyLocationListState extends State<MyLocationList>
                               }
                             }
 
-                            return MyLocationCard(
+                            return MyLocationCard(imageUrl: locationListProvider.myLocationList[index].screenshots?.isNotEmpty == true
+                                ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
+                                : '',
+                              campusId: locationListProvider
+                                  .myLocationList[index]
+                                  .finalAddress
+                                  ?.campusId ??
+                                  '',
+
                               index: index,
                               accountId: widget.accountID,
                               subAccountId: widget.subAccountID,
@@ -1706,6 +1834,7 @@ class _MyLocationListState extends State<MyLocationList>
                                             context,
                                             widget.accountID,
                                             widget.subAccountID,
+                                            "",
                                             [locationId]);
 
                                     // Refresh the list after deletion
@@ -1714,7 +1843,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         .fetchLocationList(
                                       context,
                                       locationQuery,
-                                      0,
+                                      1,
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
@@ -2015,6 +2144,17 @@ class _MyLocationListState extends State<MyLocationList>
       int index,
       BuildContext context) {
     return MyLocationCard(
+      campusId: locationListProvider
+          .certifiedLocationList[index]
+          .finalAddress
+          ?.campusId ??
+          '',
+      imageUrl: (locationListProvider.certifiedLocationList[index].screenshots != null &&
+          locationListProvider.certifiedLocationList[index].screenshots!.isNotEmpty)
+          ? locationListProvider.certifiedLocationList[index].screenshots![0].imageUrl ?? ''
+          : '',
+
+
       index: index,
       accountId: widget.accountID,
       subAccountId: widget.subAccountID,
@@ -2047,7 +2187,7 @@ class _MyLocationListState extends State<MyLocationList>
             print("Deleting location $locationId");
             // Delete the location
             await Provider.of<MyLocationListProvider>(context, listen: false)
-                .deleteLocations(context, widget.accountID, widget.subAccountID,
+                .deleteLocations(context, widget.accountID, widget.subAccountID,"",
                     [locationId]);
 
             // Refresh the list after deletion
@@ -3001,7 +3141,7 @@ class _MyLocationListState extends State<MyLocationList>
             ? null
             : () {
                 // On tap of card
-                if (showCheckbox) {
+                /*if (showCheckbox) {
                   setState(() {
                     sOVListProvider.sovList[index].isChecked =
                         !(sOVListProvider.sovList[index].isChecked ?? false);
@@ -3015,7 +3155,7 @@ class _MyLocationListState extends State<MyLocationList>
                       showCheckbox = false;
                     });
                   });
-                }
+                }*/
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return SovLocationList(
                     accountID: widget.accountID,
@@ -3027,7 +3167,7 @@ class _MyLocationListState extends State<MyLocationList>
                   );
                 }));
               },
-        onLongPress: () {
+       /* onLongPress: () {
           setState(() {
             if (showCheckbox) {
               showCheckbox = false;
@@ -3040,11 +3180,11 @@ class _MyLocationListState extends State<MyLocationList>
               sOVListProvider.sovList[index].isChecked = true;
             }
           });
-        },
+        },*/
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Add Checkbox here
+            /*// Add Checkbox here
             showCheckbox
                 ? Checkbox(
                     value: sOVListProvider.sovList[index].isChecked ?? false,
@@ -3057,7 +3197,7 @@ class _MyLocationListState extends State<MyLocationList>
                             });
                           },
                   )
-                : SizedBox(),
+                : SizedBox(),*/
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -3297,9 +3437,9 @@ class _MyLocationListState extends State<MyLocationList>
                                             ),
                                     ],
                                   ),
-                                  !sOVListProvider.showLocationCount
+                                  /*!sOVListProvider.showLocationCount
                                       ? SizedBox()
-                                      : Row(
+                                      : */Row(
                                           children: [
                                             Text(
                                                 sOVListProvider.sovList[index]
@@ -3355,7 +3495,7 @@ class _MyLocationListState extends State<MyLocationList>
                                           : AppColors.black,
                                       text: sOVListProvider
                                               .sovList[index].overAllScore
-                                              ?.toString() ??
+                                              ?.toStringAsFixed(2) ??
                                           "0",
                                     ),
                                   ),
@@ -3498,7 +3638,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 tooltip: LanguageService.getTranslated(context,
                                     "sov_list_app_duplicate_tooltip_text"),
                               ),
-                              IconButton(
+                              /*IconButton(
                                 icon: Icon(
                                   Icons.settings,
                                   color: AppColors.primaryMain,
@@ -3508,7 +3648,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 },
                                 tooltip: LanguageService.getTranslated(context,
                                     "sov_list_app_settings_tooltip_text"),
-                              ),
+                              ),*/
                             ],
                           ),
                         ),

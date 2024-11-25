@@ -57,6 +57,24 @@ class NonCorporateProvider with ChangeNotifier {
   }
 
   /// Pagination
+  int _page = 1;
+  int get page => _page;
+  set page(int value) {
+    _page = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalPages = 1;
+  int get totalPages => _totalPages;
+  set totalPages(int value) {
+    _totalPages = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isNextPageLoading = false;
   bool get isNextPageLoading => _isNextPageLoading;
   set isNextPageLoading(bool value) {
@@ -65,8 +83,7 @@ class NonCorporateProvider with ChangeNotifier {
       notifyListeners();
     });
   }
-  String? nextPageToken;
-  bool nextPageExists = true;
+
 
 
   List<IndividualUsers>? _employeesList = [];
@@ -95,99 +112,90 @@ class NonCorporateProvider with ChangeNotifier {
   String allCount = "";
   // List<Roles>? _roles = [];
   // List<Roles>? get roles => _roles;
-  Future<List<IndividualUsers>> getNonCorporateUserList(BuildContext context, {String searchText = "", String roleFilter = "", bool isSearch = false, bool? status}) async {
+  Future<List<IndividualUsers>> getNonCorporateUserList(BuildContext context,
+      {String searchText = "", String roleFilter = "", bool isSearch = false, bool? status}) async {
     try {
+      // Reset pagination for new searches
       if (isSearch) {
-        nextPageToken = null;
-        nextPageExists = true;
+        page = 1;
+        _employeesList = [];
       }
-      if (isLoading || isNextPageLoading) return _employeesList ?? [];
-      if (!nextPageExists) return _employeesList ?? [];
 
-      if (nextPageToken == null && nextPageExists) {
+      // Prevent duplicate API calls
+      if (isLoading || isNextPageLoading || page > totalPages) {
+        return _employeesList ?? [];
+      }
+
+      // Set loading states
+      if (page == 1) {
         _employeesList = [];
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      // Construct API URL with filters
-      String additionalParams = "";
-      if (searchText.isNotEmpty) {
-        additionalParams += "&search=$searchText";
-      }
-      if (roleFilter.isNotEmpty) {
-        additionalParams += "&role_filter=$roleFilter";
-      }
-      if (nextPageToken != null) {
-        additionalParams += "&pageToken=$nextPageToken&direction=forward";
-      }
-      additionalParams += "&pageSize=5"; // You can adjust the page size as needed
-      if (status != null) {
-        additionalParams += "&active_users=$status";
-      }
+      // Construct API URL with pagination and filters
+      String additionalParams = "?page=$page&pageSize=10";
+      if (searchText.isNotEmpty) additionalParams += "&search=$searchText";
+      if (roleFilter.isNotEmpty) additionalParams += "&role_filter=$roleFilter";
+      if (status != null) additionalParams += "&active_users=$status";
 
-      ApiService apiService = ApiService(AppConstant.NON_CORPORATE_USER_STATUS);
-      String url = "?is_individual=true";
-      if (additionalParams.isNotEmpty) {
-        url += (url.contains("?") ? "&" : "?") + additionalParams.substring(1);
-      }
+      ApiService apiService = ApiService(AppConstant.NON_CORPORATE_USER_STATUS_NEW);
+      String url = "$additionalParams";
 
       // Fetch data from API
       Map<String, dynamic> response = await apiService.get(url);
 
+      // Parse response
       List<IndividualUsers> usersList = [];
-      if (response.containsKey('individual_users')) {
-        var model = Non_Corporate_User_Model.fromJson(response);
-        if (model.individualUsers != null) {
-          usersList = model.individualUsers!;
-        }
-        if (model.counts != null) {
-          activeCount = model.counts!.active.toString();
-          allCount = model.counts!.users.toString();
-        }
-      } /*else
-      if (isSearch&&response.containsKey('users') && response['users']!= null &&response['users']['individual_users'] != null) {
-        var model = Non_Corporate_User_Model.fromJson(response, isSearch: true); // Parse the entire model
-        if (model.users != null && model.users!.individualUsers != null) {
-          usersList = model.users!.individualUsers!;
-          print("Parsed users: ${usersList.length}");
-          if (model.counts != null) {
-            activeCount = model.users?.counts?.active?.toString()??"0";
-            allCount = model.users?.counts?.users?.toString()??"0";
-          }
-        } else {
-          print("No 'individualUsers' found within 'users'.");
-        }
-      } else {
-        print("Response does not contain 'data' key or it is null.");
-      }*/
-
-      _employeesList?.addAll(usersList);
-      notifyListeners();
-
-      if (response.containsKey('pageToken')) {
-        nextPageToken = response['pageToken'];
-      } else {
-        nextPageToken = null;
+      if (response.containsKey('result')) {
+        usersList = (response['result'] as List)
+            .map((user) => IndividualUsers.fromJson(user))
+            .toList();
       }
-      nextPageExists = response.containsKey('nextPageExists') ? response['nextPageExists'] : false;
 
+      // Update pagination
+      if (response.containsKey('totalRecords')) {
+        int totalRecords = response['totalRecords'];
+        totalPages = (totalRecords / 10).ceil(); // Assuming pageSize is 10
+        allCount = totalRecords.toString();
+      } else {
+        totalPages = 1;
+      }
+
+      if (response.containsKey('active_count')) {
+        activeCount = response['active_count'].toString();
+      }
+
+      // Add new data to the list
+      _employeesList?.addAll(usersList);
+
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
 
+      notifyListeners();
       return _employeesList ?? [];
     } catch (e, stackTrace) {
+      log('Error fetching non-corporate users: $e');
       print('Stack Trace: $stackTrace');
-      print('Error: $e');
+      handleError(context, e, stackTrace);
 
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
-      if (!context.mounted) return [];
-      CustomToast.error(context, 'Error fetching non-corporate users. Please try again later.');
+
       return [];
     }
   }
+  void handleError(BuildContext context, dynamic e, StackTrace stackTrace) {
+    log('Error: $e');
+    print('Stack Trace: $stackTrace');
+    if (context.mounted) {
+      CustomToast.error(context, 'An error occurred. Please try again.');
+    }
+  }
+
 
 
   // Future<List<IndividualUsers>> getNonCorporateUserList(BuildContext context) async {

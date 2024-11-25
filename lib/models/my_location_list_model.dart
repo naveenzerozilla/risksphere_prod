@@ -103,9 +103,9 @@ class MyLocation with ClusterItem{
       });
     }
 
-    if (json['screenshots'] != null) { // Corrected condition here
+    if (json['screen_shots'] != null) { // Corrected condition here
       screenshots = <Screenshots>[];
-      json['screenshots'].forEach((v) {
+      json['screen_shots'].forEach((v) {
         screenshots!.add(Screenshots.fromJson(v));
       });
     }
@@ -128,14 +128,14 @@ class MyLocation with ClusterItem{
       data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
     }
     if (screenshots != null) {
-      data['screenshots'] = screenshots!.map((v) => v.toJson()).toList();
+      data['screen_shots'] = screenshots!.map((v) => v.toJson()).toList();
     }
     return data;
   }
 
   @override
   String toString() {
-    return 'MyLocation(id: $id, finalAddress: $finalAddress, overallScore: $overallScore, geocodingScore: $geocodingScore, hazard: $hazard, tags: $tags, geocodedAddress: $geocodedAddress, subdestinations: $subdestinations, screenshots: $screenshots)';
+    return 'MyLocation(id: $id, finalAddress: $finalAddress, overallScore: $overallScore, geocodingScore: $geocodingScore, hazard: $hazard, tags: $tags, geocodedAddress: $geocodedAddress, subdestinations: $subdestinations, screen_shots: $screenshots)';
   }
 
   @override
@@ -190,6 +190,7 @@ class Hazard {
 
 class FinalAddress {
   String? campusId;
+  String? campusKey;
   String? country;
   String? locationIdForRef;
   bool? autoCertified;
@@ -253,6 +254,7 @@ class FinalAddress {
     this.longitude,
     this.state,
     this.campusId,
+    this.campusKey,
   });
 
   FinalAddress.fromJson(Map<String, dynamic> json) {
@@ -282,7 +284,9 @@ class FinalAddress {
     ownerName = json['owner_name'];
     subAccountName = json['sub_account_name'];
     companyId = json['company_id'];
-    lineNo = json['line_no'];
+    lineNo = json['line_no']?.runtimeType == int
+        ? json['line_no']
+        : int.tryParse(json['line_no']?.toString() ?? '');
     locationType = json['location_type'];
     sovId = json['sov_id'];
     locationName = json['location_name'];
@@ -290,7 +294,8 @@ class FinalAddress {
     countryIsoCode = json['country_iso_code'];
     longitude = json['longitude']?.toDouble();
     state = json['state'];
-    campusId = json['campus_id'];
+    campusId = json['campus_name'];
+    campusKey = json['campus_id'];
   }
 
   Map<String, dynamic> toJson() {
@@ -327,13 +332,14 @@ class FinalAddress {
     data['country_iso_code'] = countryIsoCode;
     data['longitude'] = longitude;
     data['state'] = state;
-    data['campus_id'] = campusId;
+    data['campus_name'] = campusId;
+    data['campus_id'] = campusKey;
     return data;
   }
 
   @override
   String toString() {
-    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude, state: $state)';
+    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude, state: $state, campusId: $campusId, campusKey: $campusKey)';
   }
 }
 

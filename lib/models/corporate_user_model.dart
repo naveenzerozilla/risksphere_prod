@@ -43,7 +43,7 @@ class Corporate_User_Model {
 }
 
 class CorporateUsers {
-  Role? role;
+  String? role;
   String? displayName;
   int? rating;
   CreatedAt? createdAt;
@@ -80,16 +80,16 @@ class CorporateUsers {
       this.username, this.isSelected = false});
 
   factory CorporateUsers.fromJson(Map<String, dynamic> json) {
-    Role? role;
+    /*Role? role;
 
       // For other cases where role is an object
       final roleJson = json['role'] as Map<String, dynamic>? ?? {};
       if (roleJson.isNotEmpty) {
         role = Role.fromJson(roleJson);
-    }
+    }*/
 
     return CorporateUsers(
-      role: role,
+      role: json['role'] ?? '',
       displayName: json['displayName'] ?? '',
       rating: json['rating'] ?? 0,
       isIndividual: json['isIndividual'] ?? false,
@@ -110,7 +110,7 @@ class CorporateUsers {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.role != null) {
-      data['role'] = this.role!.toJson();
+      data['role'] = this.role;
     }
     data['displayName'] = this.displayName;
     data['rating'] = this.rating;

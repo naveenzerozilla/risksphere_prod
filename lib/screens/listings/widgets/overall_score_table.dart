@@ -141,7 +141,7 @@ class _LocationTableState extends State<LocationTable> {
                     maxLines: 3,
                   ),
                 ),
-                DataCell(Text(location.overallScore.toString(), style: CustomTypography(context).Body2)),
+                DataCell(Text(location.overallScore == null?"0":location.overallScore.toString(), style: CustomTypography(context).Body2)),
                 DataCell(Text(location.finalAddress?.score?.toString() ?? 'N/A', style: CustomTypography(context).Body2)),
                 ...hazardColumns
                     .where((hazard) => columnVisibility[hazard] ?? true)

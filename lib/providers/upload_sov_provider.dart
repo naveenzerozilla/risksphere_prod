@@ -322,15 +322,15 @@ class UploadSovProvider extends ChangeNotifier {
       if (response['message'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? "SOV submitted successfully"),
+            content: Text(response['message'] ?? "Submitted successfully"),
           ),
         );
-       /* Navigator.pushReplacement(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => SubAccountListScreen(accountId: accountId, accountName: accountName)), // Navigate to AccountsScreen
-        );*/
-        Navigator.push(context, MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
-        Navigator.pop(context);
+        );
+       // Navigator.push(context, MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
+        //Navigator.pop(context);
         return true; // Indicate success
       } else {
         throw Exception('Failed to submit data');

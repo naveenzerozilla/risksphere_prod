@@ -116,10 +116,10 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
     if(widget.showGeoRatings) {
       Provider.of<MyLocationListProvider>(context, listen: false)
-          .fetchLocationList(context, "", 0, 40, widget.accountId,
+          .fetchLocationList(context, "", 1, 40, widget.accountId,
           widget.subAccountId);
     } else {
-      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 0, 40, widget.accountId, widget.subAccountId);
+      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId);
     }
 
 
@@ -302,14 +302,25 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Campus Filter Section
   Widget buildCampusFilter(BuildContext context, CustomTypography typography) {
-    final campusIds = Provider.of<LocationListProvider>(context).campusIds;
+    final locationListProvider = Provider.of<LocationListProvider>(context);
+
+    // Check if campusIds is empty
+    if (locationListProvider.campusIds.isEmpty) {
+      return SizedBox.shrink(); // Return an empty widget if no campus data is available
+    }
+
+    // Prefill selectedCampusIds if not already set
+    if (selectedCampusIds.isEmpty) {
+      selectedCampusIds = locationListProvider.campusIds;
+    }
+
     return ExpansionTile(
       title: Text('Campus', style: typography.Body1),
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
           child: MultiSelectDropdown(
-            items: campusIds,
+            items: locationListProvider.campusIds,
             selectedItems: selectedCampusIds,
             onChanged: (newSelection) {
               setState(() {
@@ -321,6 +332,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       ],
     );
   }
+
 
   // Certifications Filter Section
   Widget buildCertificationsFilter(CustomTypography typography) {

@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
@@ -56,101 +57,110 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           },
         ),
         drawer: CustomDrawer(),
-        body: PopScope(
-          onPopInvokedWithResult: (a, b) {
-            log('Pop Invoked with result: $a, $b');
-            Navigator.push(context, MaterialPageRoute(builder: (_) => MyLocationList()));
-          },
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.3, // Change this value to set the desired opacity (0.0 to 1.0)
-                  child: Image.asset(
-                    'assets/images/mesh.png',
-                    fit: BoxFit.cover,
-                  ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.3, // Change this value to set the desired opacity (0.0 to 1.0)
+                child: Image.asset(
+                  'assets/images/mesh.png',
+                  fit: BoxFit.cover,
                 ),
               ),
-          
-              Consumer<JobMonitoringProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoading) {
+            ),
+
+            Consumer<JobMonitoringProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                Stream<QuerySnapshot> stream;
+
+                if (provider.isSuperAdmin) {
+                  // Fetch all processes if the user is a super admin
+                  stream = FirebaseFirestore.instance
+                      .collection('processes')
+                      .orderBy('created_at', descending: true)
+                      .snapshots();
+                } else if (provider.docIds.isNotEmpty) {
+                  // Fetch specific processes in batches
+                  stream = _fetchBatchedProcesses(provider.docIds, 30);
+                } else {
+                  // If there are no document IDs, show no processes
+                  return Center(child: Text('No processes available'));
+                }
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: stream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
                       return Center(child: CircularProgressIndicator());
                     }
-          
-                    // Handle different cases for is_super_admin
-                    Stream<QuerySnapshot> stream;
-          
-                    if (provider.isSuperAdmin) {
-                      // Fetch all processes if the user is a super admin
-                      stream = FirebaseFirestore.instance
-                          .collection('processes')
-                          .orderBy('created_at', descending: true)
-                          .snapshots();
-                    } else if (provider.docIds.isNotEmpty) {
-                      // Fetch specific processes if the user is not a super admin
-                      stream = FirebaseFirestore.instance
-                          .collection('processes')
-                          .where(FieldPath.documentId, whereIn: provider.docIds)
-                          .orderBy('created_at', descending: true)
-                          .snapshots();
-                    } else {
-                      // If there are no document IDs, show no processes
-                      return Center(child: Text('No processes available'));
-                    }
-                  return StreamBuilder<QuerySnapshot>(
-                    stream: stream,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-          
-                      var processes = snapshot.data!.docs;
-          
-          
-                      return ListView.builder(
-                        itemCount: processes.length,
-                        itemBuilder: (context, index) {
-                          var processData = processes[index].data() as Map<String, dynamic>;
-          
-                  // Dynamically fetch process ID from the key 'process_id'
-                          String processId = processData['process_id'] ?? 'Unknown ID';
-          
-                  // Dynamically fetch company name from the field 'location_data'
-                          String companyName = processData['location_data']?['account_name'] ?? 'Unknown Company';
-          
-                  // Dynamically fetch owner name from the field 'owner_name'
-                          String ownerName = processData['owner_name'] ?? 'Unknown Owner';
-          
-                  // Fetch total locations from 'total_locations'
-                          int totalLocations = processData['total_locations'] ?? 0;
-          
-                  // Fetch subprocesses map from the 'subprocesses' key
-                          var subProcesses = (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
-          
-                          count = 0;
-          
-                          return _buildProcessCard(
-                            processId: processId,
-                            companyName: companyName,
-                            ownerName: ownerName,
-                            totalLocations: totalLocations,
-                            subProcesses: subProcesses, // Now properly casted to Map<String, dynamic>
-                            typography: typography,
-                          );
-          
-                        },
-                      );
-                    },
-                  );
-                }
-              ),
-            ],
-          ),
+
+                    var processes = snapshot.data!.docs;
+
+                    // Filter out processes with 'heatmap' in subprocesses
+                    processes.removeWhere((element) {
+                      final data = element.data() as Map<String, dynamic>?;
+                      final subprocesses = data?['subprocesses'] as Map<String, dynamic>?;
+                      return subprocesses?.containsKey('heatmap') ?? false;
+                    });
+
+                    return ListView.builder(
+                      itemCount: processes.length,
+                      itemBuilder: (context, index) {
+                        var processData = processes[index].data() as Map<String, dynamic>;
+
+                        String processId = processData['process_id'] ?? 'Unknown ID';
+                        String companyName =
+                            processData['location_data']?['account_name'] ?? 'Unknown Company';
+                        String ownerName = processData['owner_name'] ?? 'Unknown Owner';
+                        int totalLocations = processData['total_locations'] ?? 0;
+
+                        var subProcesses =
+                            (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
+
+                        return _buildProcessCard(
+                          processId: processId,
+                          companyName: companyName,
+                          ownerName: ownerName,
+                          totalLocations: totalLocations,
+                          subProcesses: subProcesses,
+                          typography: typography,
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Stream<QuerySnapshot> _fetchBatchedProcesses(
+      List<String> docIds, int batchSize) {
+    final List<Stream<QuerySnapshot>> streams = [];
+
+    // Split the docIds into chunks of batchSize (30 in Firestore)
+    for (int i = 0; i < docIds.length; i += batchSize) {
+      final batch = docIds.sublist(
+        i,
+        i + batchSize > docIds.length ? docIds.length : i + batchSize,
+      );
+
+      // Create a stream for the current batch
+      streams.add(FirebaseFirestore.instance
+          .collection('processes')
+          .where(FieldPath.documentId, whereIn: batch)
+          .snapshots());
+    }
+
+    // Merge all streams into one
+    return StreamGroup.merge(streams);
   }
 
   // Build each process card with subprocesses inside as ExpansionTile

@@ -711,7 +711,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         ? entry.value['vendor_name'][0]
                         : 'Unknown Vendor') +
                 '/' +
-                (entry.value['hazard_name'] ?? 'Unknown Hazard'),
+                (entry.value['hazard_name'] ?? ''),
             successCount: entry.value['processed'] ?? 0,
             failureCount: entry.value['unprocessed'] ?? 0,
             typography: typography,
@@ -721,7 +721,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         // Overall Task
         if (overallData != null)
           _buildTaskCard(
-            geeTaskID: subprocessData['payload']['subtask_id'],
+            geeTaskID: subprocessData['payload']?['subtask_id']??"",
             taskName: "Overall Score",
             description: "",
             successCount: overallData['processed'] ?? 0,

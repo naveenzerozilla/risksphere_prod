@@ -78,6 +78,8 @@ dependencies:
   lottie: ^3.1.2
   data_table_2: ^2.5.15
   google_maps_cluster_manager_2: ^3.2.0
+  rxdart: ^0.27.7
+  async: ^2.11.0
 
 dev_dependencies:
   flutter_test:

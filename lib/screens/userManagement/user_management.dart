@@ -207,38 +207,50 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     companyDeBouncer = Timer(duration, callback);
   }
 
-  void companySearchClient(String query) async => companyDebounce(() async {
-        if (!mounted) return;
-        // add filters for name, email, mobile as search text separated by comma, company name as company type filter and role as role filter
-        // company name as company type filter and role as role filter
-        List<String> searchItems = [];
+  void companySearchClient(String query) async {
+    // Debounce the search operation to avoid multiple rapid API calls
+    companyDebounce(() async {
+      if (!mounted) return;
 
-        // Add filter names, emails, and phones to the search items
-        searchItems.addAll(filterNames);
-        searchItems.addAll(filterEmails);
-        searchItems.addAll(filterPhones);
+      // Combine filters for names, emails, phones, and the query
+      List<String> searchItems = [];
 
-        // Combine all search items with the query
-        if (query.isNotEmpty) {
-          searchItems.add(query);
-        }
+      // Add name, email, and phone filters
+      if (filterNames.isNotEmpty) searchItems.addAll(filterNames);
+      if (filterEmails.isNotEmpty) searchItems.addAll(filterEmails);
+      if (filterPhones.isNotEmpty) searchItems.addAll(filterPhones);
 
-        String searchText = searchItems.join(",");
+      // Add the user's query to the search items
+      if (query.isNotEmpty) searchItems.add(query);
 
-        // Combine company type filters
-        String companyTypeFilter = filterCompanies.join(",");
+      // Generate the final search text by joining items with a comma
+      String searchText = searchItems.join(",");
 
-        // Combine role filters
-        String roleFilter = filterRoles.map((e) => e.id ?? "").join(",");
+      // Combine company type filters
+      String companyTypeFilter = filterCompanies.isNotEmpty
+          ? filterCompanies.join(",")
+          : ""; // Avoid an empty string causing issues in the API
 
-        print(
-            'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+      // Combine role filters
+      String roleFilter = filterRoles.isNotEmpty
+          ? filterRoles.map((e) => e.id ?? "").join(",")
+          : "";
 
-        // Call the common function to fetch data
-        await Provider.of<CompanyProvider>(context, listen: false)
-            .getAllCompanies(
-                context, searchText, companyTypeFilter, roleFilter, true);
-      });
+      print(
+          'Search Text: $searchText, Company Type Filter: $companyTypeFilter, Role Filter: $roleFilter');
+
+      // Fetch filtered company data using the provider
+      await Provider.of<CompanyProvider>(context, listen: false).getAllCompanies(
+        context,
+        searchText,
+        companyTypeFilter,
+        roleFilter,
+        isSearch: true, // Use named argument here
+      );
+
+    });
+  }
+
 
   void corporateEmployeeDebounce(
     VoidCallback callback, {
@@ -699,9 +711,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     _tabNonCorporateController = TabController(length: 2, vsync: this);
     _tabNonCorporateController?.addListener(() {
       final provider =
-          Provider.of<NonCorporateProvider>(context, listen: false);
-      provider.nextPageToken = null;
-      provider.nextPageExists = true;
+      Provider.of<NonCorporateProvider>(context, listen: false);
+      provider.page = 1; // Reset to the first page
       provider.getNonCorporateUserList(context,
           status: _tabNonCorporateController?.index == 1);
     });
@@ -709,12 +720,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     _tabEmployeeController = TabController(length: 2, vsync: this);
     _tabEmployeeController?.addListener(() {
       final provider = Provider.of<EmployeeProvider>(context, listen: false);
-      provider.nextPageToken = null;
-      provider.nextPageExists = true;
+      provider.page = 1; // Reset to the first page
       provider.getAllEmployees(context,
           status: _tabEmployeeController?.index == 1);
-      employeeSearchClient(_employeeSearchController.text,
-          status: _tabEmployeeController?.index == 1);
+      employeeSearchClient(
+        _employeeSearchController.text,
+        status: _tabEmployeeController?.index == 1,
+      );
     });
   }
 
@@ -793,18 +805,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               '';
         }
 
-        _adminNameController.text = companyProvider.company.admins?.name ?? "";
+        _adminNameController.text = companyProvider.company.adminName ?? "";
         _adminDisplayNameController.text =
-            companyProvider.company.admins?.displayName ?? '';
+            companyProvider.company.adminName ?? '';
         _adminEmailController.text =
-            companyProvider.company.admins?.email ?? '';
+            companyProvider.company.adminEmail ?? '';
         _selectedCountryCode = _adminMobileController.text =
-            companyProvider.company.admins?.mobile ?? '';
+            companyProvider.company.adminCountryCode ?? '';
         print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
         corporateEditMobileController.value = PhoneNumber(
             isoCode:
                 countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
-            nsn: companyProvider.company.admins?.mobile ?? "");
+            nsn: companyProvider.company.adminMobile ?? "");
         _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
         _selectedCorporateCountryName =
             companyProvider.company.countryName ?? 'United States';
@@ -820,950 +832,947 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
     return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-      return Scaffold(
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: const CustomDrawer(),
-        floatingActionButton: (_selectedScreen == Screens.corporateList &&
-                    showCreateCorporate) ||
-                (_selectedScreen == Screens.corporateEmployeeList &&
-                    showCreateUser) ||
-                (_selectedScreen == Screens.employeeList && showCreateEmployee)
-            ? FloatingActionButton(
-                onPressed: () async {
-                  if (_selectedScreen == Screens.corporateList) {
-                    print("object");
-                    selectedCorporateTypeRole = [
-                      companyType.Roles(
-                        name: "Admin",
-                        role: "admin",
-                      )
-                    ];
-                    setState(() {
-                      _selectedScreen = Screens.corporateAdd;
-                      clearFilters();
-                    });
-                  } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
-                    setState(() {
-                      _selectedScreen = Screens.corporateEmployeeEdit;
-                      clearFilters();
-                    });
-                  } else if (_selectedScreen == Screens.corporateEmployeeList) {
-                    filterRoleList = await Provider.of<CorporateProvider>(
-                            context,
-                            listen: false)
-                        .getRolesWithCompanyId(
-                            context, selectedCorporateId ?? "");
-                    setState(() {
-                      _selectedScreen = Screens.corporateEmployeeAdd;
-                      clearFilters();
-                    });
-                  } else if (_selectedScreen == Screens.employeeList) {
-                    setState(() {
-                      _selectedScreen = Screens.employeeAdd;
-                      clearFilters();
-                    });
-                  }
-                },
-                child: const Icon(Icons.add),
-              )
-            : const SizedBox(),
-        body: PopScope(
-          /* canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
-              _selectedScreen == Screens.defaultScreen,
-          onPopInvoked: (canPop) {
-            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-            if (showCheckbox) {
+      return SafeArea(
+        child: Scaffold(
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
               setState(() {
-                showCheckbox = false;
+                _isExpanded = isExpanded;
               });
-              return;
-            }
-            if (_selectedScreen == Screens.corporateAdd) {
+            },
+            onSearchPressed: () {
               setState(() {
-                _selectedScreen = Screens.corporateList;
-                clearFilters();
+                _isExpanded = !_isExpanded;
               });
-            } else if (_selectedScreen == Screens.corporateEdit) {
-              setState(() {
-                _selectedScreen = Screens.corporateList;
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.corporateEmployeeList) {
-              setState(() {
-                if (showCorporateList) {
-                  _selectedScreen = Screens.corporateList;
-                } else {
-                  Navigator.pop(context);
-                }
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.corporateEmployeeAdd) {
-              setState(() {
-                _selectedScreen = Screens.corporateEmployeeList;
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
-              setState(() {
-                _selectedScreen = Screens.corporateEmployeeList;
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.nonCorporateList) {
-              setState(() {
-                if (showCorporateList) {
-                  _selectedScreen = Screens.corporateList;
-                } else {
-                  if (showCorporateUserListDropdown) {
-                    _selectedScreen = Screens.corporateEmployeeList;
-                  } else if (showUserVerificationTab ||
-                      showCorporateVerificationTab) {
-                    _selectedScreen = Screens.verificationList;
-                  } else {
-                    var companyProvider =
-                        Provider.of<CompanyProvider>(context, listen: false);
-                    companyProvider.viewCompany(context, "true").then((value) {
-                      companyImageUrl = companyProvider.company.companyImageUrl;
-                      selectedCompanyType = CorporateType(
-                        name: companyProvider.company.companyTypeName,
-                        type: companyProvider.company.companyType,
-                      );
-                      _enableDomainCheck =
-                          companyProvider.company.enableDomainCheck ?? false;
+            },
+          ),
+          drawer: const CustomDrawer(),
+          floatingActionButton: (_selectedScreen == Screens.corporateList &&
+                      showCreateCorporate) ||
+                  (_selectedScreen == Screens.corporateEmployeeList &&
+                      showCreateUser) ||
+                  (_selectedScreen == Screens.employeeList && showCreateEmployee)
+              ? FloatingActionButton(
+                  onPressed: () async {
+                    if (_selectedScreen == Screens.corporateList) {
+                      print("object");
                       selectedCorporateTypeRole = [
                         companyType.Roles(
                           name: "Admin",
                           role: "admin",
                         )
                       ];
-                      _domainListController.text =
-                          companyProvider.company.domainList?.join(",") ?? '';
-                      _companyLegalNameController.text =
-                          companyProvider.company.name ?? '';
-                      if (companyProvider.company.displayName != null) {
-                        _companyDisplayNameController.text = companyProvider
-                                    .company.displayName!
-                                    .substring(0, 1)
-                                    .toUpperCase() +
-                                companyProvider.company.displayName!
-                                    .substring(1) ??
-                            '';
-                      }
-
-                      _adminNameController.text =
-                          companyProvider.company.admins?.name ?? "";
-                      _adminDisplayNameController.text =
-                          companyProvider.company.admins?.displayName ?? '';
-                      _adminEmailController.text =
-                          companyProvider.company.admins?.email ?? '';
-                      _selectedCountryCode = _adminMobileController.text =
-                          companyProvider.company.admins?.mobile ?? '';
-                      print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
-                      corporateEditMobileController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: companyProvider.company.admins?.mobile??"");
-                      _enableDomainCheck =
-                          companyProvider.company.enableDomainCheck ?? false;
-                      _selectedCorporateCountryName = companyProvider.company.countryName ?? 'United States';
-                      // Set screen to edit
-
-                      /// Todo: Add the code to view the company profile
-                      _selectedScreen = Screens.corporateProfile;
-                      clearFilters();
-
-                      log(companyProvider.company.toJson().toString());
-                    });
-                    ///Todo: Add the code to view the company profile
-                    _selectedScreen = Screens.corporateProfile;
-                  }
-                }
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.employeeAdd) {
-              setState(() {
-                _selectedScreen = Screens.employeeList;
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.employeeEdit) {
-              setState(() {
-                _selectedScreen = Screens.employeeList;
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.verificationList) {
-              setState(() {
-                if (showCorporateVerificationTab && showUserVerificationTab) {
-                  if (_tabVerificationController?.index == 0) {
-                    if (showCorporateList) {
-                      _selectedScreen = Screens.corporateList;
-                    } else {
-                      if (showCorporateUserListDropdown) {
-                        _selectedScreen = Screens.corporateEmployeeList;
-                      } else {
-                        Navigator.pop(context);
-                      }
+                      setState(() {
+                        _selectedScreen = Screens.corporateAdd;
+                        clearFilters();
+                      });
+                    } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
+                      setState(() {
+                        _selectedScreen = Screens.corporateEmployeeEdit;
+                        clearFilters();
+                      });
+                    } else if (_selectedScreen == Screens.corporateEmployeeList) {
+                      filterRoleList = await Provider.of<CorporateProvider>(
+                              context,
+                              listen: false)
+                          .getRolesWithCompanyId(
+                              context, selectedCorporateId ?? "");
+                      setState(() {
+                        _selectedScreen = Screens.corporateEmployeeAdd;
+                        clearFilters();
+                      });
+                    } else if (_selectedScreen == Screens.employeeList) {
+                      setState(() {
+                        _selectedScreen = Screens.employeeAdd;
+                        clearFilters();
+                      });
                     }
-                  } else if (_tabVerificationController?.index == 1) {
-                    if (showCorporateList) {
-                      _selectedScreen = Screens.corporateList;
-                    } else {
-                      if (showCorporateUserListDropdown) {
-                        _selectedScreen = Screens.corporateEmployeeList;
-                      } else {
-                        Navigator.pop(context);
-                      }
-                    }
+                  },
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox(),
+          body: PopScope(
+            /* canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
+                _selectedScreen == Screens.defaultScreen,
+            onPopInvoked: (canPop) {
+              print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+              if (showCheckbox) {
+                setState(() {
+                  showCheckbox = false;
+                });
+                return;
+              }
+              if (_selectedScreen == Screens.corporateAdd) {
+                setState(() {
+                  _selectedScreen = Screens.corporateList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.corporateEdit) {
+                setState(() {
+                  _selectedScreen = Screens.corporateList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.corporateEmployeeList) {
+                setState(() {
+                  if (showCorporateList) {
+                    _selectedScreen = Screens.corporateList;
+                  } else {
+                    Navigator.pop(context);
                   }
-                } else if (showCorporateVerificationTab) {
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.corporateEmployeeAdd) {
+                setState(() {
+                  _selectedScreen = Screens.corporateEmployeeList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
+                setState(() {
+                  _selectedScreen = Screens.corporateEmployeeList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.nonCorporateList) {
+                setState(() {
                   if (showCorporateList) {
                     _selectedScreen = Screens.corporateList;
                   } else {
                     if (showCorporateUserListDropdown) {
                       _selectedScreen = Screens.corporateEmployeeList;
+                    } else if (showUserVerificationTab ||
+                        showCorporateVerificationTab) {
+                      _selectedScreen = Screens.verificationList;
                     } else {
-                      Navigator.pop(context);
-                    }
-                  }
-                } else if (showUserVerificationTab) {
-                  if (showCorporateList) {
-                    _selectedScreen = Screens.corporateList;
-                  } else {
-                    if (showCorporateUserListDropdown) {
-                      _selectedScreen = Screens.corporateEmployeeList;
-                    } else {
-                      Navigator.pop(context);
-                    }
-                  }
-                }
-                clearFilters();
-              });
-            } else if (_selectedScreen == Screens.nonCorporateEdit) {
-              setState(() {
-                _selectedScreen = Screens.nonCorporateList;
-                clearFilters();
-              });
-            }
-          },*/
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Column(
-                children: [
-                  Expanded(
-                    child: showMainLoading
-                        ? const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(),
-                            ),
+                      var companyProvider =
+                          Provider.of<CompanyProvider>(context, listen: false);
+                      companyProvider.viewCompany(context, "true").then((value) {
+                        companyImageUrl = companyProvider.company.companyImageUrl;
+                        selectedCompanyType = CorporateType(
+                          name: companyProvider.company.companyTypeName,
+                          type: companyProvider.company.companyType,
+                        );
+                        _enableDomainCheck =
+                            companyProvider.company.enableDomainCheck ?? false;
+                        selectedCorporateTypeRole = [
+                          companyType.Roles(
+                            name: "Admin",
+                            role: "admin",
                           )
-                        : Container(
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 24),
-                            child: _selectedScreen == Screens.defaultScreen
-                                ? _defaultScreen()
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'User Management',
-                                        style: typography.H5_Regular
-                                            .copyWith(
-                                          color: Theme.of(context).brightness ==
-                                                  Brightness.dark
-                                              ? AppColors.white
-                                              : AppColors.black,
+                        ];
+                        _domainListController.text =
+                            companyProvider.company.domainList?.join(",") ?? '';
+                        _companyLegalNameController.text =
+                            companyProvider.company.name ?? '';
+                        if (companyProvider.company.displayName != null) {
+                          _companyDisplayNameController.text = companyProvider
+                                      .company.displayName!
+                                      .substring(0, 1)
+                                      .toUpperCase() +
+                                  companyProvider.company.displayName!
+                                      .substring(1) ??
+                              '';
+                        }
+
+                        _adminNameController.text =
+                            companyProvider.company.admins?.name ?? "";
+                        _adminDisplayNameController.text =
+                            companyProvider.company.admins?.displayName ?? '';
+                        _adminEmailController.text =
+                            companyProvider.company.admins?.email ?? '';
+                        _selectedCountryCode = _adminMobileController.text =
+                            companyProvider.company.admins?.mobile ?? '';
+                        print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
+                        corporateEditMobileController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: companyProvider.company.admins?.mobile??"");
+                        _enableDomainCheck =
+                            companyProvider.company.enableDomainCheck ?? false;
+                        _selectedCorporateCountryName = companyProvider.company.countryName ?? 'United States';
+                        // Set screen to edit
+
+                        /// Todo: Add the code to view the company profile
+                        _selectedScreen = Screens.corporateProfile;
+                        clearFilters();
+
+                        log(companyProvider.company.toJson().toString());
+                      });
+                      ///Todo: Add the code to view the company profile
+                      _selectedScreen = Screens.corporateProfile;
+                    }
+                  }
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.employeeAdd) {
+                setState(() {
+                  _selectedScreen = Screens.employeeList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.employeeEdit) {
+                setState(() {
+                  _selectedScreen = Screens.employeeList;
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.verificationList) {
+                setState(() {
+                  if (showCorporateVerificationTab && showUserVerificationTab) {
+                    if (_tabVerificationController?.index == 0) {
+                      if (showCorporateList) {
+                        _selectedScreen = Screens.corporateList;
+                      } else {
+                        if (showCorporateUserListDropdown) {
+                          _selectedScreen = Screens.corporateEmployeeList;
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      }
+                    } else if (_tabVerificationController?.index == 1) {
+                      if (showCorporateList) {
+                        _selectedScreen = Screens.corporateList;
+                      } else {
+                        if (showCorporateUserListDropdown) {
+                          _selectedScreen = Screens.corporateEmployeeList;
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      }
+                    }
+                  } else if (showCorporateVerificationTab) {
+                    if (showCorporateList) {
+                      _selectedScreen = Screens.corporateList;
+                    } else {
+                      if (showCorporateUserListDropdown) {
+                        _selectedScreen = Screens.corporateEmployeeList;
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    }
+                  } else if (showUserVerificationTab) {
+                    if (showCorporateList) {
+                      _selectedScreen = Screens.corporateList;
+                    } else {
+                      if (showCorporateUserListDropdown) {
+                        _selectedScreen = Screens.corporateEmployeeList;
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    }
+                  }
+                  clearFilters();
+                });
+              } else if (_selectedScreen == Screens.nonCorporateEdit) {
+                setState(() {
+                  _selectedScreen = Screens.nonCorporateList;
+                  clearFilters();
+                });
+              }
+            },*/
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Column(
+                  children: [
+                    Expanded(
+                      child: showMainLoading
+                          ? const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : Container(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 24),
+                              child: _selectedScreen == Screens.defaultScreen
+                                  ? _defaultScreen()
+                                  : Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'User Management',
+                                          style: typography.H5_Regular
+                                              .copyWith(
+                                            color: Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? AppColors.white
+                                                : AppColors.black,
+                                          ),
                                         ),
-                                      ),
-                                      // Add 3 tabs
-                                      SizedBox(
-                                        height: CustomSpacing.two,
-                                      ),
-                                      _selectedScreen == Screens.defaultScreen
-                                          ? _defaultScreen()
-                                          : const SizedBox(),
-                                      TabBar(
-                                        isScrollable: true,
-                                        controller: _tabController,
-                                        labelStyle: typography
-                                            .BottomNavigationActiveLabel,
-                                        tabs: [
-                                          if (showCorporateManagementTab)
-                                            Tab(
-                                              child: DropdownButton(
-                                                underline: const SizedBox(),
-                                                value: 'Corporate',
-                                                items:
-                                                    corporateDropdownMenuService
-                                                        .corporateDropdownItems(
-                                                            context),
-                                                onChanged: (value) {
-                                                  // Handle dropdown item selection
-                                                  if (value == 'Corporate') {
-                                                    setState(() {
-                                                      _selectedScreen =
-                                                          Screens.corporateList;
-                                                      clearFilters();
-                                                    });
-                                                  } else if (value ==
-                                                      'Companies') {
-                                                    setState(() {
-                                                      _selectedScreen =
-                                                          Screens.corporateList;
-                                                      clearFilters();
-                                                    });
-                                                  } else if (value == 'Users') {
-                                                    setState(() {
-                                                      selectedCorporateId = "";
-                                                      _selectedScreen = Screens
-                                                          .corporateEmployeeList;
-                                                      clearFilters();
-                                                    });
-                                                  } else if (value ==
-                                                      'Company Profiles') {
-                                                    // Handle company profiles option
-                                                    setState(() {
-                                                      var companyProvider =
-                                                          Provider.of<
-                                                                  CompanyProvider>(
-                                                              context,
-                                                              listen: false);
-                                                      companyProvider
-                                                          .viewCompany(
-                                                              context, "true")
-                                                          .then((value) {
-                                                        companyImageUrl =
-                                                            companyProvider
+                                        // Add 3 tabs
+                                        SizedBox(
+                                          height: CustomSpacing.two,
+                                        ),
+                                        _selectedScreen == Screens.defaultScreen
+                                            ? _defaultScreen()
+                                            : const SizedBox(),
+                                        TabBar(
+                                          isScrollable: true,
+                                          controller: _tabController,
+                                          labelStyle: typography
+                                              .BottomNavigationActiveLabel,
+                                          tabs: [
+                                            if (showCorporateManagementTab)
+                                              Tab(
+                                                child: DropdownButton(
+                                                  underline: const SizedBox(),
+                                                  value: 'Corporate',
+                                                  items:
+                                                      corporateDropdownMenuService
+                                                          .corporateDropdownItems(
+                                                              context),
+                                                  onChanged: (value) {
+                                                    // Handle dropdown item selection
+                                                    if (value == 'Corporate') {
+                                                      setState(() {
+                                                        _selectedScreen =
+                                                            Screens.corporateList;
+                                                        clearFilters();
+                                                      });
+                                                    } else if (value ==
+                                                        'Companies') {
+                                                      setState(() {
+                                                        _selectedScreen =
+                                                            Screens.corporateList;
+                                                        clearFilters();
+                                                      });
+                                                    } else if (value == 'Users') {
+                                                      setState(() {
+                                                        selectedCorporateId = "";
+                                                        _selectedScreen = Screens
+                                                            .corporateEmployeeList;
+                                                        clearFilters();
+                                                      });
+                                                    } else if (value ==
+                                                        'Company Profiles') {
+                                                      // Handle company profiles option
+                                                      setState(() {
+                                                        var companyProvider =
+                                                            Provider.of<
+                                                                    CompanyProvider>(
+                                                                context,
+                                                                listen: false);
+                                                        companyProvider
+                                                            .viewCompany(
+                                                                context, "true")
+                                                            .then((value) {
+                                                          companyImageUrl =
+                                                              companyProvider
+                                                                  .company
+                                                                  .companyImageUrl;
+                                                          selectedCompanyType =
+                                                              CorporateType(
+                                                            name: companyProvider
                                                                 .company
-                                                                .companyImageUrl;
-                                                        selectedCompanyType =
-                                                            CorporateType(
-                                                          name: companyProvider
-                                                              .company
-                                                              .companyTypeName,
-                                                          type: companyProvider
-                                                              .company
-                                                              .companyType,
-                                                        );
-                                                        _enableDomainCheck =
-                                                            companyProvider
-                                                                    .company
-                                                                    .enableDomainCheck ??
-                                                                false;
-                                                        selectedCorporateTypeRole =
-                                                            [
-                                                          companyType.Roles(
-                                                            name: "Admin",
-                                                            role: "admin",
-                                                          )
-                                                        ];
-                                                        _domainListController
-                                                                .text =
-                                                            companyProvider
-                                                                    .company
-                                                                    .domainList
-                                                                    ?.join(
-                                                                        ",") ??
-                                                                '';
-                                                        _companyLegalNameController
-                                                                .text =
-                                                            companyProvider
-                                                                    .company
-                                                                    .name ??
-                                                                '';
-                                                        if (companyProvider
+                                                                .companyTypeName,
+                                                            type: companyProvider
                                                                 .company
-                                                                .displayName !=
-                                                            null) {
-                                                          _companyDisplayNameController
+                                                                .companyType,
+                                                          );
+                                                          _enableDomainCheck =
+                                                              companyProvider
+                                                                      .company
+                                                                      .enableDomainCheck ??
+                                                                  false;
+                                                          selectedCorporateTypeRole =
+                                                              [
+                                                            companyType.Roles(
+                                                              name: "Admin",
+                                                              role: "admin",
+                                                            )
+                                                          ];
+                                                          _domainListController
+                                                                  .text =
+                                                              companyProvider
+                                                                      .company
+                                                                      .domainList
+                                                                      ?.join(
+                                                                          ",") ??
+                                                                  '';
+                                                          _companyLegalNameController
+                                                                  .text =
+                                                              companyProvider
+                                                                      .company
+                                                                      .name ??
+                                                                  '';
+                                                          if (companyProvider
+                                                                  .company
+                                                                  .displayName !=
+                                                              null) {
+                                                            _companyDisplayNameController
+                                                                .text = companyProvider
+                                                                        .company
+                                                                        .displayName!
+                                                                        .substring(
+                                                                            0, 1)
+                                                                        .toUpperCase() +
+                                                                    companyProvider
+                                                                        .company
+                                                                        .displayName!
+                                                                        .substring(
+                                                                            1) ??
+                                                                '';
+                                                          }
+
+                                                          _adminNameController
+                                                                  .text =
+                                                              companyProvider
+                                                                      .company
+                                                                      .adminName ??
+                                                                  "";
+                                                          _adminDisplayNameController
                                                               .text = companyProvider
-                                                                      .company
-                                                                      .displayName!
-                                                                      .substring(
-                                                                          0, 1)
-                                                                      .toUpperCase() +
-                                                                  companyProvider
-                                                                      .company
-                                                                      .displayName!
-                                                                      .substring(
-                                                                          1) ??
+                                                                  .company
+                                                                  .adminName ??
                                                               '';
-                                                        }
+                                                          _adminEmailController
+                                                                  .text =
+                                                              companyProvider
+                                                                      .company
+                                                                      .adminEmail??
+                                                                  '';
+                                                          _selectedCountryCode =
+                                                              _adminMobileController
+                                                                      .text =
+                                                                  companyProvider
+                                                                          .company
+                                                                          .adminCountryCode ??
+                                                                      '';
+                                                          print(
+                                                              'Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
+                                                          corporateEditMobileController
+                                                                  .value =
+                                                              PhoneNumber(
+                                                                  isoCode: countryCodeToIsoCode[
+                                                                              _selectedCountryCode]
+                                                                          ?.first ??
+                                                                      IsoCode.US,
+                                                                  nsn: companyProvider
+                                                                          .company
+                                                                          .adminCountryCode ??
+                                                                      "");
+                                                          _enableDomainCheck =
+                                                              companyProvider
+                                                                      .company
+                                                                      .enableDomainCheck ??
+                                                                  false;
+                                                          _selectedCorporateCountryName =
+                                                              companyProvider
+                                                                      .company
+                                                                      .countryName ??
+                                                                  "United States";
+                                                          // Set screen to edit
 
-                                                        _adminNameController
-                                                                .text =
-                                                            companyProvider
-                                                                    .company
-                                                                    .admins
-                                                                    ?.name ??
-                                                                "";
-                                                        _adminDisplayNameController
-                                                            .text = companyProvider
-                                                                .company
-                                                                .admins
-                                                                ?.displayName ??
-                                                            '';
-                                                        _adminEmailController
-                                                                .text =
-                                                            companyProvider
-                                                                    .company
-                                                                    .admins
-                                                                    ?.email ??
-                                                                '';
-                                                        _selectedCountryCode =
-                                                            _adminMobileController
-                                                                    .text =
-                                                                companyProvider
-                                                                        .company
-                                                                        .admins
-                                                                        ?.mobile ??
-                                                                    '';
-                                                        print(
-                                                            'Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
-                                                        corporateEditMobileController
-                                                                .value =
-                                                            PhoneNumber(
-                                                                isoCode: countryCodeToIsoCode[
-                                                                            _selectedCountryCode]
-                                                                        ?.first ??
-                                                                    IsoCode.US,
-                                                                nsn: companyProvider
-                                                                        .company
-                                                                        .admins
-                                                                        ?.mobile ??
-                                                                    "");
-                                                        _enableDomainCheck =
-                                                            companyProvider
-                                                                    .company
-                                                                    .enableDomainCheck ??
-                                                                false;
-                                                        _selectedCorporateCountryName =
-                                                            companyProvider
-                                                                    .company
-                                                                    .countryName ??
-                                                                "United States";
-                                                        // Set screen to edit
+                                                          _selectedScreen = Screens
+                                                              .corporateProfile;
+                                                          clearFilters();
 
+                                                          log(companyProvider
+                                                              .company
+                                                              .toJson()
+                                                              .toString());
+                                                          _selectedCorporateCountryName =
+                                                              companyProvider
+                                                                      .company
+                                                                      .countryName ??
+                                                                  "United States";
+                                                        });
                                                         _selectedScreen = Screens
                                                             .corporateProfile;
                                                         clearFilters();
-
-                                                        log(companyProvider
-                                                            .company
-                                                            .toJson()
-                                                            .toString());
-                                                        _selectedCorporateCountryName =
-                                                            companyProvider
-                                                                    .company
-                                                                    .countryName ??
-                                                                "United States";
                                                       });
-                                                      _selectedScreen = Screens
-                                                          .corporateProfile;
-                                                      clearFilters();
-                                                    });
-                                                  } else if (value ==
-                                                      'Verification Requests') {
-                                                    // Handle verification requests option
-                                                    setState(() {
-                                                      _selectedScreen = Screens
-                                                          .verificationList;
-                                                      clearFilters();
-                                                    });
-                                                  } else if (value ==
-                                                      'AnotherOption') {
-                                                    // Handle another option
-                                                  }
-                                                  _tabController?.animateTo(0);
-                                                },
+                                                    } else if (value ==
+                                                        'Verification Requests') {
+                                                      // Handle verification requests option
+                                                      setState(() {
+                                                        _selectedScreen = Screens
+                                                            .verificationList;
+                                                        clearFilters();
+                                                      });
+                                                    } else if (value ==
+                                                        'AnotherOption') {
+                                                      // Handle another option
+                                                    }
+                                                    _tabController?.animateTo(0);
+                                                  },
+                                                ),
                                               ),
-                                            ),
-                                          if (showNonCorporateManagementTab)
-                                            InkWell(
-                                              onTap: () {
-                                                _tabController?.animateTo(
-                                                    showCorporateManagementTab
-                                                        ? 1
-                                                        : 0);
-                                                _selectedScreen =
-                                                    Screens.nonCorporateList;
-                                              },
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(Icons.people),
-                                                  SizedBox(
-                                                    width: CustomSpacing.two,
-                                                  ),
-                                                  const Tab(
-                                                      text:
-                                                          'Non Corporate Management'),
-                                                ],
-                                              ),
-                                            ),
-                                          if (showEmployeeManagementTab)
-                                            InkWell(
-                                              onTap: () {
-                                                int destinationTabIndex =
-                                                    showCorporateManagementTab
-                                                        ? showNonCorporateManagementTab
-                                                            ? 2 // If both Corporate and Non-Corporate tabs are visible
-                                                            : 1 // If only Corporate tab is visible
-                                                        : 0; // If neither Corporate nor Non-Corporate tabs are visible
-                                                _tabController?.animateTo(
-                                                    destinationTabIndex);
-                                                _selectedScreen =
-                                                    Screens.employeeList;
-                                              },
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                      Icons.account_circle),
-                                                  SizedBox(
-                                                    width: CustomSpacing.two,
-                                                  ),
-                                                  const Tab(
-                                                      text:
-                                                          'Employee Management'),
-                                                ],
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-
-                                      // Add 3 tab views
-                                      Expanded(
-                                        child: TabBarView(
-                                          controller: _tabController,
-                                          children: [
-                                            // Corporate Management
-                                            if (showCorporateManagementTab)
-                                              _getCorporateManagementUI(),
-                                            // Non Corporate Management
                                             if (showNonCorporateManagementTab)
-                                              _getNonCorporateManagementUI(),
-                                            // Employee Management
+                                              InkWell(
+                                                onTap: () {
+                                                  _tabController?.animateTo(
+                                                      showCorporateManagementTab
+                                                          ? 1
+                                                          : 0);
+                                                  _selectedScreen =
+                                                      Screens.nonCorporateList;
+                                                },
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(Icons.people),
+                                                    SizedBox(
+                                                      width: CustomSpacing.two,
+                                                    ),
+                                                    const Tab(
+                                                        text:
+                                                            'Non Corporate Management'),
+                                                  ],
+                                                ),
+                                              ),
                                             if (showEmployeeManagementTab)
-                                              _getEmployeeManagementUI(),
+                                              InkWell(
+                                                onTap: () {
+                                                  int destinationTabIndex =
+                                                      showCorporateManagementTab
+                                                          ? showNonCorporateManagementTab
+                                                              ? 2 // If both Corporate and Non-Corporate tabs are visible
+                                                              : 1 // If only Corporate tab is visible
+                                                          : 0; // If neither Corporate nor Non-Corporate tabs are visible
+                                                  _tabController?.animateTo(
+                                                      destinationTabIndex);
+                                                  _selectedScreen =
+                                                      Screens.employeeList;
+                                                },
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                        Icons.account_circle),
+                                                    SizedBox(
+                                                      width: CustomSpacing.two,
+                                                    ),
+                                                    const Tab(
+                                                        text:
+                                                            'Employee Management'),
+                                                  ],
+                                                ),
+                                              ),
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        endDrawer: Drawer(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  SizedBox(height: CustomSpacing.four),
-                  // Circular elevated icon for filter
-                  Center(
-                      child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Icon(
-                        Icons.filter_alt_outlined,
-                        size: 32,
-                      ),
-                    ),
-                  )),
-                  SizedBox(height: CustomSpacing.four),
-                  // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                    child: Column(
-                      children: [
-                        // Filter Chips
-                        Wrap(
-                          direction: Axis.horizontal,
-                          alignment: WrapAlignment.start,
-                          runAlignment: WrapAlignment.start,
-                          crossAxisAlignment: WrapCrossAlignment.start,
-                          verticalDirection: VerticalDirection.down,
-                          spacing: 4,
-                          children: [
-                            // Dynamic chips for all filters such that we can do add remove and remove all operations
-                            for (var role in filterRoles)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(role.name ?? ""),
-                                onDeleted: () {
-                                  removeFilter(role.name ?? "", 'role');
-                                },
-                              ),
-                            for (var name in filterNames)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(name),
-                                onDeleted: () {
-                                  removeFilter(name, 'name');
-                                },
-                              ),
-                            for (var email in filterEmails)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(email),
-                                onDeleted: () {
-                                  removeFilter(email, 'email');
-                                },
-                              ),
-                            for (var phone in filterPhones)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(phone),
-                                onDeleted: () {
-                                  removeFilter(phone, 'phone');
-                                },
-                              ),
-                            for (var company in filterCompanies)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(company),
-                                onDeleted: () {
-                                  removeFilter(company, 'company');
-                                },
-                              ),
-                            for (var status in filterStatus)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(status),
-                                onDeleted: () {
-                                  removeFilter(status, 'status');
-                                },
-                              ),
-                          ],
+                                        // Add 3 tab views
+                                        Expanded(
+                                          child: TabBarView(
+                                            controller: _tabController,
+                                            children: [
+                                              // Corporate Management
+                                              if (showCorporateManagementTab)
+                                                _getCorporateManagementUI(),
+                                              // Non Corporate Management
+                                              if (showNonCorporateManagementTab)
+                                                _getNonCorporateManagementUI(),
+                                              // Employee Management
+                                              if (showEmployeeManagementTab)
+                                                _getEmployeeManagementUI(),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          endDrawer: Drawer(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(height: CustomSpacing.four),
+                    // Circular elevated icon for filter
+                    Center(
+                        child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Icon(
+                          Icons.filter_alt_outlined,
+                          size: 32,
                         ),
-                        // Clear Filter Button
-                        (filterCompanies.isEmpty &&
-                                filterEmails.isEmpty &&
-                                filterNames.isEmpty &&
-                                filterPhones.isEmpty &&
-                                filterRoles.isEmpty &&
-                                filterStatus.isEmpty)
-                            ? const SizedBox()
-                            : TextButton(
-                                onPressed: () {
-                                  // Handle clear filter
-                                  removeAllFilters();
-                                },
-                                child: Text(LanguageService.getTranslated(
-                                    context,
-                                    'usermanagement_app_filter_clear')),
-                              ),
-                        Divider(
-                          thickness: 1,
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                        ),
-                        SizedBox(
-                          height: CustomSpacing.two,
-                        ),
-                        Builder(builder: (context) {
-                          return Column(
+                      ),
+                    )),
+                    SizedBox(height: CustomSpacing.four),
+                    // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                      child: Column(
+                        children: [
+                          // Filter Chips
+                          Wrap(
+                            direction: Axis.horizontal,
+                            alignment: WrapAlignment.start,
+                            runAlignment: WrapAlignment.start,
+                            crossAxisAlignment: WrapCrossAlignment.start,
+                            verticalDirection: VerticalDirection.down,
+                            spacing: 4,
                             children: [
-                              // name, phone, email, company, role dropdown, status,
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: Form(
-                                    child: Column(children: [
-                                  // Name
-                                  TextFormField(
-                                    controller: _filterNameController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_name'),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                              // Dynamic chips for all filters such that we can do add remove and remove all operations
+                              for (var role in filterRoles)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(role.name ?? ""),
+                                  onDeleted: () {
+                                    removeFilter(role.name ?? "", 'role');
+                                  },
+                                ),
+                              for (var name in filterNames)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(name),
+                                  onDeleted: () {
+                                    removeFilter(name, 'name');
+                                  },
+                                ),
+                              for (var email in filterEmails)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(email),
+                                  onDeleted: () {
+                                    removeFilter(email, 'email');
+                                  },
+                                ),
+                              for (var phone in filterPhones)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(phone),
+                                  onDeleted: () {
+                                    removeFilter(phone, 'phone');
+                                  },
+                                ),
+                              for (var company in filterCompanies)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(company),
+                                  onDeleted: () {
+                                    removeFilter(company, 'company');
+                                  },
+                                ),
+                              for (var status in filterStatus)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(status),
+                                  onDeleted: () {
+                                    removeFilter(status, 'status');
+                                  },
+                                ),
+                            ],
+                          ),
+                          // Clear Filter Button
+                          (filterCompanies.isEmpty &&
+                                  filterEmails.isEmpty &&
+                                  filterNames.isEmpty &&
+                                  filterPhones.isEmpty &&
+                                  filterRoles.isEmpty &&
+                                  filterStatus.isEmpty)
+                              ? const SizedBox()
+                              : TextButton(
+                                  onPressed: () {
+                                    // Handle clear filter
+                                    removeAllFilters();
+                                  },
+                                  child: Text(LanguageService.getTranslated(
+                                      context,
+                                      'usermanagement_app_filter_clear')),
+                                ),
+                          Divider(
+                            thickness: 1,
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Builder(builder: (context) {
+                            return Column(
+                              children: [
+                                // name, phone, email, company, role dropdown, status,
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: Form(
+                                      child: Column(children: [
+                                    // Name
+                                    TextFormField(
+                                      controller: _filterNameController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_name'),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: CustomSpacing.two,
-                                  ),
-                                  // Email
-                                  TextFormField(
-                                    controller: _filterEmailController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_email'),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                    SizedBox(
+                                      height: CustomSpacing.two,
+                                    ),
+                                    // Email
+                                    TextFormField(
+                                      controller: _filterEmailController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_email'),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: CustomSpacing.two,
-                                  ),
-                                  // Phone
-                                  TextFormField(
-                                    controller: _filterPhoneController,
-                                    keyboardType: TextInputType.number,
-                                    maxLength: 10,
-                                    // Numeric keyboard
-                                    inputFormatters: <TextInputFormatter>[
-                                      FilteringTextInputFormatter.digitsOnly
-                                      // Only allows digits
-                                    ],
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_phone'),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_phone_hint'),
-                                      border: const OutlineInputBorder(),
-                                      counterText: '',
+                                    SizedBox(
+                                      height: CustomSpacing.two,
                                     ),
-                                    validator: (value) {
-                                      if (!RegExp(r'^[0-9]+$')
-                                          .hasMatch(value!)) {
-                                        return 'Mobile number can only contain digits';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Company
-                                  TextFormField(
-                                    controller: _filterCompanyController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_company'),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                    // Phone
+                                    TextFormField(
+                                      controller: _filterPhoneController,
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 10,
+                                      // Numeric keyboard
+                                      inputFormatters: <TextInputFormatter>[
+                                        FilteringTextInputFormatter.digitsOnly
+                                        // Only allows digits
+                                      ],
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_phone'),
+                                        hintText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_phone_hint'),
+                                        border: const OutlineInputBorder(),
+                                        counterText: '',
+                                      ),
+                                      validator: (value) {
+                                        if (!RegExp(r'^[0-9]+$')
+                                            .hasMatch(value!)) {
+                                          return 'Mobile number can only contain digits';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Company
+                                    TextFormField(
+                                      controller: _filterCompanyController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_company'),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Role Dropdown
-                                  (_selectedScreen == Screens.corporateList)
-                                      ? const SizedBox()
-                                      : DropdownButtonFormField<
-                                          roleModel.Roles>(
-                                          decoration: InputDecoration(
-                                            labelText:
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    'usermanagement_app_filter_role'),
-                                            border: OutlineInputBorder(
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Role Dropdown
+                                    (_selectedScreen == Screens.corporateList)
+                                        ? const SizedBox()
+                                        : DropdownButtonFormField<
+                                            roleModel.Roles>(
+                                            decoration: InputDecoration(
+                                              labelText:
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      'usermanagement_app_filter_role'),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            items: filterRoleList
+                                                .map((roleModel.Roles value) {
+                                              return DropdownMenuItem<
+                                                  roleModel.Roles>(
+                                                value: value,
+                                                child: Text(value.name ?? ''),
+                                              );
+                                            }).toList(),
+                                            onChanged: (roleModel.Roles? value) {
+                                              // Handle role change
+                                              setState(() {
+                                                selectedRoleForFilter = value;
+                                              });
+                                            },
+                                          ),
+
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Status
+                                    DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'usermanagement_app_filter_status'),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      items: ['Active', 'Inactive']
+                                          .map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? value) {
+                                        // Handle status change
+                                        setState(() {
+                                          selectedStatus = value!;
+                                        });
+                                      },
+                                    ),
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Cancel and Submit Buttons
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        CustomButton(
+                                          onPressed: () {
+                                            // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
+                                            if (_filterNameController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterNameController.text,
+                                                  'name');
+                                              _filterNameController.clear();
+                                            }
+                                            if (_filterEmailController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterEmailController.text,
+                                                  'email');
+                                              _filterEmailController.clear();
+                                            }
+                                            if (_filterPhoneController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterPhoneController.text,
+                                                  'phone');
+                                              _filterPhoneController.clear();
+                                            }
+                                            if (_filterCompanyController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterCompanyController.text,
+                                                  'company');
+                                              _filterCompanyController.clear();
+                                            }
+                                            if (selectedRoleForFilter != null) {
+                                              addFilter(
+                                                  selectedRoleForFilter?.name ??
+                                                      '',
+                                                  'role');
+                                              selectedRoleForFilter = null;
+                                            }
+                                            if (selectedStatus.isNotEmpty) {
+                                              addFilter(selectedStatus, 'status');
+                                              selectedStatus = '';
+                                            }
+                                            // call api and close the drawer
+                                            if (_selectedScreen ==
+                                                Screens.corporateList) {
+                                              companySearchClient(
+                                                  _corporateSearchController
+                                                      .text);
+                                              Scaffold.of(context)
+                                                  .closeEndDrawer();
+                                            } else if (_selectedScreen ==
+                                                Screens.corporateEmployeeList) {
+                                              corporateEmployeeSearchClient(
+                                                  _corporateEmployeeSearchController
+                                                      .text);
+                                              Scaffold.of(context)
+                                                  .closeEndDrawer();
+                                            } else if (_selectedScreen ==
+                                                Screens.nonCorporateList) {
+                                              nonCorporateSearchClient(
+                                                  _nonCorporateSearchController
+                                                      .text);
+                                              Scaffold.of(context)
+                                                  .closeEndDrawer();
+                                            } else if (_selectedScreen ==
+                                                Screens.employeeList) {
+                                              employeeSearchClient(
+                                                  _employeeSearchController.text);
+                                              Scaffold.of(context)
+                                                  .closeEndDrawer();
+                                            }
+                                          },
+                                          type: ButtonType.filled,
+                                          child: Text(
+                                            LanguageService.getTranslated(context,
+                                                'usermanagement_app_filter_submit'),
+                                            style: typography.ButtonLarge,
+                                          ),
+                                        ),
+                                        SizedBox(width: CustomSpacing.two),
+                                        OutlinedButton(
+                                          onPressed: () {
+                                            // Handle submit button
+                                            Navigator.pop(context);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 22, vertical: 8),
                                           ),
-                                          items: filterRoleList
-                                              .map((roleModel.Roles value) {
-                                            return DropdownMenuItem<
-                                                roleModel.Roles>(
-                                              value: value,
-                                              child: Text(value.name ?? ''),
-                                            );
-                                          }).toList(),
-                                          onChanged: (roleModel.Roles? value) {
-                                            // Handle role change
-                                            setState(() {
-                                              selectedRoleForFilter = value;
-                                            });
-                                          },
+                                          child: Text(
+                                            LanguageService.getTranslated(context,
+                                                'usermanagement_app_filter_cancel'),
+                                            style: typography.ButtonLarge,
+                                          ),
                                         ),
-
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Status
-                                  DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'usermanagement_app_filter_status'),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                      ],
                                     ),
-                                    items: ['Active', 'Inactive']
-                                        .map((String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? value) {
-                                      // Handle status change
-                                      setState(() {
-                                        selectedStatus = value!;
-                                      });
-                                    },
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Cancel and Submit Buttons
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      CustomButton(
-                                        onPressed: () {
-                                          // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
-                                          if (_filterNameController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterNameController.text,
-                                                'name');
-                                            _filterNameController.clear();
-                                          }
-                                          if (_filterEmailController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterEmailController.text,
-                                                'email');
-                                            _filterEmailController.clear();
-                                          }
-                                          if (_filterPhoneController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterPhoneController.text,
-                                                'phone');
-                                            _filterPhoneController.clear();
-                                          }
-                                          if (_filterCompanyController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterCompanyController.text,
-                                                'company');
-                                            _filterCompanyController.clear();
-                                          }
-                                          if (selectedRoleForFilter != null) {
-                                            addFilter(
-                                                selectedRoleForFilter?.name ??
-                                                    '',
-                                                'role');
-                                            selectedRoleForFilter = null;
-                                          }
-                                          if (selectedStatus.isNotEmpty) {
-                                            addFilter(selectedStatus, 'status');
-                                            selectedStatus = '';
-                                          }
-                                          // call api and close the drawer
-                                          if (_selectedScreen ==
-                                              Screens.corporateList) {
-                                            companySearchClient(
-                                                _corporateSearchController
-                                                    .text);
-                                            Scaffold.of(context)
-                                                .closeEndDrawer();
-                                          } else if (_selectedScreen ==
-                                              Screens.corporateEmployeeList) {
-                                            corporateEmployeeSearchClient(
-                                                _corporateEmployeeSearchController
-                                                    .text);
-                                            Scaffold.of(context)
-                                                .closeEndDrawer();
-                                          } else if (_selectedScreen ==
-                                              Screens.nonCorporateList) {
-                                            nonCorporateSearchClient(
-                                                _nonCorporateSearchController
-                                                    .text);
-                                            Scaffold.of(context)
-                                                .closeEndDrawer();
-                                          } else if (_selectedScreen ==
-                                              Screens.employeeList) {
-                                            employeeSearchClient(
-                                                _employeeSearchController.text);
-                                            Scaffold.of(context)
-                                                .closeEndDrawer();
-                                          }
-                                        },
-                                        type: ButtonType.filled,
-                                        child: Text(
-                                          LanguageService.getTranslated(context,
-                                              'usermanagement_app_filter_submit'),
-                                          style: typography.ButtonLarge,
-                                        ),
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          // Handle submit button
-                                          Navigator.pop(context);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 22, vertical: 8),
-                                        ),
-                                        child: Text(
-                                          LanguageService.getTranslated(context,
-                                              'usermanagement_app_filter_cancel'),
-                                          style: typography.ButtonLarge,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ])),
-                              )
-                            ],
-                          );
-                        }),
-                      ],
+                                  ])),
+                                )
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1986,7 +1995,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       "usermanagement_app_corporate_management_empty_list_text"),
                                   style: typography.Body1),
                             )
-                          : ListView.builder(
+                          : /*ListView.builder(
                               itemCount: companyProvider.companies.length +
                                   (companyProvider.companyListNextPageExists
                                       ? 1
@@ -2008,7 +2017,55 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       index, companyProvider);
                                 }
                               },
-                            );
+                            );*/
+                  ListView.builder(
+                    itemCount: companyProvider.companies.length,
+                    itemBuilder: (context, index) {
+                      if (index == companyProvider.companies.length - 1) {
+                        // Check if it's the last item
+                        if (companyProvider.isNextPageLoading) {
+                          // Display loading indicator
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        } else if (companyProvider.page >= companyProvider.totalPages &&
+                            companyProvider.companies.isNotEmpty) {
+                          // Display end of list message
+                          return Column(
+                            children: [
+                              _companyListItem(index, companyProvider),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: Text(
+                                    LanguageService.getTranslated(
+                                        context, "company_list_app_end_of_list_text"),
+                                    style: CustomTypography(context).Body1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Trigger fetching the next page
+                          companyProvider.page = companyProvider.page + 1;
+                          companyProvider.getAllCompanies(
+                            context,
+                            _corporateSearchController.text,
+                            "", // Pass company type filter
+                            "", // Pass role filter
+                          );
+                          return const SizedBox(); // Placeholder
+                        }
+                      } else {
+                        return _companyListItem(index, companyProvider);
+                      }
+                    },
+                  );
+
                 },
               ),
             ),
@@ -2201,11 +2258,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           height: CustomSpacing.two,
                         ),
                         Text(
-                          (companyProvider.companies[index].admins?.name
+                          (companyProvider.companies[index].adminName
                                       ?.substring(0, 1)
                                       .toUpperCase() ??
                                   "") +
-                              (companyProvider.companies[index].admins?.name
+                              (companyProvider.companies[index].adminName
                                       ?.substring(1) ??
                                   ""),
                           style: typography.Body2.copyWith(
@@ -2215,7 +2272,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   : AppColors.black),
                         ),
                         Text(
-                            companyProvider.companies[index].admins?.email ??
+                            companyProvider.companies[index].adminEmail ??
                                 '',
                             style: typography.Caption),
                         SizedBox(
@@ -2331,16 +2388,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 }
 
                                 _adminNameController.text =
-                                    companyProvider.company.admins?.name ?? "";
+                                    companyProvider.company.adminName ?? "";
                                 _adminDisplayNameController.text =
                                     companyProvider
-                                            .company.admins?.displayName ??
+                                            .company.adminName ??
                                         '';
                                 _adminEmailController.text =
-                                    companyProvider.company.admins?.email ?? '';
+                                    companyProvider.company.adminEmail ?? '';
                                 _selectedCountryCode = _adminMobileController
                                         .text =
-                                    companyProvider.company.admins?.mobile ??
+                                    companyProvider.company.adminCountryCode ??
                                         '';
                                 print(
                                     'Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
@@ -2351,7 +2408,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 ?.first ??
                                             IsoCode.US,
                                         nsn: companyProvider
-                                                .company.admins?.mobile ??
+                                                .company.adminMobile ??
                                             "");
                                 _enableDomainCheck =
                                     companyProvider.company.enableDomainCheck ??
@@ -2617,30 +2674,51 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 style: typography.Body1),
                           )
                         : ListView.builder(
-                            itemCount:
-                                (corporateProvider.employeeList ?? []).length +
-                                    (corporateProvider.nextPageExists ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index ==
-                                  (corporateProvider.employeeList ?? [])
-                                      .length) {
-                                // Reached the end of the current list, load more data
-                                corporateProvider.getCorporateUserList(context,
-                                    companyId: selectedCorporateId);
-                                return const SizedBox(
-                                  height:
-                                      50, // Placeholder for loading indicator
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              } else {
-                                return _corporateUserList(
-                                    index, corporateProvider);
-                              }
-                            },
-                          );
-              }),
+                  itemCount: corporateProvider.employeeList?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    if (index == corporateProvider.employeeList!.length - 1) {
+                      // Check if it's the last item
+                      if (corporateProvider.isNextPageLoading) {
+                        // Display loading indicator
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      } else if (corporateProvider.page >= corporateProvider.totalPages &&
+                          corporateProvider.employeeList!.isNotEmpty) {
+                        // Display end of list message
+                        return Column(
+                          children: [
+                            _corporateUserList(index, corporateProvider),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Center(
+                                child: Text(
+                                  "End of the list", // You can use your localized text here
+                                  style: CustomTypography(context).Body1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Trigger fetching the next page
+                        corporateProvider.page += 1;
+                        corporateProvider.getCorporateUserList(
+                          context,
+                          companyId: selectedCorporateId,
+                        );
+                        return const SizedBox(); // Placeholder for fetching
+                      }
+                    } else {
+                      return _corporateUserList(index, corporateProvider);
+                    }
+                  },
+                );
+
+                  }),
             ),
           ],
         );
@@ -4519,7 +4597,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           children: [
                             CustomChip(
                                 label: Text(corporateProvider
-                                        .employeeList?[index].role?.name ??
+                                        .employeeList?[index].role ??
                                     '')),
                           ],
                         ),
@@ -6148,109 +6226,120 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       children: [
                         // All Tab
                         Consumer<NonCorporateProvider>(
-                            builder: (context, noncorporateProvider, child) {
-                          return noncorporateProvider.isLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : noncorporateProvider.employeeList!.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "usermanagement_individual_users_empty_list_text"),
-                                          style: typography.Body1),
-                                    )
-                                  : Builder(builder: (context) {
-                                      return ListView.builder(
-                                        itemCount: noncorporateProvider
-                                                .employeeList!.length +
-                                            (noncorporateProvider.nextPageExists
-                                                ? 1
-                                                : 0),
-                                        itemBuilder: (context, index) {
-                                          if (index ==
-                                              noncorporateProvider
-                                                  .employeeList!.length) {
-                                            // Reached the end of the current list, load more data
-                                            noncorporateProvider
-                                                .getNonCorporateUserList(
-                                              context,
-                                              searchText: "",
-                                              // Adjust parameters as needed
-                                              roleFilter: "",
-                                              isSearch: false,
-                                            );
-                                            return const SizedBox(
-                                              height: 50,
-                                              // Placeholder for loading indicator
-                                              child: Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                            );
-                                          } else {
-                                            return _nonCorporateListItem(
-                                                index, noncorporateProvider);
-                                          }
-                                        },
-                                      );
-                                    });
-                        }),
+                          builder: (context, nonCorporateProvider, child) {
+                            return nonCorporateProvider.isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : nonCorporateProvider.employeeList!.isEmpty
+                                ? Center(
+                              child: Text(
+                                LanguageService.getTranslated(
+                                  context,
+                                  "usermanagement_individual_users_empty_list_text",
+                                ),
+                                style: typography.Body1,
+                              ),
+                            )
+                                : ListView.builder(
+                              itemCount: nonCorporateProvider.employeeList!.length,
+                              itemBuilder: (context, index) {
+                                if (index == nonCorporateProvider.employeeList!.length - 1) {
+                                  // Check if it's the last item
+                                  if (nonCorporateProvider.isNextPageLoading) {
+                                    // Display loading indicator
+                                    return const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  } else if (nonCorporateProvider.page >=
+                                      nonCorporateProvider.totalPages &&
+                                      nonCorporateProvider.employeeList!.isNotEmpty) {
+                                    // End of list message
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          'End of the list',
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // Fetch next page
+                                    nonCorporateProvider.page += 1;
+                                    nonCorporateProvider.getNonCorporateUserList(
+                                      context,
+                                      searchText: "",
+                                      roleFilter: "",
+                                      isSearch: false,
+                                    );
+                                    return const SizedBox();
+                                  }
+                                }
+                                return _nonCorporateListItem(index, nonCorporateProvider);
+                              },
+                            );
+                          },
+                        ),
                         // Active Tab
                         Consumer<NonCorporateProvider>(
-                            builder: (context, noncorporateProvider, child) {
-                          return noncorporateProvider.isLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : noncorporateProvider.employeeList!.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "usermanagement_individual_users_empty_list_text"),
-                                          style: typography.Body1),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: noncorporateProvider
-                                              .employeeList!.length +
-                                          (noncorporateProvider.nextPageExists
-                                              ? 1
-                                              : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index ==
-                                            noncorporateProvider
-                                                .employeeList!.length) {
-                                          // Reached the end of the current list, load more data
-                                          noncorporateProvider
-                                              .getNonCorporateUserList(
-                                            context,
-                                            searchText: "",
-                                            // Adjust parameters as needed
-                                            roleFilter: "",
-                                            isSearch: false,
-                                          );
-                                          return const SizedBox(
-                                            height: 50,
-                                            // Placeholder for loading indicator
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                          );
-                                        } else {
-                                          return _nonCorporateListItem(
-                                              index, noncorporateProvider);
-                                        }
-                                      },
+                          builder: (context, nonCorporateProvider, child) {
+                            return nonCorporateProvider.isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : nonCorporateProvider.employeeList!.isEmpty
+                                ? Center(
+                              child: Text(
+                                LanguageService.getTranslated(
+                                  context,
+                                  "usermanagement_individual_users_empty_list_text",
+                                ),
+                                style: typography.Body1,
+                              ),
+                            )
+                                : ListView.builder(
+                              itemCount: nonCorporateProvider.employeeList!.length,
+                              itemBuilder: (context, index) {
+                                if (index == nonCorporateProvider.employeeList!.length - 1) {
+                                  // Check if it's the last item
+                                  if (nonCorporateProvider.isNextPageLoading) {
+                                    // Display loading indicator
+                                    return const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
                                     );
-                        }),
-                        // Pending Tab
-                        // ListView.builder(
-                        //   itemCount: 5,
-                        //   itemBuilder: (context, index) {
-                        //     return _corporateEmployeeManagement();
-                        //   },
-                        // ),
+                                  } else if (nonCorporateProvider.page >=
+                                      nonCorporateProvider.totalPages &&
+                                      nonCorporateProvider.employeeList!.isNotEmpty) {
+                                    // End of list message
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          'End of the list',
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // Fetch next page
+                                    nonCorporateProvider.page += 1;
+                                    nonCorporateProvider.getNonCorporateUserList(
+                                      context,
+                                      searchText: "",
+                                      roleFilter: "",
+                                      isSearch: false,
+                                    );
+                                    return const SizedBox();
+                                  }
+                                }
+                                return _nonCorporateListItem(index, nonCorporateProvider);
+                              },
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -6258,6 +6347,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               ),
             ),
           ),
+
         ],
       );
     });
@@ -6950,7 +7040,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   ),
                                 ),
                                 Positioned(
-                                  top: 10.0,
+                                  top: 4.0,
                                   left: 10.0,
                                   right: 10.0,
                                   child: Container(
@@ -7524,110 +7614,128 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     height: CustomSpacing.four,
                   ),
                   Consumer<EmployeeProvider>(
-                      builder: (context, employeeProvider, child) {
-                    return Expanded(
-                      child: TabBarView(
-                        controller: _tabEmployeeController,
-                        children: [
-                          // All Tab
-                          employeeProvider.isLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : employeeProvider.employeeList!.isEmpty
-                                  ? Center(
-                                      child: Text('No employees found',
-                                          style: typography.Body1),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: employeeProvider
-                                              .employeeList?.length ??
-                                          0 +
-                                              (employeeProvider.nextPageExists
-                                                  ? 1
-                                                  : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index ==
-                                            (employeeProvider
-                                                    .employeeList?.length ??
-                                                0)) {
-                                          // Reached the end of the current list, load more data
-                                          if (!employeeProvider.isLoading &&
-                                              employeeProvider.nextPageExists) {
-                                            employeeProvider.getAllEmployees(
-                                              context,
-                                              searchText: "",
-                                              // Adjust parameters as needed
-                                              roleFilter: "",
-                                              isSearch: false,
-                                            );
-                                          }
-                                          return const SizedBox(
-                                            height: 50,
-                                            // Placeholder for loading indicator
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                          );
-                                        } else {
-                                          return _employeeManagementListItem(
-                                              index, employeeProvider);
-                                        }
-                                      },
-                                    ),
+                    builder: (context, employeeProvider, child) {
+                      return Expanded(
+                        child: TabBarView(
+                          controller: _tabEmployeeController,
+                          children: [
+                            // All Tab
+                            employeeProvider.isLoading
+                                ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                                : employeeProvider.employeeList!.isEmpty
+                                ? Center(
+                              child: Text(
+                                'No employees found',
+                                style: typography.Body1,
+                              ),
+                            )
+                                : ListView.builder(
+                              itemCount: employeeProvider.employeeList!.length,
+                              itemBuilder: (context, index) {
+                                if (index ==
+                                    employeeProvider.employeeList!.length - 1) {
+                                  // Check if it's the last item
+                                  if (employeeProvider.isNextPageLoading) {
+                                    // Display loading indicator
+                                    return const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  } else if (employeeProvider.page >=
+                                      employeeProvider.totalPages &&
+                                      employeeProvider.employeeList!.isNotEmpty) {
+                                    // Display end of list message
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          'End of the list',
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // Trigger fetching the next page
+                                    employeeProvider.page += 1;
+                                    employeeProvider.getAllEmployees(
+                                      context,
+                                      searchText: "", // Pass appropriate parameters
+                                      roleFilter: "",
+                                      isSearch: false,
+                                    );
+                                    return const SizedBox();
+                                  }
+                                }
+                                return _employeeManagementListItem(
+                                    index, employeeProvider);
+                              },
+                            ),
 
-                          // Active Tab
-                          employeeProvider.isLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : employeeProvider.employeeList!.isEmpty
-                                  ? Center(
-                                      child: Text('No employees found',
-                                          style: typography.Body1),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: employeeProvider
-                                              .employeeList?.length ??
-                                          0 +
-                                              (employeeProvider.nextPageExists
-                                                  ? 1
-                                                  : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index ==
-                                            (employeeProvider
-                                                    .employeeList?.length ??
-                                                0)) {
-                                          // Reached the end of the current list, load more data
-                                          if (!employeeProvider.isLoading &&
-                                              employeeProvider.nextPageExists) {
-                                            employeeProvider.getAllEmployees(
-                                              context,
-                                              searchText: "",
-                                              // Adjust parameters as needed
-                                              roleFilter: "",
-                                              isSearch: false,
-                                            );
-                                          }
-                                          return const SizedBox(
-                                            height: 50,
-                                            // Placeholder for loading indicator
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                          );
-                                        } else {
-                                          return _employeeManagementListItem(
-                                              index, employeeProvider);
-                                        }
-                                      },
-                                    ),
-                        ],
-                      ),
-                    );
-                  }),
+                            // Active Tab
+                            employeeProvider.isLoading
+                                ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                                : employeeProvider.employeeList!.isEmpty
+                                ? Center(
+                              child: Text(
+                                'No employees found',
+                                style: typography.Body1,
+                              ),
+                            )
+                                : ListView.builder(
+                              itemCount: employeeProvider.employeeList!.length,
+                              itemBuilder: (context, index) {
+                                if (index ==
+                                    employeeProvider.employeeList!.length - 1) {
+                                  // Check if it's the last item
+                                  if (employeeProvider.isNextPageLoading) {
+                                    // Display loading indicator
+                                    return const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  } else if (employeeProvider.page >=
+                                      employeeProvider.totalPages &&
+                                      employeeProvider.employeeList!.isNotEmpty) {
+                                    // Display end of list message
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          'End of the list',
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // Trigger fetching the next page
+                                    employeeProvider.page += 1;
+                                    employeeProvider.getAllEmployees(
+                                      context,
+                                      searchText: "", // Pass appropriate parameters
+                                      roleFilter: "",
+                                      isSearch: false,
+                                    );
+                                    return const SizedBox();
+                                  }
+                                }
+                                return _employeeManagementListItem(
+                                    index, employeeProvider);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
                 ],
               ),
             ),

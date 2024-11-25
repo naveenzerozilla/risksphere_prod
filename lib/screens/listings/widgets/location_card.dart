@@ -11,6 +11,7 @@ import '../../../providers/location_list_provider.dart';
 import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
+  final String imageUrl;
   final String locationId;
   final String accountName;
   final String ownerName;
@@ -32,9 +33,11 @@ class MyLocationCard extends StatefulWidget {
   final String? sovName;
   final String? subAccountName;
   final String? locationQuery;
+  final String? campusId;
 
   const MyLocationCard({
     super.key,
+    required this.imageUrl,
     required this.locationId,
     required this.accountName,
     required this.ownerName,
@@ -45,6 +48,7 @@ class MyLocationCard extends StatefulWidget {
     required this.dataCompletenessScore,
     required this.isAutoCertified,
     required this.tags,
+    required this.campusId,
     this.onDelete,
     this.onAddToSOV,
     this.isCertified = false,
@@ -79,6 +83,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   @override
   Widget build(BuildContext context) {
+    print("Campus ID: ${widget.campusId}");
     selectionMode = Provider.of<MyLocationListProvider>(context).selectedLocations.isNotEmpty;
     MyLocation? myLocation;
     if (widget.isCertified) {
@@ -92,6 +97,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
     final isSelected = Provider.of<MyLocationListProvider>(context)
         .selectedLocations
         .contains(myLocation);
+    final image = widget.imageUrl;
     return GestureDetector(
       onTap: () {
         // In selection mode, toggle the selection if its last selection getting unselected we remove the selection mode
@@ -121,7 +127,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               sovId: widget.sovId??"",
               sovName: widget.sovName??"",
               searchQuery: widget.locationQuery??"",
-              page: (widget.index).toString(),
+              page: (widget.index+1).toString(),
               totalPages: locationListProvider.locationHits.toString(),
             ),
           ));/*.then((_) {
@@ -159,13 +165,18 @@ class _MyLocationCardState extends State<MyLocationCard> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-            _buildTopRow(
-            context,
-            widget.tags,
-            isSelected,
-          ),
+              // Modify the call to _buildTopRow to handle campusId and tags
+              _buildTopRow(
+                context,
+                widget.campusId != null && widget.campusId!.isNotEmpty
+                    ? [widget.campusId!, ...widget.tags]
+                    : widget.tags,
+                isSelected,
+                image,
+              ),
 
-            SizedBox(height: 16),
+
+              SizedBox(height: 16),
               _buildScrollableScores(context),
             ],
           ),
@@ -181,11 +192,10 @@ class _MyLocationCardState extends State<MyLocationCard> {
     super.dispose();
   }
 
-  Widget _buildTopRow(BuildContext context, List<String> chipLabels, bool isSelected) {
+  Widget _buildTopRow(BuildContext context, List<String> chipLabels, bool isSelected, String image) {
     return Row(
       children: [
-
-        // Building Image - use your own SVG or image here
+        // Building Image
         isSelected
             ? CircleAvatar(
           radius: 25,
@@ -194,70 +204,63 @@ class _MyLocationCardState extends State<MyLocationCard> {
         )
             : ClipRRect(
           borderRadius: BorderRadius.circular(99),
-          child: Image.asset(
+          child: image.isNotEmpty
+              ? Image.network(
+            image,
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+          )
+              : Image.asset(
             'assets/images/building_image.png',
             width: 50,
             height: 50,
             fit: BoxFit.cover,
           ),
         ),
-
         SizedBox(width: 8),
-        if(widget.tags.isEmpty||widget.tags.length==0||widget.tags[0]=='')
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Overflowed address
-                Text(
-                  widget.address,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-        if(widget.tags.isNotEmpty && widget.tags.length > 0 && widget.tags[0] != '')
-          // Expanded to take the remaining space (after the image and the scrollbar
+
+        // Expanded chip list or single chip
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Scrollable chip list with scrollbar and gap
-              Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true, // Makes the scrollbar always visible
-                thickness: 2, // Increases the thickness of the scrollbar
-                child: SingleChildScrollView(
+              if (chipLabels.length == 1)
+              // Center single chip to take full width
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildChip(context, chipLabels[0], isCampus: true),
+                  ],
+                ),
+              if (chipLabels.length > 1)
+              // Scrollable chip list with scrollbar for multiple chips
+                Scrollbar(
                   controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0), // Adds a gap between chips and scrollbar
-                    child: Row(
-                      children: chipLabels
-                          .map((label) => Padding(
-                        padding: const EdgeInsets.only(right: 8.0), // Add some space between chips
-                        child: Chip(
-                          labelStyle: CustomTypography(context).InputLabel,
-                          label: Text(label),
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest, // Keep your original color here
-                          deleteIcon: Icon(Icons.close, size: 16),
-                          onDeleted: () {
-                            Provider.of<MyLocationListProvider>(context, listen: false).showDeleteTagDialog(context, widget.accountId??"", widget.subAccountId??"", widget.locationId, label);
-                          },
-                        ),
-                      ))
-                          .toList(),
+                  thumbVisibility: true,
+                  thickness: 2,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 4.0),
+                      child: Row(
+                        children: chipLabels
+                            .map(
+                              (label) => Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: _buildChip(
+                              context,
+                              label,
+                              isCampus: label == chipLabels[0], // Assuming the first chip is campus
+                            ),
+                          ),
+                        )
+                            .toList(),
+                      ),
                     ),
                   ),
                 ),
-              ),
               SizedBox(height: 4),
               // Overflowed address
               Text(
@@ -271,6 +274,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             ],
           ),
         ),
+
         SizedBox(width: 12),
         // Circular score with percentage and gaped border
         Stack(
@@ -287,7 +291,10 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
               ),
             ),
-            Text('${widget.percentage}%', style: CustomTypography(context).InputLabel.copyWith(fontSize: 10)),
+            Text(
+              '${widget.percentage}%',
+              style: CustomTypography(context).InputLabel.copyWith(fontSize: 10),
+            ),
           ],
         ),
         SizedBox(width: 4),
@@ -301,6 +308,30 @@ class _MyLocationCardState extends State<MyLocationCard> {
       ],
     );
   }
+
+  Widget _buildChip(BuildContext context, String label, {bool isCampus = false}) {
+    return Chip(
+      labelStyle: CustomTypography(context).InputLabel,
+      label: Text(label),
+      backgroundColor: isCampus
+          ? AppColors.primaryMain.withOpacity(0.2)
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
+      deleteIcon: isCampus ? null : Icon(Icons.close, size: 16),
+      onDeleted: isCampus
+          ? null
+          : () {
+        Provider.of<MyLocationListProvider>(context, listen: false).showDeleteTagDialog(
+          context,
+          widget.accountId ?? "",
+          widget.subAccountId ?? "",
+          widget.locationId,
+          label,
+        );
+      },
+    );
+  }
+
+
 
   Widget _buildScrollableScores(BuildContext context) {
     return SingleChildScrollView(
@@ -424,7 +455,16 @@ class CustomPopupMenuButton extends StatelessWidget {
         offset.dx + 40, // Adjust for width offset if necessary
         offset.dy + 40, // Adjust for height offset if necessary
       ),
-      items: [
+      items: onAddToSOV == null?[
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Text('Delete Location', style: typography.Body1),
+        ),
+        PopupMenuItem<String>(
+          value: 'add_tag',
+          child: Text('Add Tag', style: typography.Body1),
+        ),
+      ]:[
         PopupMenuItem<String>(
           value: 'delete',
           child: Text('Delete Location', style: typography.Body1),

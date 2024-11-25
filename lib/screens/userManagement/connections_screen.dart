@@ -255,185 +255,222 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     var typography = CustomTypography(context1);
     return Consumer<ThemeProvider>(
         builder: (buildContext, themeProvider, child) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        floatingActionButton: _selectedScreen == Screens.connectionList ||
-                _selectedScreen == Screens.corporateConnectionList ||
-                _selectedScreen == Screens.nonCorporateConnectionList
-            ? Builder(builder: (contextLocal) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FloatingActionButton(
-                      onPressed: () {
-                        // Open bottom sheet of filters
-                        print(
-                            'Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
-                        _showFiltersBottomSheet(contextLocal);
-                      },
-                      child: Icon(Icons.filter_alt_outlined),
-                    ),
-                    SizedBox(
-                      height: CustomSpacing.two,
-                    ),
-                    FloatingActionButton(
-                      onPressed: () {
-                        _tabController?.animateTo(3);
-                        _selectedScreen = Screens.networkList;
-                      },
-                      child: Icon(Icons.add),
-                    ),
-                  ],
-                );
-              })
-            : SizedBox(),
-        body: PopScope(
-          canPop: _selectedScreen == Screens.connectionList ||
-              _selectedScreen == Screens.corporateConnectionList,
-          onPopInvoked: (canPop) {
-            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-            if (_selectedScreen == Screens.nonCorporateConnectionList) {
+      return SafeArea(
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
               setState(() {
-                _selectedScreen = Screens.corporateConnectionList;
+                _isExpanded = isExpanded;
               });
-            } else if (_selectedScreen == Screens.requestList) {
+            },
+            onSearchPressed: () {
               setState(() {
-                _tabController?.animateTo(0);
-                _selectedScreen = Screens.corporateConnectionList;
+                _isExpanded = !_isExpanded;
               });
-            }
-          },
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
+            },
+          ),
+          drawer: CustomDrawer(),
+          floatingActionButton: _selectedScreen == Screens.connectionList ||
+                  _selectedScreen == Screens.corporateConnectionList ||
+                  _selectedScreen == Screens.nonCorporateConnectionList
+              ? Builder(builder: (contextLocal) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton(
+                        onPressed: () {
+                          // Open bottom sheet of filters
+                          print(
+                              'Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
+                          _showFiltersBottomSheet(contextLocal);
+                        },
+                        child: Icon(Icons.filter_alt_outlined),
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      FloatingActionButton(
+                        onPressed: () {
+                          _tabController?.animateTo(3);
+                          _selectedScreen = Screens.networkList;
+                        },
+                        child: Icon(Icons.add),
+                      ),
+                    ],
+                  );
+                })
+              : SizedBox(),
+          body: PopScope(
+            canPop: _selectedScreen == Screens.connectionList ||
+                _selectedScreen == Screens.corporateConnectionList,
+            onPopInvoked: (canPop) {
+              print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+              if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                setState(() {
+                  _selectedScreen = Screens.corporateConnectionList;
+                });
+              } else if (_selectedScreen == Screens.requestList) {
+                setState(() {
+                  _tabController?.animateTo(0);
+                  _selectedScreen = Screens.corporateConnectionList;
+                });
+              }
+            },
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                      margin:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.userName == ''
-                                ? LanguageService.getTranslated(context,
-                                    "connections_user_connection_connections_tab")
-                                : '${LanguageService.getTranslated(context, "connections_user_connection_connections_tab")} ${widget.userName.substring(0, 1).toUpperCase()}${widget.userName.substring(1)}',
-                            style: typography.H5_Regular,
-                          ),
-                          SizedBox(height: CustomSpacing.two),
-                          Text(
-                            LanguageService.getTranslated(context,
-                                "connections_user connections_sub_title_description"),
-                            style: typography.Body2,
-                          ),
-                          SizedBox(height: CustomSpacing.two),
-                          Consumer<ConnectionsProvider>(
-                            builder: (context, connectionsProvider, child) {
-                              return TabBar(
-                                isScrollable: true,
-                                controller: _tabController,
-                                labelStyle: typography
-                                    .BottomNavigationActiveLabel,
-                                tabs: [
-                                  Tab(
-                                    child: InkWell(
+                Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.userName == ''
+                                  ? LanguageService.getTranslated(context,
+                                      "connections_user_connection_connections_tab")
+                                  : '${LanguageService.getTranslated(context, "connections_user_connection_connections_tab")} ${widget.userName.substring(0, 1).toUpperCase()}${widget.userName.substring(1)}',
+                              style: typography.H5_Regular,
+                            ),
+                            SizedBox(height: CustomSpacing.two),
+                            Text(
+                              LanguageService.getTranslated(context,
+                                  "connections_user connections_sub_title_description"),
+                              style: typography.Body2,
+                            ),
+                            SizedBox(height: CustomSpacing.two),
+                            Consumer<ConnectionsProvider>(
+                              builder: (context, connectionsProvider, child) {
+                                return TabBar(
+                                  isScrollable: true,
+                                  controller: _tabController,
+                                  labelStyle: typography
+                                      .BottomNavigationActiveLabel,
+                                  tabs: [
+                                    Tab(
+                                      child: InkWell(
+                                        onTap: () {
+                                          _tabController?.animateTo(0);
+                                          _selectedScreen =
+                                              Screens.connectionList;
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Tab(
+                                              child: DropdownButton(
+                                                underline: SizedBox(),
+                                                value: LanguageService.getTranslated(
+                                                    context,
+                                                    "connections_user_connection_connections_tab"),
+                                                items: [
+                                                  DropdownMenuItem(
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.apartment),
+                                                        SizedBox(
+                                                            width: CustomSpacing
+                                                                .two),
+                                                        Text(
+                                                          LanguageService
+                                                              .getTranslated(
+                                                                  context,
+                                                                  "connections_user_connection_connections_tab"),
+                                                          style: typography
+                                                              .BottomNavigationActiveLabel,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    value: LanguageService
+                                                        .getTranslated(context,
+                                                            "connections_user_connection_connections_tab"),
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    child: Text(
+                                                      LanguageService.getTranslated(
+                                                          context,
+                                                          "connections_user_connection_corporate_connections_filed_label"),
+                                                      style: typography
+                                                          .BottomNavigationActiveLabel,
+                                                    ),
+                                                    value: 'Corporate',
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    child: Text(
+                                                      LanguageService.getTranslated(
+                                                          context,
+                                                          "connections_user_connection_non_corporate_label"),
+                                                      style: typography
+                                                          .BottomNavigationActiveLabel,
+                                                    ),
+                                                    value: 'Non Corporate',
+                                                  ),
+                                                ],
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    if (value == 'Corporate') {
+                                                      _selectedScreen = Screens
+                                                          .corporateConnectionList;
+                                                    } else if (value ==
+                                                        'Non Corporate') {
+                                                      _selectedScreen = Screens
+                                                          .nonCorporateConnectionList;
+                                                    }
+                                                    _tabController?.animateTo(0);
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 25,
+                                              width: 35,
+                                              child: Chip(
+                                                labelPadding: EdgeInsets.all(0),
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                label: Text(
+                                                  connectionsProvider
+                                                      .totalConnections,
+                                                  style: typography
+                                                          .BottomNavigationActiveLabel
+                                                      .copyWith(height: -0.6),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
                                       onTap: () {
-                                        _tabController?.animateTo(0);
-                                        _selectedScreen =
-                                            Screens.connectionList;
+                                        _tabController?.animateTo(1);
+                                        _selectedScreen = Screens.requestList;
                                       },
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
                                           Tab(
-                                            child: DropdownButton(
-                                              underline: SizedBox(),
-                                              value: LanguageService.getTranslated(
-                                                  context,
-                                                  "connections_user_connection_connections_tab"),
-                                              items: [
-                                                DropdownMenuItem(
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.apartment),
-                                                      SizedBox(
-                                                          width: CustomSpacing
-                                                              .two),
-                                                      Text(
-                                                        LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "connections_user_connection_connections_tab"),
-                                                        style: typography
-                                                            .BottomNavigationActiveLabel,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  value: LanguageService
-                                                      .getTranslated(context,
-                                                          "connections_user_connection_connections_tab"),
-                                                ),
-                                                DropdownMenuItem(
-                                                  child: Text(
-                                                    LanguageService.getTranslated(
-                                                        context,
-                                                        "connections_user_connection_corporate_connections_filed_label"),
-                                                    style: typography
-                                                        .BottomNavigationActiveLabel,
-                                                  ),
-                                                  value: 'Corporate',
-                                                ),
-                                                DropdownMenuItem(
-                                                  child: Text(
-                                                    LanguageService.getTranslated(
-                                                        context,
-                                                        "connections_user_connection_non_corporate_label"),
-                                                    style: typography
-                                                        .BottomNavigationActiveLabel,
-                                                  ),
-                                                  value: 'Non Corporate',
-                                                ),
-                                              ],
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  if (value == 'Corporate') {
-                                                    _selectedScreen = Screens
-                                                        .corporateConnectionList;
-                                                  } else if (value ==
-                                                      'Non Corporate') {
-                                                    _selectedScreen = Screens
-                                                        .nonCorporateConnectionList;
-                                                  }
-                                                  _tabController?.animateTo(0);
-                                                });
-                                              },
-                                            ),
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_requests__tab"),
                                           ),
+                                          SizedBox(width: CustomSpacing.two),
                                           SizedBox(
                                             height: 25,
                                             width: 35,
@@ -444,7 +481,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                       .shrinkWrap,
                                               label: Text(
                                                 connectionsProvider
-                                                    .totalConnections,
+                                                    .requestReceivedCount,
                                                 style: typography
                                                         .BottomNavigationActiveLabel
                                                     .copyWith(height: -0.6),
@@ -454,508 +491,473 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         ],
                                       ),
                                     ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      _tabController?.animateTo(1);
-                                      _selectedScreen = Screens.requestList;
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Tab(
-                                          text: LanguageService.getTranslated(
-                                              context,
-                                              "connections_user_connection_requests__tab"),
-                                        ),
-                                        SizedBox(width: CustomSpacing.two),
-                                        SizedBox(
-                                          height: 25,
-                                          width: 35,
-                                          child: Chip(
-                                            labelPadding: EdgeInsets.all(0),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            label: Text(
-                                              connectionsProvider
-                                                  .requestReceivedCount,
-                                              style: typography
-                                                      .BottomNavigationActiveLabel
-                                                  .copyWith(height: -0.6),
+                                    InkWell(
+                                      onTap: () {
+                                        _tabController?.animateTo(2);
+                                        _selectedScreen = Screens.chatList;
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Tab(
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_chats__tab"),
+                                          ),
+                                          SizedBox(width: CustomSpacing.two),
+                                          SizedBox(
+                                            height: 25,
+                                            width: 35,
+                                            child: Chip(
+                                              labelPadding: EdgeInsets.all(0),
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              label: Text(
+                                                '0',
+                                                style: typography
+                                                        .BottomNavigationActiveLabel
+                                                    .copyWith(height: -0.6),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      _tabController?.animateTo(2);
-                                      _selectedScreen = Screens.chatList;
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Tab(
-                                          text: LanguageService.getTranslated(
-                                              context,
-                                              "connections_user_connection_chats__tab"),
-                                        ),
-                                        SizedBox(width: CustomSpacing.two),
-                                        SizedBox(
-                                          height: 25,
-                                          width: 35,
-                                          child: Chip(
-                                            labelPadding: EdgeInsets.all(0),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            label: Text(
-                                              '0',
-                                              style: typography
-                                                      .BottomNavigationActiveLabel
-                                                  .copyWith(height: -0.6),
-                                            ),
+                                    InkWell(
+                                      onTap: () {
+                                        _tabController?.animateTo(3);
+                                        _selectedScreen = Screens.networkList;
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Tab(
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_networking_tab"),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      _tabController?.animateTo(3);
-                                      _selectedScreen = Screens.networkList;
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Tab(
-                                          text: LanguageService.getTranslated(
-                                              context,
-                                              "connections_user_connection_networking_tab"),
-                                        ),
-                                      ],
+                                    InkWell(
+                                      onTap: () {
+                                        _tabController?.animateTo(4);
+                                        _selectedScreen = Screens.blockedList;
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Tab(
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_blocked_tab"),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      _tabController?.animateTo(4);
-                                      _selectedScreen = Screens.blockedList;
-                                    },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Tab(
-                                          text: LanguageService.getTranslated(
-                                              context,
-                                              "connections_user_connection_blocked_tab"),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _getConnectionsUI(),
-                                _getRequestsUI(),
-                                _getChatsUI(),
-                                _getNetworkingUI(),
-                                _getBlockedUI(),
-                              ],
+                                  ],
+                                );
+                              },
                             ),
+                            Expanded(
+                              child: TabBarView(
+                                controller: _tabController,
+                                children: [
+                                  _getConnectionsUI(),
+                                  _getRequestsUI(),
+                                  _getChatsUI(),
+                                  _getNetworkingUI(),
+                                  _getBlockedUI(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          endDrawer: Drawer(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: CustomSpacing.two,
+                    ),
+                    SizedBox(height: CustomSpacing.two),
+                    // Circular elevated icon for filter
+                    Center(
+                        child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        endDrawer: Drawer(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  // Circular elevated icon for filter
-                  Center(
-                      child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Icon(
+                          Icons.filter_alt_outlined,
+                          size: 32,
                         ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Icon(
-                        Icons.filter_alt_outlined,
-                        size: 32,
                       ),
-                    ),
-                  )),
-                  SizedBox(height: CustomSpacing.four),
-                  // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
+                    )),
+                    SizedBox(height: CustomSpacing.four),
+                    // Toolbar with chips for filter, a text button for clear filter and show number of selections, vertical divider and deselect text and delete button
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                    child: Column(
-                      children: [
-                        // Filter Chips
-                        Wrap(
-                          direction: Axis.horizontal,
-                          alignment: WrapAlignment.start,
-                          runAlignment: WrapAlignment.start,
-                          crossAxisAlignment: WrapCrossAlignment.start,
-                          verticalDirection: VerticalDirection.down,
-                          spacing: 4,
-                          children: [
-                            // Dynamic chips for all filters such that we can do add remove and remove all operations
-                            for (var role in filterRoles)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(role.name ?? ""),
-                                onDeleted: () {
-                                  removeFilter(role.name ?? "", 'role');
-                                },
-                              ),
-                            for (var name in filterNames)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(name),
-                                onDeleted: () {
-                                  removeFilter(name, 'name');
-                                },
-                              ),
-                            for (var email in filterEmails)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(email),
-                                onDeleted: () {
-                                  removeFilter(email, 'email');
-                                },
-                              ),
-                            for (var phone in filterPhones)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(phone),
-                                onDeleted: () {
-                                  removeFilter(phone, 'phone');
-                                },
-                              ),
-                            for (var company in filterCompanies)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(company),
-                                onDeleted: () {
-                                  removeFilter(company, 'company');
-                                },
-                              ),
-                            for (var status in filterStatus)
-                              Chip(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: CustomSpacing.two),
-                                label: Text(status),
-                                onDeleted: () {
-                                  removeFilter(status, 'status');
-                                },
-                              ),
-                          ],
-                        ),
-                        // Clear Filter Button
-                        (filterCompanies.isEmpty &&
-                                filterEmails.isEmpty &&
-                                filterNames.isEmpty &&
-                                filterPhones.isEmpty &&
-                                filterRoles.isEmpty &&
-                                filterStatus.isEmpty)
-                            ? SizedBox()
-                            : TextButton(
-                                onPressed: () {
-                                  // Handle clear filter
-                                  removeAllFilters();
-                                },
-                                child: Text(
-                                  LanguageService.getTranslated(context,
-                                      'connections_user_connection_clear_filter_filed_label'),
-                                ),
-                              ),
-                        Divider(
-                          thickness: 1,
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                        ),
-                        SizedBox(
-                          height: CustomSpacing.two,
-                        ),
-                        Builder(builder: (context) {
-                          return Column(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                      child: Column(
+                        children: [
+                          // Filter Chips
+                          Wrap(
+                            direction: Axis.horizontal,
+                            alignment: WrapAlignment.start,
+                            runAlignment: WrapAlignment.start,
+                            crossAxisAlignment: WrapCrossAlignment.start,
+                            verticalDirection: VerticalDirection.down,
+                            spacing: 4,
                             children: [
-                              // name, phone, email, company, role dropdown, status,
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: Form(
-                                    child: Column(children: [
-                                  // Name
-                                  TextFormField(
-                                    controller: _filterNameController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          'user_profile_user_management_name_filed_label'),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                              // Dynamic chips for all filters such that we can do add remove and remove all operations
+                              for (var role in filterRoles)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(role.name ?? ""),
+                                  onDeleted: () {
+                                    removeFilter(role.name ?? "", 'role');
+                                  },
+                                ),
+                              for (var name in filterNames)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(name),
+                                  onDeleted: () {
+                                    removeFilter(name, 'name');
+                                  },
+                                ),
+                              for (var email in filterEmails)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(email),
+                                  onDeleted: () {
+                                    removeFilter(email, 'email');
+                                  },
+                                ),
+                              for (var phone in filterPhones)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(phone),
+                                  onDeleted: () {
+                                    removeFilter(phone, 'phone');
+                                  },
+                                ),
+                              for (var company in filterCompanies)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(company),
+                                  onDeleted: () {
+                                    removeFilter(company, 'company');
+                                  },
+                                ),
+                              for (var status in filterStatus)
+                                Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: CustomSpacing.two),
+                                  label: Text(status),
+                                  onDeleted: () {
+                                    removeFilter(status, 'status');
+                                  },
+                                ),
+                            ],
+                          ),
+                          // Clear Filter Button
+                          (filterCompanies.isEmpty &&
+                                  filterEmails.isEmpty &&
+                                  filterNames.isEmpty &&
+                                  filterPhones.isEmpty &&
+                                  filterRoles.isEmpty &&
+                                  filterStatus.isEmpty)
+                              ? SizedBox()
+                              : TextButton(
+                                  onPressed: () {
+                                    // Handle clear filter
+                                    removeAllFilters();
+                                  },
+                                  child: Text(
+                                    LanguageService.getTranslated(context,
+                                        'connections_user_connection_clear_filter_filed_label'),
+                                  ),
+                                ),
+                          Divider(
+                            thickness: 1,
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                          ),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                          Builder(builder: (context) {
+                            return Column(
+                              children: [
+                                // name, phone, email, company, role dropdown, status,
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: Form(
+                                      child: Column(children: [
+                                    // Name
+                                    TextFormField(
+                                      controller: _filterNameController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            'user_profile_user_management_name_filed_label'),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: CustomSpacing.two,
-                                  ),
-                                  // Email
-                                  TextFormField(
-                                    controller: _filterEmailController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          "user_profile_user_management_email_field_label"),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                    SizedBox(
+                                      height: CustomSpacing.two,
+                                    ),
+                                    // Email
+                                    TextFormField(
+                                      controller: _filterEmailController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            "user_profile_user_management_email_field_label"),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: CustomSpacing.two,
-                                  ),
-                                  // Phone
-                                  TextFormField(
-                                    controller: _filterPhoneController,
-                                    keyboardType: TextInputType.number,
-                                    maxLength: 10,
-                                    // Numeric keyboard
-                                    inputFormatters: <TextInputFormatter>[
-                                      FilteringTextInputFormatter.digitsOnly
-                                      // Only allows digits
-                                    ],
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context, "register_mobile_number"),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          "register_enter_mobile_number"),
-                                      border: const OutlineInputBorder(),
-                                      counterText: '',
+                                    SizedBox(
+                                      height: CustomSpacing.two,
                                     ),
-                                    validator: (value) {
-                                      if (!RegExp(r'^[0-9]+$')
-                                          .hasMatch(value!)) {
-                                        return 'Mobile number can only contain digits';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Company
-                                  TextFormField(
-                                    controller: _filterCompanyController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          "usermangement_corp_trow_comp_name"),
-                                      labelStyle: typography.Body1,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                    // Phone
+                                    TextFormField(
+                                      controller: _filterPhoneController,
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 10,
+                                      // Numeric keyboard
+                                      inputFormatters: <TextInputFormatter>[
+                                        FilteringTextInputFormatter.digitsOnly
+                                        // Only allows digits
+                                      ],
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context, "register_mobile_number"),
+                                        hintText: LanguageService.getTranslated(
+                                            context,
+                                            "register_enter_mobile_number"),
+                                        border: const OutlineInputBorder(),
+                                        counterText: '',
+                                      ),
+                                      validator: (value) {
+                                        if (!RegExp(r'^[0-9]+$')
+                                            .hasMatch(value!)) {
+                                          return 'Mobile number can only contain digits';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Company
+                                    TextFormField(
+                                      controller: _filterCompanyController,
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            "usermangement_corp_trow_comp_name"),
+                                        labelStyle: typography.Body1,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Role Dropdown
-                                  (_selectedScreen == Screens.corporateList)
-                                      ? SizedBox()
-                                      : DropdownButtonFormField<
-                                          roleModel.Roles>(
-                                          decoration: InputDecoration(
-                                            labelText:
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "register_corporate_role_field_label"),
-                                            border: OutlineInputBorder(
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Role Dropdown
+                                    (_selectedScreen == Screens.corporateList)
+                                        ? SizedBox()
+                                        : DropdownButtonFormField<
+                                            roleModel.Roles>(
+                                            decoration: InputDecoration(
+                                              labelText:
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "register_corporate_role_field_label"),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            items: filterRoleList
+                                                .map((roleModel.Roles value) {
+                                              return DropdownMenuItem<
+                                                  roleModel.Roles>(
+                                                value: value,
+                                                child: Text(value.name ?? ''),
+                                              );
+                                            }).toList(),
+                                            onChanged: (roleModel.Roles? value) {
+                                              // Handle role change
+                                              setState(() {
+                                                selectedRoleForFilter = value;
+                                              });
+                                            },
+                                          ),
+
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Status
+                                    DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        labelText: LanguageService.getTranslated(
+                                            context,
+                                            "categorymanagement_trow_status"),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      items: ['Active', 'Inactive']
+                                          .map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? value) {
+                                        // Handle status change
+                                        setState(() {
+                                          selectedStatus = value!;
+                                        });
+                                      },
+                                    ),
+                                    SizedBox(height: CustomSpacing.two),
+                                    // Cancel and Submit Buttons
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        CustomButton(
+                                          onPressed: () {
+                                            // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
+                                            if (_filterNameController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterNameController.text,
+                                                  'name');
+                                              _filterNameController.clear();
+                                            }
+                                            if (_filterEmailController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterEmailController.text,
+                                                  'email');
+                                              _filterEmailController.clear();
+                                            }
+                                            if (_filterPhoneController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterPhoneController.text,
+                                                  'phone');
+                                              _filterPhoneController.clear();
+                                            }
+                                            if (_filterCompanyController
+                                                .text.isNotEmpty) {
+                                              addFilter(
+                                                  _filterCompanyController.text,
+                                                  'company');
+                                              _filterCompanyController.clear();
+                                            }
+                                            if (selectedRoleForFilter != null) {
+                                              addFilter(
+                                                  selectedRoleForFilter?.name ??
+                                                      '',
+                                                  'role');
+                                              selectedRoleForFilter = null;
+                                            }
+                                            if (selectedStatus.isNotEmpty) {
+                                              addFilter(selectedStatus, 'status');
+                                              selectedStatus = '';
+                                            }
+                                            // call api and close the drawer
+                                            if (_selectedScreen ==
+                                                    Screens.connectionList ||
+                                                _selectedScreen ==
+                                                    Screens
+                                                        .corporateConnectionList ||
+                                                _selectedScreen ==
+                                                    Screens
+                                                        .nonCorporateConnectionList) {
+                                              connectionsSearchClient("");
+                                              Scaffold.of(context)
+                                                  .closeEndDrawer();
+                                            }
+                                          },
+                                          type: ButtonType.filled,
+                                          child: Text(
+                                            'Add Filter',
+                                            style: typography.ButtonLarge,
+                                          ),
+                                        ),
+                                        SizedBox(width: CustomSpacing.two),
+                                        OutlinedButton(
+                                          onPressed: () {
+                                            // Handle submit button
+                                            Navigator.pop(context);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 22, vertical: 8),
                                           ),
-                                          items: filterRoleList
-                                              .map((roleModel.Roles value) {
-                                            return DropdownMenuItem<
-                                                roleModel.Roles>(
-                                              value: value,
-                                              child: Text(value.name ?? ''),
-                                            );
-                                          }).toList(),
-                                          onChanged: (roleModel.Roles? value) {
-                                            // Handle role change
-                                            setState(() {
-                                              selectedRoleForFilter = value;
-                                            });
-                                          },
+                                          child: Text(
+                                            LanguageService.getTranslated(context,
+                                                "user_profile_user_management_btn_cancel"),
+                                            style: typography.ButtonLarge,
+                                          ),
                                         ),
-
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Status
-                                  DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          "categorymanagement_trow_status"),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                      ],
                                     ),
-                                    items: ['Active', 'Inactive']
-                                        .map((String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? value) {
-                                      // Handle status change
-                                      setState(() {
-                                        selectedStatus = value!;
-                                      });
-                                    },
-                                  ),
-                                  SizedBox(height: CustomSpacing.two),
-                                  // Cancel and Submit Buttons
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      CustomButton(
-                                        onPressed: () {
-                                          // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
-                                          if (_filterNameController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterNameController.text,
-                                                'name');
-                                            _filterNameController.clear();
-                                          }
-                                          if (_filterEmailController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterEmailController.text,
-                                                'email');
-                                            _filterEmailController.clear();
-                                          }
-                                          if (_filterPhoneController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterPhoneController.text,
-                                                'phone');
-                                            _filterPhoneController.clear();
-                                          }
-                                          if (_filterCompanyController
-                                              .text.isNotEmpty) {
-                                            addFilter(
-                                                _filterCompanyController.text,
-                                                'company');
-                                            _filterCompanyController.clear();
-                                          }
-                                          if (selectedRoleForFilter != null) {
-                                            addFilter(
-                                                selectedRoleForFilter?.name ??
-                                                    '',
-                                                'role');
-                                            selectedRoleForFilter = null;
-                                          }
-                                          if (selectedStatus.isNotEmpty) {
-                                            addFilter(selectedStatus, 'status');
-                                            selectedStatus = '';
-                                          }
-                                          // call api and close the drawer
-                                          if (_selectedScreen ==
-                                                  Screens.connectionList ||
-                                              _selectedScreen ==
-                                                  Screens
-                                                      .corporateConnectionList ||
-                                              _selectedScreen ==
-                                                  Screens
-                                                      .nonCorporateConnectionList) {
-                                            connectionsSearchClient("");
-                                            Scaffold.of(context)
-                                                .closeEndDrawer();
-                                          }
-                                        },
-                                        type: ButtonType.filled,
-                                        child: Text(
-                                          'Add Filter',
-                                          style: typography.ButtonLarge,
-                                        ),
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          // Handle submit button
-                                          Navigator.pop(context);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 22, vertical: 8),
-                                        ),
-                                        child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "user_profile_user_management_btn_cancel"),
-                                          style: typography.ButtonLarge,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ])),
-                              )
-                            ],
-                          );
-                        }),
-                      ],
+                                  ])),
+                                )
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1240,7 +1242,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    height: CustomSpacing.two,
+                    height: CustomSpacing.four,
                   ),
                   Row(
                     children: [

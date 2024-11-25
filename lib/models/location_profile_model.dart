@@ -534,6 +534,8 @@ class Subdestination {
   String? status;
   String? campusId;
   bool isChecked = false;
+  bool? rented;
+  String? locationId;
 
   Subdestination({
     this.types,
@@ -545,6 +547,8 @@ class Subdestination {
     this.placeId,
     this.status,
     this.campusId,
+    this.rented,
+    this.locationId,
   });
 
   Subdestination.fromJson(Map<String, dynamic> json) {
@@ -557,6 +561,8 @@ class Subdestination {
     placeId = json['place_id'];
     status = json['status'];
     campusId = json['campus_id'];
+    rented = json['occupancy'] ??false;
+    locationId = json['location_id'];
   }
 
   Map<String, dynamic> toJson() {
@@ -570,7 +576,14 @@ class Subdestination {
     data['place_id'] = placeId;
     data['status'] = status;
     data['campus_id'] = campusId;
+    data['occupancy'] = rented;
+    data['location_id'] = locationId;
     return data;
+  }
+
+  @override
+  String toString() {
+    return 'Subdestination(id: $id, name: $name, isChecked: $isChecked, types: $types, address: $address, lng: $lng, lat: $lat, placeId: $placeId, status: $status, campusId: $campusId, occupancy: $rented)';
   }
 }
 

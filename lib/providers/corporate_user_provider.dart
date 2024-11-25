@@ -77,6 +77,25 @@ class CorporateProvider with ChangeNotifier {
     });
   }
   /// Pagination
+  /// Pagination Variables
+  int _page = 1;
+  int get page => _page;
+  set page(int value) {
+    _page = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalPages = 1;
+  int get totalPages => _totalPages;
+  set totalPages(int value) {
+    _totalPages = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isNextPageLoading = false;
   bool get isNextPageLoading => _isNextPageLoading;
   set isNextPageLoading(bool value) {
@@ -85,8 +104,7 @@ class CorporateProvider with ChangeNotifier {
       notifyListeners();
     });
   }
-  String? nextPageToken;
-  bool nextPageExists = true;
+
 
   CorporateUsers _employees = CorporateUsers();
 
@@ -110,88 +128,88 @@ class CorporateProvider with ChangeNotifier {
         bool isSearch = false,
       }) async {
     try {
-      print("Company ID: $companyId");
-      // Clear normal pagination is isSearch is true
+      // Handle search and reset pagination if it's a new search
       if (isSearch) {
-        nextPageToken = null;
-        nextPageExists = true;
+        _page = 1;
+        _employeesList = [];
       }
-      // Check loading state and pagination
-      if (isLoading || isNextPageLoading) return _employeesList ?? [];
-      if (!nextPageExists) return _employeesList ?? [];
+
+      // Prevent duplicate API calls
+      if (isLoading || isNextPageLoading || _page > _totalPages) {
+        return _employeesList ?? [];
+      }
 
       // Set loading state
-      if (nextPageToken == null && nextPageExists) {
+      if (_page == 1) {
         _employeesList = [];
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      // Construct API URL with filters
-      String additionalParams = "";
-      if (searchText.isNotEmpty) {
-        additionalParams += "&search=$searchText";
-      }
-      if (roleFilter.isNotEmpty) {
-        additionalParams += "&role_filter=$roleFilter";
-      }
-      if (nextPageToken != null) {
-        additionalParams += "&pageToken=$nextPageToken&direction=forward";
-      }
-      additionalParams += "&pageSize=5";
+      // Construct API URL with pagination and filters
+      String additionalParams = "?page=$_page&pageSize=10";
+      if (searchText.isNotEmpty) additionalParams += "&search=$searchText";
+      if (roleFilter.isNotEmpty) additionalParams += "&role_filter=$roleFilter";
 
-      ApiService apiService = ApiService(AppConstant.GET_CORPORATE_USER);
-      String url = companyId != null && companyId != ""? "?users=true&company_id=$companyId" : "?users=true&current=true";
-      if (additionalParams.isNotEmpty) {
-        url += (url.contains("?") ? "&" : "?") + additionalParams.substring(1);
-      }
+      String url = companyId != null && companyId.isNotEmpty
+          ? "/$companyId"
+          : "/current";
+
+      url += additionalParams;
 
       // Fetch data from API
+      ApiService apiService = ApiService(AppConstant.GET_CORPORATE_USER_NEW);
       Map<String, dynamic> response = await apiService.get(url);
 
       // Parse response
       List<CorporateUsers> employees = [];
-      if(response['users'] == null) {
-        isLoading = false;
-        isNextPageLoading = false;
-        return [];
+      if (response['result'] != null) {
+        employees = (response['result'] as List)
+            .map((employee) => CorporateUsers.fromJson(employee))
+            .toList();
       }
-      employees = (response['users'])
-          .map<CorporateUsers>((employee) => CorporateUsers.fromJson(employee))
-          .toList();
 
-      // Update pagination variables
-      print("Contains Key? ${response.containsKey('pageToken')}");
-      if (response.containsKey('pageToken')) {
-        nextPageToken = response['pageToken'];
+
+      // Update pagination
+      if (response.containsKey('totalRecords')) {
+        int totalRecords = response['totalRecords'] ?? 0; // Default to 0 if key is missing
+        _totalPages = (totalRecords / 10).ceil(); // Assuming pageSize is 10
       } else {
-        nextPageToken = null;
+        _totalPages = 1;
       }
-      nextPageExists = response.containsKey('nextPageExists') ? response['nextPageExists'] : false;
 
-      // Update employee list and notify listeners
+
+      // Add employees to the list
       _employeesList?.addAll(employees);
-      notifyListeners();
 
-      // Reset loading state
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
 
+      notifyListeners();
       return _employeesList ?? [];
     } catch (e, stackTrace) {
+      log('Error fetching corporate users: $e');
       print('Stack Trace: $stackTrace');
-      log('Error: $e');
+      handleError(context, e, stackTrace);
 
-      // Handle error and reset loading state
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
-      if (!context.mounted) return [];
-      CustomToast.error(
-          context, 'Error fetching corporate users. Please try again later.');
+
       return [];
     }
   }
+  void handleError(BuildContext context, dynamic e, StackTrace stackTrace) {
+    log('Error: $e');
+    print('Stack Trace: $stackTrace');
+    if (context.mounted) {
+      CustomToast.error(context, 'An error occurred. Please try again.');
+    }
+  }
+
+
 
   /// Changes status of an employee based on the employee ID and new status.
   Future<bool> changeCorporateEmployeeStatus(BuildContext context,

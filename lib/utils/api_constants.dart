@@ -7,6 +7,7 @@ class AppConstant {
 
   // R1 API URL
   static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies';
+  static String get CORPORATE_MANAGEMENT_URL_NEW => '$baseURL/user_management_new/companies_list';
   static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create';
   static String get UPDATE_CORPORATE_URL => '$baseURL/companies';
   static String get UPLOAD_FILE => '$baseURL/upload_file';
@@ -18,6 +19,7 @@ class AppConstant {
   static String get ADD_EMAILS => '$baseURL/support';
   static String get CHANGE_STATUS => '$baseURL/support';
   static String get GET_EMPLOYEES => '$baseURL/user_management?employees_list=true';
+  static String get GET_EMPLOYEES_NEW => '$baseURL/user_management_new/employee_list';
   static String get GET_ROLES_FOR_EMPLOYEES => '$baseURL/companies?role=internal';
   static String get GET_ROLES_FOR_CORPORATE_EMPLOYEES => '$baseURL/companies?role=external';
   static String get CREATE_EMPLOYEES => '$baseURL/new_user_create';
@@ -32,20 +34,23 @@ class AppConstant {
   static String get UPDATE_USER_DETAILS => '$baseURL/user_management';
   static String get GET_AVATARS => '$baseURL/get_avatar';
   static String get GET_DASHBOARD => '$baseURL/dashboard_data';
-  static String get GET_CONNECTIONS => '$baseURL/user-management?connections=true';
-  static String get GET_REQUESTS => '$baseURL/user-management?requests=true';
+  static String get GET_CONNECTIONS => '$baseURL/user_management?connections=true';
+  static String get GET_REQUESTS => '$baseURL/user_management?requests=true';
   static String get ACCEPT_REJECT_REQUEST => '$baseURL/companies';
-  static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management';
+  static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management_new/company_user_list/current';
   static String get SEND_NETWORKING_REQUEST => '$baseURL/user_management';
   static String get GET_USER_TEAMS => '$baseURL/user_management?my_team=true';
   static String get DELETE_TEAM_MEMBER => '$baseURL/user_management';
   static String get ADD_TEAM_MEMBERS => '$baseURL/user_management';
   static String get GET_CORPORATE_USER => '$baseURL/companies';
+  static String get GET_CORPORATE_USER_NEW => '$baseURL/user_management_new/company_user_list';
 
   static String get UPDATE_USER_STATUS => '$baseURL/user_management';
   static String get NON_CORPORATE_USER_STATUS => '$baseURL/user_management';
+  static String get NON_CORPORATE_USER_STATUS_NEW => '$baseURL/user_management_new/individual_user_list';
   static String get CREATE_CORPORATE_EMPLOYEES => '$baseURL/new_company_user_create';
   static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/user_management';
+  static String get TRANSFER_USER_AUTOCOMPLETE => '$baseURL/user_management_new/company_user_list/current';
 
   // R2 APIS
   static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
@@ -53,10 +58,12 @@ class AppConstant {
   static String get DUPLICATE_ACCOUNT => '$baseURL/accounts';//'$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts';
   static String get AUTO_COMPLETE_ACCOUNT_LIST => '$baseURL/accounts';
-  static String get ADD_ACCOUNT => '$baseURL/accounts';
+  static String get ADD_ACCOUNT => '$baseURL/locations/create_account';
   static String get REQUEST_ACCESS => '$baseURL/accounts';
   static String get UPLOAD_SOV_ACCOUNT => '$baseURL/sov';
-  static String get TRANSFER => '$baseURL/locations/transfer_sov';
+  static String get TRANSFER_SOV => '$baseURL/locations/transfer_sov';
+  static String get TRANSFER_SUBACCOUNT=> '$baseURL/locations/transfer_sub_account';
+  static String get TRANSFER_ACCOUNT=> '$baseURL/locations/transfer_account';
 
   // Sub Accounts
   static String get GET_SUB_ACCOUNT_LIST => '$baseURL/locations';
@@ -87,9 +94,13 @@ class AppConstant {
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
+  static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW => '$baseURL/locations/getlocation';
+  static String get ADD_SUBDESTINATION => '$baseURL/locations/addsubdestination';
 
   // Location Profile New
   static String get GET_LOCATION_PROFILE_NEW => '$baseURL/locations';
+  static String get EDIT_CAMPUS => '$baseURL/locations/editcampus';
+  static String get CHANGE_OCCUPANCY => '$baseURL/locations/rented';
 
   // Upload Images New
   static String get UPLOAD_IMAGES_NEW => '$baseURL/locations/location_profile_images';
@@ -98,5 +109,6 @@ class AppConstant {
   static String get GET_JOB_MONITORING => '$baseURL/job_monitoring';
   static String get UPLOAD_SOV_LOCATIONS => '$baseURL/sov/upload';
   static String get EXPORT => '$baseURL/locations/export';
+  static String get GLOBAL_SEARCH => '$baseURL/locations/global_search';
 
 }

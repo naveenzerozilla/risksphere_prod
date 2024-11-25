@@ -13,7 +13,7 @@ class CustomTileProvider implements TileProvider {
     required this.tileUrls,
     required this.hazardType,
     this.minZoom = 0,
-    this.maxZoom = 5,
+    this.maxZoom = 22,
     this.currentReducer = "mean",
   });
 

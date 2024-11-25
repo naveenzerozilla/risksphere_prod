@@ -809,5 +809,8 @@
     "location_list_end_of_list": "End of list",
     "location_list_app_no_accounts_text": "No locations",
     "sub_account_list_app_account_name_field_label": "Sub-Account Name",
-    "sub_account_list_app_account_name_field_hint": "Enter sub-account name"
+    "sub_account_list_app_account_name_field_hint": "Enter sub-account name",
+    "company_list_app_end_of_list_text": "End of list",
+    "usermanagement_individual_user_edit_role_label": "Role",
+    "usermanagement_user_verification_tab": "User Verification"
 }

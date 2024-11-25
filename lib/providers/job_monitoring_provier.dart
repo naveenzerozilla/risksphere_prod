@@ -1,22 +1,19 @@
 import 'dart:convert';
 
+import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gcaptcha_v3/constants.dart';
 import 'package:green/models/maintainance_model.dart';
 import 'package:green/service/api_service.dart';
-
 import '../utils/api_constants.dart';
 
 class JobMonitoringProvider extends ChangeNotifier {
-
   bool _isLoading = false;
 
   bool get isLoading => _isLoading;
 
   set isLoading(bool val) {
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _isLoading = val;
       notifyListeners();
     });
@@ -51,51 +48,59 @@ class JobMonitoringProvider extends ChangeNotifier {
 
   final _fireStore = FirebaseFirestore.instance;
 
-  late Stream<QuerySnapshot> _jobMonitoringData;
-
-  List<MaintainanceModel> maintainancePeriods = [];
-
-  JobMonitoringProvider() {
-    _jobMonitoringData = getJobMonitoringData();
-  }
-
-  // Store whether the user is a super admin
+  // Whether the user is a super admin
   bool _isSuperAdmin = false;
 
   bool get isSuperAdmin => _isSuperAdmin;
 
-  // Store the fetched list of document IDs
+  // List of document IDs for specific processes
   List<String> _docIds = [];
 
   List<String> get docIds => _docIds;
 
-  // Get Job Monitoring Data Stream (based on user role and document IDs)
+  List<MaintainanceModel> maintainancePeriods = [];
+
+  // Fetch Job Monitoring Data (handle batching for `whereIn` clause)
   Stream<QuerySnapshot> getJobMonitoringData() {
     if (_isSuperAdmin) {
       // Fetch all processes if the user is a super admin
-      return _fireStore.collection('processes').orderBy('created_at', descending: true).snapshots();
-    } else if (_docIds.isNotEmpty) {
-      // Fetch processes matching the document IDs if not a super admin
       return _fireStore
           .collection('processes')
-          .where(FieldPath.documentId, whereIn: _docIds)
           .orderBy('created_at', descending: true)
           .snapshots();
+    } else if (_docIds.isNotEmpty) {
+      // Fetch processes in batches of 30
+      List<Stream<QuerySnapshot>> streams = [];
+      const batchSize = 30;
+
+      for (int i = 0; i < _docIds.length; i += batchSize) {
+        final batch = _docIds.sublist(
+          i,
+          i + batchSize > _docIds.length ? _docIds.length : i + batchSize,
+        );
+
+        streams.add(
+          _fireStore
+              .collection('processes')
+              .where(FieldPath.documentId, whereIn: batch)
+              .snapshots(),
+        );
+      }
+
+      // Merge all streams
+      return StreamGroup.merge(streams);
     } else {
       // Return an empty stream if there are no document IDs
       return Stream.empty();
     }
   }
 
-  Stream<QuerySnapshot> get jobMonitoringData => _jobMonitoringData;
-
-
-  // Function to fetch company IDs from the API
+  // Fetch company IDs from the API
   Future<void> fetchCompanyIds() async {
     try {
       isLoading = true;
-      ApiService apiService = ApiService(
-          AppConstant.GET_JOB_MONITORING); // Replace with correct endpoint
+
+      ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
       var response = await apiService.get('?monitoring_processes=true');
       print(response);
 
@@ -116,56 +121,46 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
-
-  // Add maintainance period
-  Future<String> addMaintainancePeriod(String processStartTime,
-      String processEndTime) async {
+  // Add maintenance period
+  Future<String> addMaintainancePeriod(String processStartTime, String processEndTime) async {
     try {
-      // Convert to UTC
       var body = {
         "data": {
           'start_time': processStartTime,
-          'end_time': processEndTime
+          'end_time': processEndTime,
         }
       };
 
       isAddLoading = true;
       print(jsonEncode(body));
+
       ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
       var response = await apiService.post(body);
       print(response);
-      /*final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('job_monitoring');
-      final result = await callable.call(body);*/
+
       isAddLoading = false;
-      //print(result.data);
       return response['message'];
-    } on BackendException catch (e) {
-      isAddLoading = false;
-      print(e.message);
-      return e.message;
-    }
-    catch (e, stack) {
+    } catch (e) {
       isAddLoading = false;
       print(e);
-      print(stack);
-      return 'error';
+      return 'Error adding maintenance period';
     }
   }
 
-  // Get Maintainance period
+  // Get maintenance periods
   Future<void> getMaintainancePeriod() async {
     try {
       isLoading = true;
-      print('getMaintainancePeriod');
+
       ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
       var response = await apiService.get();
-      isLoading = false;
       print(response);
-      MaintainanceResponse maintainanceResponse = MaintainanceResponse.fromJson(
-          response);
-      maintainancePeriods = maintainanceResponse.results!;
-      print(maintainancePeriods);
+
+      MaintainanceResponse maintainanceResponse = MaintainanceResponse.fromJson(response);
+      maintainancePeriods = maintainanceResponse.results ?? [];
+
+      isLoading = false;
+      notifyListeners();
     } catch (e, stack) {
       isLoading = false;
       print(e);
@@ -173,43 +168,43 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
-  // Edit maintainance period
-  Future<String> editMaintainancePeriod(String processStartTime,
-      String processEndTime, String id) async {
+  // Edit maintenance period
+  Future<String> editMaintainancePeriod(String processStartTime, String processEndTime, String id) async {
     try {
       var body = {
         "data": {
           'id': id,
           'start_time': processStartTime,
-          'end_time': processEndTime
+          'end_time': processEndTime,
         }
       };
 
       isLoading = true;
-      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING}');
+
+      ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
       var response = await apiService.patch(body);
+
       isLoading = false;
-      return 'Update successful';
-    } catch (e, stack) {
+      return response['message'] ?? 'Update successful';
+    } catch (e) {
       isLoading = false;
       return 'Update failed';
     }
   }
 
-
-  // Delete maintainance period
+  // Delete maintenance period
   Future<bool> deleteMaintainancePeriod(String id) async {
     try {
       isDeleteLoading = true;
-      ApiService apiService = ApiService(
-          '${AppConstant.GET_JOB_MONITORING}/$id');
+
+      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING}/$id');
       var body = {
-        "data": {
-          'id': id
-        }
+        "data": {'id': id},
       };
+
       var response = await apiService.delete(body);
       print(response);
+
       isDeleteLoading = false;
       return true;
     } catch (e, stack) {
@@ -219,8 +214,4 @@ class JobMonitoringProvider extends ChangeNotifier {
       return false;
     }
   }
-
-
-
-
 }

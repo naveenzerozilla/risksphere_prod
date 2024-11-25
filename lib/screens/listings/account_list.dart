@@ -1157,22 +1157,20 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
-  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
-      String query) async {
-    var typography = CustomTypography(context);
+  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(String query) async {
     try {
-      ApiService apiService = ApiService(AppConstant.ADD_TEAM_MEMBERS);
-      String url = '?search=$query&within_company=true';
+      ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+      String url = '?search=$query';
       var response = await apiService.get(url);
 
-      // Parse the response to extract user data
-      List<TransferAutocompleteModel> users = (response['users'] as List)
+      // The response has 'result' array instead of 'users'
+      List<TransferAutocompleteModel> users = (response['result'] as List)
           .map((user) => TransferAutocompleteModel.fromJson(user))
           .toList();
 
       return users;
     } catch (e) {
-      print(e.toString());
+      print('Error fetching users: ${e.toString()}');
       return [];
     }
   }

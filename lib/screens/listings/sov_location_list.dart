@@ -42,6 +42,7 @@ import 'package:green/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
+import '../processMonitoringScreen/process_monitoring_system.dart';
 import 'widgets/maintenance_widget.dart';
 
 class SovLocationList extends StatefulWidget {
@@ -165,6 +166,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
           40,
           widget.accountID,
           widget.subAccountID,
+          widget.sovID,
         ).then((value) => setState(() {}));
       } else {
         _selectedScreen = Screens.certifiedLocationList;
@@ -178,6 +180,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
           40,
           widget.accountID,
           widget.subAccountID,
+          widget.sovID,
         ).then((value) => setState(() {}));
         /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
         Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
@@ -208,6 +211,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       40,
       widget.accountID,
       widget.subAccountID,
+      widget.sovID,
     ).then((value) => setState(() {}));
     Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
@@ -216,6 +220,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       40,
       widget.accountID,
       widget.subAccountID,
+      widget.sovID,
     ).then((value) => setState(() {}));
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
     _getMaintainancePeriod();
@@ -548,6 +553,17 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                               title: Text('Export Locations', style: typography.Body1),
                                               onTap: () {
 
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (BuildContext context) {
+                                                    return ExportDialog(
+                                                      accountId: widget.accountID,
+                                                      subAccountId: widget.subAccountID,
+                                                      sovId: widget.sovID,
+                                                      locationId: selectedMainTab==0?myLocationListProvider.myLocationList.map((location) => location.id??"").toList():myLocationListProvider.certifiedLocationList.map((location) => location.id??"").toList(),
+                                                    );
+                                                  },
+                                                );
                                               },
                                             ),
                                           ),
@@ -877,61 +893,83 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
   }
 
   Widget _getLiveUI() {
-    // Handle different cases for is_super_admin
-    Stream<DocumentSnapshot> stream;
-
-    // Fetch specific processes if the user is not a super admin
-    stream = FirebaseFirestore.instance
-        .collection('subaccount')
-        .doc(widget.subAccountID)
-        .snapshots();
-
-    var heatmapStatus = stream.map((event) => event['heatmap_status']);
-
     var typography = CustomTypography(context);
-    return heatmapStatus.toString().toLowerCase() == 'Initiated'.toLowerCase()?Container(
-      /*decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: Offset(0, 1), // changes position of shadow
-          ),
-        ],
-      ),*/
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Lottie.asset(
-                        'assets/lottie/loading.json',  // Lottie file for 'in-progress' animation
-                        width: 24,
-                        height: 24,
-                      ),
-                      SizedBox(width: 8.0),
-                      Text(
-                        'Generating Heatmap',
-                        style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('sov')
+          .doc(widget.sovID)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Display a loading indicator while waiting for data
+          return SizedBox(); // Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          // Handle error case
+          return SizedBox();
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          // Check if 'heatmap_status' field exists
+          var data = snapshot.data!.data();
+          var heatmapStatus = data != null && data.containsKey('heatmap_status')
+              ? data['heatmap_status']
+              : null;
+
+          if (heatmapStatus != null) {
+            print('Heatmap status: $heatmapStatus');
+            return heatmapStatus.toString().toLowerCase() == 'initiated'
+                ? Container(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()),
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/lottie/loading.json', // Lottie file for 'in-progress' animation
+                                width: 24,
+                                height: 24,
+                              ),
+                              SizedBox(width: 8.0),
+                              Text(
+                                'Generating Heatmap',
+                                style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  SizedBox(height: CustomSpacing.two),
+                ],
               ),
-            ],
-          ),
-          SizedBox(height: CustomSpacing.two),
-        ],
-      ),
-    ):SizedBox();
+            )
+                : SizedBox();
+          } else {
+            print("Field 'heatmap_status' does not exist in the document.");
+          }
+        }
+
+        // Return an empty widget if no data is available or the field is missing
+        return SizedBox();
+      },
+    );
   }
+
 
 
   _getLocationListAllUI() {
@@ -944,8 +982,6 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Row(
                 children: [
-
-
                   // Horizontally scrollable row for all chips
                   Expanded(
                     child: SingleChildScrollView(
@@ -955,9 +991,11 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show country options as chips
                           if (locationListProvider.countries.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Country: ${locationListProvider.countries.join(', ')}"),
+                                label: Text(
+                                    "Country: ${locationListProvider.countries.join(', ')}"),
                                 onDeleted: () {
                                   locationListProvider.clearCountryFilter();
                                   locationListProvider.fetchLocationList(
@@ -967,6 +1005,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -975,11 +1014,14 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show certifications as chips
                           if (locationListProvider.certifications.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Certifications: ${locationListProvider.certifications.join(', ')}"),
+                                label: Text(
+                                    "Certifications: ${locationListProvider.certifications.join(', ')}"),
                                 onDeleted: () {
-                                  locationListProvider.clearCertificationsFilter();
+                                  locationListProvider
+                                      .clearCertificationsFilter();
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
@@ -987,6 +1029,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -994,27 +1037,39 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
 
                           // Show hazard ratings as chips with circles for selected ratings
                           if (locationListProvider.hazardRatings.isNotEmpty)
-                            for (var hazard in locationListProvider.hazardRatings.keys)
+                            for (var hazard
+                            in locationListProvider.hazardRatings.keys)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
                                 child: Chip(
                                   label: Row(
                                     children: [
-                                      Text(hazard), // Hazard name
-                                      const SizedBox(width: 8), // Space before ratings
-                                      if (locationListProvider.hazardRatings[hazard]!.isEmpty)
-                                        Text('All') // If no ratings are selected
+                                      Text(hazard),
+                                      // Hazard name
+                                      const SizedBox(width: 8),
+                                      // Space before ratings
+                                      if (locationListProvider
+                                          .hazardRatings[hazard]!.isEmpty)
+                                        Text(
+                                            'All') // If no ratings are selected
                                       else
                                         Row(
-                                          children: locationListProvider.hazardRatings[hazard]!.map((rating) {
+                                          children: locationListProvider
+                                              .hazardRatings[hazard]!
+                                              .map((rating) {
                                             return Padding(
-                                              padding: const EdgeInsets.only(right: 4.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 4.0),
                                               child: CircleAvatar(
                                                 radius: 10,
-                                                backgroundColor: _getRatingColor(rating),
+                                                backgroundColor:
+                                                _getRatingColor(rating),
                                                 child: Text(
                                                   '$rating',
-                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12),
                                                 ),
                                               ),
                                             );
@@ -1023,7 +1078,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     ],
                                   ),
                                   onDeleted: () {
-                                    locationListProvider.clearHazardFilter(hazard);
+                                    locationListProvider
+                                        .clearHazardFilter(hazard);
                                     locationListProvider.fetchLocationList(
                                       context,
                                       locationQuery,
@@ -1039,9 +1095,11 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show ratings as chips
                           if (locationListProvider.rating.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Ratings: ${locationListProvider.rating.join(', ')}"),
+                                label: Text(
+                                    "Ratings: ${locationListProvider.rating.join(', ')}"),
                                 onDeleted: () {
                                   locationListProvider.clearRatingsFilter();
                                   locationListProvider.fetchLocationList(
@@ -1051,6 +1109,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -1061,7 +1120,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                   ),
 
                   // Clear all filters button (text button at the end)
-                  if (locationListProvider.hasAnyFilterApplied()) // Check if any filter is applied
+                  if (locationListProvider
+                      .hasAnyFilterApplied()) // Check if any filter is applied
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: TextButton(
@@ -1078,7 +1138,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                         },
                         child: const Text(
                           'Clear All',
-                          style: TextStyle(color: Colors.red), // Color for emphasis
+                          style: TextStyle(
+                              color: Colors.red), // Color for emphasis
                         ),
                       ),
                     ),
@@ -1110,7 +1171,9 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                 shrinkWrap: true,
                 itemCount: locationListProvider.myLocationList.length,
                 itemBuilder: (context, index) {
-                  if (index == locationListProvider.myLocationList.length - 1) {
+                  if (index ==
+                      locationListProvider.myLocationList.length -
+                          1) {
                     // Check if it's the last item
                     if (locationListProvider.isNextPageLoading) {
                       // Display loading indicator
@@ -1122,43 +1185,130 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                       );
                     } else if (locationListProvider.page >=
                         locationListProvider.totalPages &&
-                        locationListProvider.myLocationList.isNotEmpty) {
+                        locationListProvider
+                            .myLocationList.isNotEmpty) {
                       // Display end of list message
                       print(
                           "location list: ${locationListProvider.myLocationList}");
                       return Column(
                         children: [
                           MyLocationCard(
+                            campusId: locationListProvider
+                                .myLocationList[index]
+                                .finalAddress
+                                ?.campusId ??
+                                '',
+                            imageUrl: locationListProvider.myLocationList[index].screenshots?.isNotEmpty == true
+                                ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
+                                : '',
+
                             index: index,
-                            locationId: locationListProvider.myLocationList[index].id ?? '',
-                            accountName: locationListProvider.myLocationList[index].finalAddress?.accountName ?? '',
-                            ownerName: locationListProvider.myLocationList[index].finalAddress?.ownerName ?? '',
-                            address: locationListProvider.myLocationList[index].finalAddress?.address ?? '',
-                            percentage: double.parse(locationListProvider.myLocationList[index].finalAddress?.percent ?? '0'),
-                            geocodingScore: locationListProvider.myLocationList[index].geocodingScore ?? 0,
-                            riskScore: 4,
+                            accountId: widget.accountID,
+                            subAccountId: widget.subAccountID,
+                            locationId: locationListProvider
+                                .myLocationList[index].id ??
+                                '',
+                            accountName: locationListProvider
+                                .myLocationList[index]
+                                .finalAddress
+                                ?.accountName ??
+                                '',
+                            ownerName: locationListProvider
+                                .myLocationList[index]
+                                .finalAddress
+                                ?.ownerName ??
+                                '',
+                            address: locationListProvider
+                                .myLocationList[index]
+                                .finalAddress
+                                ?.address ??
+                                '',
+                            percentage: double.parse(
+                                locationListProvider
+                                    .myLocationList[index]
+                                    .finalAddress
+                                    ?.percent ??
+                                    '0'),
+                            geocodingScore: locationListProvider
+                                .myLocationList[index]
+                                .finalAddress
+                                ?.score ??
+                                0,
+                            riskScore: locationListProvider
+                                .myLocationList[index]
+                                .overallScore ??
+                                0,
                             dataCompletenessScore: 2,
                             isAutoCertified: true,
-                            tags: (locationListProvider.myLocationList[index]?.tags ?? []),
+                            tags: (locationListProvider
+                                .myLocationList[index]?.tags ??
+                                []),
+                            onDelete: (locationId) {
+                              // Show delete confirmation dialog
+                              showDeleteConfirmationDialog(
+                                context,
+                                    () async {
+                                  print(
+                                      "Deleting location $locationId");
+                                  // Delete the location
+                                  await Provider.of<
+                                      MyLocationListProvider>(
+                                      context,
+                                      listen: false)
+                                      .deleteLocations(
+                                      context,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.sovID,
+                                      [locationId]);
+
+                                  // Refresh the list after deletion
+                                  Provider.of<MyLocationListProvider>(
+                                      context,
+                                      listen: false)
+                                      .fetchLocationList(
+                                    context,
+                                    locationQuery,
+                                    0,
+                                    40,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                    widget.sovID,
+                                  );
+
+                                  Navigator.of(context).pop();
+                                },
+                                [locationId],
+                              );
+                            },
+                            onAddToSOV: null,
+                            onAddTag: (locationId) {
+                              // Show add tag dialog
+                              // Implement bulk add tag
+                              locationListProvider.addTagsToSelectedLocations(
+                                  context,
+                                  widget.accountID,
+                                  widget.subAccountID,locationId);
+                            },
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Center(
                               child: Text(
-                                LanguageService.getTranslated(
-                                    context, "location_list_end_of_list"),
+                                LanguageService.getTranslated(context,
+                                    "location_list_end_of_list"),
                                 style: typography.Body1,
                               ),
                             ),
                           ),
                         ],
                       );
-                    } else
-                    {
+                    } else {
                       // Trigger fetching the next page
                       locationListProvider.page =
                           locationListProvider.page + 1;
-                      print("Fetching page ${locationListProvider.page}");
+                      print(
+                          "Fetching page ${locationListProvider.page}");
                       print(
                           "Query: $locationQuery, Page: ${locationListProvider.page}");
                       locationListProvider.fetchLocationList(
@@ -1174,18 +1324,100 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                     }
                   }
 
-                  return   MyLocationCard(
+                  return MyLocationCard(
+                    campusId: locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.campusId ??
+                        '',
+                    imageUrl: locationListProvider
+                        .myLocationList[index]
+                        .screenshots != null &&
+                        locationListProvider.myLocationList[index].screenshots!.isNotEmpty
+                        ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
+                        : '',
                     index: index,
-                    locationId: locationListProvider.myLocationList[index].id ?? '',
-                    accountName: locationListProvider.myLocationList[index].finalAddress?.accountName ?? '',
-                    ownerName: locationListProvider.myLocationList[index].finalAddress?.ownerName ?? '',
-                    address: locationListProvider.myLocationList[index].finalAddress?.address ?? '',
-                    percentage: double.parse(locationListProvider.myLocationList[index].finalAddress?.percent ?? '0'),
-                    geocodingScore: locationListProvider.myLocationList[index].geocodingScore ?? 0,
-                    riskScore: 4,
+                    accountId: widget.accountID,
+                    subAccountId: widget.subAccountID,
+                    locationId: locationListProvider
+                        .myLocationList[index].id ??
+                        '',
+                    accountName: locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.accountName ??
+                        '',
+                    ownerName: locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.ownerName ??
+                        '',
+                    address: locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.address ??
+                        '',
+                    percentage: double.parse(locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.percent ??
+                        '0'),
+                    geocodingScore: locationListProvider
+                        .myLocationList[index]
+                        .finalAddress
+                        ?.score ??
+                        0,
+                    riskScore: locationListProvider
+                        .myLocationList[index].overallScore ??
+                        0,
                     dataCompletenessScore: 2,
                     isAutoCertified: true,
-                    tags: (locationListProvider.myLocationList[index]?.tags ?? []),
+                    tags: (locationListProvider
+                        .myLocationList[index]?.tags ??
+                        []),
+                    onDelete: (locationId) {
+                      // Show delete confirmation dialog
+                      showDeleteConfirmationDialog(
+                        context,
+                            () async {
+                          print("Deleting location $locationId");
+                          // Delete the location
+                          await Provider.of<MyLocationListProvider>(
+                              context,
+                              listen: false)
+                              .deleteLocations(
+                              context,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.sovID,
+                              [locationId]);
+
+                          // Refresh the list after deletion
+                          Provider.of<MyLocationListProvider>(context,
+                              listen: false)
+                              .fetchLocationList(
+                            context,
+                            locationQuery,
+                            0,
+                            40,
+                            widget.accountID,
+                            widget.subAccountID,
+                          );
+
+                          Navigator.of(context).pop();
+                        },
+                        [locationId],
+                      );
+                    },
+                    onAddToSOV: null,
+                    onAddTag: (locationId) {
+                      // Show add tag dialog
+                      // Implement bulk add tag
+                      locationListProvider.addTagsToSelectedLocations(
+                          context,
+                          widget.accountID,
+                          widget.subAccountID,locationId);
+                    },
                   );
                 },
               ),
@@ -1195,7 +1427,6 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       },
     );
   }
-
 
   _getLocationListCertifiedUI() {
     var typography = CustomTypography(context);
@@ -1207,8 +1438,6 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Row(
                 children: [
-
-
                   // Horizontally scrollable row for all chips
                   Expanded(
                     child: SingleChildScrollView(
@@ -1218,12 +1447,15 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show country options as chips
                           if (locationListProvider.countries.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Country: ${locationListProvider.countries.join(', ')}"),
+                                label: Text(
+                                    "Country: ${locationListProvider.countries.join(', ')}"),
                                 onDeleted: () {
                                   locationListProvider.clearCountryFilter();
-                                  locationListProvider.fetchCertifiedLocationList(
+                                  locationListProvider
+                                      .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
                                     0,
@@ -1238,12 +1470,16 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show certifications as chips
                           if (locationListProvider.certifications.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Certifications: ${locationListProvider.certifications.join(', ')}"),
+                                label: Text(
+                                    "Certifications: ${locationListProvider.certifications.join(', ')}"),
                                 onDeleted: () {
-                                  locationListProvider.clearCertificationsFilter();
-                                  locationListProvider.fetchCertifiedLocationList(
+                                  locationListProvider
+                                      .clearCertificationsFilter();
+                                  locationListProvider
+                                      .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
                                     0,
@@ -1257,27 +1493,39 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
 
                           // Show hazard ratings as chips with circles for selected ratings
                           if (locationListProvider.hazardRatings.isNotEmpty)
-                            for (var hazard in locationListProvider.hazardRatings.keys)
+                            for (var hazard
+                            in locationListProvider.hazardRatings.keys)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
                                 child: Chip(
                                   label: Row(
                                     children: [
-                                      Text(hazard), // Hazard name
-                                      const SizedBox(width: 8), // Space before ratings
-                                      if (locationListProvider.hazardRatings[hazard]!.isEmpty)
-                                        Text('All') // If no ratings are selected
+                                      Text(hazard),
+                                      // Hazard name
+                                      const SizedBox(width: 8),
+                                      // Space before ratings
+                                      if (locationListProvider
+                                          .hazardRatings[hazard]!.isEmpty)
+                                        Text(
+                                            'All') // If no ratings are selected
                                       else
                                         Row(
-                                          children: locationListProvider.hazardRatings[hazard]!.map((rating) {
+                                          children: locationListProvider
+                                              .hazardRatings[hazard]!
+                                              .map((rating) {
                                             return Padding(
-                                              padding: const EdgeInsets.only(right: 4.0),
+                                              padding: const EdgeInsets.only(
+                                                  right: 4.0),
                                               child: CircleAvatar(
                                                 radius: 10,
-                                                backgroundColor: _getRatingColor(rating),
+                                                backgroundColor:
+                                                _getRatingColor(rating),
                                                 child: Text(
                                                   '$rating',
-                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12),
                                                 ),
                                               ),
                                             );
@@ -1286,8 +1534,10 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     ],
                                   ),
                                   onDeleted: () {
-                                    locationListProvider.clearHazardFilter(hazard);
-                                    locationListProvider.fetchCertifiedLocationList(
+                                    locationListProvider
+                                        .clearHazardFilter(hazard);
+                                    locationListProvider
+                                        .fetchCertifiedLocationList(
                                       context,
                                       locationQuery,
                                       0,
@@ -1302,12 +1552,15 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           // Show ratings as chips
                           if (locationListProvider.rating.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                              const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Chip(
-                                label: Text("Ratings: ${locationListProvider.rating.join(', ')}"),
+                                label: Text(
+                                    "Ratings: ${locationListProvider.rating.join(', ')}"),
                                 onDeleted: () {
                                   locationListProvider.clearRatingsFilter();
-                                  locationListProvider.fetchCertifiedLocationList(
+                                  locationListProvider
+                                      .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
                                     0,
@@ -1324,7 +1577,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                   ),
 
                   // Clear all filters button (text button at the end)
-                  if (locationListProvider.hasAnyFilterApplied()) // Check if any filter is applied
+                  if (locationListProvider
+                      .hasAnyFilterApplied()) // Check if any filter is applied
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: TextButton(
@@ -1341,7 +1595,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                         },
                         child: const Text(
                           'Clear All',
-                          style: TextStyle(color: Colors.red), // Color for emphasis
+                          style: TextStyle(
+                              color: Colors.red), // Color for emphasis
                         ),
                       ),
                     ),
@@ -1359,8 +1614,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                   : locationListProvider.certifiedLocationList.isEmpty
                   ? Center(
                 child: Text(
-                    LanguageService.getTranslated(
-                        context, "location_list_app_no_accounts_text"),
+                    LanguageService.getTranslated(context,
+                        "location_list_app_no_accounts_text"),
                     style: typography.Body1),
               )
                   : ListView.builder(
@@ -1370,37 +1625,31 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                 locationListProvider.certifiedLocationList.length,
                 itemBuilder: (context, index) {
                   if (index ==
-                      locationListProvider.certifiedLocationList.length -
+                      locationListProvider
+                          .certifiedLocationList.length -
                           1) {
-                    if (locationListProvider.isNextPageCertifiedLoading) {
+                    if (locationListProvider
+                        .isNextPageCertifiedLoading) {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(
+                            child: CircularProgressIndicator()),
                       );
                     } else if (locationListProvider.certifiedPage >=
-                        locationListProvider.certifiedTotalPages &&
-                        locationListProvider.certifiedLocationList
-                            .isNotEmpty) {
+                        locationListProvider
+                            .certifiedTotalPages &&
+                        locationListProvider
+                            .certifiedLocationList.isNotEmpty) {
                       return Column(
                         children: [
-                          MyLocationCard(
-                            index: index,
-                            locationId: locationListProvider.certifiedLocationList[index].id ?? '',
-                            accountName: locationListProvider.certifiedLocationList[index].finalAddress?.accountName ?? '',
-                            ownerName: locationListProvider.certifiedLocationList[index].finalAddress?.ownerName ?? '',
-                            address: locationListProvider.certifiedLocationList[index].finalAddress?.address ?? '',
-                            percentage: double.parse(locationListProvider.certifiedLocationList[index].finalAddress?.percent ?? '0'),
-                            geocodingScore: locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
-                            riskScore: 4,
-                            dataCompletenessScore: 2,
-                            isAutoCertified: true,
-                            tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
-                          ),
+                          myLocationCertifiedCard(
+                              locationListProvider, index, context),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Center(
                                 child: Text(
-                                    LanguageService.getTranslated(context,
+                                    LanguageService.getTranslated(
+                                        context,
                                         "location_list_end_of_list"),
                                     style: typography.Body1)),
                           ),
@@ -1423,19 +1672,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
 
                   /*return locationListCard(index,
                       locationListProvider.certifiedLocationList);*/
-                  return MyLocationCard(
-                    index: index,
-                    locationId: locationListProvider.certifiedLocationList[index].id ?? '',
-                    accountName: locationListProvider.certifiedLocationList[index].finalAddress?.accountName ?? '',
-                    ownerName: locationListProvider.certifiedLocationList[index].finalAddress?.ownerName ?? '',
-                    address: locationListProvider.certifiedLocationList[index].finalAddress?.address ?? '',
-                    percentage: double.parse(locationListProvider.certifiedLocationList[index].finalAddress?.percent ?? '0'),
-                    geocodingScore: locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
-                    riskScore: 4,
-                    dataCompletenessScore: 2,
-                    isAutoCertified: true,
-                    tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
-                  );
+                  return myLocationCertifiedCard(
+                      locationListProvider, index, context);
                 },
               ),
             ),
@@ -1462,9 +1700,88 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
     }
   }
 
+  MyLocationCard myLocationCertifiedCard(
+      MyLocationListProvider locationListProvider,
+      int index,
+      BuildContext context) {
+    return MyLocationCard(
+      imageUrl: locationListProvider.certifiedLocationList[index].screenshots?.isNotEmpty == true
+          ? locationListProvider.certifiedLocationList[index].screenshots![0].imageUrl ?? ''
+          : '',
+      campusId: locationListProvider
+          .certifiedLocationList[index]
+          .finalAddress
+          ?.campusId ??
+          '',
+
+      index: index,
+      accountId: widget.accountID,
+      subAccountId: widget.subAccountID,
+      isCertified: true,
+      locationId: locationListProvider.certifiedLocationList[index].id ?? '',
+      accountName: locationListProvider
+          .certifiedLocationList[index].finalAddress?.accountName ??
+          '',
+      ownerName: locationListProvider
+          .certifiedLocationList[index].finalAddress?.ownerName ??
+          '',
+      address: locationListProvider
+          .certifiedLocationList[index].finalAddress?.address ??
+          '',
+      percentage: double.parse(locationListProvider
+          .certifiedLocationList[index].finalAddress?.percent ??
+          '0'),
+      geocodingScore:
+      locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
+      riskScore:
+      locationListProvider.certifiedLocationList[index].overallScore ?? 0,
+      dataCompletenessScore: 2,
+      isAutoCertified: true,
+      tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
+      onDelete: (locationId) {
+        // Show delete confirmation dialog
+        showDeleteConfirmationDialog(
+          context,
+              () async {
+            print("Deleting location $locationId");
+            // Delete the location
+            await Provider.of<MyLocationListProvider>(context, listen: false)
+                .deleteLocations(context, widget.accountID, widget.subAccountID, widget.sovID,
+                [locationId]);
+
+            // Refresh the list after deletion
+            Provider.of<MyLocationListProvider>(context, listen: false)
+                .fetchLocationList(
+              context,
+              locationQuery,
+              0,
+              40,
+              widget.accountID,
+              widget.subAccountID,
+              widget.sovID,
+            );
+
+            Navigator.of(context).pop();
+          },
+          [locationId],
+        );
+      },
+      onAddToSOV: null,
+      onAddTag: (locationId) {
+        // Show add tag dialog
+        // Implement bulk add tag
+        locationListProvider.addTagsToSelectedLocations(
+            context,
+            widget.accountID,
+            widget.subAccountID,locationId);
+      },
+    );
+  }
 
 
-  void showDeleteConfirmationDialog(BuildContext context, Function onDelete) {
+
+  void showDeleteConfirmationDialog(
+      BuildContext context, Function onDelete, List<String> locationIds) {
     var typography = CustomTypography(context);
     showDialog(
       context: context,
@@ -1501,22 +1818,22 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                 Navigator.of(context).pop(); // Close the dialog
               },
             ),
-            Consumer<LocationListProvider>(
+            Consumer<MyLocationListProvider>(
                 builder: (context, locationListProvider, child) {
-                  return
-                    locationListProvider.isDeleteLocationLoading
-                        ? CircularProgressIndicator()
-                        :
-                    CustomButton(
-                      type: ButtonType.danger,
-                      child: Text('Delete', style: typography.Body1.copyWith(fontWeight: FontWeight.w500)),
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                        onDelete(); // Trigger the delete action
-                      },
-                    );
-                }
-            ),
+                  return locationListProvider.isDeleteLocationLoading
+                      ? CircularProgressIndicator()
+                      : CustomButton(
+                    type: ButtonType.danger,
+                    child: Text('Delete',
+                        style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w500)),
+                    onPressed: () {
+                      //Navigator.of(context).pop(); // Close the dialog
+                      print('Deleting locations b4: $locationIds');
+                      onDelete(); // Trigger the delete action
+                    },
+                  );
+                }),
           ],
         );
       },

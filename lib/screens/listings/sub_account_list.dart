@@ -1571,12 +1571,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
       String query) async {
     try {
-      ApiService apiService = ApiService(AppConstant.ADD_TEAM_MEMBERS);
-      String url = '?search=$query&within_company=true';
+      ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+      String url = '?search=$query';
       var response = await apiService.get(url);
 
       // Parse the response to extract user data
-      List<TransferAutocompleteModel> users = (response['users'] as List)
+      List<TransferAutocompleteModel> users = (response['result'] as List)
           .map((user) => TransferAutocompleteModel.fromJson(user))
           .toList();
 

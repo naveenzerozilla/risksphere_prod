@@ -223,6 +223,7 @@ class LocationListProvider extends ChangeNotifier {
 
 
 
+
   Future<void> fetchCampusIds(String accountId, String subAccountId, String sovId) async {
     final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
 

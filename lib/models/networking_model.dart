@@ -64,7 +64,7 @@ class NetworkingUsers {
     displayImageUrl = json['display_image_url'];
     status = json['status'];
     if (json['role'] != null) {
-      role = json['role'].cast<String>();
+      role = [json['role']];
     }
     phone = json['phone'];
     countryCode = json['country_code'];

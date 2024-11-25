@@ -86,10 +86,27 @@ class EmployeeProvider with ChangeNotifier {
   }
 
   /// Pagination
+  /// Pagination
+  int _page = 1;
+  int get page => _page;
+  set page(int value) {
+    _page = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalPages = 1;
+  int get totalPages => _totalPages;
+  set totalPages(int value) {
+    _totalPages = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isNextPageLoading = false;
-
   bool get isNextPageLoading => _isNextPageLoading;
-
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,8 +114,6 @@ class EmployeeProvider with ChangeNotifier {
     });
   }
 
-  String? nextPageToken;
-  bool nextPageExists = true;
 
   List<Employees>? _employeesList = [];
 
@@ -118,139 +133,91 @@ class EmployeeProvider with ChangeNotifier {
   /// Fetches all employees from the API based on search text and filter criteria.
   Future<List<Employees>> getAllEmployees(BuildContext context,
       {String searchText = "",
-      String roleFilter = "",
-      bool isSearch = false, bool status = false}) async {
+        String roleFilter = "",
+        bool isSearch = false,
+        bool status = false}) async {
     try {
-      // Clear normal pagination if isSearch is true
+      // Reset pagination if it's a new search
       if (isSearch) {
-        nextPageToken = null;
-        nextPageExists = true;
+        page = 1;
+        _employeesList = [];
       }
 
-      // Check loading state and pagination
-      if (isLoading || isNextPageLoading) return _employeesList ?? [];
-      if (!nextPageExists) return _employeesList ?? [];
+      // Prevent duplicate API calls
+      if (isLoading || isNextPageLoading || page > totalPages) {
+        return _employeesList ?? [];
+      }
 
       // Set loading state
-      if (nextPageToken == null && nextPageExists) {
+      if (page == 1) {
         _employeesList = [];
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      // Construct API URL with filters and pagination
-      String additionalParams = "";
-      if (searchText.isNotEmpty) {
-        additionalParams += "&search=$searchText";
-      }
-      if (roleFilter.isNotEmpty) {
-        additionalParams += "&role_filter=$roleFilter";
-      }
-      if (nextPageToken != null) {
-        additionalParams += "&pageToken=$nextPageToken&direction=forward";
-      }
-      additionalParams += "&pageSize=10"; // Adjust page size as needed
-      if (status) {
-        additionalParams += "&active_users=$status";
-      }
-
-      // Construct the URL with correct formatting
-      String url = AppConstant.GET_EMPLOYEES;
-      if (additionalParams.isNotEmpty) {
-        // Check if the base URL already contains a "?"
-        final bool hasQueryParams = url.contains("?");
-
-        // If the base URL already contains a "?", use "&" to append additionalParams
-        // Otherwise, use "?"
-        final String separator = hasQueryParams ? "&" : "?";
-
-        // If additionalParams starts with "&" or "?", remove the first character
-        final String formattedParams =
-        additionalParams.startsWith("&") || additionalParams.startsWith("?")
-            ? additionalParams.substring(1)
-            : additionalParams;
-
-        // Construct the final URL with additional parameters
-        print("Formatted Params: $formattedParams");
-        print("URL: $url");
-        print("Separator: $separator");
-        url = "$separator$formattedParams";
-      } else {
-        url = "";
-      }
-
-      ApiService apiService = ApiService(AppConstant.GET_EMPLOYEES);
+      // Construct API URL with pagination and filters
+      String additionalParams = "?page=$page&pageSize=10";
+      if (searchText.isNotEmpty) additionalParams += "&search=$searchText";
+      if (roleFilter.isNotEmpty) additionalParams += "&role_filter=$roleFilter";
+      if (status) additionalParams += "&active_users=$status";
 
       // Fetch data from API
+      ApiService apiService = ApiService(AppConstant.GET_EMPLOYEES_NEW);
+      String url = additionalParams;
       Map<String, dynamic> response = await apiService.get(url);
 
       // Parse response
       List<Employees> employees = [];
-      /*if ((!isSearch)&&response.containsKey('employees')) {
-        var model = EmployeeListModel.fromJson(response);
-        if (model.employees != null) {
-          employees = model.employees!;
-        }
-        if (model.counts != null) {
-          activeCount = model.counts!.active.toString();
-          allCount = model.counts!.users.toString();
-        }
-      } else
-      if (isSearch&&response.containsKey('users') && response['users']!= null &&response['users']['employees'] != null && response['users']['employees'].isNotEmpty) {
-        var model = EmployeeListModel.fromJson(response, isSearch: true); // Parse the entire model
-        if (model.users != null && model.users!.employees != null) {
-          employees = model.users!.employees!;
-          print("Parsed users: ${employees.length}");
-          if (model.counts != null) {
-            activeCount = model.users?.counts?.active?.toString()??"0";
-            allCount = model.users?.counts?.users?.toString()??"0";
-          }
-        } else {
-          print("No 'employees' found within 'users'.");
-        }
-      } else {
-        print("Response does not contain 'data' key or it is null.");
-      }*/
-
-      if (response.containsKey('users') && response['users'].containsKey('employees')) {
-        employees = (response['users']['employees'] as List)
+      if (response.containsKey('result')) {
+        employees = (response['result'] as List)
             .map((employee) => Employees.fromJson(employee))
             .toList();
-        if (response['users'].containsKey('counts')) {
-          activeCount = response['users']['counts']['active'].toString();
-          allCount = response['users']['counts']['users'].toString();
-        }
       }
 
+      // Update pagination
+      if (response.containsKey('totalRecords')) {
+        int totalRecords = response['totalRecords'];
+        allCount = totalRecords.toString();
+        totalPages = (totalRecords / 10).ceil(); // Assuming pageSize is 10
+      } else {
+        totalPages = 1;
+      }
+
+      if (response.containsKey('active_count')) {
+        activeCount = response['active_count'].toString();
+      }
+
+      // Add employees to the list
       _employeesList?.addAll(employees);
-      notifyListeners();
 
-      // Update pagination variables
-      nextPageToken =
-          response.containsKey('pageToken') ? response['pageToken'] : null;
-      nextPageExists = response.containsKey('nextPageExists')
-          ? response['nextPageExists']
-          : false;
-
-      // Reset loading state
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
 
+      notifyListeners();
       return _employeesList ?? [];
     } catch (e, stackTrace) {
+      log('Error fetching employees: $e');
       print('Stack Trace: $stackTrace');
-      log('Error: $e');
+      handleError(context, e, stackTrace);
 
-      // Handle error and reset loading state
+      // Reset loading states
       isLoading = false;
       isNextPageLoading = false;
-      if (!context.mounted) return [];
-      CustomToast.error(
-          context, 'Error fetching employees. Please try again later.');
+
       return [];
     }
   }
+
+  void handleError(BuildContext context, dynamic e, StackTrace stackTrace) {
+    log('Error: $e');
+    print('Stack Trace: $stackTrace');
+    if (context.mounted) {
+      CustomToast.error(context, 'An error occurred. Please try again.');
+    }
+  }
+
 
   /// Changes status of an employee based on the employee ID and new status.
   Future<bool> changeEmployeeStatus(

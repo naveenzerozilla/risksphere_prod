@@ -333,10 +333,10 @@ class ConnectionsProvider with ChangeNotifier {
       List<NetworkingUsers> networkingUsersLocal = [];
 
       print("Response: $response");
-      print("Contains Key users? ${response.containsKey('users')}");
-      if (response.containsKey('users')) {
-        print("Users: ${response['users']}");
-          networkingUsersLocal = (response['users'] as List)
+      print("Contains Key result? ${response.containsKey('result')}");
+      if (response.containsKey('result')) {
+        print("Users: ${response['result']}");
+          networkingUsersLocal = (response['result'] as List)
               .map((networkUsers) => NetworkingUsers.fromJson(networkUsers))
               .toList();
           print("Networking Users: $networkingUsersLocal");
