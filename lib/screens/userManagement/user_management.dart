@@ -521,7 +521,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             false;
     showUserVerificationTab =
         await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMUL) ??
+                SharedPreferenceService.CAMVU) ??
             false;
 
     showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
@@ -811,7 +811,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         _adminEmailController.text =
             companyProvider.company.adminEmail ?? '';
         _selectedCountryCode = _adminMobileController.text =
-            companyProvider.company.adminCountryCode ?? '';
+            companyProvider.company.adminCountryCode?.replaceAll('+', '') ?? "1";
         print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
         corporateEditMobileController.value = PhoneNumber(
             isoCode:
@@ -1242,8 +1242,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       .text =
                                                                   companyProvider
                                                                           .company
-                                                                          .adminCountryCode ??
-                                                                      '';
+                                                                          .adminCountryCode ?.replaceAll('+', '') ?? "1";
                                                           print(
                                                               'Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
                                                           corporateEditMobileController
@@ -5383,7 +5382,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               TextEditingController(text: currentUser.phone);
           TextEditingController _employeeCountryCodeController =
               TextEditingController(text: currentUser.countryCode);
-          _selectedCountryCode = currentUser.countryCode ?? '+1';
+          _selectedCountryCode = currentUser.countryCode?.replaceAll('+', '') ?? "1";
           print('Selected Country Code: $_selectedCountryCode');
           print('isoCode: ${countryCodeToIsoCode[_selectedCountryCode]}');
           print('number: ${currentUser.phone}');
@@ -5638,7 +5637,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   ),
                                 ),
                                 Positioned(
-                                  top: 10.0,
+                                  top: 4.0,
                                   left: 10.0,
                                   right: 10.0,
                                   child: Container(
@@ -8656,9 +8655,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _verificationRequestsUI() {
     var typography = CustomTypography(context);
     return Container(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? AppColors.paperElavation25
-          : AppColors.paperElavation25Light,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.paperElavation25
+            : AppColors.paperElavation25Light,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        )
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

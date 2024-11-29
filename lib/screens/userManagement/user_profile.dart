@@ -103,11 +103,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
   
   _setClaims() async {
+    _selectedScreen = Screens.generalInfo;
     showAssignDeleteManager = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMAM)?? false;
     showAddDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDA)??false;
     showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;
     showAddReportee = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRE)??false;
-    showEditUser = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC)??false;
+    //showEditUser = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC)??false;
+    print('1st claim: ${await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMEU)?? false}');
+    print('2nd claim: ${await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMEU)??false}');
+    print('3rd claim: ${await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPEU)??false}');
+    showEditUser = (await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMEU)??false)||((await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMEU)??false)||(await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPEU)??false));
     bool showNonCorporateMyTeams = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMMT)??false;
     bool showEmployeeMyTeams = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPMT)??false;
     User user = FirebaseAuth.instance.currentUser!;
@@ -177,7 +182,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           displayNameLabelText = value.displayName ??  value.name ?? "";
           emailLabelText = value.email ?? "";
           phoneLabelText = value.phone ?? "";
-          _selectedCountryCode = value.countryCode ?? "+1";
+          print('Country Code: ${value.countryCode}');
+          // remove '+' from country code
+          _selectedCountryCode = value.countryCode?.replaceAll('+', '') ?? "1";
           print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
           phoneController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: phoneLabelText??"");
           // Set roles and assign from List<Roles> to List<Categories>
@@ -225,6 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _isExpanded = !_isExpanded;
               });
             },
+            stopNavigateToProfile: _selectedScreen == Screens.generalInfo,
           ),
           drawer: CustomDrawer(),
           body: _tabsLoading?Column(children: [
@@ -899,7 +907,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                     itemCount: userProfileProvider.avatars.length,
                                                                     physics: NeverScrollableScrollPhysics(),
                                                                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                                                      crossAxisCount: 3,
+                                                                      crossAxisCount: 5,
                                                                       crossAxisSpacing: 16,
                                                                       mainAxisSpacing: 16,
                                                                     ),
@@ -2098,6 +2106,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               } else {
                 return Future.delayed(Duration.zero, () async {
                   _managerList = await searchNetworks(textEditingValue.text);
+                  print("Manager List: $_managerList");
                   return _managerList;
                 });
               }

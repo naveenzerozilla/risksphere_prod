@@ -411,7 +411,7 @@ class SubAccountListProvider extends ChangeNotifier {
     try {
       isAddSubAccountLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount");
+      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId");
       var response = await apiService.post({'data': {
         'name': accountName,
       }});

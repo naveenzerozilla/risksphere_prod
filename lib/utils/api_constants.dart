@@ -36,7 +36,7 @@ class AppConstant {
   static String get GET_DASHBOARD => '$baseURL/dashboard_data';
   static String get GET_CONNECTIONS => '$baseURL/user_management?connections=true';
   static String get GET_REQUESTS => '$baseURL/user_management?requests=true';
-  static String get ACCEPT_REJECT_REQUEST => '$baseURL/companies';
+  static String get ACCEPT_REJECT_REQUEST => '$baseURL/user_management';
   static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management_new/company_user_list/current';
   static String get SEND_NETWORKING_REQUEST => '$baseURL/user_management';
   static String get GET_USER_TEAMS => '$baseURL/user_management?my_team=true';
@@ -71,7 +71,7 @@ class AppConstant {
   static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts';
   static String get CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT => '$baseURL/accounts';
   static String get AUTO_COMPLETE_SUB_ACCOUNT_LIST => '$baseURL/accounts';
-  static String get ADD_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get ADD_SUB_ACCOUNT => '$baseURL/locations/create_sub_account';
   static String get REQUEST_ACCESS_SUB_ACCOUNT => '$baseURL/accounts';
   static String get UPLOAD_SOV_SUB_ACCOUNT => '$baseURL/sov';
 

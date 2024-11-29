@@ -69,9 +69,9 @@ class UsersCorporate {
         : [];
     displayName = json['displayName'] ?? '';
     rating = json['rating'] ?? 0;
-    createdAt = json['created_at'] != null
+/*    createdAt = json['created_at'] != null
         ? CreatedAt.fromJson(json['created_at'] as Map<String, dynamic>)
-        : null;
+        : null;*/
     isIndividual = json['isIndividual'] ?? false;
     email = json['email'] ?? '';
     companyId = json['company_id'] ?? '';

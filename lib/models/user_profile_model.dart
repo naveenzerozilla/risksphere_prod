@@ -89,7 +89,16 @@ class UserData {
         acceptedRole!.add(new Roles.fromJson(v));
       });
     }
-    isExternal = json['is_external'];
+    print('userid: ${json['user_id']}');
+    print('isExternal: ${json['is_external']}');
+    if(json['is_external'] != null && json['is_external'].runtimeType == bool) {
+      isExternal = json['is_external'];
+    } else if(json['is_external'] != null && json['is_external'].runtimeType == String) {
+      isExternal = json['is_external'] == 'true' ? true : false;
+    } else {
+      isExternal = false;
+    }
+    //isExternal = json['is_external'];
   }
 
   Map<String, dynamic> toJson() {

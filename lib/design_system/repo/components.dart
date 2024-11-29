@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../screens/onboarding/login_screen.dart';
@@ -36,6 +38,9 @@ class FirstComponentList extends StatelessWidget {
         builder: (context, authNotifier, child) {
           return ElevatedButton(
             onPressed: () async {
+              final _googleSignIn = GoogleSignIn();
+              var isSignedIn = await _googleSignIn.isSignedIn();
+              if (isSignedIn) await _googleSignIn.disconnect();
               await authNotifier.signOut();
               Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
             },

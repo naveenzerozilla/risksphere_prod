@@ -188,6 +188,9 @@ class AuthNotifier extends ChangeNotifier {
                                     ),
                                   );
                                 }
+                                final _googleSignIn = GoogleSignIn();
+                                var isSignedIn = await _googleSignIn.isSignedIn();
+                                if (isSignedIn) await _googleSignIn.disconnect();
                                 await _auth.signOut();
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
                                   notifyListeners();
@@ -210,6 +213,9 @@ class AuthNotifier extends ChangeNotifier {
                           child: CustomButton(
                               type: ButtonType.text,
                               onPressed: () async {
+                                final _googleSignIn = GoogleSignIn();
+                                var isSignedIn = await _googleSignIn.isSignedIn();
+                                if (isSignedIn) await _googleSignIn.disconnect();
                                 await _auth.signOut();
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
                                   notifyListeners();
@@ -252,6 +258,9 @@ class AuthNotifier extends ChangeNotifier {
         );
 
         await _auth.signOut();
+        final _googleSignIn = GoogleSignIn();
+        var isSignedIn = await _googleSignIn.isSignedIn();
+        if (isSignedIn) await _googleSignIn.disconnect();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
@@ -346,6 +355,14 @@ class AuthNotifier extends ChangeNotifier {
           content: Text(e.message!),
         ),
       );
+    } catch (e) {
+      print("Error signing in with Google: $e");
+      _isSigningIn = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      // Handle error
+      print("Error signing in with Google: $e");
     }
   }
 
@@ -426,6 +443,9 @@ class AuthNotifier extends ChangeNotifier {
         notifyListeners();
       });
 
+      final _googleSignIn = GoogleSignIn();
+      var isSignedIn = await _googleSignIn.isSignedIn();
+      if (isSignedIn) await _googleSignIn.disconnect();
       await _auth.signOut();
       _user = null;
       _isSigningOut = false;

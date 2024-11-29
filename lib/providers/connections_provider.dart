@@ -303,7 +303,20 @@ class ConnectionsProvider with ChangeNotifier {
       // Update the list of companies and notify listeners
       isRequestActionLoading = false;
       getAllRequests(context, userId);
-    } catch (e, stackTrace) {
+    } on BackendException catch(e, stack) {
+      // Catch any errors that occur during the process
+      print('Stack Trace: $stack'); // Print the stack trace for debugging
+      log('Error: $e'); // Log the error
+      // Show a generic error message to the user
+      String errorMessage = 'Error accepting/rejecting request. Please try again later.';
+      if (e is String) {
+        errorMessage = e.message;
+      }
+      if (!context.mounted) return;
+      //CustomToast.error(context, errorMessage);
+      isRequestActionLoading = false;
+    }
+    catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
@@ -313,7 +326,9 @@ class ConnectionsProvider with ChangeNotifier {
         errorMessage = e;
       }
       if (!context.mounted) return;
-      CustomToast.error(context, errorMessage);
+      //CustomToast.error(context, errorMessage);
+      isRequestActionLoading = false;
+    } finally {
       isRequestActionLoading = false;
     }
   }

@@ -85,6 +85,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       .snapshots();
                 } else if (provider.docIds.isNotEmpty) {
                   // Fetch specific processes in batches
+                  print('Fetching processes for ${provider.docIds.length} companies and the ids are: ${provider.docIds}');
                   stream = _fetchBatchedProcesses(provider.docIds, 30);
                 } else {
                   // If there are no document IDs, show no processes
@@ -98,14 +99,45 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       return Center(child: CircularProgressIndicator());
                     }
 
+                    print('StreamBuilder received ${snapshot.data!.docs.length} documents'); // Debug print
                     var processes = snapshot.data!.docs;
+                    print('Process IDs: ${processes.map((doc) => doc.id).toList()}'); // Debug print
+
+                    // Debug: Check if 9oJ02qpIilZJt0gOlr78 is present
+                    final processIds = processes.map((doc) => doc.id).toList();
+                    if (processIds.contains('9oJ02qpIilZJt0gOlr78')) {
+                      print('Process 9oJ02qpIilZJt0gOlr78 is present before filtering.');
+                    } else {
+                      print('Process 9oJ02qpIilZJt0gOlr78 is NOT present before filtering.');
+                    }
 
                     // Filter out processes with 'heatmap' in subprocesses
-                    processes.removeWhere((element) {
+                   /* processes.removeWhere((element) {
                       final data = element.data() as Map<String, dynamic>?;
                       final subprocesses = data?['subprocesses'] as Map<String, dynamic>?;
+                      print('Subprocesses of ${element.id}: $subprocesses');
+
+                      // Debug for process 9oJ02qpIilZJt0gOlr78
+                      if (element.id == '9oJ02qpIilZJt0gOlr78') {
+                        print('Subprocesses of 9oJ02qpIilZJt0gOlr78: $subprocesses');
+                        final hasHeatmap = subprocesses?.containsKey('heatmap') ?? false;
+                        print('Process 9oJ02qpIilZJt0gOlr78 is being filtered out: $hasHeatmap');
+                        return hasHeatmap;
+                      }
+
+                      // Original filtering logic
                       return subprocesses?.containsKey('heatmap') ?? false;
-                    });
+                    });*/
+
+
+                    // Debug: Check if 9oJ02qpIilZJt0gOlr78 is removed after filtering
+                    final remainingProcessIds = processes.map((doc) => doc.id).toList();
+                    if (remainingProcessIds.contains('9oJ02qpIilZJt0gOlr78')) {
+                      print('Process 9oJ02qpIilZJt0gOlr78 is present after filtering.');
+                    } else {
+                      print('Process 9oJ02qpIilZJt0gOlr78 is NOT present after filtering.');
+                    }
+                    print('Processes after filtering: $remainingProcessIds');
 
                     return ListView.builder(
                       itemCount: processes.length,
@@ -114,8 +146,8 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
 
                         String processId = processData['process_id'] ?? 'Unknown ID';
                         String companyName =
-                            processData['location_data']?['account_name'] ?? 'Unknown Company';
-                        String ownerName = processData['owner_name'] ?? 'Unknown Owner';
+                            processData['location_data']?['account_name'] ?? '';
+                        String ownerName = processData['owner_name'] ?? '';
                         int totalLocations = processData['total_locations'] ?? 0;
 
                         var subProcesses =
@@ -143,24 +175,33 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
 
   Stream<QuerySnapshot> _fetchBatchedProcesses(
       List<String> docIds, int batchSize) {
+    print('Total docIds: ${docIds.length}'); // Debug print
     final List<Stream<QuerySnapshot>> streams = [];
 
-    // Split the docIds into chunks of batchSize (30 in Firestore)
     for (int i = 0; i < docIds.length; i += batchSize) {
       final batch = docIds.sublist(
         i,
         i + batchSize > docIds.length ? docIds.length : i + batchSize,
       );
 
-      // Create a stream for the current batch
+      print('Processing batch ${i ~/ batchSize + 1} with ${batch.length} IDs'); // Debug print
+      print('Batch IDs: $batch'); // Debug print
+
       streams.add(FirebaseFirestore.instance
           .collection('processes')
           .where(FieldPath.documentId, whereIn: batch)
-          .snapshots());
+          .snapshots()
+          .map((snapshot) {
+        print('Batch ${i ~/ batchSize + 1} returned ${snapshot.docs.length} documents'); // Debug print
+        return snapshot;
+      }));
     }
 
-    // Merge all streams into one
-    return StreamGroup.merge(streams);
+    // Return merged stream with additional debug info
+    return StreamGroup.merge(streams).map((snapshot) {
+      print('Merged snapshot has ${snapshot.docs.length} documents'); // Debug print
+      return snapshot;
+    });
   }
 
   // Build each process card with subprocesses inside as ExpansionTile
@@ -172,6 +213,12 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     required Map<String, dynamic> subProcesses,
     required CustomTypography typography,
   }) {
+    print('Subprocesses: $subProcesses');
+    if (processId == '9oJ02qpIilZJt0gOlr78') {
+      print('Building card for process 9oJ02qpIilZJt0gOlr78');
+      print('Company Name: $companyName, Owner Name: $ownerName, Locations: $totalLocations');
+      print('SubProcesses: $subProcesses');
+    }
     // Sort the subprocesses by the 'sub_process_name'
     var sortedSubProcesses = subProcesses.entries.toList()
       ..sort((a, b) {
@@ -204,6 +251,11 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
         // If the structure doesn't match the expected type, just return 0 (no sorting change)
         return 0;
       });
+    if (processId == '9oJ02qpIilZJt0gOlr78') {
+      print('Building card for process 9oJ02qpIilZJt0gOlr78');
+      print('Company Name: $companyName, Owner Name: $ownerName, Locations: $totalLocations');
+      print('SubProcesses: $subProcesses');
+    }
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),

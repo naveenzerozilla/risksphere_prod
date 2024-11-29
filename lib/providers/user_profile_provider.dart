@@ -426,9 +426,9 @@ class UserProfileProvider with ChangeNotifier {
 
       print("Response: $response");
       print("Contains Key users? ${response.containsKey('users')}");
-      if (response.containsKey('users')) {
-        print("Users: ${response['users']}");
-        networkingUsersLocal = (response['users'] as List)
+      if (response.containsKey('result')) {
+        print("Users: ${response['result']}");
+        networkingUsersLocal = (response['result'] as List)
             .map((networkUsers) => NetworkingUsers.fromJson(networkUsers))
             .toList();
         print("Networking Users: $networkingUsersLocal");
@@ -451,7 +451,7 @@ class UserProfileProvider with ChangeNotifier {
       }
       isTeamSearchLoading = false;
       if (!context.mounted) return [];
-      CustomToast.error(context, errorMessage);
+      //CustomToast.error(context, errorMessage);
       return []; // Return an empty list in case of error
     }
   }

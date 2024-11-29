@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/models/my_location_list_model.dart';
+import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/my_scrollable_scores_widget.dart';
 import 'package:green/screens/listings/widgets/vertical_bar_indicator.dart';
 
@@ -16,6 +17,15 @@ class LocationDetailsPopup extends StatelessWidget {
   final List<String> geocodedAt;
   final List<String> occupancy;
   final String? campus;
+  final String? accountId;
+  final String? accountName;
+  final String? subAccountId;
+  final String? subAccountName;
+  final String? sovId;
+  final String? sovName;
+  final bool? rented;
+  final bool? hideNavigation;
+
 
   LocationDetailsPopup({
     required this.address,
@@ -25,7 +35,15 @@ class LocationDetailsPopup extends StatelessWidget {
     required this.hazards,
     required this.geocodedAt,
     required this.occupancy,
+    this.accountId,
+    this.accountName,
+    this.subAccountId,
+    this.subAccountName,
+    this.sovId,
+    this.sovName,
     this.campus,
+    this.rented,
+    this.hideNavigation = false,
   });
 
   @override
@@ -62,7 +80,7 @@ class LocationDetailsPopup extends StatelessWidget {
                 SizedBox(height: 8),
 
                 Chip(
-                  label: Text('Rented/Leased', style: typography.Caption),
+                  label: Text((rented??true)?'Rented':"Leased", style: typography.Caption),
                 ),
               ],
             ),
@@ -86,19 +104,43 @@ class LocationDetailsPopup extends StatelessWidget {
             // Information Section
             _buildInformationSection(typography),
 
-            // Action Buttons
+            hideNavigation??false?
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: (hideNavigation??false)? MainAxisAlignment.center:MainAxisAlignment.spaceBetween,
               children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Close'),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Close', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)  ),
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
+                (hideNavigation??false)? SizedBox.shrink(): ElevatedButton(
+                  onPressed: (hideNavigation??false)?null:() {
                     // Add your View Profile action here
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: accountId??"", accountName: accountName??"", subAccountId: subAccountId??"", subAccountName: subAccountName??"", sovId: sovId??"", sovName: sovName??"", page: "0", totalPages: "0", searchQuery: "")));
                   },
-                  child: Text('View Profile'),
+
+
+                  child: Text('View Profile', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+                ),
+              ],
+            ):Row(
+              mainAxisAlignment: (hideNavigation??false)? MainAxisAlignment.center:MainAxisAlignment.spaceBetween,
+              children: [
+                Center(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Close', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)  ),
+                  ),
+                ),
+                (hideNavigation??false)? SizedBox.shrink(): ElevatedButton(
+                  onPressed: (hideNavigation??false)?null:() {
+                    // Add your View Profile action here
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: accountId??"", accountName: accountName??"", subAccountId: subAccountId??"", subAccountName: subAccountName??"", sovId: sovId??"", sovName: sovName??"", page: "0", totalPages: "0", searchQuery: "")));
+                  },
+
+
+                  child: Text('View Profile', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)),
                 ),
               ],
             ),
@@ -133,7 +175,7 @@ class LocationDetailsPopup extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(entry.key, style: typography.Body2),
-                Text(entry.value, style: typography.Body2),
+                Text(entry.value, style: typography.Body2, overflow: TextOverflow.ellipsis),
               ],
             ),
           );

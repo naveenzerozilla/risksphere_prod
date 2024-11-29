@@ -23,6 +23,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function() onSearchPressed;
   final bool showDropdown;
   final double margin;
+  final bool? stopNavigateToProfile;
 
   const CustomAppBar({
     Key? key,
@@ -32,6 +33,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onSearchPressed,
     this.showDropdown = false,
     this.margin = 16.0,
+    this.stopNavigateToProfile = false,
 
   }) : super(key: key);
 
@@ -67,7 +69,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         )
             : GestureDetector(
           onTap: () {
-            onExpandPressed(!isExpanded);
+            //onExpandPressed(!isExpanded);
           },
           child: Container(
             padding: EdgeInsets.all(8),
@@ -186,7 +188,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: ProfileMenu(),
           )
               : Center(
-            child: InkWell(onTap:() {
+            child: InkWell(onTap:
+            stopNavigateToProfile! ? null :
+                () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => ProfileScreen()),

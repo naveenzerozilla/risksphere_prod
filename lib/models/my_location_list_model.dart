@@ -83,7 +83,17 @@ class MyLocation with ClusterItem{
     geocodingScore = json['geocoding_score'] is int
         ? json['geocoding_score']
         : int.tryParse(json['geocoding_score']?.toString() ?? '');
-    tags = json['tags'] != null ? List<String>.from(json['tags']) : null;
+    if (json['tags'] != null) {
+      if (json['tags'] is List) {
+        // If it's already a List, directly convert it
+        tags = List<String>.from(json['tags']);
+      } else if (json['tags'] is Map) {
+        // If it's a Map, extract the values as a List
+        tags = List<String>.from((json['tags'] as Map).values);
+      }
+    } else {
+      tags = null;
+    }
     if (json['overall_score'] is int) {
       overallScore = json['overall_score'];
     } else {
@@ -221,6 +231,7 @@ class FinalAddress {
   String? accountId;
   String? countryIsoCode;
   double? longitude;
+  bool? rented;
 
   FinalAddress({
     this.country,
@@ -255,6 +266,7 @@ class FinalAddress {
     this.state,
     this.campusId,
     this.campusKey,
+    this.rented,
   });
 
   FinalAddress.fromJson(Map<String, dynamic> json) {
@@ -296,6 +308,7 @@ class FinalAddress {
     state = json['state'];
     campusId = json['campus_name'];
     campusKey = json['campus_id'];
+    rented = json['rented'];
   }
 
   Map<String, dynamic> toJson() {
@@ -334,12 +347,13 @@ class FinalAddress {
     data['state'] = state;
     data['campus_name'] = campusId;
     data['campus_id'] = campusKey;
+    data['rented'] = rented;
     return data;
   }
 
   @override
   String toString() {
-    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude, state: $state, campusId: $campusId, campusKey: $campusKey)';
+    return 'FinalAddress(country: $country, locationIdForRef: $locationIdForRef, autoCertified: $autoCertified, city: $city, ownerId: $ownerId, latitude: $latitude, description: $description, percent: $percent, subAccountId: $subAccountId, locationId: $locationId, score: $score, sovName: $sovName, accountName: $accountName, placeTypes: $placeTypes, placeId: $placeId, ownerEmail: $ownerEmail, zip: $zip, owner: $owner, address: $address, ownerName: $ownerName, subAccountName: $subAccountName, companyId: $companyId, lineNo: $lineNo, locationType: $locationType, sovId: $sovId, locationName: $locationName, accountId: $accountId, countryIsoCode: $countryIsoCode, longitude: $longitude, state: $state, campusId: $campusId, campusKey: $campusKey, rented: $rented)';
   }
 }
 

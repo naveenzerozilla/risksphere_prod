@@ -13,6 +13,7 @@ import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:green/providers/user_profile_provider.dart';
+import 'package:green/screens/home/widgets/subscription_cards.dart';
 import 'package:intl/intl.dart';
 import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 
@@ -350,6 +351,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
+                   SizedBox(height: CustomSpacing.one,),
+                    _subscriptionBody(typography),
                     SizedBox(height: CustomSpacing.one),
                     !showCompanyOnboardingStats
                         ? SizedBox()
@@ -410,6 +413,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
     });
+  }
+
+  Widget _subscriptionBody(CustomTypography typography) {
+    final subscriptionData = [
+      {
+        "title": "Earthquake Alerts",
+        "description":
+        "When an earthquake is detected nearby, you'll get an alert with the initial estimated magnitude at your location.",
+        "iconPath": "assets/images/earthquake.svg",
+        "isSubscribed": true,
+      },
+      {
+        "title": "Hurricane Alerts",
+        "description":
+        "When a hurricane is approaching, you'll receive an alert with the estimated wind speed at your location.",
+        "iconPath": "assets/images/hurricane.svg",
+        "isSubscribed": false,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...subscriptionData.map((data) {
+          return SubscriptionCard(
+            title: data["title"] as String,
+            description: data["description"] as String,
+            iconPath: data["iconPath"] as String,
+            isSubscribed: data["isSubscribed"] as bool,
+          );
+        }).toList(),
+      ],
+    );
   }
 
 

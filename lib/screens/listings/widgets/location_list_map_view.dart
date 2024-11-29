@@ -1043,6 +1043,13 @@
             geocodedAt: [location.finalAddress?.locationType??""],
             occupancy: location.finalAddress?.placeTypes??["--"],
             campus: location.finalAddress?.campusId,
+            accountId: location.finalAddress?.accountId,
+            accountName: location.finalAddress?.accountName,
+            subAccountId: location.finalAddress?.subAccountId,
+            subAccountName: location.finalAddress?.subAccountName,
+            sovId: location.finalAddress?.sovId,
+            sovName: location.finalAddress?.sovName,
+            rented: location.finalAddress?.rented??false,
           );
         },
       );

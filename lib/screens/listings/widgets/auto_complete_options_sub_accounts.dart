@@ -19,7 +19,7 @@ class AutocompleteOptionsSubAccount extends StatelessWidget {
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
     if (isLoading) {
-      return Container(
+      return /*Container(
         height: 100.0,
         width: MediaQuery.of(context).size.width - 32,
         child: Column(
@@ -30,7 +30,7 @@ class AutocompleteOptionsSubAccount extends StatelessWidget {
             ),
           ],
         ),
-      );
+      )*/SizedBox();
     }
     return Material(
       child: Container(

@@ -1951,15 +1951,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
               ],
             ),
             Divider(),
-            connectionsProvider.isRequestLoading
+            connectionsProvider.isRequestActionLoading &&
+                    requestActionIndex == index
                 ? Row(
                     children: [
                       Expanded(
                           child: Center(
-                              child: SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator())))
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator()),
+                              )))
                     ],
                   )
                 : Container(
@@ -1979,7 +1983,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                     connectionsProvider
                                             .requestUsers[index].id ??
                                         "",
-                                    "reject_request");
+                                    "reject_request").then((value) {
+                                      _getData();
+                            });
                           },
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(

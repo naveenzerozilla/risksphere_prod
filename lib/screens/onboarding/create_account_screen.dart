@@ -97,6 +97,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   String _individualHintText = '(XXX) XXX-XXXX';
   String _selectedIndividualCountry = 'US';
 
+  bool _showPasswordIndividual = false;
+  bool _showPasswordConfirmationIndividual = false;
+  bool _showPasswordCorporate = false;
+
   @override
   void initState() {
     super.initState();
@@ -646,6 +650,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   });
                   print('changed ${p.countryCode}');
                 },
+
               ),
             ),
           ],
@@ -653,14 +658,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         // Password
         TextFormField(
+
           decoration: InputDecoration(
+            suffixIcon: IconButton(
+              icon: _showPasswordIndividual
+                  ? Icon(Icons.visibility)
+                  : Icon(Icons.visibility_off),
+              onPressed: () {
+                setState(() {
+                  _showPasswordIndividual = !_showPasswordIndividual;
+                });
+              },
+            ),
             labelText:LanguageService.getTranslated(context,"register_non_corporate_passwordfield_label"),
 
             hintText: LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
 
             border: const OutlineInputBorder(),
           ),
-          obscureText: true,
+          obscureText: !_showPasswordIndividual,
           validator: (value) {
             if (value == null || value.isEmpty || value.length < 8) {
               return 'Password must be at least 8 characters';
@@ -669,18 +685,29 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
           controller: passwordController,
+
         ),
         SizedBox(height: CustomSpacing.two),
         // Confirm Password
         TextFormField(
           decoration: InputDecoration(
+          /*  suffixIcon: IconButton(
+              icon: _showPasswordConfirmationIndividual
+                  ? Icon(Icons.visibility)
+                  : Icon(Icons.visibility_off),
+              onPressed: () {
+                setState(() {
+                  _showPasswordConfirmationIndividual = !_showPasswordConfirmationIndividual;
+                });
+              },
+            ),*/
             labelText:  LanguageService.getTranslated(context,"register_corporate_confirm_password_field_label"),
 
             hintText:LanguageService.getTranslated(context,"register_corporate_confirm_password_field_placeholder"),
 
             border: const OutlineInputBorder(),
           ),
-          obscureText: true,
+          obscureText: !_showPasswordIndividual,
           validator: (value) {
             if (value == null || value.isEmpty || value.length < 8) {
               return 'Password must be at least 8 characters';
@@ -1255,7 +1282,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ):SizedBox(),
         SizedBox(height: CustomSpacing.four),
-        // Admin Email
+        // Admin Name
         TextFormField(
           decoration: InputDecoration(
             labelText:   LanguageService.getTranslated(context,"usermanagement_name_field_label"),
@@ -1349,8 +1376,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             hintText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
 
             border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: _showPasswordCorporate
+                  ? Icon(Icons.visibility)
+                  : Icon(Icons.visibility_off),
+              onPressed: () {
+                setState(() {
+                  _showPasswordCorporate = !_showPasswordCorporate;
+                });
+              },
+            ),
           ),
-          obscureText: true,
+          obscureText: !_showPasswordCorporate,
           validator: (value) {
             if (value == null || value.isEmpty || value.length < 8) {
               return 'Password must be at least 8 characters';
@@ -1369,7 +1406,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
             border: const OutlineInputBorder(),
           ),
-          obscureText: true,
+          obscureText: !_showPasswordCorporate,
           validator: (value) {
             if (value == null || value.isEmpty || value.length < 8) {
               return 'Password must be at least 8 characters';

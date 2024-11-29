@@ -162,7 +162,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
         Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
           context,
           "",
-          0,
+          1,
           40,
           widget.accountID,
           widget.subAccountID,
@@ -176,7 +176,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
         Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(
           context,
           "",
-          0,
+          1,
           40,
           widget.accountID,
           widget.subAccountID,
@@ -207,7 +207,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
     Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
       context,
       "",
-      0,
+      1,
       40,
       widget.accountID,
       widget.subAccountID,
@@ -216,7 +216,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
     Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
       "",
-      0,
+      1,
       40,
       widget.accountID,
       widget.subAccountID,
@@ -1001,7 +1001,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1025,7 +1025,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1083,7 +1083,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     locationListProvider.fetchLocationList(
                                       context,
                                       locationQuery,
-                                      0,
+                                      1,
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
@@ -1105,7 +1105,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1130,7 +1130,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           locationListProvider.fetchLocationList(
                             context,
                             locationQuery,
-                            0,
+                            1,
                             40,
                             widget.accountID,
                             widget.subAccountID,
@@ -1269,7 +1269,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       .fetchLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1289,6 +1289,17 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                   context,
                                   widget.accountID,
                                   widget.subAccountID,locationId);
+                            },
+                            getData: () {
+                              locationListProvider.fetchLocationList(
+                                context,
+                                locationQuery,
+                                1,
+                                40,
+                                widget.accountID,
+                                widget.subAccountID,
+                                widget.sovID,
+                              );
                             },
                           ),
                           Padding(
@@ -1398,7 +1409,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                               .fetchLocationList(
                             context,
                             locationQuery,
-                            0,
+                            1,
                             40,
                             widget.accountID,
                             widget.subAccountID,
@@ -1417,6 +1428,17 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           context,
                           widget.accountID,
                           widget.subAccountID,locationId);
+                    },
+                    getData: () {
+                      locationListProvider.fetchLocationList(
+                        context,
+                        locationQuery,
+                        1,
+                        40,
+                        widget.accountID,
+                        widget.subAccountID,
+                        widget.sovID,
+                      );
                     },
                   );
                 },
@@ -1458,7 +1480,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1482,7 +1504,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1540,7 +1562,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                         .fetchCertifiedLocationList(
                                       context,
                                       locationQuery,
-                                      0,
+                                      1,
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
@@ -1563,7 +1585,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1587,7 +1609,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                           locationListProvider.fetchLocationList(
                             context,
                             locationQuery,
-                            0,
+                            1,
                             40,
                             widget.accountID,
                             widget.subAccountID,
@@ -1754,7 +1776,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                 .fetchLocationList(
               context,
               locationQuery,
-              0,
+              1,
               40,
               widget.accountID,
               widget.subAccountID,
@@ -1774,6 +1796,17 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
             context,
             widget.accountID,
             widget.subAccountID,locationId);
+      },
+      getData: () {
+        locationListProvider.fetchLocationList(
+          context,
+          locationQuery,
+          1,
+          40,
+          widget.accountID,
+          widget.subAccountID,
+          widget.sovID,
+        );
       },
     );
   }

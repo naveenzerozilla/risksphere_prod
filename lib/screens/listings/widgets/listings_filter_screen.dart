@@ -232,10 +232,10 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                   Provider.of<MyLocationListProvider>(context, listen: false).clearAllFilters();
                   if(widget.showGeoRatings) {
                     Provider.of<MyLocationListProvider>(context, listen: false)
-                        .fetchLocationList(context, "", 0, 40, widget.accountId,
+                        .fetchLocationList(context, "", 1, 40, widget.accountId,
                         widget.subAccountId);
                   } else {
-                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 0, 40, widget.accountId, widget.subAccountId);
+                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId);
                   }
 
                 },

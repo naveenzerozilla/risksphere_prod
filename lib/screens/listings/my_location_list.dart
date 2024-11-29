@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:green/design_system/components/rating_half_stars.dart';
 import 'package:green/design_system/components/rating_slider.dart';
 import 'package:green/models/my_location_list_model.dart';
@@ -18,6 +19,7 @@ import 'package:green/providers/my_location_list_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sov_location_list.dart';
+import 'package:green/screens/listings/widgets/adaptive_tab_bar_locations.dart';
 import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
@@ -31,6 +33,7 @@ import 'package:green/service/shared_preference_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -139,32 +142,6 @@ class _MyLocationListState extends State<MyLocationList>
     deBouncer = Timer(duration, callback);
   }
 
-  void locationSearchClient(String query) async {
-    debounce(() async {
-      if (!mounted) return;
-      locationQuery = query;
-      Provider.of<LocationListProvider>(context, listen: false)
-          .fetchLocationList(
-        context,
-        "widget.accountId",
-        "widget.subAccountId",
-        "widget.sovId",
-        query,
-        0,
-        "forward",
-        40,
-        countries: [],
-        // Add your filter parameters here
-        state: "",
-        propertyType: [],
-        constructionType: [],
-        certifications: [],
-        hazard: [],
-        rating: [],
-      );
-    });
-  }
-
   @override
   void initState() {
     super.initState();
@@ -193,7 +170,7 @@ class _MyLocationListState extends State<MyLocationList>
             .fetchLocationList(
               context,
               "",
-              0,
+              1,
               40,
               widget.accountID,
               widget.subAccountID,
@@ -209,7 +186,7 @@ class _MyLocationListState extends State<MyLocationList>
             .fetchCertifiedLocationList(
               context,
               "",
-              0,
+              1,
               40,
               widget.accountID,
               widget.subAccountID,
@@ -238,11 +215,21 @@ class _MyLocationListState extends State<MyLocationList>
     _mainTabController?.dispose();
     _masterTabController?.dispose();
     _tabController?.dispose();
+    Provider.of<MyLocationListProvider>(context, listen: false).clearAllFilters();
+    Provider.of<MyLocationListProvider>(context, listen: false).clearSelection();
+    Provider.of<MyLocationListProvider>(context, listen: false).clearRatingsFilter();
+    Provider.of<MyLocationListProvider>(context, listen: false).myLocationList.clear();
+    Provider.of<MyLocationListProvider>(context, listen: false).certifiedLocationList.clear();
+    Provider.of<MyLocationListProvider>(context, listen: false).selectedLocations.clear();
+    Provider.of<MyLocationListProvider>(context, listen: false).summaryList.clear();
+    Provider.of<MyLocationListProvider>(context, listen: false).certifiedLocationHits;
+    Provider.of<MyLocationListProvider>(context, listen: false).locationHits;
     super.dispose();
   }
 
   _getMaintainancePeriod() async {
-    isMaintenance = await SharedPreferenceService.getScheduleInProgress()??false;
+    isMaintenance =
+        await SharedPreferenceService.getScheduleInProgress() ?? false;
   }
 
   _getData() async {
@@ -261,13 +248,13 @@ class _MyLocationListState extends State<MyLocationList>
         .fetchCertifiedLocationList(
           context,
           "",
-          0,
+          1,
           40,
           widget.accountID,
           widget.subAccountID,
         )
         .then((value) => WidgetsBinding.instance!.addPostFrameCallback((_) {
-             setState(() {});
+              setState(() {});
             }));
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
     Provider.of<SOVListProvider>(context, listen: false).page = 0;
@@ -279,14 +266,9 @@ class _MyLocationListState extends State<MyLocationList>
     Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchAllLocationList(context, widget.accountID, widget.subAccountID);
     // Initialize the JobMonitoringProvider and fetch the company IDs
-    Provider.of<JobMonitoringProvider>(context, listen: false).fetchCompanyIds();
+    Provider.of<JobMonitoringProvider>(context, listen: false)
+        .fetchCompanyIds();
   }
-
-  void searchNetworks(String query) async => debounce(() async {
-        if (!mounted) return;
-        /*await Provider.of<ConnectionsProvider>(context, listen: false)
-        .getUserSuggestions(context, query);*/
-      });
 
   ScrollController _scrollController = ScrollController();
 
@@ -314,7 +296,8 @@ class _MyLocationListState extends State<MyLocationList>
         builder: (buildContext, themeProvider, child) {
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: themeProvider.getTheme.colorScheme.surface,
+            backgroundColor:
+                themeProvider.getTheme.colorScheme.surfaceContainerLowest,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
               showNotificationDot: _showNotificationDot,
@@ -330,85 +313,106 @@ class _MyLocationListState extends State<MyLocationList>
               },
             ),
             drawer: CustomDrawer(),
-            /*floatingActionButton: Builder(builder: (contextLocal) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  !showSelectAll
-                      ? SizedBox()
-                      : FloatingActionButton(
-                    onPressed: () {
-                      if (selectedLocations.isEmpty) {
-                        // Show a toast or snackbar message to select locations
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('No locations selected for deletion.'),
-                          ),
-                        );
-                        return;
+            floatingActionButton: SpeedDial(
+              animatedIcon: AnimatedIcons.menu_close,
+              animatedIconTheme: IconThemeData(size: 22.0),
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+              children: [
+                SpeedDialChild(
+                  child: Icon(Icons.add),
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                  label: 'Add Location',
+                  labelStyle: typography.Body1,
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => AddLocationScreen(
+                        accountId: widget.accountID,
+                        subAccountId: widget.subAccountID,
+                        sovId: "",
+                        accountName: widget.accountName,
+                        subAccountName: widget.subAccountName,
+                      ),
+                    )).then((value) {
+                      if (value != null) {
+                        if (value) {
+                          Provider.of<MyLocationListProvider>(context,
+                                  listen: false)
+                              .fetchLocationList(
+                                context,
+                                "",
+                                1,
+                                40,
+                                widget.accountID,
+                                widget.subAccountID,
+                              )
+                              .then((value) => setState(() {}));
+                        }
                       }
-
-                      showDeleteConfirmationDialog(context, _bulkDeleteLocations);
-                    }, // Trigger bulk delete
-                    child: Icon(Icons.delete), // Change icon to delete
-                  ),
-                  !showSelectAll ? SizedBox() : SizedBox(height: CustomSpacing.two),
-
-                  SpeedDial(
-                    icon: Icons.upload,
-                    activeIcon: Icons.close,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    children: [
-                      */
-            /*SpeedDialChild(
-                        child: Icon(Icons.upload_file),
-                        label: 'Upload Full List',
-                        onTap: () {
-                          // Add your logic for uploading full list
-                          print('Upload Full List tapped');
-                        },
-                      ),*/
-            /*
-                      SpeedDialChild(
-                        child: Icon(Icons.upload),
-                        label: 'Upload Partial List',
-                        onTap: () async {
-                          setState(() {
-                            _uploadedFileName = null;
-                            _sovNameController.clear();
-                          });
-                          _showUploadDialog("widget.accountId", "widget.subAccountId", "widget.sovId");
-                        },
-                      ),
-                      SpeedDialChild(
-                        child: Icon(Icons.add),
-                        label: 'Add Single Location',
-                        onTap: () {
-                          _selectedScreen = Screens.addLocation;
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => AddLocationScreen(
-                              accountId: "widget.accountId",
-                              subAccountId: "widget.subAccountId",
-                              sovId: "widget.sovId",
-                            ),
-                          ));
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }),*/
+                    });
+                  },
+                ),
+                SpeedDialChild(
+                  child: Icon(Icons.upload),
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                  label: 'Upload SOV',
+                  labelStyle: typography.Body1,
+                  onTap: () {
+                    if (isMaintenance) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'SOV upload is disabled during maintenance period.'),
+                        ),
+                      );
+                    } else {
+                      _showUploadBottomSheet(
+                          widget.accountID, widget.subAccountID, "");
+                    }
+                  },
+                ),
+                SpeedDialChild(
+                  child: Icon(Icons.download),
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                  label: 'Export Locations',
+                  labelStyle: typography.Body1,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return ExportDialog(
+                          accountId: widget.accountID,
+                          subAccountId: widget.subAccountID,
+                          sovId: "",
+                          locationId: selectedMainTab == 0
+                              ? Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
+                                  .myLocationList
+                                  .map((location) => location.id ?? "")
+                                  .toList()
+                              : Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
+                                  .certifiedLocationList
+                                  .map((location) => location.id ?? "")
+                                  .toList(),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
             body: Stack(
               children: [
-                Positioned.fill(
+                /*  Positioned.fill(
                   child: Image.asset(
                     'assets/images/mesh.png',
                     fit: BoxFit.cover,
                   ),
-                ),
+                ),*/
                 Column(
                   children: [
                     Expanded(
@@ -548,7 +552,8 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  Widget _getLocationListBodyUI(MyLocationListProvider myLocationListProvider, String sovID) {
+  Widget _getLocationListBodyUI(
+      MyLocationListProvider myLocationListProvider, String sovID) {
     final isSelectionMode = myLocationListProvider.selectedLocations.isNotEmpty;
 
     var typography = CustomTypography(context);
@@ -644,13 +649,17 @@ class _MyLocationListState extends State<MyLocationList>
                             ),
                             TextButton(
                               onPressed: () {
-                                if(_selectedScreen == Screens.locationList) {
+                                if (_selectedScreen == Screens.locationList) {
                                   // On export button click
-                                  List<String> selectedSovIds = Provider.of<MyLocationListProvider>(context, listen: false)
-                                      .myLocationList
-                                      .where((location) => location.isSelected ?? false)
-                                      .map((sov) => sov.id!)
-                                      .toList();
+                                  List<String> selectedSovIds =
+                                      Provider.of<MyLocationListProvider>(
+                                              context,
+                                              listen: false)
+                                          .myLocationList
+                                          .where((location) =>
+                                              location.isSelected ?? false)
+                                          .map((sov) => sov.id!)
+                                          .toList();
 
                                   if (selectedSovIds.isNotEmpty) {
                                     showDialog(
@@ -664,20 +673,27 @@ class _MyLocationListState extends State<MyLocationList>
                                       },
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
                                       content: Text(
-                                        LanguageService.getTranslated(context, "no_items_selected_error"),
+                                        LanguageService.getTranslated(
+                                            context, "no_items_selected_error"),
                                         style: typography.Body1,
                                       ),
                                     ));
                                   }
-                                } else if (_selectedScreen == Screens.certifiedLocationList) {
+                                } else if (_selectedScreen ==
+                                    Screens.certifiedLocationList) {
                                   // On export button click
-                                  List<String> selectedLoactionIds = Provider.of<MyLocationListProvider>(context, listen: false)
-                                      .certifiedLocationList
-                                      .where((location) => location.isSelected ?? false)
-                                      .map((sov) => sov.id!)
-                                      .toList();
+                                  List<String> selectedLoactionIds =
+                                      Provider.of<MyLocationListProvider>(
+                                              context,
+                                              listen: false)
+                                          .certifiedLocationList
+                                          .where((location) =>
+                                              location.isSelected ?? false)
+                                          .map((sov) => sov.id!)
+                                          .toList();
 
                                   if (selectedLoactionIds.isNotEmpty) {
                                     showDialog(
@@ -691,15 +707,16 @@ class _MyLocationListState extends State<MyLocationList>
                                       },
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
                                       content: Text(
-                                        LanguageService.getTranslated(context, "no_items_selected_error"),
+                                        LanguageService.getTranslated(
+                                            context, "no_items_selected_error"),
                                         style: typography.Body1,
                                       ),
                                     ));
                                   }
                                 }
-
                               },
                               child: Text('Export'),
                             ),
@@ -710,13 +727,14 @@ class _MyLocationListState extends State<MyLocationList>
                     icon: Icon(Icons.download),
                     tooltip: 'Export Selected',
                   ),
-                  IconButton(onPressed: (){
-                    // Implement bulk add to SOV
-                    locationListProvider.addTagsToSelectedLocations(
-                        context,
-                        widget.accountID,
-                        widget.subAccountID);
-                  }, icon: Icon(Symbols.note_stack_add), tooltip: 'Add Tag'),
+                  IconButton(
+                      onPressed: () {
+                        // Implement bulk add to SOV
+                        locationListProvider.addTagsToSelectedLocations(
+                            context, widget.accountID, widget.subAccountID);
+                      },
+                      icon: Icon(Symbols.note_stack_add),
+                      tooltip: 'Add Tag'),
                   IconButton(
                     onPressed: () {
                       // Implement bulk add to SOV
@@ -800,6 +818,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 ],
                               )
                             : SizedBox(),
+                        // if selected main tab is 1 then show the Generate Heatmap button
                         SizedBox(width: CustomSpacing.two),
                         TooltipTheme(
                           data: TooltipThemeData(
@@ -858,9 +877,10 @@ class _MyLocationListState extends State<MyLocationList>
                                 ),
                               );
                             } else {
-                             /* _showUploadDialog(
+                              /* _showUploadDialog(
                                   widget.accountID, widget.subAccountID, "");*/
-                              _showUploadBottomSheet(widget.accountID, widget.subAccountID, "");
+                              _showUploadBottomSheet(
+                                  widget.accountID, widget.subAccountID, "");
                             }
                           },
                         ),
@@ -870,7 +890,8 @@ class _MyLocationListState extends State<MyLocationList>
                           leading: Icon(Icons.add),
                           title: Text('Add Location', style: typography.Body1),
                           onTap: () {
-                            print("sending account name: ${widget.accountName}");
+                            print(
+                                "sending account name: ${widget.accountName}");
                             if (isMaintenance) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -880,8 +901,10 @@ class _MyLocationListState extends State<MyLocationList>
                               );
                             } else {
                               _selectedScreen = Screens.addLocation;
-                              print("sending account name: ${widget.accountName}");
-                              print("sending sub account name: ${widget.subAccountName}");
+                              print(
+                                  "sending account name: ${widget.accountName}");
+                              print(
+                                  "sending sub account name: ${widget.subAccountName}");
                               Navigator.of(context).push(MaterialPageRoute(
                                 builder: (_) => AddLocationScreen(
                                   accountId: widget.accountID,
@@ -898,7 +921,8 @@ class _MyLocationListState extends State<MyLocationList>
                       PopupMenuItem(
                         child: ListTile(
                           leading: Icon(Icons.download),
-                          title: Text('Export Locations', style: typography.Body1),
+                          title:
+                              Text('Export Locations', style: typography.Body1),
                           onTap: () {
                             showDialog(
                               context: context,
@@ -907,11 +931,17 @@ class _MyLocationListState extends State<MyLocationList>
                                   accountId: widget.accountID,
                                   subAccountId: widget.subAccountID,
                                   sovId: "",
-                                  locationId: selectedMainTab==0?myLocationListProvider.myLocationList.map((location) => location.id??"").toList():myLocationListProvider.certifiedLocationList.map((location) => location.id??"").toList(),
+                                  locationId: selectedMainTab == 0
+                                      ? myLocationListProvider.myLocationList
+                                          .map((location) => location.id ?? "")
+                                          .toList()
+                                      : myLocationListProvider
+                                          .certifiedLocationList
+                                          .map((location) => location.id ?? "")
+                                          .toList(),
                                 );
                               },
                             );
-
                           },
                         ),
                       ),
@@ -927,12 +957,11 @@ class _MyLocationListState extends State<MyLocationList>
           child: MaintenanceUI(isMaintenance: isMaintenance),
         ),
         Consumer<JobMonitoringProvider>(
-          builder: (context, jobMonitoringProvider, child) {
-            return Container(
-              child: _getLiveUI(jobMonitoringProvider),
-            );
-          }
-        ),
+            builder: (context, jobMonitoringProvider, child) {
+          return Container(
+            child: _getLiveUI(jobMonitoringProvider),
+          );
+        }),
         showSelectAll
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1005,68 +1034,60 @@ class _MyLocationListState extends State<MyLocationList>
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(16), // Rounded edges
+            borderRadius: BorderRadius.circular(8),
           ),
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          child: DefaultTabController(
-            length: 3,
-            child: Builder(builder: (context) {
-              return Column(
-                children: <Widget>[
-                  // Container for the TabBar with arrows
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    ),
-                    child: TabBar(
-                      controller: _mainTabController,
-                      dividerColor: Colors.transparent,
-                      indicatorPadding:
-                          EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-                      indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        // Makes the tab rounded
-                        color: AppColors.primaryMain.withOpacity(
-                            0.16), // Background color for the selected tab
-                      ),
-                      //indicatorColor: Colors.lightBlueAccent,
-                      labelColor: AppColors.primaryMain,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      unselectedLabelColor: Colors.grey,
-                      splashBorderRadius: BorderRadius.circular(8),
-                      tabs: [
-                        Tab(
-                          icon: _buildTabIcon(
-                              context,
-                              'assets/images/location_list_icon.svg',
-                              'Location List',
-                              0,
-                              18),
-                        ),
-                        Tab(
-                          icon: _buildTabIcon(
-                              context,
-                              'assets/images/map_view_icon.svg',
-                              'Map View',
-                              1,
-                              18),
-                        ),
-                        Tab(
-                          icon: _buildTabIcon(
-                              context,
-                              'assets/images/overall_tab_icon.svg',
-                              'Overall Score',
-                              2,
-                              30),
-                        ),
-                      ],
-                    ),
+          child: ClipRRect(
+            clipBehavior: Clip.antiAlias,
+            borderRadius: BorderRadius.circular(8),
+            child: GNav(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+             // backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                rippleColor: Colors.grey[800]!, // tab button ripple color when pressed
+                hoverColor: Colors.grey[700]!, // tab button hover color
+                haptic: true, // haptic feedback
+                duration: Duration(milliseconds: 100), // tab animation duration
+                tabBorderRadius: 8,
+                //tabActiveBorder: Border.all(color: Colors.black, width: 1), // tab button border
+                //tabBorder: Border.all(color: Colors.grey, width: 1), // tab button border
+                //tabShadow: [BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 8)], // tab button shadow
+                curve: Curves.easeOutExpo, // tab animation curves
+
+                gap: 8, // the tab button gap between icon and text
+                color: Colors.grey[300], // unselected icon color
+                activeColor: AppColors.primaryMain, // selected icon and text color
+                iconSize: 24, // tab button icon size
+                tabBackgroundColor: AppColors.primaryMain.withOpacity(
+                0.16), // selected tab background color
+
+                onTabChange: (index) {
+                  setState(() {
+                    selectedMainTab = index;
+                    if (index == 0) {
+                      _mainTabController?.animateTo(0);
+                    } else if (index == 1) {
+                      _mainTabController?.animateTo(1);
+                    } else if (index == 2) {
+                      _mainTabController?.animateTo(2);
+                    }
+                  });
+                },
+                tabs: [
+                  GButton(
+                    icon: Remix.file_list_3_line,
+                    text: 'Location List',
                   ),
-                ],
-              );
-            }),
+                  GButton(
+                    icon: Remix.road_map_line,
+                    text: 'Map View',
+                  ),
+                  GButton(
+                    icon: Remix.bar_chart_box_ai_line,
+                    text: 'Overall Score',
+                  ),
+                ]
+            ),
           ),
         ),
         SizedBox(height: CustomSpacing.two),
@@ -1125,7 +1146,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(SnackBar(
                                   content: Text(
-                                    "Please include a rating of 5 in filter to view certified locations.",
+                                    "No certified locations.",
                                     style: typography.Body1,
                                   ),
                                 ));
@@ -1174,7 +1195,10 @@ class _MyLocationListState extends State<MyLocationList>
                 ],
               ),
               // Map View
-              LocationListMapView(accountId: widget.accountID, subAccountId: widget.subAccountID,),
+              LocationListMapView(
+                accountId: widget.accountID,
+                subAccountId: widget.subAccountID,
+              ),
               // Overall Score
               Consumer<MyLocationListProvider>(
                 builder: (context, locationListProvider, child) {
@@ -1188,10 +1212,6 @@ class _MyLocationListState extends State<MyLocationList>
       ],
     );
   }
-
-
-
-
 
   Widget _getLiveUI(JobMonitoringProvider provider) {
     var typography = CustomTypography(context);
@@ -1218,11 +1238,11 @@ class _MyLocationListState extends State<MyLocationList>
       // Combine streams for each chunk
       List<Stream<QuerySnapshot<Map<String, dynamic>>>> chunkStreams = chunks
           .map((chunk) => FirebaseFirestore.instance
-          .collection('processes')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .orderBy('created_at', descending: true)
-          .limit(5)
-          .snapshots())
+              .collection('processes')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .orderBy('created_at', descending: true)
+              .limit(5)
+              .snapshots())
           .toList();
 
       // Merge all chunk streams into a single stream
@@ -1241,7 +1261,7 @@ class _MyLocationListState extends State<MyLocationList>
           .doc(widget.subAccountID)
           .snapshots(),
       processStream,
-          (heatmapSnapshot, processSnapshot) {
+      (heatmapSnapshot, processSnapshot) {
         return {
           'heatmapData': heatmapSnapshot.data(),
           'processData': processSnapshot.docs.isNotEmpty
@@ -1254,9 +1274,12 @@ class _MyLocationListState extends State<MyLocationList>
     return StreamBuilder<Map<String, dynamic>>(
       stream: combinedStream,
       builder: (context, snapshot) {
+        print('Live UI snapshot: ${snapshot.data}');
+        print('Live UI snapshot connection state: ${snapshot.connectionState}');
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Display a loading indicator while waiting for data
-          return const SizedBox.shrink(); // Center(child: CircularProgressIndicator());
+          return const SizedBox
+              .shrink(); // Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
@@ -1279,9 +1302,11 @@ class _MyLocationListState extends State<MyLocationList>
               if (processStatus.toString().toLowerCase() != 'completed')
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => ProcessMonitoringScreen(),
-                    )).then((value) => _getData());
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(
+                          builder: (_) => ProcessMonitoringScreen(),
+                        ))
+                        .then((value) => _getData());
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1289,14 +1314,16 @@ class _MyLocationListState extends State<MyLocationList>
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Lottie.asset(
-                          'assets/lottie/loading.json', // Lottie file for 'in-progress' animation
+                          'assets/lottie/loading.json',
+                          // Lottie file for 'in-progress' animation
                           width: 24,
                           height: 24,
                         ),
                         SizedBox(width: 8.0),
                         Text(
                           'Processing',
-                          style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                          style: typography.Body2.copyWith(
+                              fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -1312,34 +1339,33 @@ class _MyLocationListState extends State<MyLocationList>
                       child: Row(
                         children: [
                           Lottie.asset(
-                            'assets/lottie/loading.json', // Lottie file for 'in-progress' animation
+                            'assets/lottie/loading.json',
+                            // Lottie file for 'in-progress' animation
                             width: 24,
                             height: 24,
                           ),
                           SizedBox(width: 8.0),
                           Text(
                             'Generating Heatmap',
-                            style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                            style: typography.Body2.copyWith(
+                                fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              SizedBox(height: CustomSpacing.two),
+
+              //SizedBox(height: CustomSpacing.two),
             ],
           );
         }
 
         // Return an empty widget if no data is available
-        return SizedBox();
+        return SizedBox.shrink();
       },
     );
   }
-
-
-
-
 
   _getComingSoonUI() {
     var typography = CustomTypography(context);
@@ -1380,7 +1406,7 @@ class _MyLocationListState extends State<MyLocationList>
     bool isSelected = _mainTabController?.index == tabIndex;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0),
+      padding: const EdgeInsets.symmetric(horizontal: 0.0),
       // Adjust padding to control spacing
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1540,6 +1566,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 label: Text(
                                     "Ratings: ${locationListProvider.rating.join(', ')}"),
                                 onDeleted: () {
+                                  print("Clearing ratings filter");
                                   locationListProvider.clearRatingsFilter();
                                   locationListProvider.fetchLocationList(
                                     context,
@@ -1631,10 +1658,17 @@ class _MyLocationListState extends State<MyLocationList>
                                 return Column(
                                   children: [
                                     MyLocationCard(
-                                      imageUrl: (locationListProvider.myLocationList[index].screenshots?.isNotEmpty ?? false)
-                                          ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
+                                      imageUrl: (locationListProvider
+                                                  .myLocationList[index]
+                                                  .screenshots
+                                                  ?.isNotEmpty ??
+                                              false)
+                                          ? locationListProvider
+                                                  .myLocationList[index]
+                                                  .screenshots![0]
+                                                  .imageUrl ??
+                                              ''
                                           : '',
-
                                       index: index,
                                       campusId: locationListProvider
                                               .myLocationList[index]
@@ -1733,11 +1767,14 @@ class _MyLocationListState extends State<MyLocationList>
                                       onAddTag: (locationId) {
                                         // Show add tag dialog
                                         // Implement bulk add tag
-                                        locationListProvider.addTagsToSelectedLocations(
-                                            context,
-                                            widget.accountID,
-                                            widget.subAccountID,locationId);
+                                        locationListProvider
+                                            .addTagsToSelectedLocations(
+                                                context,
+                                                widget.accountID,
+                                                widget.subAccountID,
+                                                locationId);
                                       },
+                                      getData: _getData,
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
@@ -1772,15 +1809,21 @@ class _MyLocationListState extends State<MyLocationList>
                               }
                             }
 
-                            return MyLocationCard(imageUrl: locationListProvider.myLocationList[index].screenshots?.isNotEmpty == true
-                                ? locationListProvider.myLocationList[index].screenshots![0].imageUrl ?? ''
-                                : '',
+                            return MyLocationCard(
+                              imageUrl: locationListProvider
+                                          .myLocationList[index]
+                                          .screenshots
+                                          ?.isNotEmpty ==
+                                      true
+                                  ? locationListProvider.myLocationList[index]
+                                          .screenshots![0].imageUrl ??
+                                      ''
+                                  : '',
                               campusId: locationListProvider
-                                  .myLocationList[index]
-                                  .finalAddress
-                                  ?.campusId ??
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.campusId ??
                                   '',
-
                               index: index,
                               accountId: widget.accountID,
                               subAccountId: widget.subAccountID,
@@ -1872,8 +1915,10 @@ class _MyLocationListState extends State<MyLocationList>
                                 locationListProvider.addTagsToSelectedLocations(
                                     context,
                                     widget.accountID,
-                                    widget.subAccountID,locationId);
+                                    widget.subAccountID,
+                                    locationId);
                               },
+                              getData: _getData,
                             );
                           },
                         ),
@@ -1914,7 +1959,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1938,7 +1983,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -1996,7 +2041,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         .fetchCertifiedLocationList(
                                       context,
                                       locationQuery,
-                                      0,
+                                      1,
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
@@ -2019,7 +2064,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       .fetchCertifiedLocationList(
                                     context,
                                     locationQuery,
-                                    0,
+                                    1,
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
@@ -2043,7 +2088,7 @@ class _MyLocationListState extends State<MyLocationList>
                           locationListProvider.fetchLocationList(
                             context,
                             locationQuery,
-                            0,
+                            1,
                             40,
                             widget.accountID,
                             widget.subAccountID,
@@ -2145,16 +2190,17 @@ class _MyLocationListState extends State<MyLocationList>
       BuildContext context) {
     return MyLocationCard(
       campusId: locationListProvider
-          .certifiedLocationList[index]
-          .finalAddress
-          ?.campusId ??
+              .certifiedLocationList[index].finalAddress?.campusId ??
           '',
-      imageUrl: (locationListProvider.certifiedLocationList[index].screenshots != null &&
-          locationListProvider.certifiedLocationList[index].screenshots!.isNotEmpty)
-          ? locationListProvider.certifiedLocationList[index].screenshots![0].imageUrl ?? ''
-          : '',
-
-
+      imageUrl:
+          (locationListProvider.certifiedLocationList[index].screenshots !=
+                      null &&
+                  locationListProvider
+                      .certifiedLocationList[index].screenshots!.isNotEmpty)
+              ? locationListProvider
+                      .certifiedLocationList[index].screenshots![0].imageUrl ??
+                  ''
+              : '',
       index: index,
       accountId: widget.accountID,
       subAccountId: widget.subAccountID,
@@ -2187,15 +2233,15 @@ class _MyLocationListState extends State<MyLocationList>
             print("Deleting location $locationId");
             // Delete the location
             await Provider.of<MyLocationListProvider>(context, listen: false)
-                .deleteLocations(context, widget.accountID, widget.subAccountID,"",
-                    [locationId]);
+                .deleteLocations(context, widget.accountID, widget.subAccountID,
+                    "", [locationId]);
 
             // Refresh the list after deletion
             Provider.of<MyLocationListProvider>(context, listen: false)
                 .fetchLocationList(
               context,
               locationQuery,
-              0,
+              1,
               40,
               widget.accountID,
               widget.subAccountID,
@@ -2222,10 +2268,9 @@ class _MyLocationListState extends State<MyLocationList>
         // Show add tag dialog
         // Implement bulk add tag
         locationListProvider.addTagsToSelectedLocations(
-            context,
-            widget.accountID,
-            widget.subAccountID,locationId);
+            context, widget.accountID, widget.subAccountID, locationId);
       },
+      getData: _getData,
     );
   }
 
@@ -2306,329 +2351,8 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  Future<void> _bulkDeleteLocations() async {
-    var typography = CustomTypography(context);
-    try {
-      // Construct the list of location details for deletion
-      List<Map<String, String>> locationList =
-          selectedLocations.map((location) {
-        return {
-          "location_id": location.id ?? '',
-          "owner_id": "widget.userId", // Assuming owner_id is userId
-        };
-      }).toList();
-
-      // Make API call to delete locations
-      await Provider.of<LocationListProvider>(context, listen: false)
-          .deleteLocations(context, "widget.accountId", "widget.subAccountId",
-              "widget.sovId", locationList);
-
-      // Clear selections
-      setState(() {
-        selectedLocations.clear();
-        showSelectAll = false;
-        isAllSelected = false;
-      });
-    } catch (e) {
-      // Error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete locations: ${e.toString()}')),
-      );
-    }
-  }
-
-  void _showUploadDialog(String accountId, String subAccountId, String sovId) {
-    var typography = CustomTypography(context);
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(builder: (context, StateSetter setState) {
-            return WillPopScope(
-              onWillPop: () async {
-                return false; // Disable the back button
-              },
-              child: AlertDialog(
-                backgroundColor: Colors.black87,
-                content: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(height: 20),
-                      _uploadedFileName == null
-                          ? GestureDetector(
-                              onTap: () async {
-                                FilePickerResult? result =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: ['xls', 'xlsx'],
-                                );
-                                if (result != null) {
-                                  File file = File(result.files.single.path!);
-                                  setState(() {
-                                    files = file;
-                                    String fileNameWithExtension =
-                                        file.path.split('/').last;
-                                    _uploadedFileName =
-                                        fileNameWithExtension.split('.').first;
-                                    _sovNameController.text =
-                                        _uploadedFileName!;
-                                  });
-                                }
-                              },
-                              child: Container(
-                                height: 150,
-                                width: MediaQuery.of(context).size.width / 1.2,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.cloud_upload_outlined,
-                                          color: Colors.white),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_account_upload_drag_and_drop"),
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.info_outline,
-                                              color: Colors.white54),
-                                          SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
-                                              style: typography.Body1),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              height: 150,
-                              width: MediaQuery.of(context).size.width / 1.2,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.description, size: 25),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    _sovNameController.text,
-                                    style: typography.Body1,
-                                  ),
-                                  SizedBox(height: 10),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _uploadedFileName = null;
-                                        _sovNameController.clear();
-                                      });
-                                    },
-                                    child: Text(
-                                      LanguageService.getTranslated(context,
-                                          "account_list_app_cancel_text"),
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          fontSize: 14),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                ],
-                              ),
-                            ),
-                      SizedBox(height: 20),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Consumer<MyLocationListProvider>(
-                              builder: (_, locationListProvider, child) {
-                            return locationListProvider.isImageUploadLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : Container(
-                                    width:
-                                        MediaQuery.of(context).size.width / 1.2,
-                                    child: CustomButton(
-                                      onPressed: () async {
-                                        String success = (await Provider.of<
-                                                    LocationListProvider>(
-                                                context,
-                                                listen: false)
-                                            .uploadSovAccount(
-                                                context,
-                                                files,
-                                                accountId,
-                                                subAccountId,
-                                                sovId));
-
-                                        print('Success: $success');
-                                        // contain symbol +
-                                        if (success.isNotEmpty &&
-                                            success.contains('+')) {
-                                          print('Inside + success: $success');
-                                          // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                          showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                  title: Text(
-                                                    /*LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_empty_sov_title")*/
-                                                    'Empty SOV',
-                                                    style:
-                                                        typography.H5_Regular,
-                                                  ),
-                                                  content: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        /* LanguageService.getTranslated(
-                                                            context,
-                                                            "account_list_app_empty_sov_text"),*/
-                                                        'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                        style: typography.Body1,
-                                                      ),
-                                                      SizedBox(
-                                                        height:
-                                                            CustomSpacing.two,
-                                                      ),
-                                                      Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .stretch,
-                                                        children: [
-                                                          Consumer<
-                                                                  UploadSovProvider>(
-                                                              builder: (context,
-                                                                  uploadSovProvider,
-                                                                  child) {
-                                                            return uploadSovProvider
-                                                                    .isLoading
-                                                                ? const Center(
-                                                                    child:
-                                                                        CircularProgressIndicator(),
-                                                                  )
-                                                                : CustomButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      // Create empty SOV
-                                                                      var provider = Provider.of<
-                                                                              UploadSovProvider>(
-                                                                          context,
-                                                                          listen:
-                                                                              false);
-                                                                      await provider.createEmptySov(
-                                                                          context,
-                                                                          success);
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                    },
-                                                                    child: Text(
-                                                                      /*LanguageService.getTranslated(
-                                                                      context,
-                                                                      "account_list_app_empty_sov_create"),*/
-                                                                      'Create',
-                                                                      style: typography
-                                                                          .ButtonLarge,
-                                                                    ),
-                                                                    type: ButtonType
-                                                                        .elevated,
-                                                                  );
-                                                          }),
-                                                          CustomButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: Text(
-                                                              /*LanguageService.getTranslated(
-                                                                  context,
-                                                                  "account_list_app_empty_sov_abort")*/
-                                                              'Abort',
-                                                              style: typography
-                                                                  .ButtonLarge,
-                                                            ),
-                                                            type:
-                                                                ButtonType.text,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              });
-                                        } else if (success.isNotEmpty) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => MappingScreen(
-                                                        tempId: success,
-                                                        accountId:
-                                                            "widget.accountId",
-                                                        accountName:
-                                                            "widget.accountName??"
-                                                            "",
-                                                      )));
-                                        }
-                                      },
-                                      type: ButtonType.filled,
-                                      child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "login_submit_button"),
-                                        style: typography.ButtonLarge,
-                                      ),
-                                    ),
-                                  );
-                          }),
-                          Container(
-                            width: MediaQuery.of(context).size.width / 1.2,
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _uploadedFileName = null;
-                                  _sovNameController.clear();
-                                });
-                                Navigator.of(context).pop();
-                              },
-                              child: Text(
-                                  LanguageService.getTranslated(
-                                      context, "account_list_app_cancel_text"),
-                                  style: typography.Body1),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          });
-        });
-  }
-
-  void _showUploadBottomSheet(String accountId, String subAccountId, String sovId) {
+  void _showUploadBottomSheet(
+      String accountId, String subAccountId, String sovId) {
     var typography = CustomTypography(context);
     Navigator.pop(context);
     showModalBottomSheet(
@@ -2656,103 +2380,107 @@ class _MyLocationListState extends State<MyLocationList>
                     SizedBox(height: 40),
                     _uploadedFileName == null
                         ? GestureDetector(
-                      onTap: () async {
-                        FilePickerResult? result =
-                        await FilePicker.platform.pickFiles(
-                          type: FileType.custom,
-                          allowedExtensions: ['xls', 'xlsx'],
-                        );
-                        if (result != null) {
-                          File file = File(result.files.single.path!);
-                          setState(() {
-                            files = file;
-                            String fileNameWithExtension =
-                                file.path.split('/').last;
-                            _uploadedFileName =
-                                fileNameWithExtension.split('.').first;
-                            _sovNameController.text = _uploadedFileName!;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 150,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.cloud_upload_outlined,
-                                  color: Colors.white),
-                              SizedBox(height: 10),
-                              Text(
-                                "Click to upload or drag and drop",
-                                style: typography.Body1,
-                              ),
-                              SizedBox(height: 5),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.info_outline,
-                                      color: Colors.white54),
-                                  SizedBox(width: 3),
-                                  Text('Max file size is 200 MB',
-                                      style: typography.Body1),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                        : Center(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                                      height: 150,
-                                                      decoration: BoxDecoration(
+                            onTap: () async {
+                              FilePickerResult? result =
+                                  await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['xls', 'xlsx'],
+                              );
+                              if (result != null) {
+                                File file = File(result.files.single.path!);
+                                setState(() {
+                                  files = file;
+                                  String fileNameWithExtension =
+                                      file.path.split('/').last;
+                                  _uploadedFileName =
+                                      fileNameWithExtension.split('.').first;
+                                  _sovNameController.text = _uploadedFileName!;
+                                });
+                              }
+                            },
+                            child: Container(
+                              height: 150,
+                              decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey),
                                 borderRadius: BorderRadius.circular(8),
-                                                      ),
-                                                      child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.description, size: 25),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    _sovNameController.text,
-                                    style: typography.Body1,
-                                  ),
-                                  SizedBox(height: 10),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _uploadedFileName = null;
-                                        _sovNameController.clear();
-                                      });
-                                    },
-                                    child: Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          fontSize: 14),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.cloud_upload_outlined,
+                                        color: Colors.white),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      "Click to upload or drag and drop",
+                                      style: typography.Body1,
+                                    ),
+                                    SizedBox(height: 5),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.info_outline,
+                                            color: Colors.white54),
+                                        SizedBox(width: 3),
+                                        Text('Max file size is 200 MB',
+                                            style: typography.Body1),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 150,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.description, size: 25),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          _sovNameController.text,
+                                          style: typography.Body1,
+                                        ),
+                                        SizedBox(height: 10),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _uploadedFileName = null;
+                                              _sovNameController.clear();
+                                            });
+                                          },
+                                          child: Text(
+                                            "Cancel",
+                                            style: TextStyle(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .error,
+                                                fontSize: 14),
+                                          ),
+                                        ),
+                                        SizedBox(height: 5),
+                                      ],
                                     ),
                                   ),
-                                  SizedBox(height: 5),
-                                ],
-                                                      ),
-                                                    ),
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
                     SizedBox(height: 20),
                     if (!addToSOVCheck) ...[
                       TextField(
@@ -2761,8 +2489,10 @@ class _MyLocationListState extends State<MyLocationList>
                         decoration: InputDecoration(
                           labelText: "Enter Tags (separated by comma)",
                           labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue)),
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
@@ -2770,14 +2500,17 @@ class _MyLocationListState extends State<MyLocationList>
                     if (addToSOVCheck) ...[
                       // Fields displayed only if checkbox is checked
                       TextField(
-                        controller: _sovNameController,/*
+                        controller: _sovNameController,
+                        /*
                         readOnly: _uploadedFileName != null,*/
                         style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: "Name of the SoV",
                           labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue)),
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
@@ -2788,36 +2521,46 @@ class _MyLocationListState extends State<MyLocationList>
                         decoration: InputDecoration(
                           labelText: "Enter Tags (separated by comma)",
                           labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue)),
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
                       SizedBox(height: 10),
                       TextField(
-                        controller: TextEditingController(text: widget.accountName),
+                        controller:
+                            TextEditingController(text: widget.accountName),
                         style: TextStyle(color: Colors.white),
                         enabled: false,
                         decoration: InputDecoration(
                           labelText: "Enter Account Name",
                           labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          disabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue)),
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
                       SizedBox(height: 10),
                       TextField(
                         enabled: false,
-                        controller: TextEditingController(text: widget.subAccountName),
+                        controller:
+                            TextEditingController(text: widget.subAccountName),
                         style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: "Enter Sub-account Name",
                           labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          disabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue)),
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
@@ -2843,7 +2586,7 @@ class _MyLocationListState extends State<MyLocationList>
                         ],
                       ),
                     ),
-                   /* if (addToSOVCheck)
+                    /* if (addToSOVCheck)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Column(
@@ -2880,109 +2623,164 @@ class _MyLocationListState extends State<MyLocationList>
                               return locationListProvider.isImageUploadLoading
                                   ? Center(child: CircularProgressIndicator())
                                   : Row(
-                                    children: [
-                                      Expanded(child: CustomButton(type: ButtonType.elevated, onPressed: () async {
-                                        // Upload the file
-                                        // return if file is null
-                                        if (files.path.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please select a file to upload")));
-                                          return;
-                                        }
-                                        // return if file is not xlsx
-                                        if (!files.path.endsWith('.xlsx')) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please select a valid file to upload")));
-                                          return;
-                                        }
-                                        String success = await locationListProvider.uploadSov(context, files, accountId, subAccountId, sovId, tagController.text, _sovNameController.text);
-                                        Navigator.pop(context);
+                                      children: [
+                                        Expanded(
+                                            child: CustomButton(
+                                                type: ButtonType.elevated,
+                                                onPressed: () async {
+                                                  // Upload the file
+                                                  // return if file is null
+                                                  if (files.path.isEmpty) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: Text(
+                                                                "Please select a file to upload")));
+                                                    return;
+                                                  }
+                                                  // return if file is not xlsx
+                                                  if (!files.path
+                                                      .endsWith('.xlsx')) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: Text(
+                                                                "Please select a valid file to upload")));
+                                                    return;
+                                                  }
+                                                  String success =
+                                                      await locationListProvider
+                                                          .uploadSov(
+                                                              context,
+                                                              files,
+                                                              accountId,
+                                                              subAccountId,
+                                                              sovId,
+                                                              tagController
+                                                                  .text,
+                                                              _sovNameController
+                                                                  .text);
+                                                  Navigator.pop(context);
 
-                                        print('Success: $success');
-                                        // contain symbol +
-                                        if(success.isNotEmpty && success.contains('+')){
-                                          print('Inside + success: $success');
-                                          // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                          showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                  title: Text(
-                                                    /*LanguageService.getTranslated(
+                                                  print('Success: $success');
+                                                  // contain symbol +
+                                                  if (success.isNotEmpty &&
+                                                      success.contains('+')) {
+                                                    print(
+                                                        'Inside + success: $success');
+                                                    // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                                    showDialog(
+                                                        context: context,
+                                                        builder: (BuildContext
+                                                            context) {
+                                                          return AlertDialog(
+                                                            title: Text(
+                                                              /*LanguageService.getTranslated(
                                                         context,
                                                         "account_list_app_empty_sov_title")*/
-                                                    'Empty SOV',
-                                                    style: typography.H5_Regular,
-                                                  ),
-                                                  content: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        /* LanguageService.getTranslated(
+                                                              'Empty SOV',
+                                                              style: typography
+                                                                  .H5_Regular,
+                                                            ),
+                                                            content: Column(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Text(
+                                                                  /* LanguageService.getTranslated(
                                                             context,
                                                             "account_list_app_empty_sov_text"),*/
-                                                        'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                        style: typography.Body1,
-                                                      ),
-                                                      SizedBox(
-                                                        height: CustomSpacing.two,
-                                                      ),
-                                                      Column(
-                                                        crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .stretch,
-                                                        children: [
-                                                          Consumer<UploadSovProvider>(
-                                                              builder: (context, uploadSovProvider, child) {
-                                                                return uploadSovProvider.isLoading?
-                                                                const Center(
-                                                                  child: CircularProgressIndicator(),
-                                                                ):
-                                                                CustomButton(
-                                                                  onPressed: () async {
-                                                                    // Create empty SOV
-                                                                    var provider = Provider.of<UploadSovProvider>(context, listen: false);
-                                                                    await provider.createEmptySov(context, success);
-                                                                    Navigator.pop(context);
-                                                                  },
-                                                                  child: Text(
-                                                                    /*LanguageService.getTranslated(
+                                                                  'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                                  style:
+                                                                      typography
+                                                                          .Body1,
+                                                                ),
+                                                                SizedBox(
+                                                                  height:
+                                                                      CustomSpacing
+                                                                          .two,
+                                                                ),
+                                                                Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .stretch,
+                                                                  children: [
+                                                                    Consumer<UploadSovProvider>(builder:
+                                                                        (context,
+                                                                            uploadSovProvider,
+                                                                            child) {
+                                                                      return uploadSovProvider
+                                                                              .isLoading
+                                                                          ? const Center(
+                                                                              child: CircularProgressIndicator(),
+                                                                            )
+                                                                          : CustomButton(
+                                                                              onPressed: () async {
+                                                                                // Create empty SOV
+                                                                                var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                                await provider.createEmptySov(context, success);
+                                                                                Navigator.pop(context);
+                                                                              },
+                                                                              child: Text(
+                                                                                /*LanguageService.getTranslated(
                                                                       context,
                                                                       "account_list_app_empty_sov_create"),*/
-                                                                    'Create',
-                                                                    style: typography.ButtonLarge,
-                                                                  ),
-                                                                  type: ButtonType.elevated,
-                                                                );
-                                                              }
-                                                          ),
-                                                          CustomButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(context);
-                                                            },
-                                                            child: Text(
-                                                              /*LanguageService.getTranslated(
+                                                                                'Create',
+                                                                                style: typography.ButtonLarge,
+                                                                              ),
+                                                                              type: ButtonType.elevated,
+                                                                            );
+                                                                    }),
+                                                                    CustomButton(
+                                                                      onPressed:
+                                                                          () {
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                      },
+                                                                      child:
+                                                                          Text(
+                                                                        /*LanguageService.getTranslated(
                                                                   context,
                                                                   "account_list_app_empty_sov_abort")*/
-                                                              'Abort',
-                                                              style: typography.ButtonLarge,
+                                                                        'Abort',
+                                                                        style: typography
+                                                                            .ButtonLarge,
+                                                                      ),
+                                                                      type: ButtonType
+                                                                          .text,
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ],
                                                             ),
-                                                            type: ButtonType.text,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              });
-                                        }
-                                        else if(success.isNotEmpty) {
-
-                                          Navigator.push(context, MaterialPageRoute(builder: (_) => MappingScreen(tempId: success, accountId: widget.accountID, accountName: widget.accountName??"",)));
-
-                                        }
-
-                                      }, child: Text("Upload", style: typography.ButtonLarge.copyWith(color: Colors.white)))),
-                                    ],
-                                  );
+                                                          );
+                                                        });
+                                                  } else if (success
+                                                      .isNotEmpty) {
+                                                    Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                MappingScreen(
+                                                                  tempId:
+                                                                      success,
+                                                                  accountId: widget
+                                                                      .accountID,
+                                                                  accountName:
+                                                                      widget.accountName ??
+                                                                          "",
+                                                                )));
+                                                  }
+                                                },
+                                                child: Text("Upload",
+                                                    style:
+                                                        typography.ButtonLarge
+                                                            .copyWith(
+                                                                color: Colors
+                                                                    .white)))),
+                                      ],
+                                    );
                             },
                           ),
                           TextButton(
@@ -3008,7 +2806,6 @@ class _MyLocationListState extends State<MyLocationList>
       },
     );
   }
-
 
   void sovSearchClient(String query) async {
     debounce(() async {
@@ -3167,7 +2964,7 @@ class _MyLocationListState extends State<MyLocationList>
                   );
                 }));
               },
-       /* onLongPress: () {
+        /* onLongPress: () {
           setState(() {
             if (showCheckbox) {
               showCheckbox = false;
@@ -3439,40 +3236,38 @@ class _MyLocationListState extends State<MyLocationList>
                                   ),
                                   /*!sOVListProvider.showLocationCount
                                       ? SizedBox()
-                                      : */Row(
-                                          children: [
-                                            Text(
-                                                sOVListProvider.sovList[index]
-                                                                .locationCount !=
-                                                            null &&
-                                                        sOVListProvider
-                                                                .sovList[index]
-                                                                .locationCount ==
-                                                            1
-                                                    ? LanguageService.getTranslated(
-                                                        context,
-                                                        "sov_list_app_column_location_count_text")
-                                                    : sOVListProvider
-                                                                .sovList[index]
-                                                                .locationCount ==
-                                                            null
-                                                        ? ""
-                                                        : LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "sov_list_app_column_location_count_text"),
-                                                style: typography.Caption),
-                                            SizedBox(
-                                              width: CustomSpacing.two,
-                                            ),
-                                            Text(
-                                                sOVListProvider.sovList[index]
-                                                        .locationCount
-                                                        ?.toString() ??
-                                                    "",
-                                                style: typography.Caption),
-                                          ],
-                                        ),
+                                      : */
+                                  Row(
+                                    children: [
+                                      Text(
+                                          sOVListProvider.sovList[index]
+                                                          .locationCount !=
+                                                      null &&
+                                                  sOVListProvider.sovList[index]
+                                                          .locationCount ==
+                                                      1
+                                              ? LanguageService.getTranslated(
+                                                  context,
+                                                  "sov_list_app_column_location_count_text")
+                                              : sOVListProvider.sovList[index]
+                                                          .locationCount ==
+                                                      null
+                                                  ? ""
+                                                  : LanguageService.getTranslated(
+                                                      context,
+                                                      "sov_list_app_column_location_count_text"),
+                                          style: typography.Caption),
+                                      SizedBox(
+                                        width: CustomSpacing.two,
+                                      ),
+                                      Text(
+                                          sOVListProvider
+                                                  .sovList[index].locationCount
+                                                  ?.toString() ??
+                                              "",
+                                          style: typography.Caption),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -3661,124 +3456,6 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  void _showSettingsModal(BuildContext context, int index) {
-    var typography = CustomTypography(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Consumer<SOVListProvider>(
-                builder: (context, sovListProvider, _) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                    leading: sovListProvider.showLocationCountLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: sovListProvider.showLocationCount,
-                            onChanged: (value) async {
-                              bool result =
-                                  await sovListProvider.changeColumnVisibility(
-                                      context,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      showLocationCount: value ?? false,
-                                      showOverallScore:
-                                          sovListProvider.showOverallScore,
-                                      type: 'location_count');
-
-                              if (result) {
-                                setModalState(() {
-                                  sovListProvider.showLocationCount =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  sovListProvider.showLocationCount =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                sovListProvider.fetchSovList(
-                                    context,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    _sovQuery,
-                                    sovListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(
-                            context, "sov_list_app_column_location_count_text"),
-                        style: typography.Body1),
-                  ),
-                  ListTile(
-                    leading: sovListProvider.showOverallScoreLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: sovListProvider.showOverallScore,
-                            onChanged: (value) async {
-                              bool result =
-                                  await sovListProvider.changeColumnVisibility(
-                                      context,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      showLocationCount:
-                                          sovListProvider.showLocationCount,
-                                      showOverallScore: value ?? false,
-                                      type: 'over_all_score');
-                              if (result) {
-                                setModalState(() {
-                                  sovListProvider.showOverallScore =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  sovListProvider.showOverallScore =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                sovListProvider.fetchSovList(
-                                    context,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    _sovQuery,
-                                    sovListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(
-                            context, "sov_list_app_column_overall_score_text"),
-                        style: typography.Body1),
-                  ),
-                ],
-              );
-            });
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _showTransferDialog(BuildContext context, SovAccount sov) async {
     var typography = CustomTypography(context);
     TextEditingController _userSearchController = TextEditingController();
@@ -3953,345 +3630,6 @@ class _MyLocationListState extends State<MyLocationList>
       print(e.toString());
       return [];
     }
-  }
-
-  void _showSOVUploadDialog(String accountId, String subAccountId) {
-    var typography = CustomTypography(context);
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(builder: (context, StateSetter setState) {
-            return WillPopScope(
-              onWillPop: () async {
-                return false; // Disable the back button
-              },
-              child: AlertDialog(
-                backgroundColor: Colors.black87,
-                content: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                          LanguageService.getTranslated(
-                              context, "account_list_app_account_upload_sov"),
-                          textAlign: TextAlign.start,
-                          style: typography.Body1),
-                      SizedBox(height: 20),
-                      _uploadedFileName == null
-                          ? GestureDetector(
-                              onTap: () async {
-                                FilePickerResult? result =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: ['xls', 'xlsx'],
-                                );
-                                if (result != null) {
-                                  File file = File(result.files.single.path!);
-                                  setState(() {
-                                    files = file;
-                                    String fileNameWithExtension =
-                                        file.path.split('/').last;
-                                    _uploadedFileName =
-                                        fileNameWithExtension.split('.').first;
-                                    _sovNameController.text =
-                                        _uploadedFileName!;
-                                  });
-                                }
-                              },
-                              child: Container(
-                                height: 150,
-                                width: MediaQuery.of(context).size.width / 1.2,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.cloud_upload_outlined,
-                                          color: Colors.white),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_account_upload_drag_and_drop"),
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.info_outline,
-                                              color: Colors.white54),
-                                          SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
-                                              style: typography.Body1),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              height: 150,
-                              width: MediaQuery.of(context).size.width / 1.2,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.description, size: 25),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    _sovNameController.text,
-                                    style: typography.Body1,
-                                  ),
-                                  SizedBox(height: 10),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _uploadedFileName = null;
-                                        _sovNameController.clear();
-                                      });
-                                    },
-                                    child: Text(
-                                      LanguageService.getTranslated(context,
-                                          "account_list_app_cancel_text"),
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                          fontSize: 14),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                ],
-                              ),
-                            ),
-                      SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Text(
-                              LanguageService.getTranslated(context,
-                                  "account_list_app_account_sov_name_1"),
-                              textAlign: TextAlign.start,
-                              style: typography.Body1),
-                          Flexible(
-                            child: Center(
-                              child: Text(widget.accountName ?? "",
-                                  textAlign: TextAlign.start,
-                                  style: typography.Body1),
-                            ),
-                          ),
-                          Text(
-                              LanguageService.getTranslated(context,
-                                  "account_list_app_account_sov_name_2"),
-                              textAlign: TextAlign.start,
-                              style: typography.Body1),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      TextField(
-                        controller: _sovNameController,
-                        readOnly: false,
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(
-                              context, "account_list_app_sov_name"),
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue),
-                          ),
-                          hintText: LanguageService.getTranslated(
-                              context, "account_list_app_account_name_of_sov"),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Consumer<SubAccountListProvider>(
-                              builder: (_, subAccountProvider, child) {
-                            return subAccountProvider.isImageUploadLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : Container(
-                                    width:
-                                        MediaQuery.of(context).size.width / 1.2,
-                                    child: CustomButton(
-                                      onPressed: () async {
-                                        String success = (await Provider.of<
-                                                    SubAccountListProvider>(
-                                                context,
-                                                listen: false)
-                                            .uploadSovAccount(
-                                                context,
-                                                files,
-                                                accountId,
-                                                subAccountId,
-                                                _sovNameController.text));
-
-                                        print('Success: $success');
-                                        // contain symbol +
-                                        if (success.isNotEmpty &&
-                                            success.contains('+')) {
-                                          print('Inside + success: $success');
-                                          // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                          showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                  title: Text(
-                                                    /*LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_empty_sov_title")*/
-                                                    'Empty SOV',
-                                                    style:
-                                                        typography.H5_Regular,
-                                                  ),
-                                                  content: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        /* LanguageService.getTranslated(
-                                                            context,
-                                                            "account_list_app_empty_sov_text"),*/
-                                                        'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                        style: typography.Body1,
-                                                      ),
-                                                      SizedBox(
-                                                        height:
-                                                            CustomSpacing.two,
-                                                      ),
-                                                      Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .stretch,
-                                                        children: [
-                                                          Consumer<
-                                                                  UploadSovProvider>(
-                                                              builder: (context,
-                                                                  uploadSovProvider,
-                                                                  child) {
-                                                            return uploadSovProvider
-                                                                    .isLoading
-                                                                ? const Center(
-                                                                    child:
-                                                                        CircularProgressIndicator(),
-                                                                  )
-                                                                : CustomButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      // Create empty SOV
-                                                                      var provider = Provider.of<
-                                                                              UploadSovProvider>(
-                                                                          context,
-                                                                          listen:
-                                                                              false);
-                                                                      await provider.createEmptySov(
-                                                                          context,
-                                                                          success);
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                    },
-                                                                    child: Text(
-                                                                      /*LanguageService.getTranslated(
-                                                                      context,
-                                                                      "account_list_app_empty_sov_create"),*/
-                                                                      'Create',
-                                                                      style: typography
-                                                                          .ButtonLarge,
-                                                                    ),
-                                                                    type: ButtonType
-                                                                        .elevated,
-                                                                  );
-                                                          }),
-                                                          CustomButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: Text(
-                                                              /*LanguageService.getTranslated(
-                                                                  context,
-                                                                  "account_list_app_empty_sov_abort")*/
-                                                              'Abort',
-                                                              style: typography
-                                                                  .ButtonLarge,
-                                                            ),
-                                                            type:
-                                                                ButtonType.text,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              });
-                                        } else if (success.isNotEmpty) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => MappingScreen(
-                                                        tempId: success,
-                                                        accountId:
-                                                            widget.accountID,
-                                                        accountName: widget
-                                                                .accountName ??
-                                                            "",
-                                                      )));
-                                        }
-                                      },
-                                      type: ButtonType.filled,
-                                      child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "login_submit_button"),
-                                        style: typography.ButtonLarge,
-                                      ),
-                                    ),
-                                  );
-                          }),
-                          Container(
-                            width: MediaQuery.of(context).size.width / 1.2,
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _uploadedFileName = null;
-                                  _sovNameController.clear();
-                                });
-                                Navigator.of(context).pop();
-                              },
-                              child: Text(
-                                  LanguageService.getTranslated(
-                                      context, "account_list_app_cancel_text"),
-                                  style: typography.Body1),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          });
-        });
   }
 }
 
@@ -4575,4 +3913,5 @@ class ScoreBar extends StatelessWidget {
       ),
     );
   }
+
 }

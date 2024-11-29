@@ -34,6 +34,8 @@ class MyLocationCard extends StatefulWidget {
   final String? subAccountName;
   final String? locationQuery;
   final String? campusId;
+  // callback to get gata after coming back from profile page (nullable)
+  final void Function()? getData;
 
   const MyLocationCard({
     super.key,
@@ -60,6 +62,8 @@ class MyLocationCard extends StatefulWidget {
     this.sovName,
     this.subAccountName,
     this.locationQuery,
+    this.getData,
+
   });
 
   @override
@@ -130,7 +134,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
               page: (widget.index+1).toString(),
               totalPages: locationListProvider.locationHits.toString(),
             ),
-          ));/*.then((_) {
+          )).then((_) {
+            // Call getData after pop
+            widget.getData?.call();
+          });
+          /*.then((_) {
             // Call getData after pop
             _getData();
           });*/

@@ -62,16 +62,79 @@ class CompanyType {
   late final String usedBy;
 
   CompanyType.fromJson(Map<String, dynamic> json){
-    isApplicableForTrial = json['is_applicable_for_trial'];
-    enableCorporateVerification = json['enable_corporate_verification'];
+   // id = json['id'];
+    if(json['is_applicable_for_trial'].runtimeType == bool) {
+      isApplicableForTrial = json['is_applicable_for_trial'];
+    } else {
+      print("is_applicable_for_trial: ${json['is_applicable_for_trial']}");
+      if(json['is_applicable_for_trial'] == null||json['is_applicable_for_trial'] == "") {
+        isApplicableForTrial = false;
+      } else {
+        isApplicableForTrial = bool.parse(json['is_applicable_for_trial']);
+      }
+      //isApplicableForTrial = bool.parse(json['is_applicable_for_trial']);
+    }
+    //isApplicableForTrial = json['is_applicable_for_trial'];
+    if(json['enable_corporate_verification'].runtimeType == bool) {
+      enableCorporateVerification = json['enable_corporate_verification'];
+    } else {
+      if(json['enable_corporate_verification'] == null||json['enable_corporate_verification'] == "") {
+        enableCorporateVerification = false;
+      } else {
+        enableCorporateVerification = bool.parse(json['enable_corporate_verification']);
+      }
+     // enableCorporateVerification = bool.parse(json['enable_corporate_verification']);
+    }
+    //enableCorporateVerification = json['enable_corporate_verification'];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
-    corporateUserSelfRegistration = json['corporate_user_self_registration'];
+    if(json['corporate_user_self_registration'].runtimeType == bool) {
+      corporateUserSelfRegistration = json['corporate_user_self_registration'];
+    } else {
+      if(json['corporate_user_self_registration'] == null||json['corporate_user_self_registration'] == "") {
+        corporateUserSelfRegistration = false;
+      } else {
+        corporateUserSelfRegistration = bool.parse(json['corporate_user_self_registration']);
+      }
+      //corporateUserSelfRegistration = bool.parse(json['corporate_user_self_registration']);
+    }
+    //corporateUserSelfRegistration = json['corporate_user_self_registration'];
     name = json['name']??"";
-    corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
-    canBeListed = json['can_be_listed'];
+    if(json['corporate_user_verification_by_admin'].runtimeType == bool) {
+      corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
+    } else {
+      if(json['corporate_user_verification_by_admin'] == null||json['corporate_user_verification_by_admin'] == "") {
+        corporateUserVerificationByAdmin = false;
+      } else {
+        corporateUserVerificationByAdmin = bool.parse(json['corporate_user_verification_by_admin']);
+      }
+      //corporateUserVerificationByAdmin = bool.parse(json['corporate_user_verification_by_admin']);
+    }
+    //corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
+    if(json['can_be_listed'].runtimeType == bool) {
+      canBeListed = json['can_be_listed'];
+    } else {
+      if(json['can_be_listed'] == null||json['can_be_listed'] == "") {
+        canBeListed = false;
+      } else {
+        canBeListed = bool.parse(json['can_be_listed']);
+      }
+      //canBeListed = bool.parse(json['can_be_listed']);
+    }
+    //canBeListed = json['can_be_listed'];
     trialPeriodDays = json['trial_period_days']??0;
     id = json['id'];
-    adminSelfRegistration = json['admin_self_registration'];
+    if(json['admin_self_registration'].runtimeType == bool) {
+      adminSelfRegistration = json['admin_self_registration'];
+
+    } else {
+      if(json['admin_self_registration'] == null||json['admin_self_registration'] == "") {
+        adminSelfRegistration = false;
+      } else {
+        adminSelfRegistration = bool.parse(json['admin_self_registration']);
+      }
+      //adminSelfRegistration = bool.parse(json['admin_self_registration']);
+    }
+    //adminSelfRegistration = json['admin_self_registration'];
     type = json['type'];
     usedBy = json['used_by'];
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -725,9 +726,16 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                             "country":
                                                                 _selectedCountry,
                                                             "new":
-                                                                _isSelectedFromAutocomplete,
-                                                            "rented": rented.toString(),
-                                                            "leased": leased.toString(),
+                                                                //_isSelectedFromAutocomplete
+                                                        addToSOVCheck,
+                                                            "rented": rented,
+                                                            "leased": leased,
+                                                            "latitude": markers.values.first.position.latitude,
+                                                            "longitude": markers.values.first.position.longitude,
+                                                            "user_id": FirebaseAuth.instance.currentUser!.uid,
+                                                            "add_to_sov": addToSOVCheck.toString(),
+                                                            "tags": "",
+                                                            "name": "",
                                                           }
                                                         };
                                                         locationListProvider
@@ -747,6 +755,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           .validate()) {
                                                         var body = {
                                                           "data": {
+                                                            "add_to_sov": addToSOVCheck.toString(),
                                                             "account_id":
                                                                 widget.accountId,
                                                             "sub_account_id":
@@ -780,9 +789,15 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                             "location_id":
                                                                 widget.locationId,
                                                             "new":
-                                                                _isSelectedFromAutocomplete,
-                                                            "rented": rented.toString(),
-                                                            "leased": leased.toString(),
+                                                            //_isSelectedFromAutocomplete
+                                                            addToSOVCheck,
+                                                            "rented": rented,
+                                                            "leased": leased,
+                                                            "latitude": markers.values.first.position.latitude,
+                                                            "longitude": markers.values.first.position.longitude,
+                                                            "user_id": FirebaseAuth.instance.currentUser!.uid,
+                                                            "tags": "",
+                                                            "name": "",
                                                           }
                                                         };
 
@@ -798,7 +813,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                         if (success
                                                                 .toLowerCase() ==
                                                             'true') {
-                                                          Navigator
+                                                          /*Navigator
                                                               .pushReplacement(
                                                             context,
                                                             MaterialPageRoute(
@@ -823,7 +838,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                     .totalPages,
                                                               ),
                                                             ),
-                                                          );
+                                                          );*/Navigator.pop(context, true);
                                                         }
                                                       }
                                                     }
@@ -852,9 +867,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                       "addlocation_create_button_text")
                                                               : "Update",
                                                           style: typography
-                                                              .ButtonLarge),
+                                                              .ButtonLarge.copyWith(color: themeProvider.getTheme.colorScheme.onPrimary),)),
                                                 ),
-                                              ),
                                             ],
                                           ),
                                         );
@@ -876,7 +890,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   LanguageService.getTranslated(
                                                       context,
                                                       "addlocation_cancel_button_text"),
-                                                  style: typography.ButtonLarge),
+                                                  style: typography.ButtonLarge.copyWith(
+                                                    color: themeProvider.getTheme.colorScheme.primary,
+                                                  )),
                                             ),
                                           ),
                                         ],
