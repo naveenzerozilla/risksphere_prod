@@ -37,6 +37,7 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
+import '../../providers/drawer_selection_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
@@ -164,7 +165,7 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   @override
   void initState() {
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     super.initState();
     _getData();
   }
@@ -191,204 +192,235 @@ class _AccountListScreenState extends State<AccountListScreen>
     return SafeArea(
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
-        return Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: themeProvider.getTheme.colorScheme.background,
-          appBar: CustomAppBar(
-            isExpanded: _isExpanded,
-            showDropdown: true,
-            showNotificationDot: _showNotificationDot,
-            onExpandPressed: (isExpanded) {
-              setState(() {
-                _isExpanded = isExpanded;
-              });
-            },
-            onSearchPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-          ),
-          drawer: CustomDrawer(),
-          floatingActionButton: _selectedScreen == Screens.accountList
-              ? showCheckbox
-                  ? Builder(builder: (contextLocal) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FloatingActionButton(
-                            onPressed: () {
-                              // On export button click
-                            },
-                            child: Icon(CupertinoIcons.tray_arrow_down),
-                          ),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          FloatingActionButton(
-                            onPressed: () {
-                              _tabController?.animateTo(3);
-                              _selectedScreen = Screens.networkList;
-                            },
-                            child: Icon(Icons.add),
-                          ),
-                        ],
-                      );
-                    })
-                  : FloatingActionButton(
-                      backgroundColor: AppColors.primaryMain,
-                      onPressed: () {
-                        // Add account dialog with autocomplete from api and create account
-                        _showAddAccountDialog(context);
-                      },
-                      child: Icon(
-                        Icons.add,
-                        color: Theme.of(context).colorScheme.surface,
-                      ),
-                    )
-              : SizedBox(),
-          body: PopScope(
-            canPop: /*_selectedScreen == Screens.connectionList ||
-                    _selectedScreen == Screens.corporateConnectionList,*/
-                true,
-            onPopInvoked: (canPop) {
-              print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-              /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-                    setState(() {
-                      _selectedScreen = Screens.corporateConnectionList;
-                    });
-                  } else if (_selectedScreen == Screens.requestList) {
-                    setState(() {
-                      _tabController?.animateTo(0);
-                      _selectedScreen = Screens.corporateConnectionList;
-                    });
-                  }*/
-            },
-            child: Stack(
-              children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/mesh.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+        return PopScope(
+          onPopInvokedWithResult: (canPop, result) {
+            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+            Provider.of<DrawerSelectionProvider>(context, listen: false)
+                .setSelectedItem("dashboard");
+          },
+          child: Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            appBar: CustomAppBar(
+              isExpanded: _isExpanded,
+              showDropdown: true,
+              showNotificationDot: _showNotificationDot,
+              onExpandPressed: (isExpanded) {
+                setState(() {
+                  _isExpanded = isExpanded;
+                });
+              },
+              onSearchPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+            ),
+            drawer: CustomDrawer(),
+            floatingActionButton: _selectedScreen == Screens.accountList
+                ? showCheckbox
+                    ? Builder(builder: (contextLocal) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            /*     Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        RolesDropdown(),
-                                      ],
-                                    ),
-                                  ],
-                                ),*/
-                            SizedBox(height: CustomSpacing.two),
-                            Container(
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
-                                borderRadius:
-                                    BorderRadius.circular(16), // Rounded edges
-                              ),
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 0, vertical: 0),
-                              child: DefaultTabController(
-                                length: 3,
-                                child: Column(
-                                  children: <Widget>[
-                                    // Container for the TabBar with arrows
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHigh,
-                                      ),
-                                      height: 50,
-                                      child: Row(
-                                        children: <Widget>[
-                                          // Left arrow button
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_left,
-                                                color: Colors.grey),
-                                            onPressed: _scrollLeft,
-                                          ),
-                                          // Scrollable TabBar
-                                          Expanded(
-                                            child: SingleChildScrollView(
-                                              controller: _scrollController,
-                                              scrollDirection: Axis.horizontal,
-                                              child: TabBar(
-                                                controller: _tabController,
-                                                tabAlignment:
-                                                    TabAlignment.start,
-                                                labelStyle:
-                                                    typography.Subtitle2,
-                                                isScrollable: true,
-                                                indicatorColor:
-                                                    Colors.lightBlueAccent,
-                                                labelColor:
-                                                    Colors.lightBlueAccent,
-                                                unselectedLabelColor:
-                                                    Colors.grey,
-                                                tabs: [
-                                                  Tab(
-                                                    text: 'My Accounts',
-                                                  ),
-                                                  Tab(text: 'Shared'),
-                                                  Tab(text: 'Access Requests'),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          // Right arrow button
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_right,
-                                                color: Colors.grey),
-                                            onPressed: _scrollRight,
-                                          ),
+                            FloatingActionButton(
+                              onPressed: () {
+                                // On export button click
+                              },
+                              child: Icon(CupertinoIcons.tray_arrow_down),
+                            ),
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                            FloatingActionButton(
+                              onPressed: () {
+                                _tabController?.animateTo(1);
+                                _selectedScreen = Screens.networkList;
+                              },
+                              child: Icon(Icons.add),
+                            ),
+                          ],
+                        );
+                      })
+                    : FloatingActionButton(
+                        backgroundColor: AppColors.primaryMain,
+                        onPressed: () {
+                          // Add account dialog with autocomplete from api and create account
+                          _showAddAccountDialog(context);
+                        },
+                        child: Icon(
+                          Icons.add,
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
+                      )
+                : SizedBox(),
+            body: PopScope(
+              canPop: /*_selectedScreen == Screens.connectionList ||
+                      _selectedScreen == Screens.corporateConnectionList,*/
+                  true,
+              onPopInvoked: (canPop) {
+                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                      setState(() {
+                        _selectedScreen = Screens.corporateConnectionList;
+                      });
+                    } else if (_selectedScreen == Screens.requestList) {
+                      setState(() {
+                        _tabController?.animateTo(0);
+                        _selectedScreen = Screens.corporateConnectionList;
+                      });
+                    }*/
+              },
+              child: Stack(
+                children: [
+                  // Background image
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/mesh.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              /*     Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          RolesDropdown(),
                                         ],
                                       ),
-                                    ),
+                                    ],
+                                  ),*/
+                              SizedBox(height: CustomSpacing.two),
+                              Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHigh,
+                                  borderRadius:
+                                      BorderRadius.circular(16), // Rounded edges
+                                ),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: 0, vertical: 0),
+                                child: DefaultTabController(
+                                  length: 3,
+                                  child: Column(
+                                    children: <Widget>[
+                                      // Container for the TabBar with arrows
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHigh,
+                                        ),
+                                        height: 50,
+                                        child: Row(
+                                          children: <Widget>[
+                                            // Left arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_left,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollLeft,
+                                            ),
+                                            // Scrollable TabBar
+                                            Consumer<AccountListProvider>(
+                                              builder: (context, accountListProvider, _) {
+                                                return Expanded(
+                                                  child: SingleChildScrollView(
+                                                    controller: _scrollController,
+                                                    scrollDirection: Axis.horizontal,
+                                                    child: TabBar(
+                                                      controller: _tabController,
+                                                      tabAlignment:
+                                                          TabAlignment.start,
+                                                      labelStyle:
+                                                          typography.Subtitle2,
+                                                      isScrollable: true,
+                                                      indicatorColor:
+                                                          Colors.lightBlueAccent,
+                                                      labelColor:
+                                                          Colors.lightBlueAccent,
+                                                      unselectedLabelColor:
+                                                          Colors.grey,
+                                                      tabs: [
+                                                        Tab(
+                                                          child:  Row(
+                                                            children: [
+                                                              Text('My Accounts', style: typography.Subtitle2),
+                                                              accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(width: CustomSpacing.two,),
+                                                              accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(
+                                                                height: 25,
+                                                                child: Chip(
+                                                                  labelPadding: EdgeInsets.all(0),
+                                                                  materialTapTargetSize:
+                                                                  MaterialTapTargetSize.shrinkWrap,
+                                                                  label: Text(
+                                                                    accountListProvider.accountHits
+                                                                        .toString(),
+                                                                    style:
+                                                                    typography.BottomNavigationActiveLabel
+                                                                        .copyWith(height: -0.6),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        Tab(text: 'Shared'),
+                                                        //Tab(text: 'Access Requests'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            ),
+                                            // Right arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_right,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollRight,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
 
 
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // TabBarView for the tab content
+                              Expanded(
+                                child
+                                    : TabBarView(
+                                  controller: _tabController,
+                                  children: [
+                                    _getAccountUI(),
+                                    _getComingSoonUI(),
+                                    //_getComingSoonUI(),
                                   ],
                                 ),
                               ),
-                            ),
-                            // TabBarView for the tab content
-                            Expanded(
-                              child
-                                  : TabBarView(
-                                controller: _tabController,
-                                children: [
-                                  _getAccountUI(),
-                                  _getComingSoonUI(),
-                                  _getComingSoonUI(),
-                                ],
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -791,7 +823,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 ],
                               ),
                             ),
-                            !accountListProvider.showOverallScore
+                            //!accountListProvider.showOverallScore
+                      true
                                 ? SizedBox()
                                 : Padding(
                                     padding:
@@ -1391,9 +1424,11 @@ class _AccountListScreenState extends State<AccountListScreen>
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, StateSetter setState) {
-            return WillPopScope(
-              onWillPop: () async {
-                return false;
+            return PopScope(
+              onPopInvokedWithResult: (canPop, result) {
+                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                Provider.of<DrawerSelectionProvider>(context, listen: false)
+                    .setSelectedItem("dashboard");
               },
               child: AlertDialog(
                 backgroundColor: Colors.black87,
@@ -1636,6 +1671,20 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     _autocompleteText);
                               },
                               decoration: InputDecoration(
+                                suffixIcon: _textEditingController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(Icons.clear),
+                                        onPressed: () {
+                                          setState(() {
+                                            _textEditingController.clear();
+                                            _accountAlreadyExists = false;
+                                            _selectedAccount = null;
+                                            // Clear the autocomplete list when user clears the text
+                                            accountListProvider.clearAutoCompleteList();
+                                          });
+                                        },
+                                      )
+                                    : null,
                                 labelText: LanguageService.getTranslated(
                                     context,
                                     "account_list_app_add_account_title"),
@@ -1891,9 +1940,22 @@ class _AccountListScreenState extends State<AccountListScreen>
           child: TextField(
             controller: _textEditingController,
             onChanged: (query) {
+              print("Query: ${_textEditingController.text}");
               accountsSearchClient(query);
+              setState(() {
+                _accountQuery = query;
+              });
             },
             decoration: InputDecoration(
+              suffixIcon: _accountQuery.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear),
+                      onPressed: () {
+                        _textEditingController.clear();
+                        accountsSearchClient("");
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1928,64 +1990,71 @@ class _AccountListScreenState extends State<AccountListScreen>
                           style: typography.Body1,
                         ),
                       )
-                    : ListView.builder(
-                        itemCount: accountListProvider.accountList.length,
-                        itemBuilder: (context, index) {
-                          print("Query1: $_accountQuery");
-                          if (index ==
-                              accountListProvider.accountList.length - 1) {
-                            // Check if it's the last item
-                            if (accountListProvider.isNextPageLoading) {
-                              // Display loading indicator
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            } else if (accountListProvider.page >=
-                                    accountListProvider.totalPages &&
-                                accountListProvider.accountList.isNotEmpty) {
-                              // Display end of list message
-                              print(
-                                  "account list: ${accountListProvider.accountList}");
-                              return Column(
-                                children: [
-                                  _buildAccountCard(index, accountListProvider),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Center(
-                                      child: Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_end_of_list_text"),
-                                        style: typography.Body1,
+                    : RefreshIndicator(
+
+                      onRefresh: () async {
+                        accountListProvider.fetchAccountList(
+                            context, _accountQuery, 1, 10);
+                      },
+                      child: ListView.builder(
+                          itemCount: accountListProvider.accountList.length,
+                          itemBuilder: (context, index) {
+                            print("Query1: $_accountQuery");
+                            if (index ==
+                                accountListProvider.accountList.length - 1) {
+                              // Check if it's the last item
+                              if (accountListProvider.isNextPageLoading) {
+                                // Display loading indicator
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              } else if (accountListProvider.page >=
+                                      accountListProvider.totalPages &&
+                                  accountListProvider.accountList.isNotEmpty) {
+                                // Display end of list message
+                                print(
+                                    "account list: ${accountListProvider.accountList}");
+                                return Column(
+                                  children: [
+                                    _buildAccountCard(index, accountListProvider),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          LanguageService.getTranslated(context,
+                                              "account_list_app_end_of_list_text"),
+                                          style: typography.Body1,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              );
+                                  ],
+                                );
+                              } else {
+                                // Trigger fetching the next page
+                                accountListProvider.page =
+                                    accountListProvider.page + 1;
+                                print(
+                                    "Fetching page ${accountListProvider.page}");
+                                print(
+                                    "Query: $_accountQuery, Page: ${accountListProvider.page}");
+                                accountListProvider.fetchAccountList(
+                                  context,
+                                  _accountQuery,
+                                  // Pass the search query if any
+                                  accountListProvider.page,
+                                  10, // Page size
+                                );
+                                return SizedBox();
+                              }
                             } else {
-                              // Trigger fetching the next page
-                              accountListProvider.page =
-                                  accountListProvider.page + 1;
-                              print(
-                                  "Fetching page ${accountListProvider.page}");
-                              print(
-                                  "Query: $_accountQuery, Page: ${accountListProvider.page}");
-                              accountListProvider.fetchAccountList(
-                                context,
-                                _accountQuery,
-                                // Pass the search query if any
-                                accountListProvider.page,
-                                10, // Page size
-                              );
-                              return SizedBox();
+                              return _buildAccountCard(
+                                  index, accountListProvider);
                             }
-                          } else {
-                            return _buildAccountCard(
-                                index, accountListProvider);
-                          }
-                        });
+                          }),
+                    );
           }),
         ),
       ],

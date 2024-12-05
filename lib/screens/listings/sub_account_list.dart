@@ -165,7 +165,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   @override
   void initState() {
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     super.initState();
     _getData();
   }
@@ -221,7 +221,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           ),
                           FloatingActionButton(
                             onPressed: () {
-                              _tabController?.animateTo(3);
+                              _tabController?.animateTo(1);
                               _selectedScreen = Screens.networkList;
                             },
                             child: Icon(Icons.add),
@@ -320,30 +320,54 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           ),
                                           // Scrollable TabBar
                                           Expanded(
-                                            child: SingleChildScrollView(
-                                              controller: _scrollController,
-                                              scrollDirection: Axis.horizontal,
-                                              child: TabBar(
-                                                controller: _tabController,
-                                                tabAlignment:
-                                                TabAlignment.start,
-                                                labelStyle:
-                                                typography.Subtitle2,
-                                                isScrollable: true,
-                                                indicatorColor:
-                                                Colors.lightBlueAccent,
-                                                labelColor:
-                                                Colors.lightBlueAccent,
-                                                unselectedLabelColor:
-                                                Colors.grey,
-                                                tabs: [
-                                                  Tab(
-                                                    text: 'Sub Accounts',
+                                            child: Consumer<SubAccountListProvider>(
+                                              builder: (context, subAccountListProvider, _) {
+                                                return SingleChildScrollView(
+                                                  controller: _scrollController,
+                                                  scrollDirection: Axis.horizontal,
+                                                  child: TabBar(
+                                                    controller: _tabController,
+                                                    tabAlignment:
+                                                    TabAlignment.start,
+                                                    labelStyle:
+                                                    typography.Subtitle2,
+                                                    isScrollable: true,
+                                                    indicatorColor:
+                                                    Colors.lightBlueAccent,
+                                                    labelColor:
+                                                    Colors.lightBlueAccent,
+                                                    unselectedLabelColor:
+                                                    Colors.grey,
+                                                    tabs: [
+                                                      Tab(
+                                                        child: Row(
+                                                          children: [
+                                                            Text('My Sub Accounts', style: typography.Subtitle2),
+                                                            subAccountListProvider.isLoading||subAccountListProvider.totalRecords == 0?SizedBox():SizedBox(width: CustomSpacing.two,),
+                                                            subAccountListProvider.isLoading||subAccountListProvider.totalRecords == 0?SizedBox():SizedBox(
+                                                              height: 25,
+                                                              child: Chip(
+                                                                labelPadding: EdgeInsets.all(0),
+                                                                materialTapTargetSize:
+                                                                MaterialTapTargetSize.shrinkWrap,
+                                                                label: Text(
+                                                                  subAccountListProvider.totalRecords
+                                                                      .toString(),
+                                                                  style:
+                                                                  typography.BottomNavigationActiveLabel
+                                                                      .copyWith(height: -0.6),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Tab(text: 'Shared'),
+                                                      //Tab(text: 'Access Requests'),
+                                                    ],
                                                   ),
-                                                  Tab(text: 'Shared'),
-                                                  Tab(text: 'Access Requests'),
-                                                ],
-                                              ),
+                                                );
+                                              }
                                             ),
                                           ),
                                           // Right arrow button
@@ -369,7 +393,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 children: [
                                   _getSubAccountUI(),
                                   _getComingSoonUI(),
-                                  _getComingSoonUI(),
+                                  //_getComingSoonUI(),
                                 ],
                               ),
                             ),
@@ -1612,6 +1636,15 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               accountsSearchClient(query);
             },
             decoration: InputDecoration(
+              suffixIcon: _subAccountQuery.isNotEmpty
+                  ? IconButton(
+                icon: Icon(Icons.clear),
+                onPressed: () {
+                  _textEditingController.clear();
+                  accountsSearchClient("");
+                },
+              )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

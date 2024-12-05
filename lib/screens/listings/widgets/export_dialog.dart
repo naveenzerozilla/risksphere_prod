@@ -45,7 +45,7 @@ class _ExportDialogState extends State<ExportDialog> {
                     value: 'excel',
                     child: Text('Excel(.xls)',style: typography.Body1),
                   ),
-                  DropdownMenuItem(
+                /*  DropdownMenuItem(
                     value: 'doc',
                     child: Text('Word(.doc)', style: typography.Body1),
                   ),
@@ -53,7 +53,7 @@ class _ExportDialogState extends State<ExportDialog> {
                   DropdownMenuItem(
                     value: 'pdf',
                     child: Text('PDF', style: typography.Body1),
-                  ),
+                  ),*/
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -66,7 +66,7 @@ class _ExportDialogState extends State<ExportDialog> {
                 ),
                 style: typography.Body1,
               ),
-              ListTile(
+           /*   ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(LanguageService.getTranslated(context, "export_dialog_profile"), style: typography.Body1),
                 leading: Radio(
@@ -110,7 +110,7 @@ class _ExportDialogState extends State<ExportDialog> {
                     _downloadImagesInZip = value;
                   });
                 },
-              ),
+              ),*/
             ],
           ),
           actions: [

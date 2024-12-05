@@ -419,6 +419,8 @@ class SubAccountListProvider extends ChangeNotifier {
 
       // Parse the response to get the newly added sub-account
       SubAccounts newSubAccount = SubAccounts.fromJson(response['updated_record']);
+      newSubAccount.sovCount = 0;
+      totalRecords = totalRecords + 1;
 
       // Prepend the new sub-account to the beginning of the list
       subAccountList = [newSubAccount, ...subAccountList];

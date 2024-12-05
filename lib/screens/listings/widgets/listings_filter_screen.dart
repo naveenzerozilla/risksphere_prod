@@ -72,12 +72,16 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Fetch the initial filter options
   void fetchFilterOptions() async {
+
+
     final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
     await locationListProvider.fetchInitialFilterOptions(widget.accountId, widget.subAccountId);
     setState(() {
       isLoading = false; // Stop showing loader once data is fetched
       // add a list of hazards to hazardRatings (refresh all hazardRatings keys with the provider hazard list)
+      print("hazard ratings from api${locationListProvider.hazardList}");
       hazardRatings = Map.fromIterable(locationListProvider.hazardList, key: (hazard) => hazard, value: (hazard) => []);
+      print("hazard ratings after api${hazardRatings}");
 
     });
     loadInitialFilters();
@@ -108,8 +112,10 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         hazardsForApi[hazard] = ratings;
       }
     });
+    print("hazardsForApi: $hazardsForApi");
     locationListProvider.hazardRatings = hazardsForApi;
     // Pass selected geo ratings to the provider or API
+    print('location hazard ratings: ${locationListProvider.hazardRatings}');
     locationListProvider.rating = selectedGeoRatings;
     print(hazardsForApi);  // Pass this to the API
     locationListProvider.selectedCampusIds = selectedCampusIds;
@@ -142,9 +148,12 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
           locationListProvider.certifications.contains('Auto Certified');
       selectedGeoRatings = locationListProvider.rating;
 
-      // Load hazard ratings
-      hazardRatings = Map<String, List<int>>.from(
-          locationListProvider.hazardRatings);
+      // update hazardRatings with the provider hazard ratings
+      hazardRatings.forEach((hazard, ratings) {
+        if (locationListProvider.hazardRatings.containsKey(hazard)) {
+          hazardRatings[hazard] = locationListProvider.hazardRatings[hazard]!;
+        }
+      });
     });
   }
 
@@ -410,6 +419,8 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
   // Hazard Filter Section with dropdown and multiple rating checkboxes
   Widget buildHazardFilterWithDropdown(CustomTypography typography, List<String> hazardList) {
 
+    print("hazard ratings from api${hazardList}");
+    print("hazard ratings after api${hazardRatings}");
     return ExpansionTile(
       title: Text('Hazard', style: typography.Body1),
       children: hazardRatings.keys.map((hazard) {

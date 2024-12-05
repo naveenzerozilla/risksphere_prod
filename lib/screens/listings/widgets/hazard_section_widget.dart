@@ -59,7 +59,7 @@ class HazardsSection extends StatelessWidget {
                       children: [
                         // Display Hazard Rating with background color based on score
                         Container(
-                          padding: EdgeInsets.all(8),
+                          padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
                           decoration: BoxDecoration(
                             color: color, // Color based on hazard rating
                             borderRadius: BorderRadius.circular(8),

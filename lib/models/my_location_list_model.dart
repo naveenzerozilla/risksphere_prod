@@ -9,6 +9,7 @@ class MyLocationModel {
   int? page;
   int? pageSize;
   List<MyLocation>? results;
+  List<MyLocation>? filterByLocationResult;
 
   MyLocationModel({
     this.totalRecords,
@@ -16,6 +17,7 @@ class MyLocationModel {
     this.page,
     this.pageSize,
     this.results,
+    this.filterByLocationResult,
   });
 
   MyLocationModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,11 @@ class MyLocationModel {
         results!.add(MyLocation.fromJson(v));
       });
     }
+    if (json['filter_by_location_result'] != null) {
+      filterByLocationResult = <MyLocation>[];
+        filterByLocationResult!.add(MyLocation.fromJson(json['filter_by_location_result']));
+
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -40,12 +47,16 @@ class MyLocationModel {
     if (results != null) {
       data['result'] = results!.map((v) => v.toJson()).toList();
     }
+    if (filterByLocationResult != null) {
+      data['filter_by_location_result'] =
+          filterByLocationResult!.map((v) => v.toJson()).toList();
+    }
     return data;
   }
 
   @override
   String toString() {
-    return 'MyLocationModel(totalRecords: $totalRecords, totalCertified: $totalCertified, page: $page, pageSize: $pageSize, results: $results)';
+    return 'MyLocationModel(totalRecords: $totalRecords, totalCertified: $totalCertified, page: $page, pageSize: $pageSize, results: $results, filterByLocationResult: $filterByLocationResult)';
   }
 }
 

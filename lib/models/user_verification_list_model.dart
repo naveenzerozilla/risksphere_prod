@@ -78,4 +78,11 @@ class CreatedAt {
     data['_nanoseconds'] = this.iNanoseconds;
     return data;
   }
+
+  DateTime toDateTime() {
+    return DateTime.fromMillisecondsSinceEpoch(
+      (iSeconds ?? 0) * 1000 + (iNanoseconds ?? 0) ~/ 1000000,
+      isUtc: true,
+    );
+  }
 }

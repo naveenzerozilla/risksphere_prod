@@ -62,6 +62,8 @@ class Company {
     data['id'] = this.id;
     return data;
   }
+
+
 }
 
 class Admin {
@@ -110,4 +112,6 @@ class CreatedAt {
       isUtc: true,
     );
   }
+
+
 }

@@ -1,16 +1,21 @@
+import 'dart:developer';
+
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/profile_image_widget.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
+import 'package:green/screens/userManagement/connections_screen.dart';
 import 'package:green/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/drawer_selection_provider.dart';
 import '../../screens/listings/hazard_proto.dart';
 import '../primitives/custom_typography.dart';
 import '../primitives/utilities/custom_spacing.dart';
@@ -138,6 +143,35 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
           }),
+          SizedBox(
+            width: CustomSpacing.two,
+          ),
+          IconButton(
+            padding: EdgeInsets.zero,
+            tooltip: 'Connections',
+            icon: Icon(Icons.people_alt_outlined),
+            onPressed: () async {
+              FirebaseAuth auth = FirebaseAuth.instance;
+              String uid = auth.currentUser!.uid;
+              IdTokenResult token =
+                  await auth.currentUser!.getIdTokenResult();
+              Map<String, dynamic>? claims = token.claims ?? {};
+              log(claims.toString());
+              log(auth.currentUser.toString());
+              String name =
+                  claims['name'] ?? ''; //name of the user
+              //Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ConnectionsScreen(
+                    userId: uid,
+                    userName: name,
+                    selectedTabIndex: 1,
+                  ),
+                ),
+              );
+            },
+          ),
           /*SizedBox(
             width: CustomSpacing.four,
           ),

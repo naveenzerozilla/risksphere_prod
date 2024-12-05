@@ -73,7 +73,7 @@ class LocationDetailsPopup extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
 
-                Text(
+                if((campus??"").isNotEmpty)Text(
                   campus??"",
                   style: typography.Body2,
                 ),
@@ -173,9 +173,12 @@ class LocationDetailsPopup extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(entry.key, style: typography.Body2),
-                Text(entry.value, style: typography.Body2, overflow: TextOverflow.ellipsis),
+                SizedBox(width: 8),
+                Flexible(child: Text(entry.value, style: typography.Body2, overflow: TextOverflow.ellipsis, maxLines: 2, textAlign: TextAlign.center,)),
+
               ],
             ),
           );

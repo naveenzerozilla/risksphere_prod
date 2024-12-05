@@ -119,17 +119,17 @@
     Color _getColorFromScore(int score) {
       switch (score) {
         case 1:
-          return Colors.red;
+          return Colors.blue;
         case 2:
-          return Colors.orange;
+          return Colors.blue;
         case 3:
-          return Colors.yellow;
+          return Colors.blue;
         case 4:
-          return Colors.green;
+          return Colors.blue;
         case 5:
           return Colors.blue;
         default:
-          return Colors.grey; // Default color
+          return Colors.blue; // Default color
       }
     }
 
@@ -331,25 +331,26 @@
       _reducers = hazards.entries.first.value.keys.toList();
       _selectedReducer = _reducers.contains("mean") ? "mean" : _reducers.first;
 
-      hazards.forEach((hazard, urls) {
-        Map<String, Map<int, String>> intensityMap = {};
 
-        urls.forEach((intensity, zoomUrls) {
-          Map<int, String> zoomLevelUrls = {};
-          zoomUrls.forEach((zoom, url) {
-            zoomLevelUrls[int.parse(zoom)] = url;
-          });
-          intensityMap[intensity] = zoomLevelUrls;
-        });
-
-        _tileProviders[hazard] = CustomTileProvider(
-          tileUrls: {hazard: intensityMap},
-          hazardType: hazard,
-          currentReducer: _selectedReducer ?? "mean",
-        );
-      });
 
       setState(() {
+        hazards.forEach((hazard, urls) {
+          Map<String, Map<int, String>> intensityMap = {};
+
+          urls.forEach((intensity, zoomUrls) {
+            Map<int, String> zoomLevelUrls = {};
+            zoomUrls.forEach((zoom, url) {
+              zoomLevelUrls[int.parse(zoom)] = url;
+            });
+            intensityMap[intensity] = zoomLevelUrls;
+          });
+
+          _tileProviders[hazard] = CustomTileProvider(
+            tileUrls: {hazard: intensityMap},
+            hazardType: hazard,
+            currentReducer: _selectedReducer ?? "mean",
+          );
+        });
         _isInitialized = true;
         _selectedHazard = _tileProviders.keys.first;
       });
@@ -669,309 +670,321 @@
     @override
     Widget build(BuildContext context) {
       var typography = CustomTypography(context);
-      return Column(
-        children: [
-          // Heatmap Generation Button
-          _tileProviders.isEmpty
-              ?
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child:
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CustomButton(
-                  type: ButtonType.elevated,
-                  onPressed: () async {
-                    await _fetchHazardLayers(); // Call to generate the heatmap
-                   /* setState(() {
-                      _isHeatmapOn = true; // Enable the heatmap view
-                    });*/
-                  }, child: Text('Generate Heatmap', style: typography.ButtonLarge.copyWith(color: Colors.black)),
-                ),
-              ],
-            ),
-          ): SizedBox(),
-          SizedBox(height: 8),
-          // Container for the TabBar with arrows
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            ),
-            height: 50,
-            child: Row(
-              children: <Widget>[
-                // Left arrow button
-                IconButton(
-                  icon: Icon(Icons.arrow_left, color: Colors.grey),
-                  onPressed: _scrollLeft,
-                ),
-                // Scrollable TabBar
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    child: TabBar(
-                      controller: _tabController,
-                      tabAlignment: TabAlignment.start,
-                      labelStyle: typography.Subtitle2,
-                      isScrollable: true,
-                      indicatorColor: Colors.lightBlueAccent,
-                      labelColor: Colors.lightBlueAccent,
-                      unselectedLabelColor: Colors.grey,
-                      tabs: [
-                        Tab(
-                          text: 'Geocoding',
-                        ),
-                        Tab(text: 'Risk Score'),
-                        Tab(text: 'Occupancy'),
-                        Tab(text: 'Construction'),
-                      ],
+      return Consumer<MyLocationListProvider>(
+        builder: (context, myLocationProvider, child) {
+          return Column(
+            children: [
+              // Heatmap Generation Button
+              /*_tileProviders.isEmpty && */!myLocationProvider.isHeatMapGeneratingLive
+                  ?
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child:
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _isLoading?Center(child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.1,
+                          child: CircularProgressIndicator()),
+                    )):
+                    CustomButton(
+                      type: ButtonType.elevated,
+                      onPressed: _isLoading?null:() async {
+                        await _fetchHazardLayers(); // Call to generate the heatmap
+                       /* setState(() {
+                          _isHeatmapOn = true; // Enable the heatmap view
+                        });*/
+                      }, child: Text('Generate Heatmap', style: typography.ButtonLarge.copyWith(color: Colors.black)),
                     ),
-                  ),
+                  ],
                 ),
-                // Right arrow button
-                IconButton(
-                  icon: Icon(Icons.arrow_right, color: Colors.grey),
-                  onPressed: _scrollRight,
+              ): SizedBox(),
+              SizedBox(height: 8),
+              // Container for the TabBar with arrows
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 ),
-              ],
-            ),
-          ),
-          // Container with curved borders for the map view
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
+                height: 50,
+                child: Row(
+                  children: <Widget>[
+                    // Left arrow button
+                    IconButton(
+                      icon: Icon(Icons.arrow_left, color: Colors.grey),
+                      onPressed: _scrollLeft,
+                    ),
+                    // Scrollable TabBar
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        child: TabBar(
+                          controller: _tabController,
+                          tabAlignment: TabAlignment.start,
+                          labelStyle: typography.Subtitle2,
+                          isScrollable: true,
+                          indicatorColor: Colors.lightBlueAccent,
+                          labelColor: Colors.lightBlueAccent,
+                          unselectedLabelColor: Colors.grey,
+                          tabs: [
+                            Tab(
+                              text: 'Geocoding',
+                            ),
+                            Tab(text: 'Risk Score'),
+                            Tab(text: 'Occupancy'),
+                            Tab(text: 'Construction'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Right arrow button
+                    IconButton(
+                      icon: Icon(Icons.arrow_right, color: Colors.grey),
+                      onPressed: _scrollRight,
+                    ),
+                  ],
+                ),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                        target: LatLng(38.7946, 106.5348), zoom: 0),
-                    markers: _markers,
-                   /* minMaxZoomPreference: _isHeatmapOn
-                        ? MinMaxZoomPreference(0, 5)
-                        : MinMaxZoomPreference.unbounded,*/
-                    onMapCreated: (GoogleMapController controller) {
-                      mapController = controller;
-                      clusterManager.setMapId(controller.mapId); // Set map ID for ClusterManager
-                      mapController.setMapStyle(_mapStyle);
-                    },
-                    tileOverlays: _selectedHazard != null &&
-                            _tileProviders.containsKey(_selectedHazard)
-                        ? {
-                            TileOverlay(
-                                tileOverlayId: TileOverlayId(_selectedHazard!),
-                                tileProvider: _tileProviders[_selectedHazard!]!)
-                          }
-                        : {},
-                    onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
-                    onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
+              // Container with curved borders for the map view
+              Expanded(
+                child: Container(
+                  margin: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  // Positioned widget for the hazard filter at the bottom-left
-                  _selectedTabIndex == 1 && _tileProviders.isNotEmpty && _isHeatmapOn?Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.light
-                            ? AppColors.paperElavation25Light
-                            : AppColors.paperElavation25,
-                        borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                            target: LatLng(38.7946, 106.5348), zoom: 0),
+                        markers: _markers,
+                       /* minMaxZoomPreference: _isHeatmapOn
+                            ? MinMaxZoomPreference(0, 5)
+                            : MinMaxZoomPreference.unbounded,*/
+                        onMapCreated: (GoogleMapController controller) {
+                          mapController = controller;
+                          clusterManager.setMapId(controller.mapId); // Set map ID for ClusterManager
+                          mapController.setMapStyle(_mapStyle);
+                        },
+                        tileOverlays: _selectedHazard != null &&
+                                _tileProviders.containsKey(_selectedHazard)
+                            ? {
+                                TileOverlay(
+                                    tileOverlayId: TileOverlayId(_selectedHazard!),
+                                    tileProvider: _tileProviders[_selectedHazard!]!)
+                              }
+                            : {},
+                        onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
+                        onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          selectedItemBuilder: (context) {
-                            return _tileProviders.keys.map((hazard) {
-                              return Align(
-                                alignment: Alignment.centerLeft,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(maxWidth: 80), // Set the maximum width here
-                                  child: Text(
-                                    hazard,
-                                    style: typography.InputLabel,
-                                    overflow: TextOverflow.ellipsis, // Add ellipsis for long text
-                                  ),
-                                ),
-                              );
-                            }).toList();
-                          },
-
-                          menuMaxHeight: 200,
-                          menuWidth: 400,
-                          borderRadius: BorderRadius.circular(16),
-                          value: _tileProviders.keys.contains(_selectedHazard) ? _selectedHazard : null,
-                          items: _tileProviders.keys.map((hazard) {
-                            return DropdownMenuItem<String>(
-                              value: hazard,
-                              child: Text(hazard, style: typography.InputLabel),
-                            );
-                          }).toList(),
-                          onChanged: (hazard) => _changeHazardLayer(hazard!),
-                          isDense: true,
-                          icon: SizedBox.shrink(), // Remove the dropdown icon
-                          dropdownColor: Theme.of(context).colorScheme.surface,
-                        ),
-                      ),
-                    ),
-                  ):SizedBox(),
-                  // Positioned widget for the heatmap toggle and reducer selection
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.light
-                            ? AppColors.paperElavation25Light
-                            : AppColors.paperElavation25,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Locations',
-                                style: typography.InputLabel.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Container(
-                                height: 24,
-                                width: 48,
-                                child: Switch(
-                                  value: _showPins,
-                                  onChanged: (value) => _togglePinVisibility(),
-                                  activeColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  activeTrackColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(0.5),
-                                  inactiveThumbColor:
-                                      Theme.of(context).colorScheme.surface,
-                                  inactiveTrackColor: Theme.of(context)
-                                      .colorScheme
-                                      .surface
-                                      .withOpacity(0.5),
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              InkWell(
-                                onTap: _toggleHeatmap,
-                                child: Container(
-                                  height: 34,
-                                  width: 34,
-                                  padding: EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    shape: BoxShape.rectangle,
-                                    color: _isHeatmapOn
-                                        ? Colors.orange.withOpacity(0.8)
-                                        : Theme.of(context).colorScheme.surface,
-                                  ),
-                                  child: _isLoading
-                                      ? Center(
-                                    child: SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          _isHeatmapOn ? Colors.white : Theme.of(context).colorScheme.primary,
-                                        ),
+                      // Positioned widget for the hazard filter at the bottom-left
+                      _selectedTabIndex == 1 && _tileProviders.isNotEmpty && _isHeatmapOn?Positioned(
+                        bottom: 16,
+                        left: 16,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).brightness == Brightness.light
+                                ? AppColors.paperElavation25Light
+                                : AppColors.paperElavation25,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              selectedItemBuilder: (context) {
+                                return _tileProviders.keys.map((hazard) {
+                                  return Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(maxWidth: 80), // Set the maximum width here
+                                      child: Text(
+                                        hazard,
+                                        style: typography.InputLabel,
+                                        overflow: TextOverflow.ellipsis, // Add ellipsis for long text
                                       ),
                                     ),
-                                  )
-                                      : SvgPicture.asset(
-                                    'assets/images/heatmap_icon.svg',
-                                    color: _isHeatmapOn
-                                        ? Colors.white
-                                        : Theme.of(context).colorScheme.onSurface,
+                                  );
+                                }).toList();
+                              },
+
+                              menuMaxHeight: 200,
+                              menuWidth: 400,
+                              borderRadius: BorderRadius.circular(16),
+                              value: _tileProviders.keys.contains(_selectedHazard) ? _selectedHazard : null,
+                              items: _tileProviders.keys.map((hazard) {
+                                return DropdownMenuItem<String>(
+                                  value: hazard,
+                                  child: Text(hazard, style: typography.InputLabel),
+                                );
+                              }).toList(),
+                              onChanged: (hazard) => _changeHazardLayer(hazard!),
+                              isDense: true,
+                              icon: SizedBox.shrink(), // Remove the dropdown icon
+                              dropdownColor: Theme.of(context).colorScheme.surface,
+                            ),
+                          ),
+                        ),
+                      ):SizedBox(),
+                      // Positioned widget for the heatmap toggle and reducer selection
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).brightness == Brightness.light
+                                ? AppColors.paperElavation25Light
+                                : AppColors.paperElavation25,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Locations',
+                                    style: typography.InputLabel.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Container(
+                                    height: 24,
+                                    width: 48,
+                                    child: Switch(
+                                      value: _showPins,
+                                      onChanged: (value) => _togglePinVisibility(),
+                                      activeColor:
+                                          Theme.of(context).colorScheme.primary,
+                                      activeTrackColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.5),
+                                      inactiveThumbColor:
+                                          Theme.of(context).colorScheme.surface,
+                                      inactiveTrackColor: Theme.of(context)
+                                          .colorScheme
+                                          .surface
+                                          .withOpacity(0.5),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  _tileProviders.isNotEmpty
+                                      ?
+                                  InkWell(
+                                    onTap: _toggleHeatmap,
+                                    child: Container(
+                                      height: 34,
+                                      width: 34,
+                                      padding: EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        shape: BoxShape.rectangle,
+                                        color: _isHeatmapOn
+                                            ? Colors.orange.withOpacity(0.8)
+                                            : Theme.of(context).colorScheme.surface,
+                                      ),
+                                      child: _isLoading
+                                          ? Center(
+                                        child: SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              _isHeatmapOn ? Colors.white : Theme.of(context).colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                          : SvgPicture.asset(
+                                        'assets/images/heatmap_icon.svg',
+                                        color: _isHeatmapOn
+                                            ? Colors.white
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ):SizedBox(),
+
+                                ],
+                              ),
+                              // Display the dropdown if heatmap is on and data is initialized
+                              if (_isHeatmapOn && _isInitialized)
+                                Container(
+                                  margin: EdgeInsets.only(top: 8),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _reducers.contains(_selectedReducer) ? _selectedReducer : null,
+                                      items: _reducers.map((reducer) {
+                                        return DropdownMenuItem<String>(
+                                          value: reducer,
+                                          child: Text(reducer),
+                                        );
+                                      }).toList(),
+                                      onChanged: _onReducerChanged,
+                                      isDense: true,
+                                      icon: SizedBox.shrink(),
+                                      // Remove the dropdown icon
+                                      style: typography.Subtitle2.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface),
+                                      dropdownColor:
+                                          Theme.of(context).colorScheme.surface,
+                                      selectedItemBuilder: (context) {
+                                        return _reducers.map((reducer) {
+                                          return Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(reducer,
+                                                style: TextStyle(fontSize: 16)),
+                                          );
+                                        }).toList();
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-
                             ],
                           ),
-                          // Display the dropdown if heatmap is on and data is initialized
-                          if (_isHeatmapOn && _isInitialized)
-                            Container(
-                              margin: EdgeInsets.only(top: 8),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _reducers.contains(_selectedReducer) ? _selectedReducer : null,
-                                  items: _reducers.map((reducer) {
-                                    return DropdownMenuItem<String>(
-                                      value: reducer,
-                                      child: Text(reducer),
-                                    );
-                                  }).toList(),
-                                  onChanged: _onReducerChanged,
-                                  isDense: true,
-                                  icon: SizedBox.shrink(),
-                                  // Remove the dropdown icon
-                                  style: typography.Subtitle2.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface),
-                                  dropdownColor:
-                                      Theme.of(context).colorScheme.surface,
-                                  selectedItemBuilder: (context) {
-                                    return _reducers.map((reducer) {
-                                      return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(reducer,
-                                            style: TextStyle(fontSize: 16)),
-                                      );
-                                    }).toList();
-                                  },
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          // Score filter tray below the map with rounded corners
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.all(Radius.circular(20)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildScoreIndicator(1, Colors.red),
-                SizedBox(width: 8),
-                _buildScoreIndicator(2, Colors.orange),
-                SizedBox(width: 8),
-                _buildScoreIndicator(3, Colors.yellow),
-                SizedBox(width: 8),
-                _buildScoreIndicator(4, Colors.green),
-                SizedBox(width: 8),
-                _buildScoreIndicator(5, Colors.blue),
-              ],
-            ),
-          ),
-          SizedBox(height: 16),
-        ],
+              // Score filter tray below the map with rounded corners
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildScoreIndicator(1, Colors.red),
+                    SizedBox(width: 8),
+                    _buildScoreIndicator(2, Colors.orange),
+                    SizedBox(width: 8),
+                    _buildScoreIndicator(3, Colors.yellow),
+                    SizedBox(width: 8),
+                    _buildScoreIndicator(4, Colors.green),
+                    SizedBox(width: 8),
+                    _buildScoreIndicator(5, Colors.blue),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+            ],
+          );
+        }
       );
     }
 

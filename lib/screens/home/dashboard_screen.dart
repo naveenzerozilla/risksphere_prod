@@ -11,6 +11,7 @@ import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/dashboard_model.dart';
 import 'package:green/providers/connections_provider.dart';
+import 'package:green/providers/drawer_selection_provider.dart';
 import 'package:green/providers/theme_provider.dart';
 import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/screens/home/widgets/subscription_cards.dart';
@@ -253,8 +254,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     !showVerificationRequests?SizedBox():_overviewCardHorizontal(
                       title: LanguageService.getTranslated(
                           context, 'usermanagement_dash_verification_req'),
-                      amount: dashboardProvider
-                              .dashboardModel?.verificationCount
+                      amount: ((dashboardProvider
+                              .dashboardModel?.verificationCount??0) + (dashboardProvider
+                          .dashboardModel?.companyUserLeadCount??0) )
                               .toString() ??
                           '0',
                       icon: 'assets/images/verification_req_checks.svg',
@@ -265,11 +267,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             type: ButtonType.outlined,
                             onPressed: () {
                               //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => UserManagementScreen(
                                     initialIndex: 0,
-                                    subIndex: 1,
+                                    subIndex: 0,
                                     initialScreen: Screens.verificationList,
                                   ),
                                 ),
@@ -321,6 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               log(auth.currentUser.toString());
                               String name =
                                   claims['name'] ?? ''; //name of the user
+                              Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => ConnectionsScreen(
@@ -437,11 +441,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...subscriptionData.map((data) {
-          return SubscriptionCard(
-            title: data["title"] as String,
-            description: data["description"] as String,
-            iconPath: data["iconPath"] as String,
-            isSubscribed: data["isSubscribed"] as bool,
+          return Column(
+            children: [
+              SubscriptionCard(
+                title: data["title"] as String,
+                description: data["description"] as String,
+                iconPath: data["iconPath"] as String,
+                isSubscribed: data["isSubscribed"] as bool,
+              ),
+              SizedBox(height: CustomSpacing.one),
+            ],
           );
         }).toList(),
       ],

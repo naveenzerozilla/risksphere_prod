@@ -3,6 +3,7 @@ class SovListModel {
   List<SovAccount>? results;
   int? totalPages;
   Settings? settings;
+  int? totalRecords;
 
   SovListModel({this.totalHits, this.results, this.totalPages, this.settings});
 
@@ -16,6 +17,7 @@ class SovListModel {
     }
     totalPages = json['totalPages'];
     settings = json['settings'] != null ? Settings.fromJson(json['settings']) : null;
+    totalRecords = json['totalRecords'];
   }
 
   Map<String, dynamic> toJson() {
@@ -28,6 +30,7 @@ class SovListModel {
     if (settings != null) {
       data['settings'] = settings!.toJson();
     }
+    data['totalRecords'] = totalRecords;
     return data;
   }
 }

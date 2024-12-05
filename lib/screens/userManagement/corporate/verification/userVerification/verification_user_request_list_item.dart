@@ -240,12 +240,15 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                         style: typography.BottomNavigationActiveLabel
                             .copyWith(color: AppColors.primaryMain)),
                   ),
+                 // Uncomment for time
                   Spacer(),
                   Row(
                     children: [
                       Icon(Icons.calendar_today),
                       SizedBox(width: CustomSpacing.two),
-                      Text('Mar 7, 2024 23:26',
+                      Text(
+                        '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                        //'Mar 7, 2024 23:26',
                           style: typography.Caption),
                     ],
                   ),

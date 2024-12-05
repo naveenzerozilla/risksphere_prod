@@ -1,27 +1,21 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/theme_switcher.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/jobMonitoringSystem/job_monitoring_screen.dart';
-import 'package:green/screens/listings/my_location_list.dart';
-import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
+import 'package:green/screens/listings/account_list.dart';
 import 'package:green/screens/userManagement/user_management.dart';
-import 'package:green/service/language_service.dart';
-import 'package:provider/provider.dart';
-
-import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/my_location_list_provider.dart';
-import '../../screens/listings/account_list.dart';
-import '../../screens/listings/location_profile.dart';
-import '../../screens/listings/widgets/auto_complete_options_locations.dart';
+import '../../providers/drawer_selection_provider.dart';
 import '../../screens/onboarding/splash_screen.dart';
+import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
+import '../primitives/app_colors.dart'; // Import the provider
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
@@ -43,7 +37,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   final TextEditingController searchController = TextEditingController();
 
-
   @override
   void initState() {
     _getClaims();
@@ -51,6 +44,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   _getClaims() async {
+    // These claims are fetched asynchronously; adjust the logic as per your API or service call
     showNonCorporateManagementTab =
         await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMUL) ?? false;
     showEmployeeManagementTab =
@@ -76,8 +70,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
     // Determine the icon color based on the theme
     Color? iconColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey[300]  // Light color for dark theme
-        : Colors.grey[800]; // Dark color for light theme
+        ? Colors.grey[300]
+        : Colors.grey[800];
 
     return Drawer(
       child: SafeArea(
@@ -94,166 +88,67 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     semanticsLabel: 'Logo',
                   ),
                   const SizedBox(height: 20),
-                  // Search bar added
-                  Column(
-                    children: [
-                      TextField(
-                        controller: searchController,
-                        onChanged: (value) {
-                          if (value.isNotEmpty && value.length > 2) {
-                            Provider.of<MyLocationListProvider>(context, listen: false)
-                                .performGlobalSearch(context, value);
-                          } else {
-                            Provider.of<MyLocationListProvider>(context, listen: false).searchLocationList = [];
-                          }
-                        },
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.search, color: iconColor),
-                          hintText: 'Search',
+                  Tooltip(
+                    message: 'Enter added locations to search',
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (value) {
+                        // Implement your search logic here
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.search, color: iconColor),
+                        hintText: 'Search Locations',
 
-                          hintStyle: typography.Body1,
-                          filled: true,
-                          fillColor: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[800]
-                              : Colors.grey[200], // Use a lighter color for light theme
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+                        hintStyle: typography.Body1,
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[800]
+                            : Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
                         ),
                       ),
-                      Consumer<MyLocationListProvider>(
-                        builder: (context, provider, child) {
-                          return AutocompleteOptionsLocation(
-                            options: provider.searchLocationList,
-                            isLoading: provider.isSearchLoading,
-                            onSelected: (MyLocation selectedLocation) {
-                              // Handle location selection
-                              //searchController.text = selectedLocation.finalAddress?.address ?? '';
-                              provider.searchLocationList = []; // Clear results after selection
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => LocationProfile(
-                                  accountId: selectedLocation.finalAddress?.accountId??"",
-                                  accountName: selectedLocation.finalAddress?.accountName??"",
-                                  subAccountId: selectedLocation.finalAddress?.subAccountId??"",
-                                  subAccountName: selectedLocation.finalAddress?.subAccountName??"",
-                                  sovId: selectedLocation.finalAddress?.sovId??"",
-                                  sovName: selectedLocation.finalAddress?.sovName??"",
-                                  searchQuery: "",
-                                  page: "0",
-                                  totalPages: "0",
-                                ),
-                              ));
-
-                              //onExpandPressed(false); // Collapse the search bar
-                            },
-                          );
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                   SizedBox(height: 20),
                 ],
               ),
             ),
             Expanded(
-              child: ListView(
-                physics: ClampingScrollPhysics(),
-                padding: EdgeInsets.only(top: 0), // Removed top padding
-                children: <Widget>[
-                  ListTile(
-                    leading: Icon(Icons.home, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_dashboard"),
-                        style: typography.Body1.copyWith(color: iconColor)),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen()));
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.account_balance_wallet, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_accounts"),
-                        style: typography.Body1.copyWith(color: iconColor)),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountListScreen()));
-                    },
-                  ),
-                  /*ListTile(
-                    leading: Icon(Icons.account_balance_wallet, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_my_locations"),
-                        style: typography.Body1.copyWith(color: iconColor)),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => MyLocationList()));
-                    },
-                  ),
-                  ExpansionTile(
-                    leading: Icon(Icons.feed, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_news_feed"),
-                        style: typography.Body1.copyWith(color: iconColor)),
+              child: Consumer<DrawerSelectionProvider>(
+                builder: (context, provider, child) {
+                  return ListView(
+                    physics: ClampingScrollPhysics(),
+                    padding: EdgeInsets.only(top: 0),
                     children: <Widget>[
-                      ListTile(
-                        title: Text(LanguageService.getTranslated(context, "drawer_menu_improve_locations"),
-                            style: typography.Body1.copyWith(color: iconColor)),
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "Dashboard",
+                        icon: Icons.home,
                         onTap: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(LanguageService.getTranslated(context, "coming_soon"),
-                                  style: typography.Body1.copyWith(color: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.black
-                                      : Colors.white),)),
-                          );
-                         // Navigator.of(context).push(MaterialPageRoute(builder: (_) => JobMonitoringDashboard()));
+                          provider.setSelectedItem("dashboard");
+                          Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => DashboardScreen()));
                         },
+                        isSelected: provider.selectedItem == "dashboard",
                       ),
-                      // Add other ListTile widgets for additional items
-                    ],
-                  ),
-                  ExpansionTile(
-                    leading: Icon(Icons.insights, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_insights"),
-                        style: typography.Body1.copyWith(color: iconColor)),
-                    children: <Widget>[
-                      ListTile(
-                        title: Text(LanguageService.getTranslated(context, "drawer_menu_data_quality"),
-                            style: typography.Body1.copyWith(color: iconColor)),
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "Accounts",
+                        icon: Icons.account_balance_wallet,
                         onTap: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(LanguageService.getTranslated(context, "coming_soon"),
-                                style: typography.Body1.copyWith(color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black
-                                    : Colors.white),),
-                            ),
-                          );
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
+                          provider.setSelectedItem("accounts");
+                          Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => AccountListScreen()));
                         },
+                        isSelected: provider.selectedItem == "accounts",
                       ),
                     ],
-                  ),
-                  ExpansionTile(
-                    leading: Icon(Icons.people, color: iconColor),
-                    title: Text(LanguageService.getTranslated(context, "drawer_menu_connections"),
-                        style: typography.Body1.copyWith(color: iconColor)),
-                    children: <Widget>[
-                      ListTile(
-                        title: Text(LanguageService.getTranslated(context, "drawer_menu_add_vendor"),
-                            style: typography.Body1.copyWith(color: iconColor)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(LanguageService.getTranslated(context, "coming_soon"),
-                          style: typography.Body1.copyWith(color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.black
-                              : Colors.white),),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),*/
-                ],
+                  );
+                },
               ),
             ),
             Padding(
@@ -266,10 +161,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     initialValue: _getInitialCountry(context),
                     itemBuilder: (Country country) {
                       return Container(
-                        width: 28.0, // Adjust the width as needed
-                        height: 28.0, // Adjust the height as needed
+                        width: 28.0,
+                        height: 28.0,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0), // Set the desired border radius
+                          borderRadius: BorderRadius.circular(10.0),
                           image: DecorationImage(
                             image: AssetImage(
                               CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
@@ -281,7 +176,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                     itemFilter: (Country country) {
-                      // Only include countries with these ISO codes
                       return ['US', 'ES', 'FR', 'JP', 'CN'].contains(country.isoCode);
                     },
                     icon: SizedBox(),
@@ -346,10 +240,29 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     },
                   ),
                   if (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
-                    IconButton(
-                      icon: Icon(Icons.person, color: iconColor),
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserManagementScreen()));
+                    Consumer<DrawerSelectionProvider>(
+                      builder: (context, provider, child) {
+                        return Container(
+
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(66),
+                            color: provider.selectedItem == "user_management"
+                                ? AppColors.primaryMain.withOpacity(0.4)
+                                : Colors.transparent,
+
+                          ),
+                          child: IconButton(
+                            icon: Icon(Icons.person,
+                                color: provider.selectedItem == "user_management"
+                                    ? AppColors.primaryMain
+                                    : iconColor),
+                            onPressed: () {
+                              provider.setSelectedItem("user_management");
+                              Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => UserManagementScreen()));
+                            },
+                          ),
+                        );
                       },
                     ),
                 ],
@@ -361,8 +274,37 @@ class _CustomDrawerState extends State<CustomDrawer> {
     );
   }
 
+  Widget _buildDrawerItem(
+      BuildContext context,
+      DrawerSelectionProvider provider, {
+        required String title,
+        required IconData icon,
+        required VoidCallback onTap,
+        required bool isSelected,
+      }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+
+        color: isSelected
+            ? AppColors.primaryMain.withOpacity(0.1)
+            : Colors.transparent,
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: isSelected ? AppColors.primaryMain : null),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? AppColors.primaryMain : null,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
   String _getInitialCountry(BuildContext context) {
-    // ['US', 'ES', 'FR', 'JP', 'CN']
     if (context.locale == Locale('es')) return 'ES';
     if (context.locale == Locale('fr')) return 'FR';
     if (context.locale == Locale('ja')) return 'JP';

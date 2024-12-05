@@ -838,7 +838,32 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                     .totalPages,
                                                               ),
                                                             ),
-                                                          );*/Navigator.pop(context, true);
+                                                          );*/
+                                                         // Navigator.pop(context, true);
+                                                          print('location id provided: ${widget.locationId}');
+                                                       //   if (mounted) {
+                                                           // await Navigator.maybePop(context);
+                                                            if (mounted) {
+                                                              Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder: (context) => LocationProfile(
+                                                                    accountId: widget.accountId,
+                                                                    subAccountId: widget.subAccountId,
+                                                                    sovId: widget.sovId,
+                                                                    accountName: widget.accountName,
+                                                                    subAccountName: widget.subAccountName,
+                                                                    sovName: widget.sovName,
+                                                                    locationId: widget.locationId,
+                                                                    searchQuery: widget.searchQuery,
+                                                                    page: widget.page,
+                                                                    totalPages: widget.totalPages,
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            }
+                                                       //   }
+
                                                         }
                                                       }
                                                     }

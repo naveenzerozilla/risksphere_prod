@@ -432,6 +432,9 @@ class AccountListProvider extends ChangeNotifier {
 
       // Parse the response to get the newly added account
       Accounts newAccount = Accounts.fromJson(response['updated_record']);
+      newAccount.sovCount = 0;
+      newAccount.subAccountCount = 0;
+      accountHits++;
 
       // Prepend the new account to the beginning of the list
       accountList = [newAccount, ...accountList];

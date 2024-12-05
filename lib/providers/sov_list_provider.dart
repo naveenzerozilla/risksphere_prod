@@ -175,6 +175,9 @@ class SOVListProvider extends ChangeNotifier {
     autoCompleteSovList = [];
   }
 
+  int sovHits = 0;
+
+
 
   List<SovAccount> filteredAutoCompleteList = [];
 
@@ -182,6 +185,7 @@ class SOVListProvider extends ChangeNotifier {
   Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
     var typography = CustomTypography(context);
     try {
+      if(isLoading || isNextPageLoading) return;
       if (page == 1) {
         isLoading = true;
       } else {
@@ -201,7 +205,8 @@ class SOVListProvider extends ChangeNotifier {
 
       showLocationCount = sovListModel.settings?.locationCount ?? true;
       showOverallScore = sovListModel.settings?.overAllScore ?? true;
-      totalPages = sovListModel.totalPages??1;
+      sovHits = sovListModel.totalRecords??0;
+      totalPages = sovHits~/pageSize;
       if (page == 1) {
         sovList = sovListModel.results ?? [];
       } else {

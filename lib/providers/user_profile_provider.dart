@@ -46,9 +46,9 @@ class UserProfileProvider with ChangeNotifier {
   bool get isImageUploadLoading => _isImageUploadLoading;
   set isImageUploadLoading(bool value) {
     _isImageUploadLoading = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+//    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
-    });
+ //   });
   }
 
   bool _isAvatarLoading = false;

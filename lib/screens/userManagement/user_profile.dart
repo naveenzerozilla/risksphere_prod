@@ -53,6 +53,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   PhoneController phoneController = PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  // form key
+  final _formKey = GlobalKey<FormState>();
 
   bool isEdit = false;
 
@@ -179,9 +181,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           userImageUrl = value.displayImageUrl ?? "";
           nameLabelText = value.name ?? "";
+          _nameGeneralInfoController.text = value.name ?? "";
           displayNameLabelText = value.displayName ??  value.name ?? "";
+          _displayNameGeneralInfoController.text = value.displayName ?? value.name ?? "";
           emailLabelText = value.email ?? "";
+          _emailGeneralInfoController.text = value.email ?? "";
           phoneLabelText = value.phone ?? "";
+          _phoneGeneralInfoController.text = value.phone ?? "";
           print('Country Code: ${value.countryCode}');
           // remove '+' from country code
           _selectedCountryCode = value.countryCode?.replaceAll('+', '') ?? "1";
@@ -721,12 +727,40 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               radius: 40,
                                             )
                                           : CircleAvatar(
-                                              foregroundImage:
-                                                  NetworkImage(userImageUrl),
-                                              backgroundColor: AppColors
-                                                  .avatarBackground,
-                                              radius: 40,
-                                            ),
+                                        backgroundColor: AppColors.avatarBackground,
+                                        radius: 40,
+                                        child: ClipOval(
+                                          child: Image.network(
+                                            userImageUrl,
+                                            fit: BoxFit.cover,
+                                            width: 80, // Adjust to match the CircleAvatar's size
+                                            height: 80, // Adjust to match the CircleAvatar's size
+                                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child; // Image loaded
+                                              } else {
+                                                return Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded /
+                                                        (loadingProgress.expectedTotalBytes ?? 1)
+                                                        : null,
+                                                    color: AppColors.primaryMain,
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                                              return Icon(
+                                                Icons.error,
+                                                size: 40,
+                                                color: Colors.red,
+                                              ); // Display error icon if image fails to load
+                                            },
+                                          ),
+                                        ),
+                                      ),
+
                                       SizedBox(
                                         width: CustomSpacing.four,
                                       ),
@@ -1034,288 +1068,315 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ],
                       ),
                     ),
-                    // Name
-                    TextFormField(
-                      enabled: isEdit,
-                      controller: _nameGeneralInfoController,
-                      decoration: InputDecoration(
-                        labelText: isEdit ? LanguageService.getTranslated(context, "user_profile_user_management_name_filed_label") : nameLabelText,
-                        labelStyle: isEdit
-                            ? typography.Body1
-                            : typography.Body1.copyWith(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.color),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                                !.color!,
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    // Display Name
-                    TextFormField(
-                      enabled: isEdit,
-                      controller: _displayNameGeneralInfoController,
-                      decoration: InputDecoration(
-                        labelText:
-                            isEdit ? 'Display Name' : displayNameLabelText,
-                        labelStyle: isEdit
-                            ? typography.Body1
-                            : typography.Body1.copyWith(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.color),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                            !.color!,
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    // Role Dropdown
-                    Stack(
-                      children: [
-                        TextField(
-                          readOnly: true,
-                          enabled: isEdit,
-
-                          onTap: isEdit
-                              ? () {
-                            showModalBottomSheet(
-                              context: context,
-                              useSafeArea: true,
-                              isScrollControlled: true,
-                              builder: (BuildContext context) {
-                                List<Map<String, dynamic>> acceptedRoles = userProfileProvider.userData.acceptedRole?.map((role) => role.toJson())?.toList() ?? [];
-                                print("Accepted Roles: $acceptedRoles");
-                                print("useCheckboxes: ${(userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false)}");
-
-                                return CustomFlexibleRolesBottomSheet(
-                                  showCorporateSwitch: true,
-                                  options: acceptedRoles,
-                                  selectedRoles: _selectedRoles,
-                                  addChip: _addChip,
-                                  removeChip: _removeChip,
-                                  removeAllChips: _removeAllChips,
-                                  useCheckboxes: (userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false),
-                                // Assuming you want to use checkboxes for selection
-                                );
-                              },
-                            );
-
-                          }
-                              : null,
-                          controller: _textEditingController,
-                          onChanged: (value) {
-                            // Handle input changes
-                          },
-                          decoration: InputDecoration(
-                            labelText: isEdit ? '' : '',
-                            labelStyle: isEdit
-                                ? typography.Body1
-                                : typography.Body1.copyWith(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.color),
-                            hintText: _selectedRoles.isEmpty &&
-                                    _textEditingController.text.isEmpty
-                                ? 'Select Roles'
-                                : '',
-                            border: OutlineInputBorder(),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                !.color!,
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Name
+                          TextFormField(
+                            enabled: isEdit,
+                            style: typography.Body1,
+                            controller: _nameGeneralInfoController,
+                            initialValue: null, // Remove initialValue since we'll use controller
+                            readOnly: !isEdit, // Add readOnly instead of disabled for better value visibility
+                            //controller: nameGeneralInfoController, // Always use the controller
+                            decoration: InputDecoration(
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
+                              labelText: LanguageService.getTranslated(
+                                  context, "user_profile_user_management_name_filed_label"),
+                              labelStyle: typography.Body1,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).textTheme.labelMedium!.color!,
+                                ),
                               ),
                             ),
-                            suffixIcon: IconButton(
-                              icon: Icon(Icons.arrow_drop_down),
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  useSafeArea: true,
-                                  isScrollControlled: true,
-                                  builder: (BuildContext context) {
-                                    List<Map<String, dynamic>> acceptedRoles = userProfileProvider.userData.acceptedRole?.map((role) => role.toJson())?.toList() ?? [];
-                                    return CustomFlexibleRolesBottomSheet(
-                                      showCorporateSwitch: true,
-                                      options: acceptedRoles,
-                                      selectedRoles: _selectedRoles,
-                                      addChip: _addChip,
-                                      removeChip: _removeChip,
-                                      removeAllChips: _removeAllChips,
-                                      useCheckboxes: (userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return LanguageService.getTranslated(context, "user_profile_user_management_name_field_error");
+                              }
+                              return null;
+                            },
                           ),
-                        ),
-                        Positioned(
-                          top: 4.0,
-                          left: 10.0,
-                          right: 10.0,
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 32.0),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: _selectedRoles
-                                    .map(
-                                      (value) => Padding(
-                                        padding: const EdgeInsets.only(right: 8.0),
-                                        child: Chip(
-                                          label: Text(value.name),
-                                          deleteIcon: isEdit ? Icon(Icons.cancel) : null,
-                                          onDeleted: isEdit ? () => _removeChip(value) : null,
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
+
+                          SizedBox(height: CustomSpacing.four),
+                          // Display Name
+                          TextFormField(
+                            readOnly: !isEdit,
+                            style: typography.Body1,
+                            controller: _displayNameGeneralInfoController,
+                            decoration: InputDecoration(
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
+                              labelText:
+                              isEdit ? 'Display Name' : 'Display Name',//displayNameLabelText,
+                              labelStyle: isEdit
+                                  ? typography.Body1
+                                  : typography.Body1.copyWith(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.color),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                  !.color!,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Display Name is required';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    // Email
-                    TextFormField(
-                      enabled: false,
-                      controller: _emailGeneralInfoController,
-
-                      decoration: InputDecoration(
-                        labelText: isEdit
-                            ? LanguageService.getTranslated(context, "user_profile_user_management_email_field_label")
-                            : emailLabelText,
-                        labelStyle: isEdit
-                            ? typography.Body1.copyWith(
-                            color: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                                ?.color)
-                            : typography.Body1.copyWith(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.color),
-
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                            !.color!,
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    // Phone
-                    FormField(
-                        enabled: isEdit,
-                        builder: (FormFieldState<dynamic> state) {
-                          return Row(
+                          SizedBox(height: CustomSpacing.four),
+                          // Role Dropdown
+                          Stack(
                             children: [
-                              Expanded(
-                                child: PhoneInput(
-                                  enabled: isEdit,
-                                  key: const Key('phone-field'),
-                                  controller: phoneController,
-                                  shouldFormat: true,
-                                  // set _selectedCountryCode to your country code if not null
-                                  defaultCountry: IsoCode.US,
-                                  decoration: InputDecoration(
-                                    labelText: !isEdit
-                                        ? LanguageService.getTranslated(context, "user_profile_user_management_mobile_field")
-                                        : phoneLabelText,
+                              TextField(
+                                readOnly: true,
+                                enabled: isEdit,
 
-                                    labelStyle: isEdit
-                                        ? typography.Body1
-                                        : typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.color),
-                                    disabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                        !.color!,
-                                      ),
+                                onTap: isEdit
+                                    ? () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    useSafeArea: true,
+                                    isScrollControlled: true,
+                                    builder: (BuildContext context) {
+                                      List<Map<String, dynamic>> acceptedRoles = userProfileProvider.userData.acceptedRole?.map((role) => role.toJson())?.toList() ?? [];
+                                      print("Accepted Roles: $acceptedRoles");
+                                      print("useCheckboxes: ${(userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false)}");
+
+                                      return CustomFlexibleRolesBottomSheet(
+                                        showCorporateSwitch: true,
+                                        options: acceptedRoles,
+                                        selectedRoles: _selectedRoles,
+                                        addChip: _addChip,
+                                        removeChip: _removeChip,
+                                        removeAllChips: _removeAllChips,
+                                        useCheckboxes: (userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false),
+                                        // Assuming you want to use checkboxes for selection
+                                      );
+                                    },
+                                  );
+
+                                }
+                                    : null,
+                                controller: _textEditingController,
+                                onChanged: (value) {
+                                  // Handle input changes
+                                },
+                                decoration: InputDecoration(
+                                  labelText: isEdit ? '' : '',
+                                  labelStyle: isEdit
+                                      ? typography.Body1
+                                      : typography.Body1.copyWith(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.color),
+                                  hintText: _selectedRoles.isEmpty &&
+                                      _textEditingController.text.isEmpty
+                                      ? 'Select Roles'
+                                      : '',
+                                  border: OutlineInputBorder(),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                      !.color!,
                                     ),
-                                    hintText: LanguageService.getTranslated(context, "user_profile_user_management_mobile_placeholder"),
-                                   /* hintStyle: isEdit
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(Icons.arrow_drop_down),
+                                    onPressed: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        useSafeArea: true,
+                                        isScrollControlled: true,
+                                        builder: (BuildContext context) {
+                                          List<Map<String, dynamic>> acceptedRoles = userProfileProvider.userData.acceptedRole?.map((role) => role.toJson())?.toList() ?? [];
+                                          return CustomFlexibleRolesBottomSheet(
+                                            showCorporateSwitch: true,
+                                            options: acceptedRoles,
+                                            selectedRoles: _selectedRoles,
+                                            addChip: _addChip,
+                                            removeChip: _removeChip,
+                                            removeAllChips: _removeAllChips,
+                                            useCheckboxes: (userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4.0,
+                                left: 10.0,
+                                right: 10.0,
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 32.0),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: _selectedRoles
+                                          .map(
+                                            (value) => Padding(
+                                          padding: const EdgeInsets.only(right: 8.0),
+                                          child: Chip(
+                                            label: Text(value.name),
+                                            deleteIcon: isEdit ? Icon(Icons.cancel) : null,
+                                            onDeleted: isEdit ? () => _removeChip(value) : null,
+                                          ),
+                                        ),
+                                      )
+                                          .toList(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // Email
+                          TextFormField(
+                            readOnly: true,
+                            style: typography.Body1,
+                            controller: _emailGeneralInfoController,
+
+                            decoration: InputDecoration(
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
+                              labelText: isEdit
+                                  ? LanguageService.getTranslated(context, "user_profile_user_management_email_field_label")
+                              //: emailLabelText,
+                                  : LanguageService.getTranslated(context, "user_profile_user_management_email_field_label"),
+                              labelStyle: isEdit
+                                  ? typography.Body1.copyWith(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.color)
+                                  : typography.Body1.copyWith(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.color),
+
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                  !.color!,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.four),
+                          // Phone
+                          FormField(
+                              enabled: isEdit,
+                              builder: (FormFieldState<dynamic> state) {
+                                return Row(
+                                  children: [
+                                    Expanded(
+                                      child: PhoneInput(
+                                        style: typography.Body1,
+
+                                        enabled: isEdit,
+                                        key: const Key('phone-field'),
+                                        controller: phoneController,
+                                        shouldFormat: true,
+                                        // set _selectedCountryCode to your country code if not null
+                                        defaultCountry: IsoCode.US,
+                                        decoration: InputDecoration(
+                                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                                          labelText: !isEdit
+                                              ? LanguageService.getTranslated(context, "user_profile_user_management_mobile_field")
+                                          //: phoneLabelText,
+                                              : LanguageService.getTranslated(context, "user_profile_user_management_mobile_field"),
+
+                                          labelStyle: isEdit
+                                              ? typography.Body1
+                                              : typography.Body1.copyWith(
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.color),
+                                          disabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: BorderSide(
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                              !.color!,
+                                            ),
+                                          ),
+                                          hintText: LanguageService.getTranslated(context, "user_profile_user_management_mobile_placeholder"),
+                                          /* hintStyle: isEdit
                                   ? typography.Body1
                                       : typography.Body1.copyWith(
                                       color: Theme.of(context)
                                       .textTheme
                                       .labelMedium
                                       ?.color),*/
-                                    border: const OutlineInputBorder(),
-                                    counterText: '',
-                                  ),
-                                  countrySelectorNavigator: CountrySelectorNavigator.dialog(
-                                    showSearchInput: true,
-                                    searchInputDecoration: InputDecoration(
-                                      hintText: 'Search Country',
+                                          border: const OutlineInputBorder(),
+                                          counterText: '',
+                                        ),
+                                        countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                                          showSearchInput: true,
+                                          searchInputDecoration: InputDecoration(
+                                            hintText: 'Search Country',
+                                          ),
+                                        ),
+                                        showFlagInInput: true,
+                                        flagShape: BoxShape.circle,
+                                        flagSize: 35,
+                                        onChanged: (PhoneNumber? p) {
+                                          if(p==null)
+                                            return;
+                                          setState(() {
+                                            _selectedCountryCode = p.countryCode;
+                                          });
+                                          print('changed ${p.countryCode}');
+                                        },
+                                        onSaved: (PhoneNumber? p) {
+                                          if(p==null)
+                                            return;
+                                          setState(() {
+                                            _selectedCountryCode = p.countryCode;
+                                          });
+                                          print('changed ${p.countryCode}');
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  showFlagInInput: true,
-                                  flagShape: BoxShape.circle,
-                                  flagSize: 35,
-                                  onChanged: (PhoneNumber? p) {
-                                    if(p==null)
-                                      return;
-                                    setState(() {
-                                      _selectedCountryCode = p.countryCode;
-                                    });
-                                    print('changed ${p.countryCode}');
-                                  },
-                                  onSaved: (PhoneNumber? p) {
-                                    if(p==null)
-                                      return;
-                                    setState(() {
-                                      _selectedCountryCode = p.countryCode;
-                                    });
-                                    print('changed ${p.countryCode}');
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
-                    SizedBox(height: CustomSpacing.four),
+                                  ],
+                                );
+                              }),
+                          SizedBox(height: CustomSpacing.four),
+                    ]),
+                    ),
+
                     // Cancel and Submit Buttons
                     isEdit
                         ? Column(
@@ -1325,6 +1386,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   Expanded(
                                     child: CustomButton(
                                       onPressed: () {
+                                        // validate
+                                        if (!_formKey.currentState!.validate()) {
+                                          return;
+                                        }
+                                        // Atleat one selected role:
+                                        if (_selectedRoles.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Please select at least one role.', style: typography.Body1),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         // Update Body
                                         var body = {
                                           "current_user": true,
@@ -1435,10 +1509,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         _emailGeneralInfoController.text = emailLabelText;
         _phoneGeneralInfoController.text = phoneLabelText;
       } else {
-        _nameGeneralInfoController.text = "";
-        _displayNameGeneralInfoController.text = "";
-        _emailGeneralInfoController.text = "";
-        _phoneGeneralInfoController.text = "";
+        _nameGeneralInfoController.text = nameLabelText;
+        _displayNameGeneralInfoController.text = displayNameLabelText;
+        _emailGeneralInfoController.text = emailLabelText;
+        _phoneGeneralInfoController.text = phoneLabelText;
       }
     });
   }

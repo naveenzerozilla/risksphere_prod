@@ -1,6 +1,7 @@
 
 import 'dart:io';
 
+import 'package:green/providers/drawer_selection_provider.dart';
 import 'package:green/providers/job_monitoring_provier.dart';
 import 'package:green/providers/my_location_list_provider.dart';
 import 'package:http/http.dart' as http;
@@ -274,6 +275,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => UploadSovProvider()),
           ChangeNotifierProvider(create: (_) => JobMonitoringProvider()),
           ChangeNotifierProvider(create: (_) => MyLocationListProvider()),
+          ChangeNotifierProvider(create: (_) => DrawerSelectionProvider()),
         ],
         child: const MyApp(),
       ),

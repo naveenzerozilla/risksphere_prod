@@ -10,6 +10,7 @@ class AppConstant {
   static String get CORPORATE_MANAGEMENT_URL_NEW => '$baseURL/user_management_new/companies_list';
   static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create';
   static String get UPDATE_CORPORATE_URL => '$baseURL/companies';
+  static String get UPDATE_CORPORATE_URL_NEW => '$baseURL/companies';
   static String get UPLOAD_FILE => '$baseURL/upload_file';
   static String get GET_CORPORATE_ROLES => '$baseURL/support?corporate_type=true';
   static String get GET_FEATURE_LIST => '$baseURL/feature_settings';

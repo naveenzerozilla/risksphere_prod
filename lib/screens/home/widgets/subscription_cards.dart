@@ -73,7 +73,9 @@ class SubscriptionCard extends StatelessWidget {
                       SizedBox(height: CustomSpacing.two),
                       Text(
                         description,
-                        style: typography.Body2,
+                        style: typography.Body2.copyWith(
+                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -96,29 +98,30 @@ class SubscriptionCard extends StatelessWidget {
               Container(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: isSubscribed
-                    ? ElevatedButton(
-                  onPressed: null,
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                  ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check, color: Theme.of(context).disabledColor,),
-                          SizedBox(width: 4,),
-                          Text(
-                                          "Subscribed",
-                                          style: typography.Body2.copyWith(
-                           color: Theme.of(context).disabledColor,
-                          fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                        ],
+                    ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        // Handle subscription logic
+                        //Coming soon Snackbar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Coming soon!', style: typography.Body1.copyWith(color: Theme.of(context).colorScheme.surface,)),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        backgroundColor: Colors.amber,),
+                      child: Text("  Unsubscribe  ", style: typography.Body1.copyWith(color: Theme.of(context).colorScheme.surface,),
                       ),
-                    )
+                    ),
+                  ],
+                )
                     : Row(
                   mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -126,6 +129,12 @@ class SubscriptionCard extends StatelessWidget {
                         ElevatedButton(
                                         onPressed: () {
                         // Handle subscription logic
+                                          //Coming soon Snackbar
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Coming soon!', style: typography.Body1.copyWith(color: Theme.of(context).colorScheme.surface,)),
+                                            ),
+                                          );
                                         },
                                         style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(

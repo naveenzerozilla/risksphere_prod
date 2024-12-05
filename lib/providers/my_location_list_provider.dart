@@ -52,6 +52,15 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isHeatMapGeneratingLive = false;
+  bool get isHeatMapGeneratingLive => _isHeatMapGeneratingLive;
+  set isHeatMapGeneratingLive(bool value) {
+    _isHeatMapGeneratingLive = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isAllLocationLoading = false;
 
   bool get isAllLocationLoading => _isAllLocationLoading;
@@ -587,6 +596,8 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  int resetTotalPage = 0;
+
   // Delete selected locations
   Future<void> deleteSelectedLocations(
       BuildContext context, String accountId, String subAccountId) async {
@@ -863,10 +874,11 @@ class MyLocationListProvider extends ChangeNotifier {
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
+      print('Api called page and total page are $page and $totalPages');
       // Check if api is already working
      // if (isLoading || isNextPageLoading) return;
       // dont call api is next page does not exist
-      if (page > totalPages) return;
+      if (page-1 > totalPages) return;
       if (page == 1) {
         myLocationList = [];
         isLoading = true;
@@ -904,9 +916,11 @@ class MyLocationListProvider extends ChangeNotifier {
         }
       }
       if (hazardRatings.isNotEmpty) {
-        for (var hazard in hazardRatings.keys) {
+        /*for (var hazard in hazardRatings.keys) {
           url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-        }
+        }*/
+        // we pass it in as json
+        url += "&hazard=${jsonEncode(hazardRatings)}";
       }
       if (rating.isNotEmpty) {
         url += "&score=${rating.join(",")}";
@@ -936,7 +950,7 @@ class MyLocationListProvider extends ChangeNotifier {
         totalPages = locationHits ~/ pageSize;
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
-        if (page == 0) {
+        if (page == 1) {
           myLocationList = locationListModel.results ?? [];
         } else {
           addToMyLocationList(locationListModel.results ?? []);
@@ -988,7 +1002,7 @@ class MyLocationListProvider extends ChangeNotifier {
       print("Condition: Certified fetch with rating 5");
       print("Rating: 5");
 
-      if (page > certifiedTotalPages) return;
+      if (page-1 > certifiedTotalPages) return;
       if (page == 1) {
         isCertifiedLoading = true;
       } else {
@@ -1050,7 +1064,7 @@ class MyLocationListProvider extends ChangeNotifier {
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationListModel.totalRecords ?? 1;
         //summaryList = locationListModel.summaryList ?? [];
-        if (page == 0) {
+        if (page == 1) {
           certifiedLocationList = locationListModel.results ?? [];
         } else {
           addToCertifiedLocationList(locationListModel.results ?? []);
@@ -1915,6 +1929,7 @@ class MyLocationListProvider extends ChangeNotifier {
     String? accountID,
     String? subAccountID,
     String? sovID,
+      String? locationId,
   ) async {
     var typography = CustomTypography(context);
     try {
@@ -1928,6 +1943,7 @@ class MyLocationListProvider extends ChangeNotifier {
       var headers = await CommonHeaders.createHeaders();
 
       print("Rating for all tab: $_rating. $rating");
+      print('Location ID: $locationId');
       log(headers.toString());
 
       var url;
@@ -1939,34 +1955,37 @@ class MyLocationListProvider extends ChangeNotifier {
             "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID";
       }
 
-      if (countries.isNotEmpty) {
-        url += "&country=${countries.join(",")}";
+      if(locationId != null && locationId.isNotEmpty){
+        url += "&filter_by_location_id=$locationId";
       }
-      if (zipcode.isNotEmpty) {
-        url += "&zip=$state";
-      }
+        if (countries.isNotEmpty) {
+          url += "&country=${countries.join(",")}";
+        }
+        if (zipcode.isNotEmpty) {
+          url += "&zip=$state";
+        }
 
-      if (certifications.isNotEmpty) {
-        for (var cert in certifications) {
-          if (cert == "Manual Certified") {
-            url += "&manual_certified=true";
-          } else if (cert == "Auto Certified") {
-            url += "&auto_certified=true";
+        if (certifications.isNotEmpty) {
+          for (var cert in certifications) {
+            if (cert == "Manual Certified") {
+              url += "&manual_certified=true";
+            } else if (cert == "Auto Certified") {
+              url += "&auto_certified=true";
+            }
           }
         }
-      }
-      if (hazardRatings.isNotEmpty) {
-        for (var hazard in hazardRatings.keys) {
-          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
+        if (hazardRatings.isNotEmpty) {
+          for (var hazard in hazardRatings.keys) {
+            url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
+          }
         }
-      }
-      if (rating.isNotEmpty) {
-        url += "&score=${rating.join(",")}";
-      }
+        if (rating.isNotEmpty) {
+          url += "&score=${rating.join(",")}";
+        }
 
-      if (_selectedCampusIds.isNotEmpty) {
-        url += "&campus_id=${_selectedCampusIds.join(",")}";
-      }
+        if (_selectedCampusIds.isNotEmpty) {
+          url += "&campus_id=${_selectedCampusIds.join(",")}";
+        }
 
       print(url);
       var uri = Uri.parse(url);
@@ -1985,14 +2004,18 @@ class MyLocationListProvider extends ChangeNotifier {
             MyLocationModel.fromJson(jsonResponse);
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
+        if(locationId != null && locationId.isNotEmpty){
+          locationProfile = locationListModel.filterByLocationResult?.first;
+          resetTotalPage = locationListModel.totalRecords ?? 1;
+        } else {
+          locationProfile = locationListModel.results?.first;
+        }
 
-        locationProfile = locationListModel.results?.first;
-
-        log(myLocationList.toString());
+        log(locationProfile?.toString()??"");
         print("totalPages: $totalPages");
         log(page.toString());
       } else {
-        print(json.decode(response.body)["error"]);
+        print(json.decode(response.body)?["error"]??"");
         throw Exception('Failed to load data');
       }
       isLoading = false;

@@ -87,7 +87,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   @override
   Widget build(BuildContext context) {
-    print("Campus ID: ${widget.campusId}");
+    //print("Campus ID: ${widget.campusId}");
     selectionMode = Provider.of<MyLocationListProvider>(context).selectedLocations.isNotEmpty;
     MyLocation? myLocation;
     if (widget.isCertified) {

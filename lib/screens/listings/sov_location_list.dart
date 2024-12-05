@@ -1205,6 +1205,9 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                             index: index,
                             accountId: widget.accountID,
                             subAccountId: widget.subAccountID,
+                            sovId: widget.sovID,
+                            sovName: widget.sovName,
+                            subAccountName: widget.subAccountName,
                             locationId: locationListProvider
                                 .myLocationList[index].id ??
                                 '',
@@ -1350,6 +1353,9 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                     index: index,
                     accountId: widget.accountID,
                     subAccountId: widget.subAccountID,
+                    sovId: widget.sovID,
+                    sovName: widget.sovName,
+                    subAccountName: widget.subAccountName,
                     locationId: locationListProvider
                         .myLocationList[index].id ??
                         '',
@@ -1739,6 +1745,9 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       index: index,
       accountId: widget.accountID,
       subAccountId: widget.subAccountID,
+      sovId: widget.sovID,
+      sovName: widget.sovName,
+      subAccountName: widget.subAccountName,
       isCertified: true,
       locationId: locationListProvider.certifiedLocationList[index].id ?? '',
       accountName: locationListProvider

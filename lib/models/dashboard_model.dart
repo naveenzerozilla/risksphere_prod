@@ -7,13 +7,14 @@ class DashboardModel {
   String? rolePercent;
   String? companyPercent;
   int? requests;
+  int? companyUserLeadCount;
 
   DashboardModel(
       {this.max,
         this.companyType,
         this.roles,
         this.signups,
-        this.verificationCount, this.rolePercent, this.companyPercent, this.requests});
+        this.verificationCount, this.rolePercent, this.companyPercent, this.requests, this.companyUserLeadCount});
 
   DashboardModel.fromJson(Map<String, dynamic> json) {
     max = json['max']??0;
@@ -35,6 +36,11 @@ class DashboardModel {
     rolePercent = json['role_percent'];
     companyPercent = json['company_percent'];
     requests = json['request']??0;
+    if(json['company_user_lead_count'] is int) {
+      companyUserLeadCount = json['company_user_lead_count']??0;
+    } else {
+      companyUserLeadCount = 0;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -53,6 +59,7 @@ class DashboardModel {
     data['role_percent'] = this.rolePercent;
     data['company_percent'] = this.companyPercent;
     data['requests'] = this.requests;
+    data['company_user_lead_count'] = this.companyUserLeadCount;
     return data;
   }
 }
