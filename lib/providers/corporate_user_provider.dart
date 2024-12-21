@@ -201,6 +201,8 @@ class CorporateProvider with ChangeNotifier {
       return [];
     }
   }
+
+
   void handleError(BuildContext context, dynamic e, StackTrace stackTrace) {
     log('Error: $e');
     print('Stack Trace: $stackTrace');
@@ -248,6 +250,8 @@ class CorporateProvider with ChangeNotifier {
       return false; // Return false in case of error
     }
   }
+
+
   Future<bool> deleteCompany(BuildContext context,
       List<String> employeeIds) async {
     try {
@@ -368,6 +372,7 @@ class CorporateProvider with ChangeNotifier {
 //   }
 //
 //   /// Update a employee based on the employee ID and new employee data.
+
   Future<bool> updateCorporateEmployee(BuildContext context, Map<String, dynamic> employeeData) async {
     try {
       // Set loading state to true

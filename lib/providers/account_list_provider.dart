@@ -392,7 +392,7 @@ class AccountListProvider extends ChangeNotifier {
 
       print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      String url = '?account_name=$searchQuery';
+      String url = '?search=$searchQuery';
       var response = await apiService.get(url);
       log(response.toString());
 

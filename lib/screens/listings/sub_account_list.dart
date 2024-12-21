@@ -1535,14 +1535,14 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                               backgroundImage: NetworkImage(user.imageUrl),
                             )
                                 : CircleAvatar(
-                              child: Text(user.displayName[0].toUpperCase()),
+                              child: Text(user.name[0].toUpperCase()),
                             ),
-                            title: Text(user.displayName),
+                            title: Text(user.name),
                             subtitle: Text(user.email),
                             onTap: () {
                               setState(() {
                                 _selectedUser = user;
-                                _userSearchController.text = user.displayName;
+                                _userSearchController.text = user.name;
                               });
                             },
                           );
@@ -1550,7 +1550,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                       )
                           : Padding(
                         padding: EdgeInsets.all(16),
-                        child: Text('Selected User: ${_selectedUser!.displayName}'),
+                        child: Text('Selected User: ${_selectedUser!.name}'),
                       ),
                     ),
                     ButtonBar(

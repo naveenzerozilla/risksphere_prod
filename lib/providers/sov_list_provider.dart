@@ -596,7 +596,7 @@ class SOVListProvider extends ChangeNotifier {
 
 
   /// Transfer sov
-  Future<void> transferSOV(BuildContext context, String accountId, String? subAccountId, String? sovId, String newOwnerId) async {
+  Future<bool> transferSOV(BuildContext context, String accountId, String? subAccountId, String? sovId, String newOwnerId) async {
     try {
       isTransferLoading = true;
 
@@ -619,11 +619,17 @@ class SOVListProvider extends ChangeNotifier {
       }
 
       isTransferLoading = false;
-    } catch (e) {
+      return true;
+    } on BackendException catch (e, stack) {
       isTransferLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to transfer sov: ${e.toString()}'),
+        content: Text(e.message),
       ));
+      return false;
+    } catch (e, stack) {
+      isTransferLoading = false;
+      print(e);
+      return false;
     }
   }
 

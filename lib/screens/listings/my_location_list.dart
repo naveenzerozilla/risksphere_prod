@@ -136,6 +136,8 @@ class _MyLocationListState extends State<MyLocationList>
   TextEditingController sovController = TextEditingController();
   TextEditingController tagController = TextEditingController();
 
+  bool isUploadInProgress = false;
+
   void debounce(VoidCallback callback,
       {Duration duration = const Duration(seconds: 1)}) {
     if (deBouncer != null) {
@@ -213,7 +215,10 @@ class _MyLocationListState extends State<MyLocationList>
       setState(() {});
     });
     _getData();
+
     _getMaintainancePeriod();
+
+    _getSovUploadStatus();
   }
 
   @override
@@ -222,16 +227,47 @@ class _MyLocationListState extends State<MyLocationList>
     _mainTabController?.dispose();
     _masterTabController?.dispose();
     _tabController?.dispose();
-    Provider.of<MyLocationListProvider>(context, listen: false).clearAllFilters();
-    Provider.of<MyLocationListProvider>(context, listen: false).clearSelection();
-    Provider.of<MyLocationListProvider>(context, listen: false).clearRatingsFilter();
-    Provider.of<MyLocationListProvider>(context, listen: false).myLocationList.clear();
-    Provider.of<MyLocationListProvider>(context, listen: false).certifiedLocationList.clear();
-    Provider.of<MyLocationListProvider>(context, listen: false).selectedLocations.clear();
-    Provider.of<MyLocationListProvider>(context, listen: false).summaryList.clear();
-    Provider.of<MyLocationListProvider>(context, listen: false).certifiedLocationHits;
-    Provider.of<MyLocationListProvider>(context, listen: false).locationHits;
+
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .clearAllFilters();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .clearSelection();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .clearRatingsFilter();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .myLocationList
+            .clear();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .certifiedLocationList
+            .clear();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .selectedLocations
+            .clear();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .summaryList
+            .clear();
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .certifiedLocationHits;
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .locationHits;
+      }
+    });
+
     super.dispose();
+  }
+
+  _getSovUploadStatus() async {
+    String tempProcessId =
+        await SharedPreferenceService.getSovUploadTempId() ?? "";
+    String accountId = await SharedPreferenceService.getSovAccountId() ??
+        "";
+    String subAccountId =
+        await SharedPreferenceService.getSovSubAccountId() ?? "";
+    isUploadInProgress = tempProcessId.isNotEmpty &&
+    widget.accountID == accountId &&
+    widget.subAccountID == subAccountId;
   }
 
   _getMaintainancePeriod() async {
@@ -326,48 +362,51 @@ class _MyLocationListState extends State<MyLocationList>
               backgroundColor: AppColors.primaryMain,
               foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
               children: [
-                if((selectedMasterTab) == 0)
-                SpeedDialChild(
-                  child: Icon(Icons.add),
-                  backgroundColor: AppColors.primaryMain,
-                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  label: 'Add Location',
-                  labelStyle: typography.Body1,
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => AddLocationScreen(
-                        accountId: widget.accountID,
-                        subAccountId: widget.subAccountID,
-                        sovId: "",
-                        accountName: widget.accountName,
-                        subAccountName: widget.subAccountName,
-                      ),
-                    )).then((value) {
-                      if (value != null) {
-                        if (value) {
-                          Provider.of<MyLocationListProvider>(context,
-                                  listen: false)
-                              .fetchLocationList(
-                                context,
-                                "",
-                                1,
-                                40,
-                                widget.accountID,
-                                widget.subAccountID,
-                              )
-                              .then((value) => setState(() {}));
+                if ((selectedMasterTab) == 0)
+                  SpeedDialChild(
+                    child: Icon(Icons.add),
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor:
+                        themeProvider.getTheme.colorScheme.onPrimary,
+                    label: 'Add Location',
+                    labelStyle: typography.Body1,
+                    onTap: () {
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(
+                        builder: (_) => AddLocationScreen(
+                          accountId: widget.accountID,
+                          subAccountId: widget.subAccountID,
+                          sovId: "",
+                          accountName: widget.accountName,
+                          subAccountName: widget.subAccountName,
+                        ),
+                      ))
+                          .then((value) {
+                        if (value != null) {
+                          if (value) {
+                            Provider.of<MyLocationListProvider>(context,
+                                    listen: false)
+                                .fetchLocationList(
+                                  context,
+                                  "",
+                                  1,
+                                  40,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                )
+                                .then((value) => setState(() {}));
+                          }
                         }
-                      }
-                    });
-                  },
-                ),
+                      });
+                    },
+                  ),
                 SpeedDialChild(
                   child: Icon(Icons.upload),
                   backgroundColor: AppColors.primaryMain,
                   foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  label: 'Upload SOV',
+                  label: isUploadInProgress ? 'Continue' : 'Upload SOV',
                   labelStyle: typography.Body1,
-                  onTap: () {
+                  onTap: () async {
                     if (isMaintenance) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -375,43 +414,60 @@ class _MyLocationListState extends State<MyLocationList>
                               'SOV upload is disabled during maintenance period.'),
                         ),
                       );
+                    } else if (isUploadInProgress) {
+                      String tempProcessId =
+                          await SharedPreferenceService.getSovUploadTempId() ??
+                              "";
+                      String state =
+                          await SharedPreferenceService.getSovUploadState() ??
+                              "";
+                      // Call API to get get necessary data and navigate to the respective screen
+                      Provider.of<UploadSovProvider>(context, listen: false)
+                          .fetchSovUploadData(
+                              context,
+                              widget.accountID,
+                              widget.accountName,
+                              widget.subAccountID,
+                              tempProcessId,
+                              state);
                     } else {
                       _showUploadBottomSheet(
                           widget.accountID, widget.subAccountID, "");
                     }
                   },
                 ),
-                if((_masterTabController?.index??0) == 0)
-                SpeedDialChild(
-                  child: Icon(Icons.download),
-                  backgroundColor: AppColors.primaryMain,
-                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  label: 'Export Locations',
-                  labelStyle: typography.Body1,
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return ExportDialog(
-                          accountId: widget.accountID,
-                          subAccountId: widget.subAccountID,
-                          sovId: "",
-                          locationId: selectedMainTab == 0
-                              ? Provider.of<MyLocationListProvider>(context,
-                                      listen: false)
-                                  .myLocationList
-                                  .map((location) => location.id ?? "")
-                                  .toList()
-                              : Provider.of<MyLocationListProvider>(context,
-                                      listen: false)
-                                  .certifiedLocationList
-                                  .map((location) => location.id ?? "")
-                                  .toList(),
-                        );
-                      },
-                    );
-                  },
-                ),
+                if ((_masterTabController?.index ?? 0) == 0)
+                  SpeedDialChild(
+                    child: Icon(Icons.download),
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor:
+                        themeProvider.getTheme.colorScheme.onPrimary,
+                    label: 'Export Locations',
+                    labelStyle: typography.Body1,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return ExportDialog(
+                            accountId: widget.accountID,
+                            subAccountId: widget.subAccountID,
+                            sovId: "",
+                            locationId: selectedMainTab == 0
+                                ? Provider.of<MyLocationListProvider>(context,
+                                        listen: false)
+                                    .myLocationList
+                                    .map((location) => location.id ?? "")
+                                    .toList()
+                                : Provider.of<MyLocationListProvider>(context,
+                                        listen: false)
+                                    .certifiedLocationList
+                                    .map((location) => location.id ?? "")
+                                    .toList(),
+                          );
+                        },
+                      );
+                    },
+                  ),
               ],
             ),
             body: Stack(
@@ -433,11 +489,31 @@ class _MyLocationListState extends State<MyLocationList>
                                 const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
                               children: [
-                                Text(widget.accountName,
-                                    style: typography.InputLabel),
-                                Text(' > ', style: typography.InputLabel),
-                                Text(widget.subAccountName,
-                                    style: typography.InputLabel),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0, bottom: 6),
+                                  child: Row(
+                                    children: [
+                                      Text(widget.accountName,
+                                          style: typography.InputLabel),
+                                      Text(' > ', style: typography.InputLabel),
+                                      Text(widget.subAccountName,
+                                          style: typography.InputLabel),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Consumer<JobMonitoringProvider>(
+                                          builder: (context, jobMonitoringProvider, child) {
+                                            return Container(
+                                              child: _getLiveUI(jobMonitoringProvider),
+                                            );
+                                          }),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -727,7 +803,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   }
                                 }
                               },
-                              child: Text('Export'),
+                              child: Text('Export', style: typography.Body1),
                             ),
                           ],
                         ),
@@ -770,7 +846,7 @@ class _MyLocationListState extends State<MyLocationList>
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel'),
+                              child: Text('Cancel', style: typography.Body1),
                             ),
                             TextButton(
                               onPressed: () {
@@ -781,7 +857,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 );
                                 Navigator.pop(context);
                               },
-                              child: Text('Delete'),
+                              child: Text('Delete', style: typography.Body1),
                             ),
                           ],
                         ),
@@ -868,15 +944,20 @@ class _MyLocationListState extends State<MyLocationList>
                       ],
                     ),
                   ),
+                  SizedBox(width: CustomSpacing.four),
+                  SizedBox(height: CustomSpacing.eight),
                   // Options are Upload SOV, Add Location, Export Locations
-                  PopupMenuButton(
+                  /*PopupMenuButton(
                     icon: Icon(Icons.more_vert),
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         child: ListTile(
                           leading: Icon(Icons.upload),
-                          title: Text('Upload SOV', style: typography.Body1),
-                          onTap: () {
+                          title: Text(
+                            isUploadInProgress?'Continue': 'Upload SOV',
+                            style: typography.Body1,
+                          ),
+                          onTap: () async {
                             // Add your logic for uploading SOV
                             if (isMaintenance) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -885,9 +966,29 @@ class _MyLocationListState extends State<MyLocationList>
                                       'SOV upload is disabled during maintenance period.'),
                                 ),
                               );
+                            } else if (isUploadInProgress) {
+                              String tempProcessId =
+                                  await SharedPreferenceService
+                                          .getSovUploadTempId() ??
+                                      "";
+                              String state = await SharedPreferenceService
+                                      .getSovUploadState() ??
+                                  "";
+                              // Call API to get get necessary data and navigate to the respective screen
+                              Provider.of<UploadSovProvider>(context,
+                                      listen: false)
+                                  .fetchSovUploadData(
+                                      context,
+                                      widget.accountID,
+                                      widget.accountName,
+                                      widget.subAccountID,
+                                      tempProcessId,
+                                      state);
                             } else {
-                              /* _showUploadDialog(
+                              */
+                  /* _showUploadDialog(
                                   widget.accountID, widget.subAccountID, "");*/
+                  /*
                               _showUploadBottomSheet(
                                   widget.accountID, widget.subAccountID, "");
                             }
@@ -955,7 +1056,7 @@ class _MyLocationListState extends State<MyLocationList>
                         ),
                       ),
                     ],
-                  ),
+                  ),*/
                 ]
               ],
             );
@@ -965,12 +1066,6 @@ class _MyLocationListState extends State<MyLocationList>
         Container(
           child: MaintenanceUI(isMaintenance: isMaintenance),
         ),
-        Consumer<JobMonitoringProvider>(
-            builder: (context, jobMonitoringProvider, child) {
-          return Container(
-            child: _getLiveUI(jobMonitoringProvider),
-          );
-        }),
         showSelectAll
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1050,25 +1145,35 @@ class _MyLocationListState extends State<MyLocationList>
             clipBehavior: Clip.antiAlias,
             borderRadius: BorderRadius.circular(8),
             child: GNav(
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-             // backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                rippleColor: Colors.grey[800]!, // tab button ripple color when pressed
-                hoverColor: Colors.grey[700]!, // tab button hover color
-                haptic: true, // haptic feedback
-                duration: Duration(milliseconds: 100), // tab animation duration
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHigh,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                // backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                rippleColor: Colors.grey[800]!,
+                // tab button ripple color when pressed
+                hoverColor: Colors.grey[700]!,
+                // tab button hover color
+                haptic: true,
+                // haptic feedback
+                duration: Duration(milliseconds: 100),
+                // tab animation duration
                 tabBorderRadius: 8,
                 //tabActiveBorder: Border.all(color: Colors.black, width: 1), // tab button border
                 //tabBorder: Border.all(color: Colors.grey, width: 1), // tab button border
                 //tabShadow: [BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 8)], // tab button shadow
-                curve: Curves.easeOutExpo, // tab animation curves
+                curve: Curves.easeOutExpo,
+                // tab animation curves
 
-                gap: 8, // the tab button gap between icon and text
-                color: Colors.grey[300], // unselected icon color
-                activeColor: AppColors.primaryMain, // selected icon and text color
-                iconSize: 24, // tab button icon size
-                tabBackgroundColor: AppColors.primaryMain.withOpacity(
-                0.16), // selected tab background color
+                gap: 8,
+                // the tab button gap between icon and text
+                color: Colors.grey[300],
+                // unselected icon color
+                activeColor: AppColors.primaryMain,
+                // selected icon and text color
+                iconSize: 24,
+                // tab button icon size
+                tabBackgroundColor: AppColors.primaryMain.withOpacity(0.16),
+                // selected tab background color
 
                 onTabChange: (index) {
                   setState(() {
@@ -1095,8 +1200,7 @@ class _MyLocationListState extends State<MyLocationList>
                     icon: Remix.bar_chart_box_ai_line,
                     text: 'Overall Score',
                   ),
-                ]
-            ),
+                ]),
           ),
         ),
         SizedBox(height: CustomSpacing.two),
@@ -1227,33 +1331,25 @@ class _MyLocationListState extends State<MyLocationList>
 
     // Define the secondary stream with proper caching
     Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
+    print('docids: ${provider.docIds}');
 
     if (provider.isSuperAdmin) {
       processStream = FirebaseFirestore.instance
           .collection('processes')
+          .where('process_type', isEqualTo: 'hazard')
           .orderBy('created_at', descending: true)
-          .limit(5)
+          .limit(1)
           .snapshots()
           .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
     } else if (provider.docIds.isNotEmpty) {
-      List<List<String>> chunks = [];
-      for (var i = 0; i < provider.docIds.length; i += 30) {
-        chunks.add(provider.docIds.sublist(
-          i,
-          i + 30 > provider.docIds.length ? provider.docIds.length : i + 30,
-        ));
-      }
-
-      List<Stream<QuerySnapshot<Map<String, dynamic>>>> chunkStreams = chunks
-          .map((chunk) => FirebaseFirestore.instance
+      processStream = FirebaseFirestore.instance
           .collection('processes')
-          .where(FieldPath.documentId, whereIn: chunk)
+          .where('company_id', whereIn: provider.docIds) // Filter by company_id
+          .where('process_type', isEqualTo: 'hazard') // Skip documents with heatmap
           .orderBy('created_at', descending: true)
           .limit(1)
-          .snapshots())
-          .toList();
-
-      processStream = Rx.merge(chunkStreams).asBroadcastStream();
+          .snapshots()
+          .asBroadcastStream();
     } else {
       processStream = Stream.empty();
     }
@@ -1272,8 +1368,7 @@ class _MyLocationListState extends State<MyLocationList>
         Map<String, dynamic>>(
       subaccountStream,
       processStream,
-          (heatmapSnapshot, processSnapshot) {
-        log('Heatmap Snapshot: ${heatmapSnapshot.data()}');
+      (heatmapSnapshot, processSnapshot) {
         return {
           'heatmapData': heatmapSnapshot.data(),
           'processData': processSnapshot.docs.isNotEmpty
@@ -1281,14 +1376,15 @@ class _MyLocationListState extends State<MyLocationList>
               : null,
         };
       },
-    ).debounceTime(const Duration(milliseconds: 300)); // Add debounce to stabilize updates
+    ).debounceTime(
+        const Duration(milliseconds: 500)); // Add debounce to stabilize updates
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: combinedStream,
       builder: (context, snapshot) {
-        // Only show loading on initial load
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          return SizedBox(height: CustomSpacing.eight);
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return SizedBox(height: CustomSpacing.six);
         }
 
         if (snapshot.hasError) {
@@ -1301,20 +1397,26 @@ class _MyLocationListState extends State<MyLocationList>
 
         var data = snapshot.data!;
         var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
-        var processStatus = data['processData']?['status'] ?? '';
-        print('Heatmap Status: $heatmapStatus');
-        print('Heatmap Data: ${data['heatmapData']}');
-        //print('Process Status: $processStatus');
-        //log('Process data: ${data['processData']}');
+        var processStatus = data['processData']?['status'] ?? 'completed';
 
-        var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+        print('Heatmap Status: $heatmapStatus');
+
+        var provider =
+            Provider.of<MyLocationListProvider>(context, listen: false);
         provider.isHeatMapGeneratingLive =
-            processStatus.toString().toLowerCase() != 'completed';
+            heatmapStatus.toString().toLowerCase() == 'initiated';
+
+        // Extract process count and calculate percentage
+        int totalCompleted =
+            data['processData']?['total_processes_completed'] ?? 0;
+        int totalProcesses = data['processData']?['total_processes'] ?? 1;
+        double percentage = (totalCompleted / totalProcesses) * 100;
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Column(
-            key: ValueKey('$processStatus-$heatmapStatus'), // Add key for proper animation
+            key: ValueKey('$processStatus-$heatmapStatus'),
+            // Add key for proper animation
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (processStatus.toString().toLowerCase() != 'completed')
@@ -1322,31 +1424,38 @@ class _MyLocationListState extends State<MyLocationList>
                   onTap: () {
                     Navigator.of(context)
                         .push(MaterialPageRoute(
-                      builder: (_) => ProcessMonitoringScreen(),
-                    ))
+                          builder: (_) => ProcessMonitoringScreen(),
+                        ))
                         .then((value) => _getData());
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Lottie.asset(
-                              'assets/lottie/loading.json',
-                              width: 24,
-                              height: 24,
-                            ),
-                            const SizedBox(width: 8.0),
-                            Text(
-                              'Processing',
-                              style: typography.Body2.copyWith(
-                                  fontWeight: FontWeight.w500),
-                            ),
+                            Row(
+                              children: [
+                                Lottie.asset(
+                                  'assets/lottie/loading.json',
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                const SizedBox(width: 8.0),
+                                Text(
+                                  'Processing $totalCompleted/$totalProcesses',
+                                  style: typography.Caption.copyWith(
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),/*
+                            CircularProgressIndicator(
+                              value: percentage / 100,
+                            ),*/
                           ],
                         ),
-                        SizedBox(height: CustomSpacing.two),
                       ],
                     ),
                   ),
@@ -1363,18 +1472,17 @@ class _MyLocationListState extends State<MyLocationList>
                             children: [
                               Lottie.asset(
                                 'assets/lottie/loading.json',
-                                width: 24,
-                                height: 24,
+                                width: 20,
+                                height: 20,
                               ),
                               const SizedBox(width: 8.0),
                               Text(
                                 'Generating Heatmap',
-                                style: typography.Body2.copyWith(
+                                style: typography.Caption.copyWith(
                                     fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
-                           SizedBox(height: CustomSpacing.two),
                         ],
                       ),
                     ),
@@ -1653,34 +1761,35 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
                         )
                       : RefreshIndicator(
-                onRefresh: () async {
-                  locationListProvider.certifiedPage = 1;
-                  locationListProvider.fetchCertifiedLocationList(
-                    context,
-                    "",
-                    locationListProvider.certifiedPage,
-                    40,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                  locationListProvider.fetchLocationList(
-                    context,
-                    locationQuery,
-                    1,
-                    40,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                  locationListProvider.fetchAllLocationList(
-                    context,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                },
-                        child: ListView.builder(
+                          onRefresh: () async {
+                            locationListProvider.certifiedPage = 1;
+                            locationListProvider.fetchCertifiedLocationList(
+                              context,
+                              "",
+                              locationListProvider.certifiedPage,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                            locationListProvider.fetchLocationList(
+                              context,
+                              locationQuery,
+                              1,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                            locationListProvider.fetchAllLocationList(
+                              context,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                          },
+                          child: ListView.builder(
                             physics: ClampingScrollPhysics(),
                             shrinkWrap: true,
-                            itemCount: locationListProvider.myLocationList.length,
+                            itemCount:
+                                locationListProvider.myLocationList.length,
                             itemBuilder: (context, index) {
                               if (index ==
                                   locationListProvider.myLocationList.length -
@@ -1827,7 +1936,8 @@ class _MyLocationListState extends State<MyLocationList>
                                         padding: const EdgeInsets.all(8.0),
                                         child: Center(
                                           child: Text(
-                                            LanguageService.getTranslated(context,
+                                            LanguageService.getTranslated(
+                                                context,
                                                 "location_list_end_of_list"),
                                             style: typography.Body1,
                                           ),
@@ -1929,7 +2039,8 @@ class _MyLocationListState extends State<MyLocationList>
                                               [locationId]);
 
                                       // Refresh the list after deletion
-                                      Provider.of<MyLocationListProvider>(context,
+                                      Provider.of<MyLocationListProvider>(
+                                              context,
                                               listen: false)
                                           .fetchLocationList(
                                         context,
@@ -1960,17 +2071,18 @@ class _MyLocationListState extends State<MyLocationList>
                                 onAddTag: (locationId) {
                                   // Show add tag dialog
                                   // Implement bulk add tag
-                                  locationListProvider.addTagsToSelectedLocations(
-                                      context,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      locationId);
+                                  locationListProvider
+                                      .addTagsToSelectedLocations(
+                                          context,
+                                          widget.accountID,
+                                          widget.subAccountID,
+                                          locationId);
                                 },
                                 getData: _getData,
                               );
                             },
                           ),
-                      ),
+                        ),
             ),
           ],
         );
@@ -2169,35 +2281,35 @@ class _MyLocationListState extends State<MyLocationList>
                               style: typography.Body1),
                         )
                       : RefreshIndicator(
-                onRefresh: () async {
-                  locationListProvider.certifiedPage = 1;
-                  locationListProvider.fetchCertifiedLocationList(
-                    context,
-                    "",
-                    locationListProvider.certifiedPage,
-                    40,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                  locationListProvider.fetchLocationList(
-                    context,
-                    locationQuery,
-                    1,
-                    40,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                  locationListProvider.fetchAllLocationList(
-                    context,
-                    widget.accountID,
-                    widget.subAccountID,
-                  );
-                },
-                        child: ListView.builder(
+                          onRefresh: () async {
+                            locationListProvider.certifiedPage = 1;
+                            locationListProvider.fetchCertifiedLocationList(
+                              context,
+                              "",
+                              locationListProvider.certifiedPage,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                            locationListProvider.fetchLocationList(
+                              context,
+                              locationQuery,
+                              1,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                            locationListProvider.fetchAllLocationList(
+                              context,
+                              widget.accountID,
+                              widget.subAccountID,
+                            );
+                          },
+                          child: ListView.builder(
                             physics: ClampingScrollPhysics(),
                             shrinkWrap: true,
-                            itemCount:
-                                locationListProvider.certifiedLocationList.length,
+                            itemCount: locationListProvider
+                                .certifiedLocationList.length,
                             itemBuilder: (context, index) {
                               if (index ==
                                   locationListProvider
@@ -2233,7 +2345,8 @@ class _MyLocationListState extends State<MyLocationList>
                                 } else {
                                   locationListProvider.certifiedPage =
                                       locationListProvider.certifiedPage + 1;
-                                  locationListProvider.fetchCertifiedLocationList(
+                                  locationListProvider
+                                      .fetchCertifiedLocationList(
                                     context,
                                     "",
                                     locationListProvider.certifiedPage,
@@ -2251,7 +2364,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider, index, context);
                             },
                           ),
-                      ),
+                        ),
             ),
           ],
         );
@@ -2430,7 +2543,7 @@ class _MyLocationListState extends State<MyLocationList>
   void _showUploadBottomSheet(
       String accountId, String subAccountId, String sovId) {
     var typography = CustomTypography(context);
-    Navigator.pop(context);
+    //Navigator.pop(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2590,7 +2703,7 @@ class _MyLocationListState extends State<MyLocationList>
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 14),
                       TextField(
                         controller: tagController,
                         style: TextStyle(color: Colors.white),
@@ -2604,7 +2717,7 @@ class _MyLocationListState extends State<MyLocationList>
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 14),
                       TextField(
                         controller:
                             TextEditingController(text: widget.accountName),
@@ -2622,7 +2735,7 @@ class _MyLocationListState extends State<MyLocationList>
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 14),
                       TextField(
                         enabled: false,
                         controller:
@@ -2640,7 +2753,7 @@ class _MyLocationListState extends State<MyLocationList>
                           hintStyle: TextStyle(color: Colors.white54),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 14),
                     ],
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 0.0),
@@ -2846,6 +2959,9 @@ class _MyLocationListState extends State<MyLocationList>
                                                                   accountName:
                                                                       widget.accountName ??
                                                                           "",
+                                                                  subAccountId:
+                                                                      widget
+                                                                          .subAccountID,
                                                                 )));
                                                   }
                                                 },
@@ -3347,7 +3463,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 ],
                               ),
                             ),
-                            !sOVListProvider.showOverallScore
+                            true
                                 ? SizedBox()
                                 : Padding(
                                     padding:
@@ -3596,6 +3712,7 @@ class _MyLocationListState extends State<MyLocationList>
                         },
                         decoration: InputDecoration(
                           hintText: 'Search for a user to transfer sov',
+                          hintStyle: typography.Body1,
                           border: OutlineInputBorder(),
                           suffixIcon: _isSearching
                               ? Container(
@@ -3622,16 +3739,16 @@ class _MyLocationListState extends State<MyLocationList>
                                               NetworkImage(user.imageUrl),
                                         )
                                       : CircleAvatar(
-                                          child: Text(user.displayName[0]
+                                          child: Text(user.name[0]
                                               .toUpperCase()),
                                         ),
-                                  title: Text(user.displayName),
+                                  title: Text(user.name),
                                   subtitle: Text(user.email),
                                   onTap: () {
                                     setState(() {
                                       _selectedUser = user;
                                       _userSearchController.text =
-                                          user.displayName;
+                                          user.name;
                                     });
                                   },
                                 );
@@ -3640,43 +3757,55 @@ class _MyLocationListState extends State<MyLocationList>
                           : Padding(
                               padding: EdgeInsets.all(16),
                               child: Text(
-                                  'Selected User: ${_selectedUser!.displayName}'),
+                                  'Selected User: ${_selectedUser!.name}'),
                             ),
                     ),
-                    ButtonBar(
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed:
-                              _selectedUser != null && !_isTransferLoading
-                                  ? () async {
-                                      setState(() {
-                                        _isTransferLoading = true;
-                                      });
-                                      var provider =
-                                          Provider.of<SOVListProvider>(context,
-                                              listen: false);
-                                      await provider.transferSOV(
-                                          context,
-                                          widget.accountID,
-                                          widget.subAccountID,
-                                          sov.id,
-                                          _selectedUser!.id);
-                                      setState(() {
-                                        _isTransferLoading = false;
-                                      });
-                                      Navigator.pop(dialogContext);
-                                    }
-                                  : null,
-                          child: _isTransferLoading
-                              ? CircularProgressIndicator(strokeWidth: 2.0)
-                              : Text('Transfer'),
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+
+                            child: Text('Cancel', style: CustomTypography(context).Body1,),
+                          ),
+                          CustomButton(
+                            type: ButtonType.elevated,
+                            onPressed:
+                                _selectedUser != null && !_isTransferLoading
+                                    ? () async {
+                                        setState(() {
+                                          _isTransferLoading = true;
+                                        });
+                                        var provider =
+                                            Provider.of<SOVListProvider>(context,
+                                                listen: false);
+                                        await provider.transferSOV(
+                                            context,
+                                            widget.accountID,
+                                            widget.subAccountID,
+                                            sov.id,
+                                            _selectedUser!.id).then((value) {
+                                          if (value) {
+                                            _getData();
+                                          }
+                                        });
+                                        setState(() {
+                                          _isTransferLoading = false;
+                                        });
+
+                                        Navigator.pop(dialogContext);
+                                      }
+                                    : null,
+                            child: _isTransferLoading
+                                ? CircularProgressIndicator(strokeWidth: 2.0)
+                                : Text('Transfer', style: CustomTypography(context).Body1,),
+                          ),
+                        ],
+                      ),
                     ),
+                    SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -3692,12 +3821,12 @@ class _MyLocationListState extends State<MyLocationList>
   Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
       String query) async {
     try {
-      ApiService apiService = ApiService(AppConstant.ADD_TEAM_MEMBERS);
-      String url = '?search=$query&within_company=true';
+      ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+      String url = '?search=$query';
       var response = await apiService.get(url);
 
       // Parse the response to extract user data
-      List<TransferAutocompleteModel> users = (response['users'] as List)
+      List<TransferAutocompleteModel> users = (response['result'] as List)
           .map((user) => TransferAutocompleteModel.fromJson(user))
           .toList();
 
@@ -3707,287 +3836,4 @@ class _MyLocationListState extends State<MyLocationList>
       return [];
     }
   }
-}
-
-class OverallListCard extends StatelessWidget {
-  const OverallListCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Color(0xFF2D2D2D),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: Image, 100% Indicator, RS Code
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    'https://via.placeholder.com/50', // Replace with your image
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'C-231',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    Text(
-                      'RS/00003',
-                      style: TextStyle(color: Colors.blue[300]),
-                    ),
-                  ],
-                ),
-                Spacer(),
-                CircularPercentIndicator(),
-                // Replace with your circular progress indicator widget
-              ],
-            ),
-            SizedBox(height: 20),
-
-            // Scores Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ScoreWidget(
-                  icon: Icons.electric_bolt,
-                  label: 'Risk Score',
-                  score: 4,
-                  color: Colors.green,
-                ),
-                ScoreWidget(
-                  icon: Icons.people_alt,
-                  label: 'Occupancy',
-                  score: 2,
-                  color: Colors.red,
-                ),
-                ScoreWidget(
-                  icon: Icons.construction,
-                  label: 'Construction',
-                  score: 3,
-                  color: Colors.yellow,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 10),
-
-            // Geocoding Score
-            ScoreWidget(
-              icon: Icons.gps_fixed,
-              label: 'Geocoding Score',
-              score: 5,
-              color: Colors.green,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ScoreWidget extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int score;
-  final Color color;
-
-  ScoreWidget({
-    required this.icon,
-    required this.label,
-    required this.score,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color),
-            SizedBox(width: 8),
-            Text(
-              '$label',
-              style: TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ],
-        ),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            for (var i = 0; i < 5; i++)
-              Icon(
-                Icons.circle,
-                size: 10,
-                color: i < score ? color : Colors.grey,
-              ),
-            SizedBox(width: 8),
-            Text(
-              '$score',
-              style: TextStyle(color: color),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class CircularPercentIndicator extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                value: 1.0, // This should be in the range of 0.0 to 1.0
-                strokeWidth: 5,
-                color: Colors.green,
-              ),
-            ),
-            Text(
-              '100%',
-              style: TextStyle(color: Colors.green, fontSize: 12),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class GeoCodingListCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Left Section: Badge Icon and Image
-            Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/certified.svg',
-                  semanticsLabel: 'Location',
-                ),
-                SizedBox(width: 8),
-                ClipOval(
-                  child: Image.asset(
-                    'assets/images/location_thumbnail.png',
-                    // Replace with your image
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(width: 10),
-
-            // Middle Section: RS Code and C-231
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'RS/00002',
-                        style: TextStyle(color: Colors.blue[300], fontSize: 16),
-                      ),
-                      SizedBox(width: 5),
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.grey,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Chip(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHigh,
-                    label: Text(
-                      'C-231',
-                      style: CustomTypography(context).Body2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Right Section: Geocoding Score
-            Row(
-              children: [
-                ScoreBar(),
-                SizedBox(width: 5),
-                Text(
-                  '5',
-                  style: TextStyle(color: Colors.green, fontSize: 16),
-                ),
-              ],
-            ),
-
-            // Optional: More icon on the right
-            SizedBox(width: 10),
-            Icon(
-              Icons.more_vert,
-              color: Colors.grey,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ScoreBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Color(0xFF323232),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < 5; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2.0),
-              child: Icon(
-                Icons.circle,
-                size: 12,
-                color: i < 5 ? Colors.green : Colors.grey,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
 }

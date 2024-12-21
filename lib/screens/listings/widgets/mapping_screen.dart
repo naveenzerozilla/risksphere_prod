@@ -9,8 +9,9 @@ class MappingScreen extends StatefulWidget {
   final String tempId;
   final String accountId;
   final String accountName;
+  final String subAccountId;
 
-  const MappingScreen({super.key, required this.tempId, this.accountId = '', this.accountName = ''});
+  const MappingScreen({super.key, required this.tempId, this.accountId = '', this.accountName = '', this.subAccountId = ''});
 
   @override
   _MappingScreenState createState() => _MappingScreenState();
@@ -360,6 +361,7 @@ class _MappingScreenState extends State<MappingScreen> {
           _fields,
           widget.accountId,
           widget.accountName,
+          widget.subAccountId,
         );
       } else {
         provider.submitSovHeadersAccounts(

@@ -676,10 +676,12 @@ class _LocationProfileState extends State<LocationProfile>
                                         mapType: _currentMapType,
                                         markers: Set<Marker>.of(markers.values),
                                         initialCameraPosition: _kGooglePlex,
-                                        onMapCreated:
-                                            (GoogleMapController controller) {
-                                          _controller.complete(controller);
+                                        onMapCreated: (GoogleMapController controller) {
+                                          if (!_controller.isCompleted) {
+                                            _controller.complete(controller);
+                                          }
                                         },
+
                                         gestureRecognizers: <Factory<
                                             OneSequenceGestureRecognizer>>{
                                           Factory<OneSequenceGestureRecognizer>(

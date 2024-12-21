@@ -268,6 +268,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: TypeAheadField<Suggestion>(
                                         hideOnEmpty: true,
+                                        hideKeyboardOnDrag: false,
                                         controller: _locationNameController,
                                         suggestionsCallback: (pattern) async {
                                           if (pattern.isEmpty) return [];
@@ -843,26 +844,39 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           print('location id provided: ${widget.locationId}');
                                                        //   if (mounted) {
                                                            // await Navigator.maybePop(context);
-                                                            if (mounted) {
-                                                              Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder: (context) => LocationProfile(
-                                                                    accountId: widget.accountId,
-                                                                    subAccountId: widget.subAccountId,
-                                                                    sovId: widget.sovId,
-                                                                    accountName: widget.accountName,
-                                                                    subAccountName: widget.subAccountName,
-                                                                    sovName: widget.sovName,
-                                                                    locationId: widget.locationId,
-                                                                    searchQuery: widget.searchQuery,
-                                                                    page: widget.page,
-                                                                    totalPages: widget.totalPages,
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            }
-                                                       //   }
+                                                          if (mounted) {
+                                                            // Pop twice
+                                                            Navigator.pop(context);
+                                                            Future.microtask(() {
+                                                              Navigator.pop(context);
+
+                                                              // Push and remove until the stack is clear
+                                                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                                if (mounted) {
+                                                                  Navigator.pushAndRemoveUntil(
+                                                                    context,
+                                                                    MaterialPageRoute(
+                                                                      builder: (context) => LocationProfile(
+                                                                        accountId: widget.accountId,
+                                                                        subAccountId: widget.subAccountId,
+                                                                        sovId: widget.sovId,
+                                                                        accountName: widget.accountName,
+                                                                        subAccountName: widget.subAccountName,
+                                                                        sovName: widget.sovName,
+                                                                        locationId: widget.locationId,
+                                                                        searchQuery: widget.searchQuery,
+                                                                        page: widget.page,
+                                                                        totalPages: widget.totalPages,
+                                                                      ),
+                                                                    ),
+                                                                        (route) => true, // Clear the stack
+                                                                  );
+                                                                }
+                                                              });
+                                                            });
+                                                          }
+
+                                                          //   }
 
                                                         }
                                                       }

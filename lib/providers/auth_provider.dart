@@ -62,6 +62,15 @@ class AuthNotifier extends ChangeNotifier {
     });
   }
 
+  bool _isAssignClaimsLoading = false;
+  bool get isAssignClaimsLoading => _isAssignClaimsLoading;
+  set isAssignClaimsLoading(bool value) {
+    _isAssignClaimsLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
 // Private variables to hold role list, company list, and company type list
   List<Role>? _roleList;
   List<Companies>? _companyList;
@@ -1079,7 +1088,8 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<String> getAllClaims() async {
     try {
-      
+      if (isAssignClaimsLoading) return "";
+      isAssignClaimsLoading = true;
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('assignClaims');
       String? token = await _auth.currentUser!.getIdToken(true);
@@ -1087,8 +1097,17 @@ class AuthNotifier extends ChangeNotifier {
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
-      print("update claims response: ${response.data["is_user_exists"]}");
+      print("update claims response: ${response.data}");
       SharedPreferenceService.setScheduleInProgress(response.data['schedule_inprogress']??false);
+      SharedPreferenceService.setSovUploadTempId(response.data['last_process_temp_id']??"");
+      SharedPreferenceService.setSovUploadProcessId(response.data['process_id']??"");
+      SharedPreferenceService.setSovUploadState(response.data['last_process_state']??"");
+      SharedPreferenceService.setSovAccountId(response.data['last_account']??"");
+      SharedPreferenceService.setSovSubAccountId(response.data['last_sub_account']??"");
+      SharedPreferenceService.setSovAccountName(response.data['last_account_name']??"");
+      SharedPreferenceService.setSovSubAccountName(response.data['last_sub_account_name']??"");
+
+
       String? newToken = await _auth.currentUser!
           .getIdTokenResult(true)
           .then((value) => value.token);
@@ -1099,6 +1118,8 @@ class AuthNotifier extends ChangeNotifier {
       print(stack);
       print('Error getting all claims: $e');
       return "";
+    } finally {
+      isAssignClaimsLoading = false;
     }
   }
 

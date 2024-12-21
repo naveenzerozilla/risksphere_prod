@@ -65,6 +65,7 @@ class Companies {
   String? adminEmail;
   String? adminMobile;
   String? adminCountryCode;
+  List<CorporateAdmins>? admins = [];
 
   Companies(
       {this.companyType,
@@ -78,7 +79,10 @@ class Companies {
         //this.admins,
         this.status,
         this.id, this.isSelected,
-        this.enableDomainCheck, this.countryName});
+        this.enableDomainCheck, this.countryName,
+        this.adminName, this.adminEmail, this.adminMobile, this.adminCountryCode,
+        this.admins,
+      });
 
   Companies.fromJson(Map<String, dynamic> json) {
     companyType = json['company_type'];
@@ -106,6 +110,12 @@ class Companies {
     adminEmail = json['admin_email'];
     adminMobile = json['admin_phone'];
     adminCountryCode = json['admin_country_code'];
+    if (json['admins'] != null) {
+      admins = <CorporateAdmins>[];
+      json['admins'].forEach((v) {
+        admins!.add(new CorporateAdmins.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -127,6 +137,13 @@ class Companies {
     data['enable_domain_check'] = enableDomainCheck;
     data['id'] = id;
     data['country'] = countryName;
+    data['admin_name'] = adminName;
+    data['admin_email'] = adminEmail;
+    data['admin_phone'] = adminMobile;
+    data['admin_country_code'] = adminCountryCode;
+    if (admins != null) {
+      data['admins'] = admins!.map((v) => v.toJson()).toList();
+    }
     return data;
   }
 }
@@ -150,17 +167,18 @@ class UpdatedAt {
   }
 }
 
-class Admins {
+class CorporateAdmins {
   String? name;
   String? displayName;
   String? email;
   String? userId;
   String? mobile;
   String? countryCode;
+  String? imageUrl;
 
-  Admins({this.name, this.displayName, this.email, this.userId, this.mobile, this.countryCode});
+  CorporateAdmins({this.name, this.displayName, this.email, this.userId, this.mobile, this.countryCode, this.imageUrl});
 
-  Admins.fromJson(Map<String, dynamic> json) {
+  CorporateAdmins.fromJson(Map<String, dynamic> json) {
     name = json['name'];
 
     displayName = json['displayName']??"";
@@ -168,6 +186,7 @@ class Admins {
     userId = json['user_id'];
     mobile = json['phone']??"";
     countryCode = json['country_code']??"";
+    imageUrl = json['display_image_url']??"";
   }
 
   Map<String, dynamic> toJson() {
@@ -178,11 +197,12 @@ class Admins {
     data['user_id'] = userId;
     data['phone'] = mobile;
     data['country_code'] = countryCode;
+    data['display_image_url'] = imageUrl;
     return data;
   }
 
   @override
   toString() {
-    return 'Admins(name: $name, displayName: $displayName, email: $email, userId: $userId, mobile: $mobile, countryCode: $countryCode)';
+    return 'Admins(name: $name, displayName: $displayName, email: $email, userId: $userId, mobile: $mobile, countryCode: $countryCode, imageUrl: $imageUrl)';
   }
 }

@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/custom_appbar.dart';
@@ -33,6 +36,16 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
   GlobalKey expansionTileKey = GlobalKey();
 
   GlobalKey subProcessCardKey = GlobalKey();
+
+  bool isProcessSummaryOpen = false; // For Process Summary
+  bool isSubProcessSummaryOpen = false; // For Sub-Process Summary
+  String selectedSubProcessId = ""; // To track which sub-process summary is open
+  String selectedProcessId = ""; // To track which process summary is open
+
+  Map<String, dynamic>? jobSummaryData;
+
+  Map<String, dynamic> jobData = {};
+
 
   @override
   void initState() {
@@ -131,8 +144,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                           physics: ClampingScrollPhysics(),
                           itemCount: jobs.length,
                           itemBuilder: (context, index) {
-                            var jobData =
-                                jobs[index].data() as Map<String, dynamic>;
+
                             //(jobData.toString());
                             String jobId = jobData['id'] ?? '';
                             int completedTasks =
@@ -203,6 +215,15 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
     final Color expandedColor2 =
         Theme.of(context).hoverColor; // Darker hover color for expanded section
 
+    // If the summary is open, replace the card with summary UI
+    if (isProcessSummaryOpen && selectedProcessId == jobId) {
+      return _buildProcessSummary(jobSummaryData??{});
+    }
+    // If the summary is open, replace the card with summary UI
+   if (isSubProcessSummaryOpen && selectedProcessId == jobId) {
+      return _buildSubProcessSummary(jobSummaryData??{}, selectedProcessId);
+    }
+
     return Card(
       color: collapsedColor, // Main card hover color
       shape: RoundedRectangleBorder(
@@ -234,10 +255,13 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        jobId,
-                        style: typography.Body1.copyWith(
-                          fontWeight: FontWeight.w500,
+                      Tooltip(
+                        message: jobId,
+                        child: Text(
+                          jobData["process_name"]??"Process",
+                          style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       SizedBox(height: 8),
@@ -268,8 +292,29 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 ),
                 Spacer(),
                 // Right side icons
-                SvgPicture.asset(
-                  'assets/images/contract.svg',
+                IconButton(
+                  icon: SvgPicture.asset('assets/images/contract.svg'),
+                  onPressed: () async {
+                    setState(() {
+                      selectedProcessId = jobId;
+                      isProcessSummaryOpen = true; // Open summary view
+
+                    });
+                      var provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+                      Map<String, dynamic>? summaryData = await provider.fetchSummary(selectedProcessId);
+
+                      if (mounted) { // Always check if the widget is still mounted
+                        setState(() {
+                          if (summaryData != null) {
+                            jobSummaryData = summaryData;
+                          } else {
+                            SnackBar(content: Text('Failed to fetch summary', style: typography.Body1.copyWith(color: Colors.white)));
+
+                            isProcessSummaryOpen = false; // Close summary if API fails
+                          }
+                        });
+                      }
+                  },
                 ),
                 SizedBox(width: 8),
                 Padding(
@@ -311,14 +356,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(jobData['sov_name'] ?? 'Unknown SOV',
-                            style: typography.Body2.copyWith(
-                              color: AppColors.primaryMain,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end),
-                        SizedBox(width: 8),
+                        _buildFormattedDate(jobData['created_at']),
+                        SizedBox(height: 4),
                         Text('@$ownerName',
                             style: typography.Body2.copyWith(
                               color: Colors.grey[500],
@@ -351,7 +390,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     children: [
                       _buildIconWithCount(
                           Icons.check_circle, Colors.green, successCount),
-                      SizedBox(width: 8),
+                      SizedBox(width: 4),
                       _buildIconWithCount(
                           Icons.error_outline, Colors.red, failureCount),
                     ],
@@ -385,6 +424,32 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           });
         },
       ),
+    );
+  }
+
+  Widget _buildFormattedDate(dynamic timestamp) {
+    if (timestamp == null) return const SizedBox.shrink();
+
+    // Convert Timestamp to DateTime
+    DateTime dateTime;
+    if (timestamp is DateTime) {
+      dateTime = timestamp;
+    } else {
+      dateTime = timestamp.toDate(); // Firestore Timestamp -> DateTime
+    }
+
+    // Format the date in your desired style
+    String formattedDate =
+    DateFormat('dd MMM yyyy, hh:mm a').format(dateTime.toLocal());
+    var typography = CustomTypography(context);
+    return Text(
+      formattedDate,
+      style: typography.Body2.copyWith(
+    color: AppColors.primaryMain,
+    ),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    textAlign: TextAlign.end
     );
   }
 
@@ -500,7 +565,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 height: cardHeight,
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -520,7 +585,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                           ),
                         ],
                       ),
-                      SizedBox(width: 16), // Space between the line and content
+                      SizedBox(width: 8), // Space between the line and content
 
                       // Main Content
                       Expanded(
@@ -528,10 +593,14 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(height: 8),
-                            Text(
-                              subprocessId,
-                              style: typography.Body1,
-                              overflow: TextOverflow.ellipsis,
+                            Tooltip(
+                              message: subprocessId,
+                              child: Text(
+
+                                subprocessName,
+                                style: typography.Body1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             SizedBox(height: 8),
                             Row(
@@ -545,7 +614,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                SizedBox(width: 22),
                                 Text(
                                   '$completedTasks/$totalTasks',
                                   style: typography.Subtitle2.copyWith(
@@ -554,10 +623,11 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                                 ),
                               ],
                             ),
+                            SizedBox(height: 2,),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Chip(
+                                /*Chip(
                                   label: Text(
                                     subprocessName,
                                   ),
@@ -573,15 +643,46 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                                       color: Colors.transparent,
                                     ),
                                   ),
-                                ),
+                                ),*/
                                 Row(
                                   children: [
                                     _buildIconWithCount(Icons.check_circle,
                                         Colors.green, successCount),
-                                    SizedBox(width: 8),
+                                    SizedBox(width: 4),
                                     _buildIconWithCount(Icons.error_outline,
                                         Colors.red, totalTasks - successCount),
                                   ],
+                                ),
+                                SizedBox(width: 16,),
+                                IconButton(
+                                  icon: SvgPicture.asset('assets/images/contract.svg'),
+                                  onPressed: () async {
+                                    setState(() {
+                                      isSubProcessSummaryOpen = true; // Open summary view
+                                      selectedSubProcessId = subprocessId;
+                                      selectedProcessId = jobData['id'];
+                                    });
+
+                                    var provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+                                    print('Job id: ${jobData['id']}');
+                                    Map<String, dynamic>? summaryDataLocal = await provider.fetchSummary(jobData['id']);
+                                    print('Summary data: $summaryDataLocal');
+
+                                    if (mounted) { // Always check if the widget is still mounted
+                                      setState(() {
+                                        if (summaryDataLocal != null) {
+                                          jobData = summaryDataLocal;
+                                          debugPrint('Selected subprocessId: $subprocessId');
+                                          debugPrint('Available subprocess keys: ${summaryDataLocal['result']['subprocesses']?.keys}');
+
+                                        } else {
+                                          SnackBar(content: Text('Failed to fetch summary', style: typography.Body1.copyWith(color: Colors.white)));
+
+                                          isProcessSummaryOpen = false; // Close summary if API fails
+                                        }
+                                      });
+                                    }
+                                  },
                                 ),
                               ],
                             ),
@@ -883,6 +984,943 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         return 'Unknown';
     }
   }
+
+  /// Summary
+  Widget _buildProcessSummary(Map<String, dynamic>? summaryData) {
+    if (summaryData == null || summaryData.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).hoverColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
+          height: 200,
+
+          child: Center(child: CircularProgressIndicator())); // Show loader
+    }
+
+    var typography = CustomTypography(context);
+    final hazardVendorData = summaryData['result']?['hazard_vendor_score_summary'] ?? {};
+    return Container(
+
+      margin: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).hoverColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).hoverColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Summary Header
+            ListTile(
+              contentPadding: EdgeInsets.all(0),
+              title: Row(
+                children: [
+                  SizedBox(width: 8),
+                  Tooltip(
+                    message: selectedProcessId,
+                    child: Text(
+                      summaryData?["result"]?['process_name']??"Process",
+                      style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              trailing:
+              IconButton(
+                icon: Icon(Symbols.cancel, color: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    isProcessSummaryOpen = false; // Close summary view
+                    jobSummaryData = null; // Clear data
+                  });
+                },
+              ),
+            ),
+            Padding(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Chip(
+                        label: Text("Main Process" //processType,
+                        ),
+                        backgroundColor: AppColors.primaryMain,
+                        labelStyle: typography.Body1.copyWith(
+                          color: AppColors.black,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+
+                    ],
+                  ),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child:  Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Total Locations', style: typography.Caption),
+                        Text(
+                          summaryData['result']?['total_locations']?.toString() ?? '0',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            _buildGeocodingStatus(
+              totalLocations: summaryData['result']?['total_locations']??0,
+              successfulLocations: summaryData['result']?['location_processed']??0,
+              failedLocations: summaryData['result']?['location_unprocessed']??0,
+              typography: CustomTypography(context),
+              onDownloadPressed: () {
+                // Handle download logic here
+                print("Download link clicked!");
+              },
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+              child: Divider(),
+            ),
+            SizedBox(height: 8),
+
+            _buildRunTimeSummary(summaryData['result']),
+            SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+              child: Divider(),
+            ),
+            SizedBox(height: 8),
+            _buildDynamicGeoRatingSummary(summaryData),
+            SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+              child: Divider(),
+            ),
+            //_buildHazardSummary(summaryData),
+            _buildHazardVendorSummary(hazardVendorData, typography),
+            SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+              child: Divider(),
+            ),
+            _buildUsageAndGEESummary(summaryData, typography, type: "process"),
+            SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Subprocess Summary
+  Widget _buildSubProcessSummary(Map<String, dynamic>? summaryData, String subprocessId) {
+    if (summaryData == null || summaryData.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).hoverColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
+        height: 200,
+        child: Center(child: CircularProgressIndicator()), // Show loader
+      );
+    }
+
+    var typography = CustomTypography(context);
+
+    // Extract the subprocess data dynamically
+    final subprocessData = summaryData['result']?['subprocesses']?[subprocessId] as Map<String, dynamic>?;
+
+    final hazardVendorData =
+        subprocessData?['hazard_vendor_score_summary'] ?? {};
+
+    if (subprocessData == null) {
+      return Container(
+        margin: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.red.shade100,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Subprocess data not found.",
+              style: typography.Body2.copyWith(color: Colors.red),
+            ),
+            IconButton(
+              icon: Icon(Icons.cancel, color: Colors.red),
+              onPressed: () {
+                setState(() {
+                  isSubProcessSummaryOpen = false; // Close summary view
+                });
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).hoverColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Summary Header
+          ListTile(
+            contentPadding: EdgeInsets.all(0),
+            title: Row(
+              children: [
+                SizedBox(width: 8),
+                Tooltip(
+                  message: subprocessData['subtask_id'] ?? 'Subprocess ID',
+                  child: Text(
+                    subprocessData['sub_process_name'] ?? "Sub Process",
+                    style: typography.Body1.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.cancel, color: Colors.red),
+              onPressed: () {
+                setState(() {
+                  isProcessSummaryOpen = false; // Close summary view
+                });
+              },
+            ),
+          ),
+
+          // Chip Section: Sub Process
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Chip(
+                      label: Text("Sub Process"),
+                      backgroundColor: AppColors.primaryMain,
+                      labelStyle: typography.Body1.copyWith(
+                        color: AppColors.black,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Total Locations', style: typography.Caption),
+                      Text(
+                        subprocessData['result']?['summary']?['total_locations']?.toString() ?? '0',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Geocoding Status
+          _buildGeocodingStatus(
+            totalLocations: subprocessData['result']?['summary']?['total_locations'] ?? 0,
+            successfulLocations: subprocessData['result']?['counts']?['processed_counts'] ?? 0,
+            failedLocations: 0, // Adjust as needed
+            typography: typography,
+            onDownloadPressed: () {
+              print("Download link clicked for Sub Process!");
+            },
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Divider(),
+          ),
+          SizedBox(height: 8),
+
+          // Runtime Summary
+          if (subprocessData['result'] != null)
+            _buildRunTimeSummary(subprocessData['result']),
+          SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Divider(),
+          ),
+          SizedBox(height: 8),
+
+          // Dynamic Geo Rating Summary
+          if (subprocessData['result'] != null)
+          _buildDynamicGeoRatingSummary(subprocessData),
+          SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Divider(),
+          ),
+
+          // Hazard Summary
+          _buildHazardVendorSummary(hazardVendorData, typography),
+          SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Divider(),
+          ),
+
+          // Usage and GEE Summary
+          if (subprocessData['result'] != null)
+            _buildUsageAndGEESummary(subprocessData, typography, type: "subprocess"),
+          SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildGeocodingStatus({
+    required int totalLocations,
+    required int successfulLocations,
+    required int failedLocations,
+    required CustomTypography typography,
+    required VoidCallback onDownloadPressed, // Callback for download link
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Success Section
+        SizedBox(height: 8),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: _buildStatusSection(
+            icon: Icons.check_circle,
+            iconColor: Colors.green,
+            message:
+            '$successfulLocations out of $totalLocations locations have been successfully geocoded.',
+            typography: typography,
+            hasTrailingArrow: true,
+          ),
+        ),
+        SizedBox(height: 8),
+        // Failure Section
+
+        failedLocations!=0?Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatusSection(
+                icon: Icons.error,
+                iconColor: Colors.red,
+                message: '$failedLocations locations could not be processed by Geocoding.',
+                typography: typography,
+                hasTrailingArrow: false,
+              ),
+
+              _buildDownloadLink(
+                "Download and verify these locations",
+                typography,
+                onDownloadPressed,
+              ),
+            ],
+          ),
+        ):const SizedBox.shrink(),
+      ],
+    );
+  }
+
+  Widget _buildStatusSection({
+    required IconData icon,
+    required Color iconColor,
+    required String message,
+    required CustomTypography typography,
+    bool hasTrailingArrow = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: iconColor,
+            size: 24,
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              message,
+              style: typography.Body1,
+            ),
+          ),
+          if (hasTrailingArrow)
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.primaryMain,
+              size: 16,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadLink(
+      String text,
+      CustomTypography typography,
+      VoidCallback onTap,
+      ) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 40, bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Text(
+              text,
+              style: typography.Body2.copyWith(
+                color: AppColors.primaryMain,
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.primaryMain,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildRunTimeSummary(Map<String, dynamic> processData) {
+    // Extract time data
+    if (processData == null || processData.isEmpty|| processData['geocode_starting_time'] == null || processData['geocode_ending_time'] == null) {
+      return const SizedBox.shrink();
+    }
+    String startedAt = _formatTimestamp(processData['geocode_starting_time']);
+    String finishedAt = _formatTimestamp(processData['geocode_ending_time']);
+    Duration totalRunTime = Duration(seconds: processData['total_time_taken'] ?? 0);
+    Duration geocodingRunTime = Duration(seconds: processData['geocode_ending_time']['_seconds'] - processData['geocode_starting_time']['_seconds']);
+    Duration hazardRunTime = totalRunTime - geocodingRunTime;
+
+    var typography = CustomTypography(context);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row with Start and End Times
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildTimeColumn('Started at', startedAt, typography),
+                _buildTimeColumn('Finished at', finishedAt, typography),
+              ],
+            ),
+          ),
+          Divider(color: Colors.white12),
+          SizedBox(height: 8),
+          // Run Time Details
+          _buildRunTimeRow('Total Run Time', _formatDuration(totalRunTime), typography),
+          _buildRunTimeRow('Geocoding Run Time', _formatDuration(geocodingRunTime), typography),
+          _buildRunTimeRow('Hazard Run Time', _formatDuration(hazardRunTime), typography),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeColumn(String label, String time, CustomTypography typography) {
+    return Column(
+      crossAxisAlignment: label == 'Started at'
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end, // Align 'Finished at' to the right
+      children: [
+        Text(label, style: typography.Caption),
+        SizedBox(height: 4),
+        Text(
+          time,
+          style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRunTimeRow(String label, String duration, CustomTypography typography) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: typography.Body2),
+          Text(
+            duration,
+            style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(Map<String, dynamic> timestamp) {
+    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp['_seconds'] * 1000);
+    return "${dateTime.day.toString().padLeft(2, '0')}-"
+        "${dateTime.month.toString().padLeft(2, '0')}-"
+        "${dateTime.year.toString().substring(2)} "
+        "${dateTime.hour.toString().padLeft(2, '0')}:"
+        "${dateTime.minute.toString().padLeft(2, '0')}:"
+        "${dateTime.second.toString().padLeft(2, '0')}";
+  }
+
+  String _formatDuration(Duration duration) {
+    return duration.toString().split('.').first.padLeft(8, '0');
+  }
+
+  Widget _buildDynamicGeoRatingSummary(Map<String, dynamic> apiData) {
+    // Extract the score object
+    final Map<String, dynamic> score = apiData['result']?['summary']?['score'] ?? {};
+
+    // Build the summary widget dynamically
+    return _buildGeoRatingSummary({
+      "5": score['5'] ?? 0,
+      "4": score['4'] ?? 0,
+      "3": score['3'] ?? 0,
+      "2": score['2'] ?? 0,
+      "1": score['1'] ?? 0,
+    });
+  }
+
+  Widget _buildGeoRatingSummary(Map<String, dynamic> ratings) {
+    var typography = CustomTypography(context);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Text(
+              "Geo Rating Summary",
+              style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // Grid Layout for Star Ratings
+          Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+          // Row for 5 Star and 4 Star Locations
+          Row(
+          children: [
+          Expanded(child: _buildRatingCard("5 Star Locations", ratings['5'] ?? 0, typography)),
+          SizedBox(width: 8), // Spacing between the two cards
+          Expanded(child: _buildRatingCard("4 Star Locations", ratings['4'] ?? 0, typography)),
+          ],
+          ),
+          SizedBox(height: 8), // Spacing between rows
+
+          // Row for 3 Star and 2 Star Locations
+          Row(
+          children: [
+          Expanded(child: _buildRatingCard("3 Star Locations", ratings['3'] ?? 0, typography)),
+    SizedBox(width: 8),
+    Expanded(child: _buildRatingCard("2 Star Locations", ratings['2'] ?? 0, typography)),
+    ],
+    ),
+    SizedBox(height: 8),
+
+    // Single expanded row for 1 Star Locations
+    _buildRatingCard("1 Star Locations", ratings['1'] ?? 0, typography),
+    ],
+    )
+
+    ],
+      ),
+    );
+  }
+
+  Widget _buildRatingCard(String title, int count, CustomTypography typography) {
+    return Container(
+      width: MediaQuery.sizeOf(context).width *0.4,
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 22),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: typography.Body2,
+          ),
+          SizedBox(height: 4),
+          Text(
+            count.toString(),
+            style: typography.Body1.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHazardVendorSummary(
+      Map<String, dynamic> hazardVendorData, CustomTypography typography) {
+    if (hazardVendorData.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Hazard Rating Summary",
+            style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        ...hazardVendorData.keys.map((hazard) {
+          final vendors = hazardVendorData[hazard] as Map<String, dynamic>;
+
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).hoverColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    hazard,
+                    style: typography.Body2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                ...vendors.keys.map((vendor) {
+                  final scores = vendors[vendor] as Map<String, dynamic>;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Text(
+                          vendor,
+                          style: typography.Body2.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).disabledColor,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: _buildHazardDetailRow(
+                          "Locations with Score",
+                          scores.entries
+                              .where((entry) => entry.key != "None")
+                              .map((entry) => entry.value as int)
+                              .fold(0, (prev, next) => prev + next)
+                              .toString(),
+                          typography,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: _buildHazardDetailRow(
+                          "Locations without Score",
+                          scores['None']?.toString() ?? "0",
+                          typography,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Divider(),
+                      ),
+                      ExpansionTile(
+                        tilePadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        collapsedShape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        controlAffinity: ListTileControlAffinity.trailing,
+                        trailing: Icon(
+                          Icons.add_circle_outline,
+                          color: Theme.of(context).disabledColor,
+                        ),
+                        initiallyExpanded: false,
+                        title: Text(
+                          "Hazard Risk Score Wise Locations",
+                          style: typography.Body2.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).disabledColor,
+                          ),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 8.0),
+                            child: _buildHazardRiskScores(scores, typography),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildHazardDetailRow(
+      String label, String value, CustomTypography typography) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: typography.Body2),
+        Text(
+          value,
+          style: typography.Body1.copyWith(
+            color: AppColors.primaryMain,
+            fontWeight: FontWeight.w300,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHazardRiskScores(Map<String, dynamic> scores, typography) {
+    final riskScores = [
+      {"label": "No impact", "key": "5", "color": Colors.green, "star": "★"},
+      {"label": "Low impact", "key": "4", "color": Colors.lightGreen, "star": "★"},
+      {"label": "Medium impact", "key": "3", "color": Colors.yellow, "star": "★"},
+      {"label": "High impact", "key": "2", "color": Colors.orange, "star": "★"},
+      {"label": "Severe impact", "key": "1", "color": Colors.red, "star": "★"},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: riskScores.map((score) {
+        final count = scores[score['key']]?.toString() ?? "0";
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: "${score['key']}   ",
+                      style: typography.Body2,
+                    ),
+                    TextSpan(
+                      text: "${score['star']!}",
+                      style: typography.Body2.copyWith(
+                        color: score['color'] as Color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text: " ${score['label']}",
+                      style: typography.Body2.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                count,
+                style: typography.Body1.copyWith(
+                  fontWeight: FontWeight.w300,
+                  color: AppColors.primaryMain,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+// Helper function to return color based on score
+  Color _getScoreColor(String scoreKey) {
+    switch (scoreKey) {
+      case "5":
+        return Colors.green;
+      case "4":
+        return Colors.lightGreen;
+      case "3":
+        return Colors.yellow;
+      case "2":
+        return Colors.orange;
+      case "1":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+
+  Widget _buildUsageAndGEESummary(Map<String, dynamic> apiData, CustomTypography typography, {required String type}) {
+    if (apiData.isEmpty || apiData['result'] == null) {
+      return const SizedBox.shrink();
+    }
+
+    final result = type == "process" ? apiData['result'] : apiData['result']?['subprocesses'];
+    if (result == null) return const SizedBox.shrink();
+
+    // Extract dynamic keys and data
+    final totalProcessesCompleted = result['total_processes_completed']?.toString() ?? "0";
+    final totalTimeElapsed = result['total_time_elapsed_in_earth_engine']?.toString() ?? "0";
+    final assetIngestionTime = _formatTime(result['asset_upload_summary']?['time_taken'] ?? 0.0);
+
+    // Fetch hazard file summary dynamically
+    final hazardFileKey = result['hazard_file_summary']?.keys?.first ?? "";
+    final hazardProcessingTime = _formatTime(result['hazard_file_summary']?[hazardFileKey]?['time_taken'] ?? 0.0);
+
+    // Calculate Wait Time
+    final totalWaitTime = _formatTime(
+      (result['total_time_taken'] ?? 0.0) -
+          (result['asset_upload_summary']?['time_taken'] ?? 0.0) -
+          (result['hazard_file_summary']?[hazardFileKey]?['time_taken'] ?? 0.0),
+    );
+
+    final usageSummary = {
+      "Number of Batch Process": totalProcessesCompleted,
+      "Number of GEE Process": totalTimeElapsed,
+    };
+
+    final geeSummary = {
+      "Asset Ingestion Time": assetIngestionTime,
+      "Hazard Processing Time": hazardProcessingTime,
+      "Wait Time": totalWaitTime,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: _buildSummarySection("Usage Summary", usageSummary, typography),
+        ),
+        const SizedBox(height: 8),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: _buildSummarySection("GEE Summary", geeSummary, typography),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildSummarySection(String title, Map<String, String> summaryData, CustomTypography typography) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            title,
+            style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8.0),
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).hoverColor,
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Column(
+            children: summaryData.entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(entry.key, style: typography.Body2),
+                    Text(entry.value, style: typography.Body1.copyWith(
+                      color: AppColors.primaryMain,
+                      fontWeight: FontWeight.w300,
+                    )),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Utility function to convert seconds into HH:MM:SS format
+  String _formatTime(double seconds) {
+    int hours = (seconds ~/ 3600);
+    int minutes = ((seconds % 3600) ~/ 60);
+    int secs = (seconds % 60).toInt();
+    return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}";
+  }
+
 }
 
 class DottedLinePainter extends CustomPainter {

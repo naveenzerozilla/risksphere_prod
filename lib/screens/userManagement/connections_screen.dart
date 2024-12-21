@@ -261,6 +261,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           backgroundColor: themeProvider.getTheme.colorScheme.background,
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
+            canNavigateToConnections: false,
             showNotificationDot: _showNotificationDot,
             onExpandPressed: (isExpanded) {
               setState(() {

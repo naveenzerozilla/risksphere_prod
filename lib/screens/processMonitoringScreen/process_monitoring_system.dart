@@ -69,105 +69,92 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
               ),
             ),
 
-            Consumer<JobMonitoringProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return Center(child: CircularProgressIndicator());
-                }
+      Consumer<JobMonitoringProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-                Stream<QuerySnapshot> stream;
+          Stream<QuerySnapshot<Map<String, dynamic>>> stream;
 
-                if (provider.isSuperAdmin) {
-                  // Fetch all processes if the user is a super admin
-                  stream = FirebaseFirestore.instance
-                      .collection('processes')
-                      .orderBy('created_at', descending: true)
-                      .snapshots();
-                } else if (provider.docIds.isNotEmpty) {
-                  // Fetch specific processes in batches
-                  print('Fetching processes for ${provider.docIds.length} companies and the ids are: ${provider.docIds}');
-                  stream = _fetchBatchedProcesses(provider.docIds, 30);
-                } else {
-                  // If there are no document IDs, show no processes
-                  return Center(child: Text('No processes available'));
-                }
+          if (provider.isSuperAdmin) {
+            // Fetch all processes if the user is a super admin
+            stream = FirebaseFirestore.instance
+                .collection('processes')
+                .orderBy('created_at', descending: true)
+                .where('process_type', isEqualTo: 'hazard')
+                .snapshots();
+          } else if (provider.docIds.isNotEmpty) {
+            // Fetch processes filtered by company IDs
+            print(
+                'Fetching processes for ${provider.docIds.length} companies with IDs: ${provider.docIds}');
+            stream = FirebaseFirestore.instance
+                .collection('processes')
+                .where('company_id', whereIn: provider.docIds)
+                .where('process_type', isEqualTo: 'hazard')
+                .orderBy('created_at', descending: true)
+                .snapshots();
+          } else {
+            // If there are no company IDs, show no processes
+            return Center(child: Text('No processes available'));
+          }
 
-                return StreamBuilder<QuerySnapshot>(
-                  stream: stream,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
-                    }
+          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return Center(child: CircularProgressIndicator());
+              }
 
-                    print('StreamBuilder received ${snapshot.data!.docs.length} documents'); // Debug print
-                    var processes = snapshot.data!.docs;
-                    print('Process IDs: ${processes.map((doc) => doc.id).toList()}'); // Debug print
+              print('StreamBuilder received ${snapshot.data!.docs.length} documents');
+              var processes = snapshot.data!.docs;
 
-                    // Debug: Check if 9oJ02qpIilZJt0gOlr78 is present
-                    final processIds = processes.map((doc) => doc.id).toList();
-                    if (processIds.contains('9oJ02qpIilZJt0gOlr78')) {
-                      print('Process 9oJ02qpIilZJt0gOlr78 is present before filtering.');
-                    } else {
-                      print('Process 9oJ02qpIilZJt0gOlr78 is NOT present before filtering.');
-                    }
+              // Debug: Check if specific process exists before filtering
+              final processIds = processes.map((doc) => doc.id).toList();
+              print('Process IDs before filtering: $processIds');
 
-                    // Filter out processes with 'heatmap' in subprocesses
-                   /* processes.removeWhere((element) {
-                      final data = element.data() as Map<String, dynamic>?;
-                      final subprocesses = data?['subprocesses'] as Map<String, dynamic>?;
-                      print('Subprocesses of ${element.id}: $subprocesses');
+              // Optional filtering logic (if required)
+              // Uncomment and customize as needed
+              /* processes.removeWhere((element) {
+          final data = element.data() as Map<String, dynamic>?;
+          final subprocesses = data?['subprocesses'] as Map<String, dynamic>?;
+          return subprocesses?.containsKey('heatmap') ?? false;
+        }); */
 
-                      // Debug for process 9oJ02qpIilZJt0gOlr78
-                      if (element.id == '9oJ02qpIilZJt0gOlr78') {
-                        print('Subprocesses of 9oJ02qpIilZJt0gOlr78: $subprocesses');
-                        final hasHeatmap = subprocesses?.containsKey('heatmap') ?? false;
-                        print('Process 9oJ02qpIilZJt0gOlr78 is being filtered out: $hasHeatmap');
-                        return hasHeatmap;
-                      }
+              // Debug: Check processes after filtering
+              final remainingProcessIds = processes.map((doc) => doc.id).toList();
+              print('Process IDs after filtering: $remainingProcessIds');
 
-                      // Original filtering logic
-                      return subprocesses?.containsKey('heatmap') ?? false;
-                    });*/
+              return ListView.builder(
+                itemCount: processes.length,
+                itemBuilder: (context, index) {
+                  var processData = processes[index].data() as Map<String, dynamic>;
 
+                  String processId = processData['process_id'] ?? 'Unknown ID';
+                  String companyName =
+                      processData['location_data']?['account_name'] ?? '';
+                  String ownerName = processData['owner_name'] ?? '';
+                  int totalLocations = processData['total_locations'] ?? 0;
 
-                    // Debug: Check if 9oJ02qpIilZJt0gOlr78 is removed after filtering
-                    final remainingProcessIds = processes.map((doc) => doc.id).toList();
-                    if (remainingProcessIds.contains('9oJ02qpIilZJt0gOlr78')) {
-                      print('Process 9oJ02qpIilZJt0gOlr78 is present after filtering.');
-                    } else {
-                      print('Process 9oJ02qpIilZJt0gOlr78 is NOT present after filtering.');
-                    }
-                    print('Processes after filtering: $remainingProcessIds');
+                  var subProcesses =
+                      (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
 
-                    return ListView.builder(
-                      itemCount: processes.length,
-                      itemBuilder: (context, index) {
-                        var processData = processes[index].data() as Map<String, dynamic>;
+                  return _buildProcessCard(
+                    processId: processId,
+                    companyName: companyName,
+                    ownerName: ownerName,
+                    totalLocations: totalLocations,
+                    subProcesses: subProcesses,
+                    typography: typography,
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
 
-                        String processId = processData['process_id'] ?? 'Unknown ID';
-                        String companyName =
-                            processData['location_data']?['account_name'] ?? '';
-                        String ownerName = processData['owner_name'] ?? '';
-                        int totalLocations = processData['total_locations'] ?? 0;
-
-                        var subProcesses =
-                            (processData['subprocesses'] as Map?)?.cast<String, dynamic>() ?? {};
-
-                        return _buildProcessCard(
-                          processId: processId,
-                          companyName: companyName,
-                          ownerName: ownerName,
-                          totalLocations: totalLocations,
-                          subProcesses: subProcesses,
-                          typography: typography,
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ],
+      ],
         ),
       ),
     );

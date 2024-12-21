@@ -389,23 +389,25 @@ class CompanyProvider with ChangeNotifier {
       // Set loading state to true
       isLoading = true;
       // Use API Service to update company status
-      ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL);
+      ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL_NEW);
       // Send a GET request to the API
       Map<String, dynamic> response =
           await apiService.get("?company_id=$companyId");
       isLoading = false;
+
       if (response.containsKey('company')) {
-        List<dynamic> companiesJson = response['company'];
-        List<Companies> companies =
-            companiesJson.map((json) => Companies.fromJson(json)).toList();
-        _company = companies[0];
+        Map<String, dynamic> companiesJson = response['company'];
+        Companies companies =Companies.fromJson(companiesJson);
+
+        _company = companies;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-        return companies[0];
+        return companies;
       } else {
         return Companies();
       }
+
     } catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging

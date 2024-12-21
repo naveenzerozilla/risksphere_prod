@@ -64,6 +64,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool showAddReportee = true;
   bool showEditUser = true;
   bool showMyTeams = true;
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
 
   // General Info
   String userImageUrl = '';
@@ -106,6 +109,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   
   _setClaims() async {
     _selectedScreen = Screens.generalInfo;
+    /*isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_ADMIN)??false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;*/
+    isPgAdmin = false;
+    isAdmin = true;
+    isSuperAdmin = true;
     showAssignDeleteManager = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMAM)?? false;
     showAddDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDA)??false;
     showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;
@@ -1147,9 +1156,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               TextField(
                                 readOnly: true,
-                                enabled: isEdit,
+                                enabled: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin,
 
-                                onTap: isEdit
+                                onTap: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin
                                     ? () {
                                   showModalBottomSheet(
                                     context: context,
@@ -1180,8 +1189,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   // Handle input changes
                                 },
                                 decoration: InputDecoration(
-                                  labelText: isEdit ? '' : '',
-                                  labelStyle: isEdit
+                                  labelText: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin ? '' : '',
+                                  labelStyle: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin
                                       ? typography.Body1
                                       : typography.Body1.copyWith(
                                       color: Theme.of(context)
@@ -1241,8 +1250,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           padding: const EdgeInsets.only(right: 8.0),
                                           child: Chip(
                                             label: Text(value.name),
-                                            deleteIcon: isEdit ? Icon(Icons.cancel) : null,
-                                            onDeleted: isEdit ? () => _removeChip(value) : null,
+                                            deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
+                                            onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
                                           ),
                                         ),
                                       )

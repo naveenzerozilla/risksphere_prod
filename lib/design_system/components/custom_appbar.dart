@@ -29,6 +29,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showDropdown;
   final double margin;
   final bool? stopNavigateToProfile;
+  final bool? canNavigateToConnections;
 
   const CustomAppBar({
     Key? key,
@@ -39,6 +40,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showDropdown = false,
     this.margin = 16.0,
     this.stopNavigateToProfile = false,
+    this.canNavigateToConnections = true,
 
   }) : super(key: key);
 
@@ -150,7 +152,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: EdgeInsets.zero,
             tooltip: 'Connections',
             icon: Icon(Icons.people_alt_outlined),
-            onPressed: () async {
+            onPressed: !(canNavigateToConnections??true)?null:() async {
               FirebaseAuth auth = FirebaseAuth.instance;
               String uid = auth.currentUser!.uid;
               IdTokenResult token =

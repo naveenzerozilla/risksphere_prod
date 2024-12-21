@@ -1,6 +1,7 @@
 class TransferAutocompleteModel {
   final String id;
   final String displayName;
+  final String name;
   final String email;
   final String imageUrl;
   final String phone;
@@ -10,6 +11,7 @@ class TransferAutocompleteModel {
   TransferAutocompleteModel({
     required this.id,
     required this.displayName,
+    required this.name,
     required this.email,
     required this.imageUrl,
     required this.phone,
@@ -21,6 +23,7 @@ class TransferAutocompleteModel {
     return TransferAutocompleteModel(
       id: json['id'] ?? '',
       displayName: json['displayName'] ?? '',
+      name: json['name'] ?? '',
       email: json['email'] ?? '',
       imageUrl: json['display_image_url'] ?? '',
       phone: json['phone'] ?? '',

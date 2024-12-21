@@ -9,11 +9,13 @@
   import '../../../constants/enums.dart';
   import '../../../design_system/components/custom_button.dart';
   import '../../../design_system/primitives/app_colors.dart';
-  import '../../../models/my_location_list_model.dart';
+  import '../../../models/hazard_data.dart';
+import '../../../models/my_location_list_model.dart';
   import 'package:green/providers/my_location_list_provider.dart';
 
   import '../../../providers/custom_tile_providers.dart';
-  import 'location_details_popup.dart';
+  import '../../../providers/custom_tile_providers_main_hazards.dart';
+import 'location_details_popup.dart';
   import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart' as cluster_manager;
 
   class LocationListMapView extends StatefulWidget {
@@ -44,6 +46,15 @@
     String? _selectedReducer;
     int _selectedTabIndex = 0;
     bool _isLoading = false; // Tracks if the API or tile loading is in progress
+    ScrollController _scrollController = ScrollController();
+    TabController? _tabController;
+
+    // New state variables for hazards and vendors
+    List<HazardData> mainHazards = [];
+    String? selectedHazardId;
+    String? selectedVendor;
+    bool isLoadingMainHazards = false;
+    CustomTileProviderMainHazards? _mainHazardTileProvider;
 
 
 
@@ -58,7 +69,76 @@
         });
       });
       _initializeClusterManager();
+      _fetchMainHazardLayers();
       //_fetchHazardLayers();
+    }
+
+    _fetchMainHazardLayers() async {
+      setState(() {
+        isLoadingMainHazards = true;
+      });
+      try {
+        var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+        await provider.fetchMainTileProviders(context);
+        print("Main hazard data: ${provider.mainHazardData}");
+        if (provider.mainHazardData != null) {
+          final hazardsData = provider.mainHazardData?['result'] as List;
+          setState(() {
+
+            mainHazards = hazardsData.map((h) => HazardData.fromJson(h)).toList();
+            print("mainHazards: $mainHazards");
+            if (mainHazards.isNotEmpty) {
+              selectedHazardId = mainHazards.first.id;
+              if (mainHazards.first.vendors.isNotEmpty) {
+                selectedVendor = mainHazards.first.vendors.first.name;
+                _changeHazardLayer(selectedHazardId!);
+                _changeVendor(selectedVendor);
+              }
+            }
+          });
+        }
+      } catch (e, stackTrace) {
+        print("Error while fetching main hazard layers: $e");
+      print(stackTrace);
+      } finally {
+        setState(() {
+          isLoadingMainHazards = false;
+        });
+      }
+    }
+
+    // Modified function to handle hazard selection
+    void _changeHazardLayer(String hazardId) {
+      setState(() {
+        // if heatmap is on, let the current hazard be the main hazard and we will change the heatmap wrt hazard selected from the tile provider
+        if (_isHeatmapOn) {
+          _selectedHazard = hazardId;
+
+
+        } else {
+          selectedHazardId = hazardId;
+          final hazard = mainHazards.firstWhere((h) => h.id == hazardId);
+          if (hazard.vendors.isNotEmpty) {
+            selectedVendor = hazard.vendors.first.name;
+          } else {
+            selectedVendor = null;
+          }
+        }
+      });
+    }
+
+    // New function to handle vendor selection
+    void _changeVendor(String? vendorName) {
+      if(!_isHeatmapOn) {
+        setState(() {
+        selectedVendor = vendorName;
+        _mainHazardTileProvider = CustomTileProviderMainHazards(
+          tileUrls: mainHazards,
+          hazardType: selectedHazardId!,
+          vendor: vendorName ?? "USGS",
+        );
+      });
+      }
     }
 
     void _initializeClusterManager() {
@@ -116,6 +196,7 @@
       int dominantScore = colorCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
       return _getColorFromScore(dominantScore);
     }
+
     Color _getColorFromScore(int score) {
       switch (score) {
         case 1:
@@ -132,8 +213,6 @@
           return Colors.blue; // Default color
       }
     }
-
-
 
     Future<BitmapDescriptor> _getClusterBitmap(int size, {String? text, Color color = Colors.red}) async {
       final PictureRecorder pictureRecorder = PictureRecorder();
@@ -159,129 +238,76 @@
       return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
     }
 
-
     void _updateMarkers(Set<Marker> markers) {
       setState(() {
         _markers = markers;
       });
     }
-    Future<void> _fetchHazardLayers() async {
+
+    Future<void> _fetchHazardLayers({bool regenerate = false}) async {
       setState(() {
         _isLoading = true; // Start loading
       });
+
       try {
         var provider = Provider.of<MyLocationListProvider>(context, listen: false);
 
-        if (_selectedTabIndex == 0) {
-          // Fetch geocoding data if not already initialized
-          if (provider.geocodingData == null || provider.hazardData?['GeocodeScore'] == null) {
+        if (_selectedTabIndex == 1) {
+          // Fetch hazard data unconditionally if regenerate is true
+          if (regenerate || provider.hazardData == null || provider.hazardData?['heatmap'] == null) {
+            print("Fetching hazard data from API...");
             await provider.generateHeatMapForLocationsGeocoding(
-              context, widget.accountId, widget.subAccountId, false, false, widget.sovId,
+              context, widget.accountId, widget.subAccountId, false, regenerate, widget.sovId,
             );
+          } else {
+            print("Using cached hazard data.");
+          }
 
-            Map<String, dynamic>? data = provider.geocodingData;
-            if (data == null || data.containsKey('message')) {
-              print("Re-fetching due to incomplete geocoding data: ${data?['message']}");
-              return; // Exit early if the data is incomplete
-            }
+          // Process hazard data
+          Map<String, dynamic>? data = provider.hazardData;
+          if (data == null || data.containsKey('message')) {
+            print("Re-fetching due to incomplete hazard data: ${data?['message']}");
+            return; // Exit early if the data is incomplete
+          }
 
-            final geocoding = data['GeocodeScore'];
-            if (geocoding == null) {
-              print("Error: 'GeocodeScore' data is missing in the response.");
-              return;
-            }
+          final hazards = data['heatmap'];
+          if (hazards == null) {
+            print("Error: 'heatmap' data is missing in the response.");
+            return;
+          }
 
-            // Extract reducers
-            if (geocoding.isNotEmpty) {
-              _reducers = geocoding.entries.first.value.keys.toList();
-              _selectedReducer = _reducers.contains("mean") ? "mean" : _reducers.first;
-            }
+          // Extract reducers
+          if (hazards.isNotEmpty) {
+            _reducers = hazards.entries.first.value.keys.toList();
+            _selectedReducer = _reducers.contains("mean") ? "mean" : _reducers.first;
+          }
 
-            Map<String, Map<int, String>> geocodingTiles = {};
-            geocoding.forEach((reducer, zoomUrls) {
-              Map<int, String> tiles = {};
+          hazards.forEach((hazard, urls) {
+            Map<String, Map<int, String>> intensityMap = {};
+
+            urls.forEach((intensity, zoomUrls) {
+              Map<int, String> zoomLevelUrls = {};
               zoomUrls.forEach((zoom, url) {
-                tiles[int.parse(zoom)] = url;
+                zoomLevelUrls[int.parse(zoom)] = url;
               });
-              geocodingTiles[reducer] = tiles;
+              intensityMap[intensity] = zoomLevelUrls;
             });
 
-            _tileProviders["Geocoding"] = CustomTileProvider(
-              tileUrls: {"Geocoding": geocodingTiles},
-              hazardType: "Geocoding",
+            _tileProviders[hazard] = CustomTileProvider(
+              tileUrls: {hazard: intensityMap},
+              hazardType: hazard,
               currentReducer: _selectedReducer ?? "mean",
             );
+          });
 
-            setState(() {
-              _isInitialized = true;
-              _selectedHazard = "Geocoding";
-            });
-          } else {
-            print("Geocoding data already fetched.");
-            var data = provider.geocodingData;
-            _initializeGeocodingTileProvider(data);
-          }
+          setState(() {
+            _isInitialized = true;
+            _selectedHazard = _tileProviders.keys.first;
+          });
 
-        } else if (_selectedTabIndex == 1) {
-          // Fetch hazard data if not already initialized
-          if (provider.hazardData == null || provider.hazardData?['heatmap'] == null) {
-            await provider.generateHeatMapForLocationsGeocoding(
-              context, widget.accountId, widget.subAccountId, false, false, widget.sovId,
-            );
-
-            Map<String, dynamic>? data = provider.hazardData;
-            if (data == null || data.containsKey('message')) {
-              print("Re-fetching due to incomplete hazard data: ${data?['message']}");
-              return; // Exit early if the data is incomplete
-            }
-
-            final hazards = data['heatmap'];
-            if (hazards == null) {
-              print("Error: 'heatmap' data is missing in the response.");
-              return;
-            }
-
-            // Extract reducers
-            if (hazards.isNotEmpty) {
-              _reducers = hazards.entries.first.value.keys.toList();
-              _selectedReducer = _reducers.contains("mean") ? "mean" : _reducers.first;
-            }
-
-            hazards.forEach((hazard, urls) {
-              Map<String, Map<int, String>> intensityMap = {};
-
-              urls.forEach((intensity, zoomUrls) {
-                Map<int, String> zoomLevelUrls = {};
-                zoomUrls.forEach((zoom, url) {
-                  zoomLevelUrls[int.parse(zoom)] = url;
-                });
-                intensityMap[intensity] = zoomLevelUrls;
-              });
-
-              _tileProviders[hazard] = CustomTileProvider(
-                tileUrls: {hazard: intensityMap},
-                hazardType: hazard,
-                currentReducer: _selectedReducer ?? "mean",
-              );
-            });
-
-            setState(() {
-              _isInitialized = true;
-              _selectedHazard = _tileProviders.keys.first;
-            });
-
-            // Debugging outputs
-            print("Selected hazard: $_selectedHazard");
-            print("Available tile providers: ${_tileProviders.keys}");
-          } else {
-            print("Hazard data already fetched.");
-            var data = provider.hazardData;
-            _initializeHazardTileProvider(data);
-            /*setState(() {
-              _isInitialized = true;
-              _selectedHazard = _tileProviders.keys.first;
-            });*/
-          }
+          // Debugging outputs
+          print("Selected hazard: $_selectedHazard");
+          print("Available tile providers: ${_tileProviders.keys}");
         }
       } catch (e) {
         print("Error in _fetchHazardLayers: $e");
@@ -356,13 +382,20 @@
       });
     }
 
-
     void _toggleHeatmap() async {
       setState(() {
+        // switch off pins if heatmap is on
+
         _isHeatmapOn = !_isHeatmapOn;
+        if (_isHeatmapOn) {
+          if(_showPins) {
+            _togglePinVisibility();
+          }
+        } else {
+
+        }
         _isLoading = true; // Start loading
       });
-
       if (!_isHeatmapOn) {
         // Clear tile overlays by setting _selectedHazard to null
         setState(() {
@@ -392,63 +425,187 @@
       }
     }
 
-
     void _onReducerChanged(String? newReducer) {
+      print('Tile Providers: $_tileProviders');
+      print("Reducer change initiated. New reducer: $newReducer");
+
       setState(() {
         _selectedReducer = newReducer;
+        print("Updated _selectedReducer: $_selectedReducer");
+
         if (_selectedHazard != null && newReducer != null) {
+          print("Valid hazard and reducer found. Updating tile provider.");
+
           // Update the tile provider with the selected reducer
           _tileProviders[_selectedHazard]?.updateReducer(newReducer);
+          print(
+              "Tile provider for hazard $_selectedHazard updated with reducer $newReducer");
 
           // Temporarily clear tile overlays to trigger refresh
+          print("Clearing _selectedHazard temporarily to refresh tile overlays.");
           _selectedHazard = "";
+        } else {
+          print("Either _selectedHazard or newReducer is null. Skipping tile provider update.");
         }
       });
 
       // Reapply the selected hazard with a delay to ensure the refresh
-      Future.delayed(Duration(milliseconds: 50), () {
+      Future.delayed(Duration(milliseconds: 100), () {
         setState(() {
           _selectedHazard = _tileProviders.keys.firstWhere(
-              (key) => key.isNotEmpty && key == _selectedHazard,
+                  (key) => key.isNotEmpty && key == _selectedHazard,
               orElse: () => _tileProviders.keys.first);
+          print("Reapplied _selectedHazard: $_selectedHazard");
         });
       });
     }
 
-    void _changeHazardLayer(String hazard) {
+    /* void _changeHazardLayer(String hazard) {
       setState(() => _selectedHazard = hazard);
     }
+*/
 
-    Future<void> _loadMarkers() async {
-      Set<Marker> markers = {};
-      final allLocations =
-          Provider.of<MyLocationListProvider>(context, listen: false)
-              .fullLocationList;
+    // Modified build method for the hazard and vendor dropdowns
+    Widget _buildHazardControls() {
+      var typography = CustomTypography(context);
 
-
-      for (var location in allLocations) {
-        final score = location.finalAddress?.score;
-        final marker = Marker(
-          markerId: MarkerId(location.id ?? ''),
-          position: LatLng(location.finalAddress?.latitude ?? 0,
-              location.finalAddress?.longitude ?? 0),
-          icon: BitmapDescriptor.defaultMarkerWithHue(_getMarkerHue(score ?? 0)),
-          visible:
-              _showPins && (_selectedScore == null || _selectedScore == score),
-          onTap: () {
-            showLocationDetailsPopup(context, location);
-          },
+      // Show loading spinner if the main hazards are loading
+      if (isLoadingMainHazards) {
+        return Positioned(
+          bottom: 16,
+          left: 16,
+          child: Container(
+            width: 45,
+            height: 45,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.light
+                  ? AppColors.paperElavation25Light
+                  : AppColors.paperElavation25,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
         );
-        markers.add(marker);
       }
 
+      // If heatmap is off, use the existing menu with mainHazards and vendors
+      if (!_isHeatmapOn || _isLoading) {
+        if (!(_selectedTabIndex == 0 || _selectedTabIndex == 1) || mainHazards.isEmpty) {
+          return SizedBox();
+        }
 
-      setState(() {
-        _markers = markers;
-      });
+        return Positioned(
+          bottom: 16,
+          left: 16,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.light
+                  ? AppColors.paperElavation25Light
+                  : AppColors.paperElavation25,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: MenuAnchor(
+              builder: (context, controller, child) {
+                return IconButton(
+                  onPressed: () {
+                    if (controller.isOpen) {
+                      controller.close();
+                    } else {
+                      controller.open();
+                    }
+                  },
+                  icon: SvgPicture.asset(
+                    'assets/images/hazardLayerIcon.svg',
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                );
+              },
+              menuChildren: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: 200), // Limit height of the menu
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: mainHazards.map((hazard) {
+                        return SubmenuButton(
+                          child: Text(hazard.name, style: typography.InputLabel),
+                          menuChildren: hazard.vendors.map((vendor) {
+                            return MenuItemButton(
+                              child: Text(vendor.name, style: typography.InputLabel),
+                              onPressed: () {
+                                // Change hazard and vendor selection
+                                _changeHazardLayer(hazard.id!);
+                                _changeVendor(vendor.name);
+                              },
+                            );
+                          }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // If heatmap is on and not loading, generate the menu using tileProviders
+      return Positioned(
+        bottom: 16,
+        left: 16,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.light
+                ? AppColors.paperElavation25Light
+                : AppColors.paperElavation25,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: MenuAnchor(
+            builder: (context, controller, child) {
+              return IconButton(
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+                icon: SvgPicture.asset(
+                  'assets/images/hazardLayerIcon.svg',
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              );
+            },
+            menuChildren: [
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: 200), // Limit height of the menu
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: _tileProviders.keys.map((hazard) {
+                      return MenuItemButton(
+                        child: Text(hazard, style: typography.InputLabel),
+                        onPressed: () {
+                          // Update the selected hazard
+                          setState(() {
+                            _selectedHazard = hazard;
+                            print("Selected Hazard changed to: $_selectedHazard");
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
-
-
 
     double _getMarkerHue(int score) {
       switch (score) {
@@ -478,7 +635,6 @@
       );
     }
 
-
     void _togglePinVisibility() {
       setState(() {
         _showPins = !_showPins;
@@ -493,7 +649,6 @@
             .toList(),
       );
     }
-
 
     void _toggleScoreFilter(int score) {
       setState(() {
@@ -513,10 +668,6 @@
             .toList(),
       );
     }
-
-
-    ScrollController _scrollController = ScrollController();
-    TabController? _tabController;
 
     void _scrollLeft() {
       _scrollController.animateTo(
@@ -666,7 +817,6 @@
   
     ''';
 
-
     @override
     Widget build(BuildContext context) {
       var typography = CustomTypography(context);
@@ -675,7 +825,8 @@
           return Column(
             children: [
               // Heatmap Generation Button
-              /*_tileProviders.isEmpty && */!myLocationProvider.isHeatMapGeneratingLive
+              /*_tileProviders.isEmpty && */
+              /*!myLocationProvider.isHeatMapGeneratingLive
                   ?
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -691,16 +842,19 @@
                     )):
                     CustomButton(
                       type: ButtonType.elevated,
-                      onPressed: _isLoading?null:() async {
-                        await _fetchHazardLayers(); // Call to generate the heatmap
-                       /* setState(() {
+                      onPressed: _isLoading? null: () async {
+                        print("Generating heatmap");
+                        await _fetchHazardLayers(
+                          regenerate: true,
+                        ); // Call to generate the heatmap
+                       *//* setState(() {
                           _isHeatmapOn = true; // Enable the heatmap view
-                        });*/
-                      }, child: Text('Generate Heatmap', style: typography.ButtonLarge.copyWith(color: Colors.black)),
+                        });*//*
+                      }, child: Text('Update Heatmap', style: typography.ButtonLarge.copyWith(color: Colors.black,),),
                     ),
                   ],
                 ),
-              ): SizedBox(),
+              ): SizedBox(),*/
               SizedBox(height: 8),
               // Container for the TabBar with arrows
               Container(
@@ -774,16 +928,34 @@
                         },
                         tileOverlays: _selectedHazard != null &&
                                 _tileProviders.containsKey(_selectedHazard)
+                        && _mainHazardTileProvider != null
+                        && selectedHazardId != null
+                        && selectedVendor != null
                             ? {
+                          TileOverlay(
+                            tileOverlayId: TileOverlayId(selectedHazardId!),
+                            tileProvider: _mainHazardTileProvider!,
+                          ),
                                 TileOverlay(
                                     tileOverlayId: TileOverlayId(_selectedHazard!),
-                                    tileProvider: _tileProviders[_selectedHazard!]!)
+                                    tileProvider: _tileProviders[_selectedHazard!]!),
+
                               }
+                            :
+                        _mainHazardTileProvider != null
+                        && selectedHazardId != null
+                        && selectedVendor != null
+                            ? {
+                          TileOverlay(
+                            tileOverlayId: TileOverlayId(selectedHazardId!),
+                            tileProvider: _mainHazardTileProvider!,
+                          ),
+                        }
                             : {},
                         onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
                         onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
                       ),
-                      // Positioned widget for the hazard filter at the bottom-left
+                      /*// Positioned widget for the hazard filter at the bottom-left
                       _selectedTabIndex == 1 && _tileProviders.isNotEmpty && _isHeatmapOn?Positioned(
                         bottom: 16,
                         left: 16,
@@ -830,7 +1002,8 @@
                             ),
                           ),
                         ),
-                      ):SizedBox(),
+                      ):SizedBox(),*/
+                      _buildHazardControls(),
                       // Positioned widget for the heatmap toggle and reducer selection
                       Positioned(
                         top: 16,
@@ -860,100 +1033,128 @@
                                     width: 48,
                                     child: Switch(
                                       value: _showPins,
-                                      onChanged: (value) => _togglePinVisibility(),
-                                      activeColor:
-                                          Theme.of(context).colorScheme.primary,
-                                      activeTrackColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.5),
-                                      inactiveThumbColor:
-                                          Theme.of(context).colorScheme.surface,
-                                      inactiveTrackColor: Theme.of(context)
-                                          .colorScheme
-                                          .surface
-                                          .withOpacity(0.5),
+                                      onChanged: (value) {
+                                        if (!_isHeatmapOn) {
+                                          _togglePinVisibility();
+                                        }
+                                      },
+                                      activeColor: Theme.of(context).colorScheme.primary,
+                                      activeTrackColor:
+                                      Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                      inactiveThumbColor: Theme.of(context).colorScheme.surface,
+                                      inactiveTrackColor:
+                                      Theme.of(context).colorScheme.surface.withOpacity(0.5),
                                     ),
                                   ),
                                   SizedBox(width: 8),
-                                  _tileProviders.isNotEmpty
-                                      ?
-                                  InkWell(
-                                    onTap: _toggleHeatmap,
-                                    child: Container(
-                                      height: 34,
-                                      width: 34,
-                                      padding: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        shape: BoxShape.rectangle,
-                                        color: _isHeatmapOn
-                                            ? Colors.orange.withOpacity(0.8)
-                                            : Theme.of(context).colorScheme.surface,
-                                      ),
-                                      child: _isLoading
-                                          ? Center(
-                                        child: SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              _isHeatmapOn ? Colors.white : Theme.of(context).colorScheme.primary,
+                                  _selectedTabIndex == 1
+                                      ? MenuAnchor(
+                                    builder: (context, controller, child) {
+                                      return InkWell(
+                                        onTap: () {
+                                          if (_isLoading || Provider.of<MyLocationListProvider>(context, listen: false).isHeatMapGeneratingLive) {
+                                            // Prevent opening the menu if loading or heatmap is being generated
+                                            return;
+                                          }
+                                          if (_reducers.isEmpty) {
+                                            // Old implementation: Toggle heatmap directly if no reducers
+                                            _toggleHeatmap();
+                                          } else {
+                                            // Show the menu if reducers are available
+                                            if (controller.isOpen) {
+                                              controller.close();
+                                            } else {
+                                              controller.open();
+                                            }
+                                          }
+                                        },
+                                        child: Container(
+                                          height: 34,
+                                          width: 34,
+                                          padding: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(8),
+                                            shape: BoxShape.rectangle,
+                                            color: _isHeatmapOn
+                                                ? Colors.orange.withOpacity(0.8)
+                                                : Theme.of(context).colorScheme.surface,
+                                          ),
+                                          child: _isLoading || Provider.of<MyLocationListProvider>(context, listen: false).isHeatMapGeneratingLive
+                                              ? Center(
+                                            child: SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  Theme.of(context).colorScheme.primary,
+                                                ),
+                                              ),
                                             ),
+                                          )
+                                              : SvgPicture.asset(
+                                            'assets/images/heatmap_icon.svg',
+                                            color: _isHeatmapOn
+                                                ? Colors.white
+                                                : Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
-                                      )
-                                          : SvgPicture.asset(
-                                        'assets/images/heatmap_icon.svg',
-                                        color: _isHeatmapOn
-                                            ? Colors.white
-                                            : Theme.of(context).colorScheme.onSurface,
+                                      );
+                                    },
+                                    menuChildren: !_isLoading && !Provider.of<MyLocationListProvider>(context, listen: false).isHeatMapGeneratingLive
+                                        ? [
+                                      // Update Heatmap Button
+                                      MenuItemButton(
+                                        child: Text(
+                                          "Update Heatmap",
+                                          style: typography.InputLabel,
+                                        ),
+                                        onPressed: () async {
+                                          print("Updating heatmap...");
+                                          await _fetchHazardLayers(regenerate: true);
+                                        },
                                       ),
-                                    ),
-                                  ):SizedBox(),
-
-                                ],
-                              ),
-                              // Display the dropdown if heatmap is on and data is initialized
-                              if (_isHeatmapOn && _isInitialized)
-                                Container(
-                                  margin: EdgeInsets.only(top: 8),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: _reducers.contains(_selectedReducer) ? _selectedReducer : null,
-                                      items: _reducers.map((reducer) {
-                                        return DropdownMenuItem<String>(
-                                          value: reducer,
-                                          child: Text(reducer),
+                                      Divider(height: 1, thickness: 1),
+                                      // "Switch off Heatmap" option when heatmap is on
+                                      if (_isHeatmapOn)
+                                        MenuItemButton(
+                                          child: Text("Switch off Heatmap", style: typography.InputLabel),
+                                          onPressed: () {
+                                            _toggleHeatmap(); // Turn off the heatmap
+                                          },
+                                        ),
+                                      if (_isHeatmapOn) Divider(height: 1, thickness: 1),
+                                      // List of reducers
+                                      ..._reducers.map((reducer) {
+                                        return MenuItemButton(
+                                          child: Text(reducer, style: typography.InputLabel),
+                                          onPressed: () {
+                                            if (!_isHeatmapOn) {
+                                              // Automatically turn on the heatmap if it's off
+                                              _toggleHeatmap();
+                                            }
+                                            _onReducerChanged(reducer); // Set the selected reducer
+                                          },
                                         );
                                       }).toList(),
-                                      onChanged: _onReducerChanged,
-                                      isDense: true,
-                                      icon: SizedBox.shrink(),
-                                      // Remove the dropdown icon
-                                      style: typography.Subtitle2.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface),
-                                      dropdownColor:
-                                          Theme.of(context).colorScheme.surface,
-                                      selectedItemBuilder: (context) {
-                                        return _reducers.map((reducer) {
-                                          return Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Text(reducer,
-                                                style: TextStyle(fontSize: 16)),
-                                          );
-                                        }).toList();
-                                      },
-                                    ),
-                                  ),
-                                ),
+                                    ]
+                                        : [],
+                                  )
+
+
+
+
+
+
+
+                                      : SizedBox(),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       ),
+
                     ],
                   ),
                 ),

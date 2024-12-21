@@ -56,6 +56,16 @@ class SharedPreferenceService {
   static const String EMPMT = 'EMPMT'; // My Teams for EMP
   static const String FCMTK = 'FCMTK'; // FCM Token
   static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS'; // Schedule In Progress
+  static const String SOV_UPLOAD_TEMP_ID = 'SOV_UPLOAD_TEMP_ID';
+  static const String SOV_UPLOAD_PROCESS_ID = 'SOV_UPLOAD_PROCESS_ID';
+  static const String SOV_UPLOAD_STATE = 'SOV_UPLOAD_STATE';
+  static const String SOV_ACCOUNT_ID = 'SOV_ACCOUNT_ID';
+  static const String SOV_ACCOUNT_NAME = 'SOV_ACCOUNT_NAME';
+  static const String SOV_SUB_ACCOUNT_ID = 'SOV_SUB_ACCOUNT_ID';
+  static const String SOV_SUB_ACCOUNT_NAME = 'SOV_SUB_ACCOUNT_NAME';
+  static const String IS_SUPER_ADMIN = 'is_cs';
+  static const String IS_ADMIN = 'is_a';
+  static const String IS_PG_ADMIN = 'is_sa';
 
   // Save and get FCM Token
   static Future<void> saveFcmToken(String fcmToken) async {
@@ -121,6 +131,9 @@ class SharedPreferenceService {
     prefs.setBool(SETROL, false);
     prefs.setBool(NCMMT, false);
     prefs.setBool(EMPMT, false);
+    prefs.setBool(IS_PG_ADMIN, false);
+    prefs.setBool(IS_ADMIN, false);
+    prefs.setBool(IS_SUPER_ADMIN, false);
 
     claims.forEach((key, value) {
       switch (key) {
@@ -173,6 +186,9 @@ class SharedPreferenceService {
         case SETROL:
         case NCMMT:
         case EMPMT:
+        case IS_PG_ADMIN:
+        case IS_ADMIN:
+        case IS_SUPER_ADMIN:
 
           if(value.runtimeType == int) {
             if(value == 1) {
@@ -244,6 +260,11 @@ class SharedPreferenceService {
       SETFE,
       SETEM,
       SETROL,
+      NCMMT,
+      EMPMT,
+      IS_PG_ADMIN,
+      IS_ADMIN,
+      IS_SUPER_ADMIN
     ];
     for (String key in staticStrings) {
       bool value = prefs.getBool(key) ?? false;
@@ -283,5 +304,109 @@ class SharedPreferenceService {
     bool? value = prefs.getBool(SCHEDULE_INPROGRESS);
     print('Retrieved Schedule In Progress with value $value');
     return value;
+  }
+
+  static Future<void> setSovUploadTempId(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_UPLOAD_TEMP_ID, value);
+    print('Set SOV upload id to $value');
+  }
+
+  static Future<String?> getSovUploadTempId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_UPLOAD_TEMP_ID);
+    print('Retrieved Schedule In Progress with value $value');
+    return value;
+  }
+
+  static Future<void> setSovUploadProcessId(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_UPLOAD_PROCESS_ID, value);
+    print('Set SOV upload id to $value');
+  }
+
+  static Future<String?> getSovUploadProcessId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_UPLOAD_PROCESS_ID);
+    print('Retrieved Schedule In Progress with value $value');
+    return value;
+  }
+
+  static Future<void> setSovUploadState(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_UPLOAD_STATE, value);
+    print('Set SOV upload state to $value');
+  }
+
+  static Future<String?> getSovUploadState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_UPLOAD_STATE);
+    print('Retrieved SOV upload state with value $value');
+    return value;
+  }
+
+  static Future<void> setSovAccountId(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_ACCOUNT_ID, value);
+    print('Set SOV account id to $value');
+  }
+
+  static Future<String?> getSovAccountId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_ACCOUNT_ID);
+    print('Retrieved SOV account id with value $value');
+    return value;
+  }
+
+  static Future<void> setSovSubAccountId(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_SUB_ACCOUNT_ID, value);
+    print('Set SOV sub account id to $value');
+  }
+
+  static Future<String?> getSovSubAccountId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_SUB_ACCOUNT_ID);
+    print('Retrieved SOV sub account id with value $value');
+    return value;
+  }
+
+  static Future<void> setSovAccountName(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_ACCOUNT_NAME, value);
+    print('Set SOV account name to $value');
+  }
+
+  static Future<String?> getSovAccountName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_ACCOUNT_NAME);
+    print('Retrieved SOV account name with value $value');
+    return value;
+  }
+
+  static Future<void> setSovSubAccountName(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SOV_SUB_ACCOUNT_NAME, value);
+    print('Set SOV sub account name to $value');
+  }
+
+  static Future<String?> getSovSubAccountName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SOV_SUB_ACCOUNT_NAME);
+    print('Retrieved SOV sub account name with value $value');
+    return value;
+  }
+
+  // Clear all Sov related shared preferences
+  static Future<void> clearSovPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(SOV_UPLOAD_TEMP_ID);
+    await prefs.remove(SOV_UPLOAD_PROCESS_ID);
+    await prefs.remove(SOV_UPLOAD_STATE);
+    await prefs.remove(SOV_ACCOUNT_ID);
+    await prefs.remove(SOV_ACCOUNT_NAME);
+    await prefs.remove(SOV_SUB_ACCOUNT_ID);
+    await prefs.remove(SOV_SUB_ACCOUNT_NAME);
+    print('Cleared all SOV related shared preferences');
   }
 }

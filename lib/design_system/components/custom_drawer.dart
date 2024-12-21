@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green/screens/listings/hazard_proto.dart';
 import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
@@ -10,11 +11,15 @@ import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/screens/home/dashboard_screen.dart';
 import 'package:green/screens/listings/account_list.dart';
 import 'package:green/screens/userManagement/user_management.dart';
+import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
+import '../../providers/my_location_list_provider.dart';
+import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/onboarding/splash_screen.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
+import '../../utils/debouncer.dart';
 import '../primitives/app_colors.dart'; // Import the provider
 
 class CustomDrawer extends StatefulWidget {
@@ -36,6 +41,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showCorporateProfile = true;
 
   final TextEditingController searchController = TextEditingController();
+  final Debouncer debouncer = Debouncer(milliseconds: 300); // Debouncer with 300ms delay
 
   @override
   void initState() {
@@ -44,7 +50,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   _getClaims() async {
-    // These claims are fetched asynchronously; adjust the logic as per your API or service call
     showNonCorporateManagementTab =
         await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMUL) ?? false;
     showEmployeeManagementTab =
@@ -70,8 +75,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
     // Determine the icon color based on the theme
     Color? iconColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey[300]
-        : Colors.grey[800];
+        ? Colors.grey[300] // Light color for dark theme
+        : Colors.grey[800]; // Dark color for light theme
 
     return Drawer(
       child: SafeArea(
@@ -88,28 +93,51 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     semanticsLabel: 'Logo',
                   ),
                   const SizedBox(height: 20),
-                  Tooltip(
-                    message: 'Enter added locations to search',
-                    child: TextField(
-                      controller: searchController,
-                      onChanged: (value) {
-                        // Implement your search logic here
-                      },
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.search, color: iconColor),
-                        hintText: 'Search Locations',
-
-                        hintStyle: typography.Body1,
-                        filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.grey[800]
-                            : Colors.grey[200],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
+                  // Search bar added
+                  Column(
+                    children: [
+                      TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          if (value.isNotEmpty && value.length > 2) {
+                            debouncer.run(() {
+                              Provider.of<MyLocationListProvider>(context, listen: false)
+                                  .performGlobalSearch(context, value);
+                            });
+                          } else {
+                            Provider.of<MyLocationListProvider>(context, listen: false)
+                                .searchLocationList = [];
+                          }
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.search, color: iconColor),
+                          hintText: 'Search',
+                          hintStyle: typography.Body1,
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]
+                              : Colors.grey[200], // Use a lighter color for light theme
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
-                    ),
+                      Consumer<MyLocationListProvider>(
+                        builder: (context, provider, child) {
+                          return AutocompleteOptionsLocation(
+                            options: provider.searchLocationList,
+                            isLoading: provider.isSearchLoading,
+                            onSelected: (MyLocation selectedLocation) {
+                              // Handle location selection
+                              searchController.text =
+                                  selectedLocation.finalAddress?.address ?? '';
+                              provider.searchLocationList = []; // Clear results after selection
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   SizedBox(height: 20),
                 ],
@@ -161,10 +189,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     initialValue: _getInitialCountry(context),
                     itemBuilder: (Country country) {
                       return Container(
-                        width: 28.0,
-                        height: 28.0,
+                        width: 28.0, // Adjust the width as needed
+                        height: 28.0, // Adjust the height as needed
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
+                          borderRadius: BorderRadius.circular(10.0), // Set the desired border radius
                           image: DecorationImage(
                             image: AssetImage(
                               CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
@@ -176,6 +204,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                     itemFilter: (Country country) {
+                      // Only include countries with these ISO codes
                       return ['US', 'ES', 'FR', 'JP', 'CN'].contains(country.isoCode);
                     },
                     icon: SizedBox(),
@@ -208,27 +237,37 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             context: context,
                             builder: (context) {
                               return AlertDialog(
-                                title: Text(LanguageService.getTranslated(context, "drawer_menu_logout"),
+                                title: Text(
+                                    LanguageService.getTranslated(context, "drawer_menu_logout"),
                                     style: typography.Body1.copyWith(color: iconColor)),
-                                content: Text(LanguageService.getTranslated(context, "drawer_menu_logout_confirmation"),
+                                content: Text(
+                                    LanguageService.getTranslated(
+                                        context, "drawer_menu_logout_confirmation"),
                                     style: typography.Body1.copyWith(color: iconColor)),
                                 actions: <Widget>[
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pop(context);
                                     },
-                                    child: Text(LanguageService.getTranslated(context, "drawer_menu_cancel"),
+                                    child: Text(
+                                        LanguageService.getTranslated(
+                                            context, "drawer_menu_cancel"),
                                         style: typography.Body1.copyWith(color: iconColor)),
                                   ),
                                   TextButton(
                                     onPressed: () {
                                       authNotifier.signOut();
+                                      Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                          .setSelectedItem("dashboard");
                                       Navigator.pushAndRemoveUntil(
                                           context,
-                                          MaterialPageRoute(builder: (_) => SplashScreen()),
+                                          MaterialPageRoute(
+                                              builder: (_) => SplashScreen()),
                                               (route) => false);
                                     },
-                                    child: Text(LanguageService.getTranslated(context, "drawer_menu_logout"),
+                                    child: Text(
+                                        LanguageService.getTranslated(
+                                            context, "drawer_menu_logout"),
                                         style: typography.Body1.copyWith(color: iconColor)),
                                   ),
                                 ],
@@ -305,6 +344,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   String _getInitialCountry(BuildContext context) {
+    // ['US', 'ES', 'FR', 'JP', 'CN']
     if (context.locale == Locale('es')) return 'ES';
     if (context.locale == Locale('fr')) return 'FR';
     if (context.locale == Locale('ja')) return 'JP';
@@ -312,3 +352,4 @@ class _CustomDrawerState extends State<CustomDrawer> {
     return 'US';
   }
 }
+

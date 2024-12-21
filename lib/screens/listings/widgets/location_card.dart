@@ -277,13 +277,14 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   fontSize: 12,
                   color: Colors.grey[600],
                 ),
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
 
-        SizedBox(width: 12),
+        /*SizedBox(width: 12),
         // Circular score with percentage and gaped border
         Stack(
           alignment: Alignment.center,
@@ -304,7 +305,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               style: CustomTypography(context).InputLabel.copyWith(fontSize: 10),
             ),
           ],
-        ),
+        ),*/
         SizedBox(width: 4),
         // Popup menu for actions
         CustomPopupMenuButton(

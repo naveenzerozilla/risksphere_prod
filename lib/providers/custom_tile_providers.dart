@@ -20,6 +20,7 @@ class CustomTileProvider implements TileProvider {
   void updateReducer(String reducer) {
     currentReducer = reducer;
     // Trigger tile overlay refresh if needed
+
   }
 
   String getTileUrl(int zoom) {

@@ -1124,16 +1124,16 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               NetworkImage(user.imageUrl),
                                         )
                                       : CircleAvatar(
-                                          child: Text(user.displayName[0]
+                                          child: Text(user.name[0]
                                               .toUpperCase()),
                                         ),
-                                  title: Text(user.displayName),
+                                  title: Text(user.name),
                                   subtitle: Text(user.email),
                                   onTap: () {
                                     setState(() {
                                       _selectedUser = user;
                                       _userSearchController.text =
-                                          user.displayName;
+                                          user.name;
                                     });
                                   },
                                 );
@@ -1142,7 +1142,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                           : Padding(
                               padding: EdgeInsets.all(16),
                               child: Text(
-                                  'Selected User: ${_selectedUser!.displayName}'),
+                                  'Selected User: ${_selectedUser!.name}'),
                             ),
                     ),
                     ButtonBar(

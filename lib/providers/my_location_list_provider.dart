@@ -193,6 +193,15 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  bool _isMainTileProvidersLoading = false;
+  bool get isMainTileProvidersLoading => _isMainTileProvidersLoading;
+  set isMainTileProvidersLoading(bool value) {
+    _isMainTileProvidersLoading = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   List<String> _countries = [];
   String _state = '';
   List<String> _propertyType = [];
@@ -450,6 +459,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
   Map<String, dynamic>? hazardData;
   Map<String, dynamic>? geocodingData;
+  Map<String, dynamic>? mainHazardData;
 
   /// Pagination variables
   String? locationListPageToken;
@@ -1235,6 +1245,26 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
+  // Fetch Main Tile Providers URLs for each hazards and respective vendors
+  Future<void> fetchMainTileProviders(BuildContext context) async {
+    try {
+      isMainTileProvidersLoading = true;
+      ApiService apiService = ApiService(AppConstant.MAIN_HAZARDS_TILE_PROVIDERS);
+      var response = await apiService.get();
+      log(response.toString());
+      mainHazardData = response;
+    } on BackendException catch (e, stack) {
+      log("Error fetching main tile providers: ${e.message}");
+      print(stack);
+      CustomToast.error(context, e.message);
+    } catch (e, stack) {
+      log("Error fetching main tile providers: $e");
+      print(stack);
+    } finally {
+      isMainTileProvidersLoading = false;
+    }
+  }
+
   // Generate Heatmap
   Future<Map<String, dynamic>?> generateHeatMapForLocationsGeocoding(
       BuildContext context,
@@ -1258,6 +1288,7 @@ class MyLocationListProvider extends ChangeNotifier {
         }
       };
 
+      print(body);
       var response = await apiService.post(body);
       log("Heatmap generation response: ${response.toString()}");
 

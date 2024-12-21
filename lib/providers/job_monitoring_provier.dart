@@ -19,6 +19,15 @@ class JobMonitoringProvider extends ChangeNotifier {
     });
   }
 
+  bool _isSummaryLoading = false;
+  bool get isSummaryLoading => _isSummaryLoading;
+  set isSummaryLoading(bool val) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isSummaryLoading = val;
+      notifyListeners();
+    });
+  }
+
   bool _isAddLoading = false;
 
   bool get isAddLoading => _isAddLoading;
@@ -61,7 +70,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   List<MaintainanceModel> maintainancePeriods = [];
 
   // Fetch Job Monitoring Data (handle batching for `whereIn` clause)
-  Stream<QuerySnapshot> getJobMonitoringData() {
+  /*Stream<QuerySnapshot> getJobMonitoringData() {
     if (_isSuperAdmin) {
       // Fetch all processes if the user is a super admin
       return _fireStore
@@ -93,9 +102,62 @@ class JobMonitoringProvider extends ChangeNotifier {
       // Return an empty stream if there are no document IDs
       return Stream.empty();
     }
+  }*/
+
+  // Fetch Job Monitoring Data (handle filtering by `company_id`)
+  Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData() {
+    if (_isSuperAdmin) {
+      // Fetch all processes if the user is a super admin
+      return _fireStore
+          .collection('processes')
+
+          .where('process_type', isEqualTo: 'hazard')
+          .orderBy('created_at', descending: true)
+          .snapshots();
+    }
+
+    if (_docIds.isNotEmpty) {
+      // Query for non-super-admins filtered by company IDs
+      return _fireStore
+          .collection('processes')
+          .where('company_id', whereIn: _docIds) // Filter by company IDs
+
+          .where('process_type', isEqualTo: 'hazard')
+          .orderBy('created_at', descending: true)
+          .snapshots();
+    }
+
+    // Return an empty stream if there are no company IDs
+    return Stream.empty();
   }
 
-  // Fetch company IDs from the API
+  // Fetch Summary for both process and sub process
+  Future<Map<String, dynamic>?> fetchSummary(String id) async {
+    try {
+      isSummaryLoading = true; // Trigger loader
+      notifyListeners();
+
+      // Initialize the API service
+      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING_SUMMARY}/$id');
+      final response = await apiService.get();
+
+      if (response != null) {
+        print('Summary Data: $response');
+        return response;
+      }
+      return null; // Handle null response
+    } catch (error) {
+      print('Error fetching summary: $error');
+      return null;
+    } finally {
+      isSummaryLoading = false; // Stop loader
+      notifyListeners();
+    }
+  }
+
+
+
+/*  // Fetch company IDs from the API
   Future<void> fetchCompanyIds() async {
     try {
       isLoading = true;
@@ -119,7 +181,55 @@ class JobMonitoringProvider extends ChangeNotifier {
       print(e);
       print(stack);
     }
+  }*/
+
+  // Fetch company IDs from the API
+  Future<void> fetchCompanyIds() async {
+    isLoading = true; // Start loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners(); // Notify listeners to reflect loading state
+    });
+
+    try {
+      // Initialize the API service
+      final ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
+      final response = await apiService.get('?monitoring_processes=true');
+
+      if (response == null) {
+        throw Exception('API response is null');
+      }
+
+      // Check if the user is a super admin
+      _isSuperAdmin = response['is_super_admin'] ?? false;
+
+      if (!_isSuperAdmin) {
+        final ApiService apiServiceNew = ApiService(AppConstant.GET_CURRENT_COMPANY_ID);
+        // Fetch company IDs for non-super-admins
+        final companyResponse =
+        await apiServiceNew.get();
+
+        if (companyResponse != null) {
+          _docIds = [companyResponse['company_id']]; // Assign as company ID
+        } else {
+          throw Exception('Failed to fetch company ID');
+        }
+      } else {
+        _docIds = []; // Clear docIds for super admins
+      }
+
+      print('Super Admin: $_isSuperAdmin');
+      print('Company IDs (docIds): $_docIds');
+    } catch (error, stackTrace) {
+      print('Error fetching company IDs: $error');
+      print('Stack trace: $stackTrace');
+    } finally {
+      // Stop loading and notify listeners
+      isLoading = false;
+      notifyListeners();
+    }
   }
+
+
 
   // Add maintenance period
   Future<String> addMaintainancePeriod(String processStartTime, String processEndTime) async {

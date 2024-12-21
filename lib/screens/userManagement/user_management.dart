@@ -3,12 +3,14 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:country_list_picker/country_list_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:green/design_system/components/corporate_type_roles_bottom_sheet.dart';
 import 'package:green/design_system/components/custom_chip.dart';
 import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:green/models/company_model.dart';
 import 'package:green/models/company_type_model.dart';
 import 'package:green/models/corporate_verification_list_model.dart';
 import 'package:green/models/role_model.dart' as roleModel;
@@ -43,6 +45,7 @@ import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class UserManagementScreen extends StatefulWidget {
   final Screens? initialScreen;
@@ -164,6 +167,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   bool showMainLoading = true;
   int visibleTabCount = 0;
+
+  bool isPgAdmin = false;
 
   PhoneController createEmployeePhoneController =
       PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
@@ -491,6 +496,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   Future<void> _setTabs() async {
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    //isPgAdmin = true;
     showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
             SharedPreferenceService.CAMCL) ??
         false;
@@ -2405,8 +2414,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     companyProvider.company.adminEmail ?? '';
                                 _selectedCountryCode = _adminMobileController
                                         .text =
-                                    companyProvider.company.adminCountryCode ??
-                                        '';
+                                    (companyProvider.company.adminCountryCode ??
+                                        '').replaceAll('+', '');
                                 print(
                                     'Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
                                 corporateEditMobileController.value =
@@ -2424,6 +2433,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 _selectedCorporateCountryName =
                                     companyProvider.company.countryName ??
                                         "United States";
+                                if (companyProvider.company.admins != null &&
+                                    companyProvider.company.admins!.isNotEmpty) {
+                                  _selectedUser = companyProvider.company.admins!.firstWhere(
+                                        (admin) =>
+                                    admin.email == companyProvider.company.adminEmail, // Match by admin ID or other unique property
+                                    orElse: () => companyProvider.company.admins!.first, // Fallback to the first admin
+                                  );
+                                }
                                 // Set screen to edit
 
                                 setState(() {
@@ -3576,8 +3593,17 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
+  List<CorporateAdmins> filteredAdmins = [];
+  CorporateAdmins? _selectedUser;
+  TextEditingController _userSearchController = TextEditingController();
+
+
   _editCompany({bool isView = false}) {
     var typography = CustomTypography(context);
+    List<CorporateAdmins> filteredAdmins = [];
+    CorporateAdmins? _selectedUser;
+    TextEditingController _userSearchController = TextEditingController();
+
     // Add Company
     return Consumer<CompanyProvider>(
         builder: (context, companyProvider, child) {
@@ -3975,6 +4001,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                     ),
                                     SizedBox(height: CustomSpacing.four),
                                     // User & Role(s) divider
+
+
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -4001,6 +4029,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ),
                                       ],
                                     ),
+
+
+
                                     SizedBox(height: CustomSpacing.four),
                                     // Role Dropdown
                                     Consumer<CompanyProvider>(
@@ -4071,6 +4102,82 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         ],
                                       );
                                     }),
+                                    if (isPgAdmin) ...[
+                                      SizedBox(height: CustomSpacing.four),
+                                      DropdownButtonFormField2<CorporateAdmins>(
+                                        decoration: InputDecoration(
+                                          labelText: 'Select Admin',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        value: _selectedUser,
+                                        items: companyProvider.company.admins!
+                                            .map(
+                                              (admin) => DropdownMenuItem<CorporateAdmins>(
+                                            value: admin,
+                                            child: SizedBox(
+                                              width: MediaQuery.of(context).size.width - 94,
+                                              child: ListTile(
+                                                leading: admin.imageUrl != null && admin.imageUrl!.isNotEmpty
+                                                    ? CircleAvatar(
+                                                  backgroundImage: NetworkImage(admin.imageUrl!),
+                                                )
+                                                    : CircleAvatar(
+                                                  child: Text(admin.name![0].toUpperCase()),
+                                                ),
+                                                title: Text(admin.name!),
+                                                subtitle: Text(admin.email!),
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                            .toList(),
+                                        onChanged: (selectedAdmin) {
+                                          setState(() {
+                                            _selectedUser = selectedAdmin;
+                                            // Autofill fields based on selection
+                                            if (selectedAdmin != null) {
+                                              _adminNameController.text = selectedAdmin.name!;
+                                              _adminDisplayNameController.text = selectedAdmin.displayName!;
+                                              _adminEmailController.text = selectedAdmin.email!;
+                                              _selectedCountryCode =
+                                                  (selectedAdmin.countryCode ?? "").replaceAll("+", "");
+                                              corporateEditMobileController.value = PhoneNumber(
+                                                isoCode: countryCodeToIsoCode[_selectedCountryCode]?.first ??
+                                                    IsoCode.US,
+                                                nsn: selectedAdmin.mobile ?? "",
+                                              );
+                                            }
+                                          });
+                                        },
+                                        // Custom appearance for the selected item
+                                        selectedItemBuilder: (context) {
+                                          return companyProvider.company.admins!
+                                              .map((admin) => Text(
+                                            '${admin.name} (${admin.email})',
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ))
+                                              .toList();
+                                        },
+                                        // Adjust button and dropdown dimensions
+                                        buttonStyleData: ButtonStyleData(
+                                          height: 50,
+                                          width: 200, // Adjust the width of the button
+                                        ),
+                                        dropdownStyleData: DropdownStyleData(
+                                          maxHeight: 300, // Set the max height for the dropdown
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(8),
+                                            color: Theme.of(context).colorScheme.surface,
+                                          ),
+                                        ),
+                                        menuItemStyleData: MenuItemStyleData(
+                                          height: 60, // Height of each menu item
+                                        ),
+                                      ),
+                                    ],
+
                                     SizedBox(height: CustomSpacing.four),
                                     // Name
                                     TextFormField(
@@ -4306,32 +4413,66 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                       // Edit body
 
                                                                       Map<String,
-                                                                              dynamic>
-                                                                          body =
-                                                                          {
-                                                                        "action":
-                                                                            "",
-                                                                        "userdata":
-                                                                            {
-                                                                          "company_id": companyProvider
-                                                                              .company
-                                                                              .id,
-                                                                          "id": companyProvider
-                                                                              .company
-                                                                              .id,
-                                                                          "company_name":
-                                                                              _companyLegalNameController.text,
-                                                                          "company_display_name":
-                                                                              _companyDisplayNameController.text,
-                                                                          "enable_domain_check":
-                                                                              _enableDomainCheck,
-                                                                          "domain_list": _domainListController
-                                                                              .text
-                                                                              .split(','),
-                                                                          "display_image_url":
-                                                                              companyImageUrl,
-                                                                        }
-                                                                      };
+                                                                          dynamic> body ={};
+                                                                      if (_selectedUser != null && isPgAdmin) {
+                                                                    body =
+                                                                    {
+                                                                      "action":
+                                                                      "",
+                                                                      "userdata":
+                                                                      {
+                                                                        "company_id": companyProvider
+                                                                            .company
+                                                                            .id,
+                                                                        "id": companyProvider
+                                                                            .company
+                                                                            .id,
+                                                                        "company_name":
+                                                                        _companyLegalNameController
+                                                                            .text,
+                                                                        "company_display_name":
+                                                                        _companyDisplayNameController
+                                                                            .text,
+                                                                        "enable_domain_check":
+                                                                        _enableDomainCheck,
+                                                                        "domain_list": _domainListController
+                                                                            .text
+                                                                            .split(
+                                                                            ','),
+                                                                        "display_image_url":
+                                                                        companyImageUrl,
+                                                                        "selected_admin_id": _selectedUser?.userId??"",
+                                                                      }
+                                                                    };
+                                                                      } else {
+                                                                    Map<String,
+                                                                    dynamic>
+                                                                    body =
+                                                                    {
+                                                                    "action":
+                                                                    "",
+                                                                    "userdata":
+                                                                    {
+                                                                    "company_id": companyProvider
+                                                                        .company
+                                                                        .id,
+                                                                    "id": companyProvider
+                                                                        .company
+                                                                        .id,
+                                                                    "company_name":
+                                                                    _companyLegalNameController.text,
+                                                                    "company_display_name":
+                                                                    _companyDisplayNameController.text,
+                                                                    "enable_domain_check":
+                                                                    _enableDomainCheck,
+                                                                    "domain_list": _domainListController
+                                                                        .text
+                                                                        .split(','),
+                                                                    "display_image_url":
+                                                                    companyImageUrl,
+                                                                    }
+                                                                    };
+                                                                    }
                                                                       companyProvider
                                                                           .updateCompany(
                                                                               context,
@@ -4360,6 +4501,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                             selectedCorporateTypeRole.clear();
                                                                             companyImageUrl =
                                                                                 '';
+
                                                                             // get data to update the list
 
                                                                             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const UserManagementScreen()));
@@ -4692,7 +4834,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   });
                                 },
                               ),
-                    !showDeleteUser
+                    // Cannot delete self
+                    !showDeleteUser || corporateProvider.employeeList?[index].userId == FirebaseAuth.instance.currentUser?.uid || corporateProvider.employeeList?[index].isSuperAdmin == true
                         ? const SizedBox()
                         : corporateProvider.isDeleteLoading &&
                                 selectedCompanyEmployeeListIndex == index

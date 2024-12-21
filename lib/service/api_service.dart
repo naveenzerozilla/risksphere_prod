@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:green/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 
+import '../providers/auth_provider.dart';
 import '../utils/common_headers.dart';
 
 class ApiService {
@@ -207,7 +208,7 @@ class ApiService {
         'account_id': accountId,
         'sub_account_id': subAccountId,
         "name": sovName,
-        "new": 'true',
+        "new": sovName.isNotEmpty ? 'true' : 'false',
         "add_to_sov": sovName.isNotEmpty ? 'true' : 'false',
         'sov_id': sovId,
         'tags': tags,
@@ -293,11 +294,12 @@ class ApiService {
   /// Handles the HTTP response by checking the status code.
   /// If the status code is in the success range (200-299), decodes and returns the response body.
   /// Otherwise, throws a BackendException with the error message.
-  Map<String, dynamic> _handleResponse(http.Response response, [bool? isList]) {
+  Future<Map<String, dynamic>> _handleResponse(http.Response response, [bool? isList]) async {
     final statusCode = response.statusCode;
     final body = response.body;
     log("Status Code: $statusCode");
     log("Response Body: $body");
+    await AuthNotifier().getAllClaims();
 
     if (statusCode >= 200 && statusCode < 300) {
       if (isList != null && isList) {

@@ -377,9 +377,9 @@ class SubAccountListProvider extends ChangeNotifier {
       isAutoCompleteLoading = true;
 
       print("Fetching autocomplete list for query: $searchQuery");
-      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST+"/$accountId/subaccount");
+      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST);
 
-      String url = '?sub_account_name=$searchQuery';  // Updated field
+      String url = '/sub_accounts?account_id=$accountId&search=$searchQuery';  // Updated field
       var response = await apiService.get(url);
       log(response.toString());
 

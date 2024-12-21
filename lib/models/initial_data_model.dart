@@ -292,7 +292,7 @@ class Companies {
   Companies.fromJson(Map<String, dynamic> json){
     id = json['id']??"";
     isActive = json['status']??false;
-    isAuthorized = json['is_authorized'];
+    isAuthorized = json['is_authorized']??false;
     /*if(json['user_ids']!=null) {
       userIds =
           List.from(json['user_ids']).map((e) => UserIds.fromJson(e)).toList();
@@ -304,7 +304,7 @@ class Companies {
     } else {
       displayName = "";
     }
-    adminSelfRegistration = json['admin_self_registration'];
+    adminSelfRegistration = json['admin_self_registration']??false;
 
     companyTypeId = json['company_type_id']??"";
     if(json['company_name']!=null) {
@@ -312,9 +312,9 @@ class Companies {
     } else {
       name = "";
     }
-    corporateUserSelfRegistration = json['corporate_user_self_registration'];
-    corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
-    noOfUsers = json['no_of_users'];
+    corporateUserSelfRegistration = json['corporate_user_self_registration']??false;
+    corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin']??false;
+    noOfUsers = json['no_of_users']??0;
     admins = [];
     roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
     print("display name: $displayName");
@@ -323,7 +323,7 @@ class Companies {
     if(json["country"].runtimeType == String) {
       countryName = json['country']??"";
     } else {
-      countryName = json['country']['name']??"";
+      countryName = json['country']?['name']??"";
     }
 
   }

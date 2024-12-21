@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:green/design_system/components/country_picker_flag_name.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/main.dart';
@@ -274,7 +275,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 handleImageSelect: handleImageSelect,
                                                 colorSelectionMethod: ColorSelectionMethod.colorSeed,
                                               )*//*HomeScreen()));*/
+                                              final _googleSignIn = GoogleSignIn();
+                                              var isSignedIn = await _googleSignIn.isSignedIn();
+                                              if (isSignedIn) await _googleSignIn.disconnect();
                                               FirebaseAuth.instance.signOut();
+
 
                                               showDialog(
                                                 context: context,

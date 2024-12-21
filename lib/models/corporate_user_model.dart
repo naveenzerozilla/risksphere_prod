@@ -60,6 +60,7 @@ class CorporateUsers {
   bool? status;
   String? username;
   bool? isSelected;
+  bool? isSuperAdmin;
 
   CorporateUsers(
       {this.role,
@@ -77,7 +78,9 @@ class CorporateUsers {
       this.referralCode,
       this.name,
       this.status,
-      this.username, this.isSelected = false});
+      this.username, this.isSelected = false,
+        this.isSuperAdmin = false
+      });
 
   factory CorporateUsers.fromJson(Map<String, dynamic> json) {
     /*Role? role;
@@ -103,6 +106,7 @@ class CorporateUsers {
       name: json['name'] ?? '',
       status: json['status'] ?? false,
       username: json['username'] ?? '',
+      isSuperAdmin: json['is_company_superadmin'] ?? false,
     );
   }
 
@@ -131,6 +135,7 @@ class CorporateUsers {
     data['name'] = this.name;
     data['status'] = this.status;
     data['username'] = this.username;
+    data['is_company_superadmin'] = this.isSuperAdmin;
     return data;
   }
 }
