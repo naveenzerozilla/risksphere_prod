@@ -22,6 +22,7 @@ import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sub_account_list.dart';
 import 'package:green/screens/listings/widgets/auto_complete_options.dart';
+import 'package:green/screens/listings/widgets/configurations_tab.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -165,7 +166,7 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   @override
   void initState() {
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     super.initState();
     _getData();
   }
@@ -242,7 +243,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                           ],
                         );
                       })
-                    : FloatingActionButton(
+                    : _tabController?.index != 0? SizedBox():FloatingActionButton(
                         backgroundColor: AppColors.primaryMain,
                         onPressed: () {
                           // Add account dialog with autocomplete from api and create account
@@ -275,9 +276,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                 children: [
                   // Background image
                   Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/mesh.png',
-                      fit: BoxFit.cover,
+                    child: Opacity(
+                      opacity: 0.3,
+                      child: Image.asset(
+                        'assets/images/mesh.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Column(
@@ -379,6 +383,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           ),
                                                         ),
                                                         Tab(text: 'Shared'),
+                                                        Tab(text: 'Configuration'),
                                                         //Tab(text: 'Access Requests'),
                                                       ],
                                                     ),
@@ -409,6 +414,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   children: [
                                     _getAccountUI(),
                                     _getComingSoonUI(),
+                                    ConfigurationTab(),
                                     //_getComingSoonUI(),
                                   ],
                                 ),

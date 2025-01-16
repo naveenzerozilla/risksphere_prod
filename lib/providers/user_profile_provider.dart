@@ -20,6 +20,7 @@ import '../models/employee_list_model.dart';
 import '../models/networking_model.dart';
 import '../models/view_employee_model.dart';
 import '../service/api_service.dart';
+import '../service/shared_preference_service.dart';
 import '../utils/api_constants.dart';
 
 class UserProfileProvider with ChangeNotifier {
@@ -108,6 +109,9 @@ class UserProfileProvider with ChangeNotifier {
   List<NetworkingUsers?> _networkingUsers = [];
   List<NetworkingUsers?> get networkingUsers => _networkingUsers;
 
+  Map<String, dynamic> _trialInfo = {};
+  Map<String, dynamic> get trialInfo => _trialInfo;
+
   /// Fetches all user data from the API.
   Future<UserData?> getAllUserData(
       BuildContext context, String searchText, String filter) async {
@@ -133,6 +137,7 @@ class UserProfileProvider with ChangeNotifier {
           notifyListeners();
         });
       }
+      await fetchTrialInfo();
       isLoading = false;
       return userDataLocal;
     } on BackendException catch (e) {
@@ -140,6 +145,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Error: $e'); // Log the error
       // Show a generic error message to the user
      // if (context.mounted) CustomToast.error(context, e.message);
+      await fetchTrialInfo();
       isLoading = false;
       return null; // Return an empty list in case of error
     }
@@ -150,6 +156,7 @@ class UserProfileProvider with ChangeNotifier {
       // Show a generic error message to the user
       // TODO: Display a generic error message to the user
 
+      await fetchTrialInfo();
       isLoading = false;
       if (!context.mounted) return null;
      /* CustomToast.error(
@@ -157,6 +164,33 @@ class UserProfileProvider with ChangeNotifier {
       return null; // Return an empty list in case of error
     }
   }
+
+  Future<void> fetchTrialInfo() async {
+    bool isTrialApplicable = await SharedPreferenceService.isTrialApplicable() ?? false;
+    int trialDays = await SharedPreferenceService.getTrialPeriodDays() ?? 0;
+    int trialSubdestination = await SharedPreferenceService.getTrialSubDestinations() ?? 0;
+    int trialEditLocations = await SharedPreferenceService.getTrialEditLocations() ?? 0;
+
+    print("trial period details: $isTrialApplicable, $trialDays");
+
+    if (isTrialApplicable) {
+
+      _trialInfo = {
+        'remainingDays': trialDays,
+        'status': trialDays <= 0
+            ? 'Expired'
+            : trialDays <= (trialDays * 0.4)
+            ? '$trialDays days left'
+            : 'Free Trial',
+        'subDestinations': trialSubdestination,
+        'editLocations': trialEditLocations,
+      };
+    } else {
+      _trialInfo = {'status': ''};  // No trial case
+    }
+    notifyListeners();
+  }
+
 
   /// Update a employee based on the employee ID and new employee data.
   Future<bool> updateUserData(

@@ -66,6 +66,11 @@ class SharedPreferenceService {
   static const String IS_SUPER_ADMIN = 'is_cs';
   static const String IS_ADMIN = 'is_a';
   static const String IS_PG_ADMIN = 'is_sa';
+  static const String TRIAL_PERIOD_DAYS = 'trial_period_days';
+  static const String TRIAL_CREATED_AT = 'trial_created_at';
+  static const String IS_TRIAL_APPLICABLE = 'is_trial_period_applicable';
+  static const String TRIAL_SUBDESTINATIONS = 'trial_subdestinations';
+  static const String TRIAL_EDITLOCATIONS = 'trial_max_updates';
 
   // Save and get FCM Token
   static Future<void> saveFcmToken(String fcmToken) async {
@@ -409,4 +414,63 @@ class SharedPreferenceService {
     await prefs.remove(SOV_SUB_ACCOUNT_NAME);
     print('Cleared all SOV related shared preferences');
   }
+
+  // Save Notification Subscription Status
+  static Future<void> saveNotificationSubscription(bool isSubscribed) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notificationSubscribed', isSubscribed);
+    print('Notification Subscription saved: $isSubscribed');
+  }
+
+// Get Notification Subscription Status
+  static Future<bool> getNotificationSubscription() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notificationSubscribed') ?? false;
+  }
+
+  // Save Trial Info with Firebase Timestamp
+  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(TRIAL_PERIOD_DAYS, trialDays);
+    await prefs.setBool(IS_TRIAL_APPLICABLE, isApplicable);
+    await prefs.setInt(TRIAL_SUBDESTINATIONS, trialSubDestinations);
+    await prefs.setInt(TRIAL_EDITLOCATIONS, trialEditLocations);
+  }
+
+// Get Trial Period Days
+  static Future<int?> getTrialPeriodDays() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TRIAL_PERIOD_DAYS);
+  }
+
+//
+
+// Check If Trial Is Applicable
+  static Future<bool?> isTrialApplicable() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(IS_TRIAL_APPLICABLE);
+  }
+
+  static Future<int?> getTrialSubDestinations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TRIAL_SUBDESTINATIONS);
+  }
+
+  static Future<int?> getTrialEditLocations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TRIAL_EDITLOCATIONS);
+  }
+
+  Future<void> saveUserTrialData(Map<String, dynamic> user) async {
+    if (user.containsKey('trial_period_days')) {
+      int trialDays = user['trial_period_days'];
+      bool isTrialApplicable = user['is_trial_period_applicable'];
+      int trialSubDestinations = user['trial_subdestinations'];
+      int trialEditLocations = user['trial_max_updates'];
+
+      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations);
+    }
+  }
+
+
 }

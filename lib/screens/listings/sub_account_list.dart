@@ -19,6 +19,7 @@ import 'package:green/screens/listings/location_list.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sov_list.dart';
 import 'package:green/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
+import 'package:green/screens/listings/widgets/configurations_tab.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -165,7 +166,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   @override
   void initState() {
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     super.initState();
     _getData();
   }
@@ -363,6 +364,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         ),
                                                       ),
                                                       Tab(text: 'Shared'),
+                                                      Tab(text: 'Configuration'),
                                                       //Tab(text: 'Access Requests'),
                                                     ],
                                                   ),
@@ -393,6 +395,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 children: [
                                   _getSubAccountUI(),
                                   _getComingSoonUI(),
+                                  ConfigurationTab(accountId: widget.accountId),
                                   //_getComingSoonUI(),
                                 ],
                               ),

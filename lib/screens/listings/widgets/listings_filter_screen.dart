@@ -17,6 +17,8 @@ class ListingsFilterScreen extends StatefulWidget {
   final String sovId;
   final String? searchQuery;
   final bool showGeoRatings;
+  final String? initialProcessId;
+  final String? initialSubProcessId;
 
   const ListingsFilterScreen({
     super.key,
@@ -25,6 +27,8 @@ class ListingsFilterScreen extends StatefulWidget {
     required this.sovId,
     required this.searchQuery,
     this.showGeoRatings = true,
+    this.initialProcessId,
+    this.initialSubProcessId,
   });
 
   @override
@@ -123,9 +127,13 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     if(widget.showGeoRatings) {
       Provider.of<MyLocationListProvider>(context, listen: false)
           .fetchLocationList(context, "", 1, 40, widget.accountId,
-          widget.subAccountId);
+          widget.subAccountId,
+        widget.initialProcessId,
+        widget.initialSubProcessId,);
     } else {
-      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId);
+      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId,
+        widget.initialProcessId,
+        widget.initialSubProcessId,);
     }
 
 
@@ -242,9 +250,13 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                   if(widget.showGeoRatings) {
                     Provider.of<MyLocationListProvider>(context, listen: false)
                         .fetchLocationList(context, "", 1, 40, widget.accountId,
-                        widget.subAccountId);
+                        widget.subAccountId,
+                      widget.initialProcessId,
+                      widget.initialSubProcessId,);
                   } else {
-                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId);
+                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId,
+                    widget.initialProcessId,
+                    widget.initialSubProcessId,);
                   }
 
                 },

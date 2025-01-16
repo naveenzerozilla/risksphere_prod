@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/profile_image_widget.dart';
+import 'package:green/design_system/primitives/app_colors.dart';
 import 'package:green/providers/auth_provider.dart';
 import 'package:green/screens/onboarding/splash_screen.dart';
 import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
@@ -16,6 +17,7 @@ import 'package:green/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/drawer_selection_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../screens/listings/hazard_proto.dart';
 import '../primitives/custom_typography.dart';
 import '../primitives/utilities/custom_spacing.dart';
@@ -41,15 +43,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.margin = 16.0,
     this.stopNavigateToProfile = false,
     this.canNavigateToConnections = true,
-
   }) : super(key: key);
 
   @override
   Size get preferredSize => Size.fromHeight(70);
 
+
+
   @override
   Widget build(BuildContext context) {
-    var typography = CustomTypography(context); // Use context to initialize typography
+    var typography =
+        CustomTypography(context); // Use context to initialize typography
 
     return Container(
       margin: EdgeInsets.fromLTRB(margin, 8, margin, 8),
@@ -64,27 +68,27 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         titleSpacing: 0,
         title: isExpanded
             ? Container(
-
-          //padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search...',
-              hintStyle: typography.Subtitle1, // Use the typography instance
-              border: InputBorder.none,
-            ),
-          ),
-        )
+                //padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    hintStyle:
+                        typography.Subtitle1, // Use the typography instance
+                    border: InputBorder.none,
+                  ),
+                ),
+              )
             : GestureDetector(
-          onTap: () {
-            //onExpandPressed(!isExpanded);
-          },
-          child: Container(
-            padding: EdgeInsets.all(8),
-            child: SvgPicture.asset(
-              'assets/images/logoHalf.svg',
-            ),
-          ),
-        ),
+                onTap: () {
+                  //onExpandPressed(!isExpanded);
+                },
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  child: SvgPicture.asset(
+                    'assets/images/logoHalf.svg',
+                  ),
+                ),
+              ),
         actions: <Widget>[
           /*GestureDetector(
             child: Icon(Icons.search, size: 28, color: Colors.grey),
@@ -96,7 +100,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
             return InkWell(
               onTap: () {
-               /* SnackBar snackBar = SnackBar(
+                /* SnackBar snackBar = SnackBar(
                   content: Text('Coming Soon!'),
                   duration: Duration(seconds: 2),
                 );*/
@@ -152,27 +156,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: EdgeInsets.zero,
             tooltip: 'Connections',
             icon: Icon(Icons.people_alt_outlined),
-            onPressed: !(canNavigateToConnections??true)?null:() async {
-              FirebaseAuth auth = FirebaseAuth.instance;
-              String uid = auth.currentUser!.uid;
-              IdTokenResult token =
-                  await auth.currentUser!.getIdTokenResult();
-              Map<String, dynamic>? claims = token.claims ?? {};
-              log(claims.toString());
-              log(auth.currentUser.toString());
-              String name =
-                  claims['name'] ?? ''; //name of the user
-              //Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ConnectionsScreen(
-                    userId: uid,
-                    userName: name,
-                    selectedTabIndex: 1,
-                  ),
-                ),
-              );
-            },
+            onPressed: !(canNavigateToConnections ?? true)
+                ? null
+                : () async {
+                    FirebaseAuth auth = FirebaseAuth.instance;
+                    String uid = auth.currentUser!.uid;
+                    IdTokenResult token =
+                        await auth.currentUser!.getIdTokenResult();
+                    Map<String, dynamic>? claims = token.claims ?? {};
+                    log(claims.toString());
+                    log(auth.currentUser.toString());
+                    String name = claims['name'] ?? ''; //name of the user
+                    //Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ConnectionsScreen(
+                          userId: uid,
+                          userName: name,
+                          selectedTabIndex: 0,
+                        ),
+                      ),
+                    );
+                  },
           ),
           /*SizedBox(
             width: CustomSpacing.four,
@@ -221,18 +226,72 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           showDropdown
               ? Center(
-            child: ProfileMenu(),
-          )
+                  child: ProfileMenu(),
+                )
               : Center(
-            child: InkWell(onTap:
-            stopNavigateToProfile! ? null :
-                () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ProfileScreen()),
-              );
-            },child: ProfileImageWidget()),
-          ),
+                  child: InkWell(
+                    onTap: stopNavigateToProfile!
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => ProfileScreen()),
+                            );
+                          },
+                    child: Consumer<UserProfileProvider>(
+                      builder: (context, userProfile, child) {
+                        final trialStatus = userProfile.trialInfo['status'] ?? '';
+
+                        if (trialStatus.isEmpty) {
+                          // Show normal profile icon if no trial period
+                          return ProfileImageWidget();
+                        }
+
+                        return Stack(
+                          clipBehavior: Clip.none,  // Allow overlap outside the container
+                          children: [
+                            Container(
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width * 0.3,
+                              ),
+                              padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: trialStatus.contains('Trial')
+                                      ? (AppColors.warning)
+                                      : Colors.red,
+                                  width: 1,
+                                ),
+                                color: trialStatus.contains('Trial')
+                                    ? (AppColors.warning.withOpacity(0.1))
+                                    : Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                trialStatus,
+                                maxLines: 2,
+                                style: typography.BottomNavigationActiveLabel.copyWith(color: trialStatus.contains('Trial')
+                                    ? (AppColors.warning)
+                                    : Colors.red,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+
+                            // Profile image overlapping the container
+                            Positioned(
+                              right: -6,  // Overlap adjustment
+                              top: -5,     // Slight elevation for better UI
+                              child: ProfileImageWidget(),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
           SizedBox(width: 8),
         ],
       ),

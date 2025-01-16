@@ -1,27 +1,19 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:green/design_system/components/rating_half_stars.dart';
-import 'package:green/design_system/components/rating_slider.dart';
 import 'package:green/models/my_location_list_model.dart';
-import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/location_profile_provider.dart';
 import 'package:green/providers/my_location_list_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
-import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/sov_location_list.dart';
-import 'package:green/screens/listings/widgets/adaptive_tab_bar_locations.dart';
-import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
+import 'package:green/screens/listings/widgets/configurations_tab.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:green/screens/listings/widgets/location_card.dart';
@@ -36,37 +28,33 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/custom_gradient_circular_progress_bar.dart';
-import '../../design_system/components/rating_bar.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../models/location_list_model.dart';
 import '../../models/sov_list_model.dart';
 import '../../models/transfer_autocomplete_model.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/sov_list_provider.dart';
-import '../../providers/sub_account_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
-import 'widgets/auto_complete_options_sovs.dart';
 
 class MyLocationList extends StatefulWidget {
   final String accountID;
   final String subAccountID;
   final String accountName;
   final String subAccountName;
+  final String? initialProcessId;
+  final String? initialSubProcessId;
 
   const MyLocationList({
     super.key,
@@ -74,6 +62,8 @@ class MyLocationList extends StatefulWidget {
     this.subAccountID = '',
     this.accountName = '',
     this.subAccountName = '',
+    this.initialProcessId,
+    this.initialSubProcessId,
   });
 
   @override
@@ -159,7 +149,7 @@ class _MyLocationListState extends State<MyLocationList>
         selectedMainTab = _mainTabController?.index ?? 0;
       }); // This ensures that the widget rebuilds when the tab changes
     });
-    _masterTabController = TabController(length: 4, vsync: this);
+    _masterTabController = TabController(length: 5, vsync: this);
     _masterTabController?.addListener(() {
       setState(() {
         selectedMasterTab = _masterTabController?.index ?? 0;
@@ -174,7 +164,7 @@ class _MyLocationListState extends State<MyLocationList>
         _selectedScreen = Screens.locationList;
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 0;
+        locationListProvider.page = 1;
         Provider.of<MyLocationListProvider>(context, listen: false)
             .fetchLocationList(
               context,
@@ -183,13 +173,15 @@ class _MyLocationListState extends State<MyLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
             )
             .then((value) => setState(() {}));
       } else {
         _selectedScreen = Screens.certifiedLocationList;
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 0;
+        locationListProvider.page = 1;
         locationListProvider.clearRatingsFilter();
         Provider.of<MyLocationListProvider>(context, listen: false)
             .fetchCertifiedLocationList(
@@ -199,6 +191,8 @@ class _MyLocationListState extends State<MyLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
             )
             .then((value) => setState(() {}));
         /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
@@ -285,6 +279,9 @@ class _MyLocationListState extends State<MyLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
+
+      widget.initialProcessId,
+      widget.initialSubProcessId,
         )
         .then((value) => setState(() {}));
     Provider.of<MyLocationListProvider>(context, listen: false)
@@ -295,6 +292,8 @@ class _MyLocationListState extends State<MyLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
+      widget.initialProcessId,
+      widget.initialSubProcessId,
         )
         .then((value) => WidgetsBinding.instance!.addPostFrameCallback((_) {
               setState(() {});
@@ -307,7 +306,10 @@ class _MyLocationListState extends State<MyLocationList>
         .fetchAutoCompleteSovListLocations(
             context, widget.accountID, widget.subAccountID);
     Provider.of<MyLocationListProvider>(context, listen: false)
-        .fetchAllLocationList(context, widget.accountID, widget.subAccountID);
+        .fetchAllLocationList(context, widget.accountID, widget.subAccountID,
+      processId: widget.initialProcessId,
+      subProcessId: widget.initialSubProcessId,
+    );
     // Initialize the JobMonitoringProvider and fetch the company IDs
     Provider.of<JobMonitoringProvider>(context, listen: false)
         .fetchCompanyIds();
@@ -393,6 +395,8 @@ class _MyLocationListState extends State<MyLocationList>
                                   40,
                                   widget.accountID,
                                   widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
                                 )
                                 .then((value) => setState(() {}));
                           }
@@ -575,6 +579,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                 ),
                                                 Tab(text: 'Shared'),
                                                 Tab(text: 'Access Requests'),
+
+                                                Tab(text: 'Configuration'),
                                               ],
                                             ),
                                           ),
@@ -610,6 +616,10 @@ class _MyLocationListState extends State<MyLocationList>
                                 ),
                                 _getComingSoonUI(),
                                 _getComingSoonUI(),
+                                ConfigurationTab(
+                                  accountId: widget.accountID,
+                                  subaccountId: widget.subAccountID,
+                                ),
                               ],
                             ),
                           ),
@@ -628,6 +638,8 @@ class _MyLocationListState extends State<MyLocationList>
                   sovId: "widget.sovId",
                   searchQuery: locationQuery,
                   showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
+                  initialProcessId: widget.initialProcessId,
+                  initialSubProcessId: widget.initialSubProcessId,
                 ),
               ),
             ),
@@ -1600,6 +1612,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1623,6 +1637,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1680,6 +1696,8 @@ class _MyLocationListState extends State<MyLocationList>
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
                                     );
                                   },
                                 ),
@@ -1704,6 +1722,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1728,6 +1748,8 @@ class _MyLocationListState extends State<MyLocationList>
                             40,
                             widget.accountID,
                             widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
                           );
                         },
                         child: const Text(
@@ -1770,6 +1792,8 @@ class _MyLocationListState extends State<MyLocationList>
                               40,
                               widget.accountID,
                               widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
                             );
                             locationListProvider.fetchLocationList(
                               context,
@@ -1778,11 +1802,15 @@ class _MyLocationListState extends State<MyLocationList>
                               40,
                               widget.accountID,
                               widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
                             );
                             locationListProvider.fetchAllLocationList(
                               context,
                               widget.accountID,
                               widget.subAccountID,
+                              processId: widget.initialProcessId,
+                              subProcessId: widget.initialSubProcessId,
                             );
                           },
                           child: ListView.builder(
@@ -1901,6 +1929,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                 40,
                                                 widget.accountID,
                                                 widget.subAccountID,
+                                                widget.initialProcessId,
+                                                widget.initialSubProcessId,
                                               );
 
                                               Navigator.of(context).pop();
@@ -1961,6 +1991,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40, // Page size
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                   return SizedBox();
                                 }
@@ -2049,6 +2081,8 @@ class _MyLocationListState extends State<MyLocationList>
                                         40,
                                         widget.accountID,
                                         widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
                                       );
 
                                       Navigator.of(context).pop();
@@ -2124,6 +2158,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -2148,6 +2184,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -2206,6 +2244,8 @@ class _MyLocationListState extends State<MyLocationList>
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
                                     );
                                   },
                                 ),
@@ -2229,6 +2269,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -2253,6 +2295,8 @@ class _MyLocationListState extends State<MyLocationList>
                             40,
                             widget.accountID,
                             widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
                           );
                         },
                         child: const Text(
@@ -2290,6 +2334,8 @@ class _MyLocationListState extends State<MyLocationList>
                               40,
                               widget.accountID,
                               widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
                             );
                             locationListProvider.fetchLocationList(
                               context,
@@ -2298,11 +2344,15 @@ class _MyLocationListState extends State<MyLocationList>
                               40,
                               widget.accountID,
                               widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
                             );
                             locationListProvider.fetchAllLocationList(
                               context,
                               widget.accountID,
                               widget.subAccountID,
+                              processId: widget.initialProcessId,
+                              subProcessId: widget.initialSubProcessId,
                             );
                           },
                           child: ListView.builder(
@@ -2353,6 +2403,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                   return SizedBox();
                                 }
@@ -2434,6 +2486,8 @@ class _MyLocationListState extends State<MyLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
             );
 
             Navigator.of(context).pop();

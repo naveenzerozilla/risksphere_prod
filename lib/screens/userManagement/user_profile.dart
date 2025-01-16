@@ -533,6 +533,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 builder: (BuildContext context) {
                                   return RolesBottomSheet(
                                     showCorporateSwitch: true,
+                                    isUserProfile: true,
                                     options: roles,
                                     selectedRoles: _selectedRoles,
                                     addChip: _addChip,
@@ -566,6 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     builder: (BuildContext context) {
                                       return RolesBottomSheet(
                                         showCorporateSwitch: false,
+                                        isUserProfile: true,
                                         options: roles,
                                         selectedRoles: _selectedRoles,
                                         addChip: _addChip,

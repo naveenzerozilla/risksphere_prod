@@ -23,10 +23,12 @@ import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:green/models/account_list_model.dart';
 import 'package:green/providers/location_profile_provider.dart';
 import 'package:green/providers/place_api_provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/widgets/dots_indicator.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:green/screens/listings/widgets/location_details_popup.dart';
+import 'package:green/screens/listings/widgets/message_card.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -676,12 +678,12 @@ class _LocationProfileState extends State<LocationProfile>
                                         mapType: _currentMapType,
                                         markers: Set<Marker>.of(markers.values),
                                         initialCameraPosition: _kGooglePlex,
-                                        onMapCreated: (GoogleMapController controller) {
+                                        onMapCreated:
+                                            (GoogleMapController controller) {
                                           if (!_controller.isCompleted) {
                                             _controller.complete(controller);
                                           }
                                         },
-
                                         gestureRecognizers: <Factory<
                                             OneSequenceGestureRecognizer>>{
                                           Factory<OneSequenceGestureRecognizer>(
@@ -1211,62 +1213,108 @@ class _LocationProfileState extends State<LocationProfile>
                                     );
                                   },
                                 ),
-                                (locationProfileProvider.locationProfile?.finalAddress?.score??0)==5?
-                                    SizedBox.shrink():
-                                IconButton(
-                                    icon: Icon(Icons.edit),
-                                    tooltip: 'Edit Address',
-                                    onPressed: () async {
-                                      // Store the necessary navigation data before pushing
-                                      final navigationData = {
-                                        'accountId': widget.accountId,
-                                        'subAccountId': widget.subAccountId,
-                                        'sovId': widget.sovId,
-                                        'accountName': widget.accountName,
-                                        'subAccountName': widget.subAccountName,
-                                        'sovName': widget.sovName,
-                                        'locationId': locationProfileProvider.locationProfile?.id ?? "",
-                                        'searchQuery': widget.searchQuery,
-                                        'page': widget.page,
-                                        'totalPages': widget.totalPages,
-                                      };
-                                      var value = await Navigator.of(context)
-                                          .push(
-                                        MaterialPageRoute(
-                                          builder: (_) => AddLocationScreen(
-                                            accountId: widget.accountId,
-                                            subAccountId: widget.subAccountId,
-                                            sovId: widget.sovId,
-                                            accountName: widget.accountName,
-                                            subAccountName: widget.subAccountName,
-                                            sovName: widget.sovName,
-                                            locationId: locationProfileProvider
-                                                .locationProfile?.id ??
-                                                "",
-                                            locationName: locationProfileProvider
-                                                .locationProfile
-                                                ?.finalAddress
-                                                ?.locationName ??
-                                                "",
-                                            locationIdForRef:
-                                            locationProfileProvider
-                                                ?.locationProfile
-                                                ?.finalAddress
-                                                ?.locationIdForRef ??
-                                                "",
-                                            searchQuery: widget.searchQuery ?? "",
-                                            page: widget.page,
-                                            totalPages: widget.locationId.isNotEmpty
-                                                ? (locationProfileProvider
-                                                .resetTotalPage -
-                                                1)
-                                                .toString()
-                                                : widget.totalPages,
-                                          ),
-                                        ),
-                                      );
+                                (locationProfileProvider.locationProfile
+                                                ?.finalAddress?.score ??
+                                            0) ==
+                                        5
+                                    ? SizedBox.shrink()
+                                    : IconButton(
+                                        icon: Icon(Icons.edit),
+                                        tooltip: 'Edit Address',
+                                        onPressed: () async {
+                                          var userProfileProvider =
+                                          Provider.of<UserProfileProvider>(context, listen: false);
+                                          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                          final trialSubdestinations =
+                                              userProfileProvider.trialInfo['subDestinations'] ?? 0;
+                                          if (trialStatus != '' && trialSubdestinations < 1) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return MessageCard(
+                                                  messageTextSpans: [
+                                                    TextSpan(
+                                                      text: 'You\'ve reached your limit for ',
+                                                      style: CustomTypography(context).Body1,
+                                                    ),
+                                                    TextSpan(
+                                                      text: '“editing locations”',
+                                                      style: CustomTypography(context).Body1.copyWith(
+                                                        color: AppColors.warning,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text:
+                                                      '.  Consider upgrading your account to unlock more possibilities!',
+                                                      style: CustomTypography(context).Body1,
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                            return;
+                                          }
+                                          // Store the necessary navigation data before pushing
+                                          final navigationData = {
+                                            'accountId': widget.accountId,
+                                            'subAccountId': widget.subAccountId,
+                                            'sovId': widget.sovId,
+                                            'accountName': widget.accountName,
+                                            'subAccountName':
+                                                widget.subAccountName,
+                                            'sovName': widget.sovName,
+                                            'locationId':
+                                                locationProfileProvider
+                                                        .locationProfile?.id ??
+                                                    "",
+                                            'searchQuery': widget.searchQuery,
+                                            'page': widget.page,
+                                            'totalPages': widget.totalPages,
+                                          };
+                                          var value =
+                                              await Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => AddLocationScreen(
+                                                accountId: widget.accountId,
+                                                subAccountId:
+                                                    widget.subAccountId,
+                                                sovId: widget.sovId,
+                                                accountName: widget.accountName,
+                                                subAccountName:
+                                                    widget.subAccountName,
+                                                sovName: widget.sovName,
+                                                locationId:
+                                                    locationProfileProvider
+                                                            .locationProfile
+                                                            ?.id ??
+                                                        "",
+                                                locationName:
+                                                    locationProfileProvider
+                                                            .locationProfile
+                                                            ?.finalAddress
+                                                            ?.locationName ??
+                                                        "",
+                                                locationIdForRef:
+                                                    locationProfileProvider
+                                                            ?.locationProfile
+                                                            ?.finalAddress
+                                                            ?.locationIdForRef ??
+                                                        "",
+                                                searchQuery:
+                                                    widget.searchQuery ?? "",
+                                                page: widget.page,
+                                                totalPages: widget
+                                                        .locationId.isNotEmpty
+                                                    ? (locationProfileProvider
+                                                                .resetTotalPage -
+                                                            1)
+                                                        .toString()
+                                                    : widget.totalPages,
+                                              ),
+                                            ),
+                                          );
 
-                                      /*if(value == true) {
+                                          /*if(value == true) {
                                     if (mounted) {
                                       Navigator.pushAndRemoveUntil(
                                         context,
@@ -1300,7 +1348,7 @@ class _LocationProfileState extends State<LocationProfile>
                                       );
                                     }
                                   }*/
-                                    }),
+                                        }),
                                 // Todo: implement history feature
                                 /* IconButton(
                               icon: Icon(Icons.history),
@@ -1982,62 +2030,103 @@ class _LocationProfileState extends State<LocationProfile>
                               },
                             ),
                             // edit location
-                            (locationProfileProvider.locationProfile?.finalAddress?.score??0)==5?
-                            SizedBox.shrink():
-                            IconButton(
-                                icon: Icon(Icons.edit),
-                                tooltip: 'Edit Address',
-                                onPressed: () async {
-                                  // Store the necessary navigation data before pushing
-                                  final navigationData = {
-                                    'accountId': widget.accountId,
-                                    'subAccountId': widget.subAccountId,
-                                    'sovId': widget.sovId,
-                                    'accountName': widget.accountName,
-                                    'subAccountName': widget.subAccountName,
-                                    'sovName': widget.sovName,
-                                    'locationId': locationProfileProvider.locationProfile?.id ?? "",
-                                    'searchQuery': widget.searchQuery,
-                                    'page': widget.page,
-                                    'totalPages': widget.totalPages,
-                                  };
-                                  var value = await Navigator.of(context)
-                                      .push(
-                                    MaterialPageRoute(
-                                      builder: (_) => AddLocationScreen(
-                                        accountId: widget.accountId,
-                                        subAccountId: widget.subAccountId,
-                                        sovId: widget.sovId,
-                                        accountName: widget.accountName,
-                                        subAccountName: widget.subAccountName,
-                                        sovName: widget.sovName,
-                                        locationId: locationProfileProvider
+                            (locationProfileProvider.locationProfile
+                                            ?.finalAddress?.score ??
+                                        0) ==
+                                    5
+                                ? SizedBox.shrink()
+                                : IconButton(
+                                    icon: Icon(Icons.edit),
+                                    tooltip: 'Edit Address',
+                                    onPressed: () async {
+                                      var userProfileProvider =
+                                      Provider.of<UserProfileProvider>(context, listen: false);
+                                      final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                      final trialSubdestinations =
+                                          userProfileProvider.trialInfo['subDestinations'] ?? 0;
+                                      if (trialStatus != '' && trialSubdestinations < 1) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return MessageCard(
+                                              messageTextSpans: [
+                                                TextSpan(
+                                                  text: 'You\'ve reached your limit for ',
+                                                  style: CustomTypography(context).Body1,
+                                                ),
+                                                TextSpan(
+                                                  text: '“editing locations”',
+                                                  style: CustomTypography(context).Body1.copyWith(
+                                                    color: AppColors.warning,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text:
+                                                  '.  Consider upgrading your account to unlock more possibilities!',
+                                                  style: CustomTypography(context).Body1,
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                        return;
+                                      }
+                                      // Store the necessary navigation data before pushing
+                                      final navigationData = {
+                                        'accountId': widget.accountId,
+                                        'subAccountId': widget.subAccountId,
+                                        'sovId': widget.sovId,
+                                        'accountName': widget.accountName,
+                                        'subAccountName': widget.subAccountName,
+                                        'sovName': widget.sovName,
+                                        'locationId': locationProfileProvider
                                                 .locationProfile?.id ??
                                             "",
-                                        locationName: locationProfileProvider
-                                                .locationProfile
-                                                ?.finalAddress
-                                                ?.locationName ??
-                                            "",
-                                        locationIdForRef:
-                                            locationProfileProvider
-                                                    ?.locationProfile
-                                                    ?.finalAddress
-                                                    ?.locationIdForRef ??
+                                        'searchQuery': widget.searchQuery,
+                                        'page': widget.page,
+                                        'totalPages': widget.totalPages,
+                                      };
+                                      var value =
+                                          await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => AddLocationScreen(
+                                            accountId: widget.accountId,
+                                            subAccountId: widget.subAccountId,
+                                            sovId: widget.sovId,
+                                            accountName: widget.accountName,
+                                            subAccountName:
+                                                widget.subAccountName,
+                                            sovName: widget.sovName,
+                                            locationId: locationProfileProvider
+                                                    .locationProfile?.id ??
                                                 "",
-                                        searchQuery: widget.searchQuery ?? "",
-                                        page: widget.page,
-                                        totalPages: widget.locationId.isNotEmpty
-                                            ? (locationProfileProvider
-                                                        .resetTotalPage -
-                                                    1)
-                                                .toString()
-                                            : widget.totalPages,
-                                      ),
-                                    ),
-                                  );
+                                            locationName:
+                                                locationProfileProvider
+                                                        .locationProfile
+                                                        ?.finalAddress
+                                                        ?.locationName ??
+                                                    "",
+                                            locationIdForRef:
+                                                locationProfileProvider
+                                                        ?.locationProfile
+                                                        ?.finalAddress
+                                                        ?.locationIdForRef ??
+                                                    "",
+                                            searchQuery:
+                                                widget.searchQuery ?? "",
+                                            page: widget.page,
+                                            totalPages: widget
+                                                    .locationId.isNotEmpty
+                                                ? (locationProfileProvider
+                                                            .resetTotalPage -
+                                                        1)
+                                                    .toString()
+                                                : widget.totalPages,
+                                          ),
+                                        ),
+                                      );
 
-                                  /*if(value == true) {
+                                      /*if(value == true) {
                                     if (mounted) {
                                       Navigator.pushAndRemoveUntil(
                                         context,
@@ -2071,7 +2160,7 @@ class _LocationProfileState extends State<LocationProfile>
                                       );
                                     }
                                   }*/
-                                }),
+                                    }),
                             // Todo: implement history feature
                             /* IconButton(
                               icon: Icon(Icons.history),
@@ -2767,6 +2856,39 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   void _handleSubDestinationTap() {
+    var userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+    final trialSubdestinations =
+        userProfileProvider.trialInfo['subDestinations'] ?? 0;
+    if (trialStatus != '' && trialSubdestinations < 1) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return MessageCard(
+            messageTextSpans: [
+              TextSpan(
+                text: 'You\'ve reached your limit for ',
+                style: CustomTypography(context).Body1,
+              ),
+              TextSpan(
+                text: '“creating campus”',
+                style: CustomTypography(context).Body1.copyWith(
+                      color: AppColors.warning,
+                    ),
+              ),
+              TextSpan(
+                text:
+                    '.  Consider upgrading your account to unlock more possibilities!',
+                style: CustomTypography(context).Body1,
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
     var typography = CustomTypography(context);
     var locationProfileProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);

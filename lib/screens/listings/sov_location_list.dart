@@ -5,18 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/rating_half_stars.dart';
-import 'package:green/design_system/components/rating_slider.dart';
 import 'package:green/models/my_location_list_model.dart';
-import 'package:green/providers/connections_provider.dart';
 import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/location_profile_provider.dart';
 import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/screens/listings/add_location_screen.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/listings/widgets/animated_progress_indicatiors.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:green/screens/listings/widgets/location_card.dart';
@@ -26,17 +18,14 @@ import 'package:green/screens/listings/widgets/overall_score_table.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:screenshot/screenshot.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/components/rating_bar.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../models/location_list_model.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
@@ -52,6 +41,8 @@ class SovLocationList extends StatefulWidget {
   final String subAccountName;
   final String sovID;
   final String sovName;
+  final String? initialProcessId;
+  final String? initialSubProcessId;
 
   const SovLocationList({
     super.key,
@@ -61,6 +52,8 @@ class SovLocationList extends StatefulWidget {
     this.subAccountName = '',
     this.sovID = '',
     this.sovName = '',
+    this.initialProcessId,
+    this.initialSubProcessId,
   });
 
   @override
@@ -125,7 +118,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
         context,
         "widget.accountId",
         "widget.subAccountId",
-        "widget.sovId",
+        widget.sovID,
         query,
         0,
         "forward",
@@ -158,7 +151,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       if (_tabController?.index == 0) {
         _selectedScreen = Screens.locationList;
         var locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 0;
+        locationListProvider.page = 1;
         Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
           context,
           "",
@@ -167,11 +160,13 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
           widget.accountID,
           widget.subAccountID,
           widget.sovID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
         ).then((value) => setState(() {}));
       } else {
         _selectedScreen = Screens.certifiedLocationList;
         var locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 0;
+        locationListProvider.page = 1;
         locationListProvider.clearRatingsFilter();
         Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(
           context,
@@ -181,6 +176,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
           widget.accountID,
           widget.subAccountID,
           widget.sovID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
         ).then((value) => setState(() {}));
         /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
         Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
@@ -212,6 +209,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       widget.accountID,
       widget.subAccountID,
       widget.sovID,
+      widget.initialProcessId,
+      widget.initialSubProcessId,
     ).then((value) => setState(() {}));
     Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(
       context,
@@ -221,6 +220,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       widget.accountID,
       widget.subAccountID,
       widget.sovID,
+      widget.initialProcessId,
+      widget.initialSubProcessId,
     ).then((value) => setState(() {}));
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
     _getMaintainancePeriod();
@@ -845,9 +846,11 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                 child: ListingsFilterScreen(
                   accountId: widget.accountID,
                   subAccountId: widget.subAccountID,
-                  sovId: "widget.sovId",
+                  sovId: widget.sovID,
                   searchQuery: locationQuery,
                   showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
+                  initialProcessId: widget.initialProcessId,
+                  initialSubProcessId: widget.initialSubProcessId,
                 ),
               ),
             ),
@@ -1006,6 +1009,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.sovID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1030,6 +1035,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.sovID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1087,6 +1094,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
                                     );
                                   },
                                 ),
@@ -1110,6 +1119,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.sovID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1134,6 +1145,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                             40,
                             widget.accountID,
                             widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
                           );
                         },
                         child: const Text(
@@ -1277,6 +1290,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.sovID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
 
                                   Navigator.of(context).pop();
@@ -1302,6 +1317,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                 widget.accountID,
                                 widget.subAccountID,
                                 widget.sovID,
+                                widget.initialProcessId,
+                                widget.initialSubProcessId,
                               );
                             },
                           ),
@@ -1333,6 +1350,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                         40, // Page size
                         widget.accountID,
                         widget.subAccountID,
+                        widget.initialProcessId,
+                        widget.initialSubProcessId,
                       );
                       return SizedBox();
                     }
@@ -1419,6 +1438,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                             40,
                             widget.accountID,
                             widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
                           );
 
                           Navigator.of(context).pop();
@@ -1444,6 +1465,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                         widget.accountID,
                         widget.subAccountID,
                         widget.sovID,
+                        widget.initialProcessId,
+                        widget.initialSubProcessId,
                       );
                     },
                   );
@@ -1490,6 +1513,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1514,6 +1539,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1572,6 +1599,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                       40,
                                       widget.accountID,
                                       widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
                                     );
                                   },
                                 ),
@@ -1595,6 +1624,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
                                   );
                                 },
                               ),
@@ -1619,6 +1650,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                             40,
                             widget.accountID,
                             widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
                           );
                         },
                         child: const Text(
@@ -1693,6 +1726,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                         40,
                         widget.accountID,
                         widget.subAccountID,
+                        widget.initialProcessId,
+                        widget.initialSubProcessId,
                       );
                       return SizedBox();
                     }
@@ -1790,6 +1825,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
               widget.accountID,
               widget.subAccountID,
               widget.sovID,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
             );
 
             Navigator.of(context).pop();
@@ -1815,6 +1852,8 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
           widget.accountID,
           widget.subAccountID,
           widget.sovID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
         );
       },
     );
@@ -1896,7 +1935,7 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
       // Make API call to delete locations
       await Provider.of<LocationListProvider>(context, listen: false)
           .deleteLocations(context, "widget.accountId", "widget.subAccountId",
-          "widget.sovId", locationList);
+          widget.sovID, locationList);
 
       // Clear selections
       setState(() {

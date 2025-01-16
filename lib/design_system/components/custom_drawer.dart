@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green/screens/event/notification_map_screen.dart';
 import 'package:green/screens/listings/hazard_proto.dart';
 import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
@@ -15,6 +16,7 @@ import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
+import '../../screens/listings/news_feed_screen.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/onboarding/splash_screen.dart';
 import '../../service/language_service.dart';
@@ -43,10 +45,19 @@ class _CustomDrawerState extends State<CustomDrawer> {
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer = Debouncer(milliseconds: 300); // Debouncer with 300ms delay
 
+  late ScrollController _scrollController;
+
   @override
   void initState() {
+    _scrollController = ScrollController();
     _getClaims();
     super.initState();
+  }
+
+  @override
+  dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   _getClaims() async {
@@ -144,39 +155,55 @@ class _CustomDrawerState extends State<CustomDrawer> {
               ),
             ),
             Expanded(
-              child: Consumer<DrawerSelectionProvider>(
-                builder: (context, provider, child) {
-                  return ListView(
-                    physics: ClampingScrollPhysics(),
-                    padding: EdgeInsets.only(top: 0),
-                    children: <Widget>[
-                      _buildDrawerItem(
-                        context,
-                        provider,
-                        title: "Dashboard",
-                        icon: Icons.home,
-                        onTap: () {
-                          provider.setSelectedItem("dashboard");
-                          Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => DashboardScreen()));
-                        },
-                        isSelected: provider.selectedItem == "dashboard",
-                      ),
-                      _buildDrawerItem(
-                        context,
-                        provider,
-                        title: "Accounts",
-                        icon: Icons.account_balance_wallet,
-                        onTap: () {
-                          provider.setSelectedItem("accounts");
-                          Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => AccountListScreen()));
-                        },
-                        isSelected: provider.selectedItem == "accounts",
-                      ),
-                    ],
-                  );
-                },
+              child: Scrollbar(
+                controller: _scrollController,
+                child: Consumer<DrawerSelectionProvider>(
+                  builder: (context, provider, child) {
+                    return ListView(
+                      physics: ClampingScrollPhysics(),
+                      padding: EdgeInsets.only(top: 0),
+                      children: <Widget>[
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Dashboard",
+                          icon: Icons.home,
+                          onTap: () {
+                            provider.setSelectedItem("dashboard");
+                            Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => DashboardScreen()));
+                          },
+                          isSelected: provider.selectedItem == "dashboard",
+                        ),
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Accounts",
+                          icon: Icons.account_balance_wallet,
+                          onTap: () {
+                            provider.setSelectedItem("accounts");
+                            Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => AccountListScreen()));
+                          },
+                          isSelected: provider.selectedItem == "accounts",
+                        ),
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "News Feed",
+                          icon: Icons.space_dashboard,
+                          onTap: () {
+                            provider.setSelectedItem("news");
+                            Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => NewsFeedScreen()));
+                          },
+                          isSelected: provider.selectedItem == "news",
+                        ),
+
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
             Padding(

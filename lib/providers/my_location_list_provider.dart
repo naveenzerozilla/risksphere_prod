@@ -816,6 +816,7 @@ class MyLocationListProvider extends ChangeNotifier {
     BuildContext context,
     String? accountID,
     String? subAccountID,
+  {String? processId, String? subProcessId}
   ) async {
     var typography = CustomTypography(context);
     try {
@@ -826,7 +827,20 @@ class MyLocationListProvider extends ChangeNotifier {
       print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
-      var url = AppConstant.MY_LOCATION +
+      var url;
+      if (processId != null && subProcessId != null) {
+        url = AppConstant.MY_LOCATION +
+            "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId&sub_process_id=$subProcessId";
+
+      } else if (processId != null) {     url = AppConstant.MY_LOCATION +
+          "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
+
+      } else {
+        url = AppConstant.MY_LOCATION +
+            "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
+      }
+
+      url = AppConstant.MY_LOCATION +
           "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
 
       print(url);
@@ -881,6 +895,7 @@ class MyLocationListProvider extends ChangeNotifier {
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchLocationList(BuildContext context, String searchQuery,
       int page, int pageSize, String? accountID, String? subAccountID,
+      String? processId, String? subProcessId,
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
@@ -938,6 +953,14 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (_selectedCampusIds.isNotEmpty) {
         url += "&campus_id=${_selectedCampusIds.join(",")}";
+      }
+
+      if (processId != null) {
+        url += "&process_id=$processId";
+      }
+
+      if (subProcessId != null) {
+        url += "&sub_process_id=$subProcessId";
       }
 
       print(url);
@@ -1006,6 +1029,7 @@ class MyLocationListProvider extends ChangeNotifier {
       int pageSize,
       String? accountID,
       String? subAccountID,
+      String? processId, String? subProcessId,
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
@@ -1058,6 +1082,14 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (_selectedCampusIds.isNotEmpty) {
         url += "&campus_id=${_selectedCampusIds.join(",")}";
+      }
+
+      if (processId != null) {
+        url += "&process_id=$processId";
+      }
+
+      if (subProcessId != null) {
+        url += "&sub_process_id=$subProcessId";
       }
 
       print(url);

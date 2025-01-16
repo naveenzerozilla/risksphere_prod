@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:country_list_picker/country_list_picker.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
@@ -30,9 +32,7 @@ import '../../utils/utils.dart';
 
 import 'package:country_picker/country_picker.dart' as country_picker;
 
-
 class CreateAccountScreen extends StatefulWidget {
-
   final UserCredential? userCredential;
 
   const CreateAccountScreen({super.key, this.userCredential});
@@ -49,7 +49,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   TextEditingController nameController = TextEditingController();
   TextEditingController displayNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
-  PhoneController mobileController = PhoneController(PhoneNumber(nsn:  '', isoCode: IsoCode.US));
+  PhoneController mobileController =
+      PhoneController(PhoneNumber(nsn: '', isoCode: IsoCode.US));
   TextEditingController countryCodeController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
@@ -58,7 +59,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   String _selectedCountryCode = '+1';
 
   List<Categories> _selectedRoles = [];
-
 
   String verifyResult = "";
   bool isCaptchaVerified = false;
@@ -90,7 +90,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   //bool isNewUser = false;
 
-
   String _corporateAdminHintText = '+1 (XXX) XXX-XXXX';
   String _selectedAdminCorporateCountry = 'US';
   String _selectedCorporateCountryName = 'United States';
@@ -106,7 +105,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void initState() {
     super.initState();
     _selectedOption = SignUpOptions.individual;
-   /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
+    /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
         isNewUser = true;
       });
@@ -142,12 +141,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     setState(() {
       print('Selected Corporate Country: $_selectedAdminCorporateCountry');
       print('Selected Individual Country: $_selectedIndividualCountry');
-      _corporateAdminHintText = countryPlaceholders[_selectedAdminCorporateCountry] ?? '';
-      _individualHintText = countryPlaceholders[_selectedIndividualCountry] ?? '';
+      _corporateAdminHintText =
+          countryPlaceholders[_selectedAdminCorporateCountry] ?? '';
+      _individualHintText =
+          countryPlaceholders[_selectedIndividualCountry] ?? '';
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -158,46 +157,48 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
-            child: Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+            child:
+                Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
               return Column(
-                  children: [
-                    Stack(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Image.asset(
-                                'assets/images/loginImage.png',
-                                fit: BoxFit.fitWidth,
-                              ),
+                children: [
+                  Stack(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Image.asset(
+                              'assets/images/loginImage.png',
+                              fit: BoxFit.fitWidth,
                             ),
-                          ],
-                        ),
-                        Positioned.fill(
-                          child: Center(
-                              child: Text(
-                                LanguageService.getTranslated(context, "login_image_text"),
-                            style: typography.H5_Regular,
-                          )),
-                        ),
-                      ],
-                    ),
-                    authNotifier.isNewUser
-                        ? _almostThereForm()
-                    // Create Account Form
-                    :_createAccountForm(),
-                    // Create Account Button
-                    //SizedBox(height: CustomSpacing.four),
+                          ),
+                        ],
+                      ),
+                      Positioned.fill(
+                        child: Center(
+                            child: Text(
+                          LanguageService.getTranslated(
+                              context, "login_image_text"),
+                          style: typography.H5_Regular,
+                        )),
+                      ),
+                    ],
+                  ),
+                  authNotifier.isNewUser
+                      ? _almostThereForm()
+                      // Create Account Form
+                      : _createAccountForm(),
+                  // Create Account Button
+                  //SizedBox(height: CustomSpacing.four),
 
-                    /*Container(
+                  /*Container(
                       margin: EdgeInsets.fromLTRB(16, 0, 16, 0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Expanded(
                             child: RecaptchaV2(
-                              apiKey: "6LfXp1UpAAAAAEku9BSeBt6JJxXrlvtYjh--X4D7",
-                              apiSecret: "6LfXp1UpAAAAAIFVynIPkooVWZi5qN8u16SYJTVt",
+                              apiKey: Constants.recaptchaKey,
+                              apiSecret: Constants.recaptchaSecret,
                               controller: recaptchaV2Controller,
                               onVerifiedError: (err) {
                                 print(err);
@@ -223,29 +224,29 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ],
                       ),
                     ),*/
-                    SizedBox(height: CustomSpacing.eight),
-                    Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 60,
-                              margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                              child: authNotifier.isSigningUp
-                                  ? Center(child: CircularProgressIndicator())
-                                  : ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primaryMain,
-                                        foregroundColor:
-                                            Theme.of(context).colorScheme.onSurface,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 22, vertical: 8),
-                                      ),
-                                      onPressed: () async {
-                                        if (_formKey.currentState!.validate()) {
-                                         /* if(isCaptchaVerified == false) {
+                  SizedBox(height: CustomSpacing.eight),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 60,
+                          margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          child: authNotifier.isSigningUp
+                              ? Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryMain,
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 22, vertical: 8),
+                                  ),
+                                  onPressed: () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      /* if(isCaptchaVerified == false) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
                                                 content: Text(
@@ -254,17 +255,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             );
                                             return;
                                           }*/
-                                          if(authNotifier.isNewUser) {
-                                            String result = await authNotifier
-                                                .signUpIndividualWithGoogle(
-                                              widget.userCredential!,
-                                              mobileController.value?.nsn??"",
-                                              mobileController.value?.countryCode??"",
-                                              _selectedRoles,
-                                              context,
-                                            );
-                                            if(result == 'role_assigned') {
-                                              /*Navigator.push(context, MaterialPageRoute(builder: (context) => *//*Home(
+                                      if (authNotifier.isNewUser) {
+                                        String result = await authNotifier
+                                            .signUpIndividualWithGoogle(
+                                          widget.userCredential!,
+                                          mobileController.value?.nsn ?? "",
+                                          mobileController.value?.countryCode ??
+                                              "",
+                                          _selectedRoles,
+                                          context,
+                                        );
+                                        if (result == 'role_assigned') {
+                                          /*Navigator.push(context, MaterialPageRoute(builder: (context) => */ /*Home(
                                                 useLightMode: false,
                                                 useMaterial3: true,
                                                 colorSelected: ColorSeed.baseColor,
@@ -274,125 +276,214 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 handleColorSelect: handleColorSelect,
                                                 handleImageSelect: handleImageSelect,
                                                 colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                                              )*//*HomeScreen()));*/
-                                              final _googleSignIn = GoogleSignIn();
-                                              var isSignedIn = await _googleSignIn.isSignedIn();
-                                              if (isSignedIn) await _googleSignIn.disconnect();
-                                              FirebaseAuth.instance.signOut();
+                                              )*/ /*HomeScreen()));*/
+                                          final _googleSignIn = GoogleSignIn();
+                                          var isSignedIn =
+                                              await _googleSignIn.isSignedIn();
+                                          if (isSignedIn)
+                                            await _googleSignIn.disconnect();
+                                          FirebaseAuth.instance.signOut();
 
-
-                                              showDialog(
-                                                context: context,
-                                                builder: (BuildContext context) {
-                                                  return AlertDialog(
-                                                    title: Text(
-                                                      LanguageService.getTranslated(context,"register_non_corporate_success_status_title"),
-
-
-                                                      style: typography.ButtonLarge,),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MyApp()));
-                                                        },
-                                                        child: Row(
-                                                          children: [
-                                                            Icon(Icons.arrow_back),
-                                                            SizedBox(width: CustomSpacing.four),
-                                                            Text('Back to Login'),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
-                                              );
-                                            }
-                                          }
-                                          else if (_selectedOption ==
-                                              SignUpOptions.individual) {
-                                            print('Individual Account');
-                                            print('Name: ${nameController.text}');
-                                            print(
-                                                'Display Name: ${displayNameController.text}');
-                                            print('Email: ${emailController.text}');
-                                            print(
-                                                'Mobile: $_selectedCountryCode ${mobileController.value?.nsn??""}');
-                                            print('Roles: $_selectedRoles');
-                                            print('Account Type: $_selectedOption');
-                                            if(_selectedCorporateCountryName.isEmpty) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      LanguageService.getTranslated(context,"usermanagement_app_corporate_create_company_country_invalid_error_text")),
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "register_non_corporate_success_status_title"),
+                                                  style: typography.ButtonLarge,
                                                 ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pushReplacement(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder:
+                                                                  (context) =>
+                                                                      MyApp()));
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.arrow_back),
+                                                        SizedBox(
+                                                            width: CustomSpacing
+                                                                .four),
+                                                        Text('Back to Login'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                               );
-                                            }
-                                            authNotifier
-                                                .signUpIndividualWithEmailAndPassword(
-                                              emailController.text,
-                                              passwordController.text,
-                                              nameController.text,
-                                              displayNameController.text,
-                                              mobileController.value?.nsn??"",
-                                              mobileController.value?.countryCode??"",
-                                              _selectedRoles,
-                                              context,
-                                            );
-                                          }
-                                          else {
-                                            print('Corporate Account');
-                                            print(
-                                                'Company Legal Name: ${companyName}');
-                                            print(
-                                                'Company Type: $selectedCompanyType');
-                                            print(
-                                                'Company Display Name: ${companyDisplayNameController.text}');
-                                            print('Admin Email: ${adminEmailController.text}');
-                                            print(
-                                                'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
-                                            print('Roles: $_selectedRoles');
-                                            print('Account Type: $_selectedOption');
-                                            authNotifier
-                                                .signUpCorporateWithEmailAndPassword(
-                                              companyId,
-                                              companyName,
-                                              selectedCompanyType!,
-                                              companyDisplayNameController.text,
-                                              adminNameController.text,
-                                              adminEmailController.text,
-                                              mobileController.value?.countryCode??"",
-
-                                              mobileController.value?.nsn??"",
-                                              adminPasswordController.text,
-                                              !_enableCompanyTypeDropdown?selectedCompanyRole: Roles(isForIndividual: true, isApplicableForTrial: false, role: "admin", name: "Admin", isMultipleRoleEnabled: false, id: ""),
-                                              context,
-                                              selectedCompany,
-                                              _selectedCorporateCountryName,
-                                            );
-
-                                          }
+                                            },
+                                          );
                                         }
-                                      },
-                                      child: Text(
-                                        // If selected roles contains a role with trial period, show 'Start Trial' else 'Create Account'
-                                        _selectedRoles.any(
-                                                (role) => role.isApplicableForTrial)
-                                            ? LanguageService.getTranslated(context,"register_non_corporate_freetrail_btn")
-                                            : LanguageService.getTranslated(context,"usermanagement_cuser_create_account_btn"),
-                                        style:
-                                            typography.ButtonLarge.copyWith(
-                                                color: Colors.black),
-                                      ),
-                                    ),
-                            ),
+                                      } else if (_selectedOption ==
+                                          SignUpOptions.individual) {
+                                        print('Individual Account');
+                                        print('Name: ${nameController.text}');
+                                        print(
+                                            'Display Name: ${displayNameController.text}');
+                                        print('Email: ${emailController.text}');
+                                        print(
+                                            'Mobile: $_selectedCountryCode ${mobileController.value?.nsn ?? ""}');
+                                        print('Roles: $_selectedRoles');
+                                        print('Account Type: $_selectedOption');
+                                        if (_selectedCorporateCountryName
+                                            .isEmpty) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "usermanagement_app_corporate_create_company_country_invalid_error_text")),
+                                            ),
+                                          );
+                                        }
+                                        bool isApplicableForTrial = authNotifier.companyTypeList
+                                                ?.where((companyType) =>
+                                                    companyType.type
+                                                            .toLowerCase() ==
+                                                        'individual_account')
+                                                .first
+                                                .isApplicableForTrial ??
+                                            false;
+                                        int trialPeriodDays = authNotifier.companyTypeList
+                                                ?.where((companyType) =>
+                                                    companyType.type
+                                                            .toLowerCase() ==
+                                                        'individual_account')
+                                                .first
+                                                .trialPeriodDays ??
+                                            0;
+                                        authNotifier
+                                            .signUpIndividualWithEmailAndPassword(
+                                          emailController.text,
+                                          passwordController.text,
+                                          nameController.text,
+                                          displayNameController.text,
+                                          mobileController.value?.nsn ?? "",
+                                          mobileController.value?.countryCode ??
+                                              "",
+                                          _selectedRoles,
+                                          isApplicableForTrial,
+                                          trialPeriodDays,
+                                          context,
+                                        );
+                                      } else {
+                                        print('Corporate Account');
+                                        print(
+                                            'Company Legal Name: ${companyName}');
+                                        print(
+                                            'Company Type: $selectedCompanyType');
+                                        print(
+                                            'Company Display Name: ${companyDisplayNameController.text}');
+                                        print(
+                                            'Admin Email: ${adminEmailController.text}');
+                                        print(
+                                            'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
+                                        print('Roles: $_selectedRoles');
+                                        print('Account Type: $_selectedOption');
+                                        bool isApplicableForTrial = authNotifier.companyTypeList
+                                                ?.where((companyType) =>
+                                                    companyType.id ==
+                                                    selectedCompanyType?.id)
+                                                .first
+                                                .isApplicableForTrial ??
+                                            false;
+                                        int trialPeriodDays = authNotifier.companyTypeList
+                                                ?.where((companyType) =>
+                                                    companyType.id ==
+                                                    selectedCompanyType?.id)
+                                                .first
+                                                .trialPeriodDays ?? 0;
+                                        authNotifier
+                                            .signUpCorporateWithEmailAndPassword(
+                                          companyId,
+                                          companyName,
+                                          selectedCompanyType!,
+                                          companyDisplayNameController.text,
+                                          adminNameController.text,
+                                          adminEmailController.text,
+                                          mobileController.value?.countryCode ??
+                                              "",
+                                          mobileController.value?.nsn ?? "",
+                                          adminPasswordController.text,
+                                          !_enableCompanyTypeDropdown
+                                              ? selectedCompanyRole
+                                              : Roles(
+                                                  isForIndividual: true,
+                                                  isApplicableForTrial: false,
+                                                  role: "admin",
+                                                  name: "Admin",
+                                                  isMultipleRoleEnabled: false,
+                                                  id: ""),
+
+                                          context,
+                                          selectedCompany,
+                                          isApplicableForTrial,
+                                          trialPeriodDays,
+                                          _selectedCorporateCountryName,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: _selectedOption == SignUpOptions.individual?
+                                  Text(
+                                    // If companyTypeList contains an individual_account with isApplicableForTrial as true, show 'Start Trial' else 'Create Account'
+                                    (authNotifier.companyTypeList ?? [])
+                                        .any((companyType) {
+                                      log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
+                                      return companyType.type.toLowerCase() == 'individual_account' &&
+                                          companyType.isApplicableForTrial;
+                                    })
+                                        ? "Start your ${(authNotifier.companyTypeList ?? [])
+                                        .where((companyType) {
+                                      log("Processing companyType for trial days: ${companyType.type}");
+                                      return companyType.type.toLowerCase() == 'individual_account' &&
+                                          companyType.isApplicableForTrial;
+                                    })
+                                        .map((companyType) {
+                                      log("Free trial days: ${companyType.trialPeriodDays}");
+                                      return companyType.trialPeriodDays;
+                                    })
+                                        .first}-day free trial"
+                                        : LanguageService.getTranslated(
+                                        context, "usermanagement_cuser_create_account_btn"),
+                                    style: typography.ButtonLarge.copyWith(color: Colors.black),
+                                  ):Text(
+                                    // Check selected_company_type in the companyTypeList
+                                    (authNotifier.companyTypeList ?? []).any((companyType) {
+                                      log("Checking selectedCompanyType: ${selectedCompanyType}");
+                                      return companyType.id == selectedCompanyType?.id &&
+                                          companyType.isApplicableForTrial;
+                                    })
+                                        ? "Start your ${(authNotifier.companyTypeList ?? [])
+                                        .where((companyType) {
+                                      return companyType.id == selectedCompanyType?.id &&
+                                          companyType.isApplicableForTrial;
+                                    })
+                                        .map((companyType) {
+                                      log("Selected Free trial days: ${companyType.trialPeriodDays}");
+                                      return companyType.trialPeriodDays;
+                                    })
+                                        .first}-day free trial"
+                                        : LanguageService.getTranslated(
+                                        context, "usermanagement_cuser_create_account_btn"),
+                                    style: typography.ButtonLarge.copyWith(color: Colors.black),
+                                  ),
+
+
                           ),
-                        ],
+                        ),
                       ),
-                  ],
-                );
-              }
-            ),
+                    ],
+                  ),
+                ],
+              );
+            }),
           ),
         ),
       ),
@@ -409,9 +500,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           Center(
             child: Text(
               _selectedOption == SignUpOptions.individual
-                  ? LanguageService.getTranslated(context,"register_non_corporate_create_user_account_title")
-                  :
-              LanguageService.getTranslated(context,"register_corporate_create_corporate_act_title"),
+                  ? LanguageService.getTranslated(context,
+                      "register_non_corporate_create_user_account_title")
+                  : LanguageService.getTranslated(
+                      context, "register_corporate_create_corporate_act_title"),
               style: typography.H5_Regular.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
               textAlign: TextAlign.center,
@@ -423,9 +515,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               Expanded(
                 child: RadioListTile<SignUpOptions>(
                   contentPadding: EdgeInsets.zero,
-                  title:  Text(
-                      LanguageService.getTranslated(context,"register_non_corporate_radio_Individual")
-                  ),
+                  title: Text(LanguageService.getTranslated(
+                      context, "register_non_corporate_radio_Individual")),
                   value: SignUpOptions.individual,
                   groupValue: _selectedOption,
                   onChanged: (value) {
@@ -439,9 +530,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               Expanded(
                 child: RadioListTile<SignUpOptions>(
                   contentPadding: EdgeInsets.zero,
-                  title:  Text(
-                      LanguageService.getTranslated(context,"register_non_corporate_radio_Corporate")
-                      ),
+                  title: Text(LanguageService.getTranslated(
+                      context, "register_non_corporate_radio_Corporate")),
                   value: SignUpOptions.corporate,
                   groupValue: _selectedOption,
                   onChanged: (value) {
@@ -493,19 +583,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Social Media Buttons
-        Consumer<AuthNotifier>(
-          builder: (context, authNotifier, child) {
-            return SocialMediaButton(
-              onPressed: () async {
-                // Add your onPressed function here
-                await authNotifier.signInWithGoogle(context: context);
-              },
-              buttonText:
-              LanguageService.getTranslated(context,"login_googlebutton"),
-              iconPath: 'assets/images/googleLogo.svg',
-            );
-          }
-        ),
+        Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+          return SocialMediaButton(
+            onPressed: () async {
+              // Add your onPressed function here
+              await authNotifier.signInWithGoogle(context: context);
+            },
+            buttonText:
+                LanguageService.getTranslated(context, "login_googlebutton"),
+            iconPath: 'assets/images/googleLogo.svg',
+          );
+        }),
         SizedBox(
           height: CustomSpacing.one,
         ),
@@ -513,7 +601,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           onPressed: () {
             // Add your onPressed function here
           },
-          buttonText: LanguageService.getTranslated(context,"login_microsoft_button"),
+          buttonText:
+              LanguageService.getTranslated(context, "login_microsoft_button"),
           iconPath: 'assets/images/microsoftLogo.svg',
         ),
         SizedBox(height: CustomSpacing.eight),
@@ -530,7 +619,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
             SizedBox(width: CustomSpacing.three),
             Text(
-              LanguageService.getTranslated(context,"register_non_corporate_register_manually"),
+              LanguageService.getTranslated(
+                  context, "register_non_corporate_register_manually"),
               style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),
@@ -547,12 +637,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Name
         TextFormField(
           decoration: InputDecoration(
-            labelText:
-
-            LanguageService.getTranslated(context,"user_profile_user_management_name_filed_label"),
-
-            hintText:   LanguageService.getTranslated(context,"user_profile_user_management_name_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "user_profile_user_management_name_filed_label"),
+            hintText: LanguageService.getTranslated(
+                context, "user_profile_user_management_name_placeholder"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
@@ -572,9 +660,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Display Name
         TextFormField(
           decoration: InputDecoration(
-            labelText:   LanguageService.getTranslated(context,"usermanagement_display_name_field_label"),
-
-            hintText:  LanguageService.getTranslated(context,"usermanagement_display_name_placeholder"),
+            labelText: LanguageService.getTranslated(
+                context, "usermanagement_display_name_field_label"),
+            hintText: LanguageService.getTranslated(
+                context, "usermanagement_display_name_placeholder"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
@@ -595,14 +684,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Email
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(context,"register_non_corporate_emailfield_label"),
-
-            hintText: LanguageService.getTranslated(context,"register_non_corporate_emailfield_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "register_non_corporate_emailfield_label"),
+            hintText: LanguageService.getTranslated(
+                context, "register_non_corporate_emailfield_placeholder"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
           ),
+          keyboardType: TextInputType.emailAddress,
           validator: (value) {
             if (value == null || value.isEmpty || regextest(value) == false) {
               return 'Enter a valid email address';
@@ -623,7 +713,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 shouldFormat: true,
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
+                  labelText: LanguageService.getTranslated(
+                      context, "register_mobile_number"),
                   hintText: _individualHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
@@ -638,8 +729,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 flagShape: BoxShape.circle,
                 flagSize: 35,
                 onChanged: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
+                  if (p == null) return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
                     _selectedIndividualCountry = p.isoCode.name;
@@ -648,14 +738,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   print('changed ${p.countryCode}');
                 },
                 onSaved: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
+                  if (p == null) return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
                   });
                   print('changed ${p.countryCode}');
                 },
-
               ),
             ),
           ],
@@ -663,7 +751,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         // Password
         TextFormField(
-
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: _showPasswordIndividual
@@ -675,10 +762,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 });
               },
             ),
-            labelText:LanguageService.getTranslated(context,"register_non_corporate_passwordfield_label"),
-
-            hintText: LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "register_non_corporate_passwordfield_label"),
+            hintText: LanguageService.getTranslated(
+                context, "register_corporate_password_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           obscureText: !_showPasswordIndividual,
@@ -690,13 +777,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
           controller: passwordController,
-
         ),
         SizedBox(height: CustomSpacing.two),
         // Confirm Password
         TextFormField(
           decoration: InputDecoration(
-          /*  suffixIcon: IconButton(
+            /*  suffixIcon: IconButton(
               icon: _showPasswordConfirmationIndividual
                   ? Icon(Icons.visibility)
                   : Icon(Icons.visibility_off),
@@ -706,10 +792,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 });
               },
             ),*/
-            labelText:  LanguageService.getTranslated(context,"register_corporate_confirm_password_field_label"),
-
-            hintText:LanguageService.getTranslated(context,"register_corporate_confirm_password_field_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "register_corporate_confirm_password_field_label"),
+            hintText: LanguageService.getTranslated(context,
+                "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           obscureText: !_showPasswordIndividual,
@@ -726,8 +812,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Text(
-              LanguageService.getTranslated(context,"categorymanagement_category_role_field_label"),
-
+              LanguageService.getTranslated(
+                  context, "categorymanagement_category_role_field_label"),
               style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
             ),
@@ -773,8 +859,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Handle input changes
               },
               decoration: InputDecoration(
-                labelText:  LanguageService.getTranslated(context,"register_non_corporate_role_field_label"),
-
+                labelText: LanguageService.getTranslated(
+                    context, "register_non_corporate_role_field_label"),
                 hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -787,6 +873,173 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       builder: (BuildContext context) {
                         return RolesBottomSheet(
                           showCorporateSwitch: true,
+                          options: roles,
+                          selectedRoles: _selectedRoles,
+                          addChip: _addChip,
+                          removeChip: _removeChip,
+                          removeAllChips: _removeAllChips,
+                          selectedOption:
+                              _selectedOption ?? SignUpOptions.individual,
+                          onOptionChanged: (SignUpOptions signUpOptions) {
+                            setState(() {
+                              _selectedOption = signUpOptions;
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 4.0,
+              left: 10.0,
+              right: 10.0,
+              child: Container(
+                margin: const EdgeInsets.only(right: 32.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _selectedRoles
+                        .map(
+                          (value) => Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Chip(
+                              label: Text(value.name),
+                              deleteIcon: Icon(Icons.cancel),
+                              onDeleted: () => _removeChip(value),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  _signUpAdditionFields() {
+    var typography = CustomTypography(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // mobile (optional)
+        Row(
+          children: [
+            Expanded(
+              child: PhoneInput(
+                key: const Key('phone-field'),
+                controller: mobileController,
+                shouldFormat: true,
+                defaultCountry: IsoCode.US,
+                decoration: InputDecoration(
+                  labelText: LanguageService.getTranslated(
+                      context, "register_mobile_number"),
+                  hintText: LanguageService.getTranslated(context,
+                      "register_non_corporate_mobilefield_placeholder"),
+                  border: const OutlineInputBorder(),
+                  counterText: '',
+                ),
+                countrySelectorNavigator: CountrySelectorNavigator.dialog(
+                  showSearchInput: true,
+                  searchInputDecoration: InputDecoration(
+                    hintText: 'Search Country',
+                  ),
+                ),
+                showFlagInInput: true,
+                flagShape: BoxShape.circle,
+                flagSize: 35,
+                onChanged: (PhoneNumber? p) {
+                  if (p == null) return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
+                onSaved: (PhoneNumber? p) {
+                  if (p == null) return;
+                  setState(() {
+                    _selectedCountryCode = p.countryCode;
+                  });
+                  print('changed ${p.countryCode}');
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: CustomSpacing.two),
+        Row(
+          children: [
+            Text(
+              LanguageService.getTranslated(
+                  context, "register_non_corporate_role_field_label"),
+              style: typography.Subtitle1.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground),
+            ),
+            Expanded(
+              child: Divider(
+                thickness: 1,
+                color: Colors.white.withOpacity(0.11999999731779099),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: CustomSpacing.two),
+        Stack(
+          children: [
+            TextField(
+              readOnly: true,
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  useSafeArea: true,
+                  isScrollControlled: true,
+                  builder: (BuildContext context) {
+                    return RolesBottomSheet(
+                      showCorporateSwitch: false,
+                      options: roles,
+                      selectedRoles: _selectedRoles,
+                      addChip: _addChip,
+                      removeChip: _removeChip,
+                      removeAllChips: _removeAllChips,
+                      selectedOption:
+                          _selectedOption ?? SignUpOptions.individual,
+                      onOptionChanged: (SignUpOptions option) {
+                        setState(() {
+                          _selectedOption = option;
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+              controller: _textEditingController,
+              onChanged: (value) {
+                // Handle input changes
+              },
+              decoration: InputDecoration(
+                labelText: LanguageService.getTranslated(
+                    context, "usermanagement_roles_label"),
+                hintText: _selectedRoles.isEmpty
+                    ? LanguageService.getTranslated(
+                        context, "usermanagement_cuser_roles_placeholder")
+                    : "",
+                border: OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.arrow_drop_down),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      builder: (BuildContext context) {
+                        return RolesBottomSheet(
+                          showCorporateSwitch: false,
                           options: roles,
                           selectedRoles: _selectedRoles,
                           addChip: _addChip,
@@ -837,169 +1090,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  _signUpAdditionFields() {
-    var typography = CustomTypography(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // mobile (optional)
-        Row(
-          children: [
-            Expanded(
-              child: PhoneInput(
-                key: const Key('phone-field'),
-                controller: mobileController,
-                shouldFormat: true,
-                defaultCountry: IsoCode.US,
-                decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
-                  hintText: LanguageService.getTranslated(context, "register_non_corporate_mobilefield_placeholder"),
-                  border: const OutlineInputBorder(),
-                  counterText: '',
-                ),
-                countrySelectorNavigator: CountrySelectorNavigator.dialog(
-                  showSearchInput: true,
-                  searchInputDecoration: InputDecoration(
-                    hintText: 'Search Country',
-                  ),
-                ),
-                showFlagInInput: true,
-                flagShape: BoxShape.circle,
-                flagSize: 35,
-                onChanged: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                  });
-                  print('changed ${p.countryCode}');
-                },
-                onSaved: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                  });
-                  print('changed ${p.countryCode}');
-                },
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: CustomSpacing.two),
-        Row(
-          children: [
-            Text(
-              LanguageService.getTranslated(context,"register_non_corporate_role_field_label"),
-
-              style: typography.Subtitle1.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground),
-            ),
-            Expanded(
-              child: Divider(
-                thickness: 1,
-                color: Colors.white.withOpacity(0.11999999731779099),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: CustomSpacing.two),
-        Stack(
-          children: [
-            TextField(
-              readOnly: true,
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  useSafeArea: true,
-                  isScrollControlled: true,
-                  builder: (BuildContext context) {
-                    return RolesBottomSheet(
-                      showCorporateSwitch: false,
-                      options: roles,
-                      selectedRoles: _selectedRoles,
-                      addChip: _addChip,
-                      removeChip: _removeChip,
-                      removeAllChips: _removeAllChips,
-                      selectedOption:
-                      _selectedOption ?? SignUpOptions.individual,
-                      onOptionChanged: (SignUpOptions option) {
-                        setState(() {
-                          _selectedOption = option;
-                        });
-                      },
-                    );
-                  },
-                );
-              },
-              controller: _textEditingController,
-              onChanged: (value) {
-                // Handle input changes
-              },
-              decoration: InputDecoration(
-                labelText:   LanguageService.getTranslated(context,"usermanagement_roles_label"),
-                hintText: _selectedRoles.isEmpty ?  LanguageService.getTranslated(context,"usermanagement_cuser_roles_placeholder") : "",
-                border: OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_drop_down),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      useSafeArea: true,
-                      isScrollControlled: true,
-                      builder: (BuildContext context) {
-                        return RolesBottomSheet(
-                          showCorporateSwitch: false,
-                          options: roles,
-                          selectedRoles: _selectedRoles,
-                          addChip: _addChip,
-                          removeChip: _removeChip,
-                          removeAllChips: _removeAllChips,
-                          selectedOption:
-                          _selectedOption ?? SignUpOptions.individual,
-                          onOptionChanged: (SignUpOptions signUpOptions) {
-                            setState(() {
-                              _selectedOption = signUpOptions;
-                            });
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: 10.0,
-              left: 10.0,
-              right: 10.0,
-              child: Container(
-                margin: const EdgeInsets.only(right: 32.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _selectedRoles
-                        .map(
-                          (value) => Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Chip(
-                          label: Text(value.name),
-                          deleteIcon: Icon(Icons.cancel),
-                          onDeleted: () => _removeChip(value),
-                        ),
-                      ),
-                    )
-                        .toList(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   _corporateAccountUI() {
     var typography = CustomTypography(context);
     print('Corporate Country: $_selectedCorporateCountryName');
@@ -1012,11 +1102,29 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Expanded(
-              child: CountryPickerFlagName(onCountryChange: !_enableCountryDropdown? null: (country) {
-                setState(() {
-                  _selectedCorporateCountryName = country.name;
-                });
-              }, initialValue: country_picker.Country(phoneCode: '1', countryCode: getCountryCodeFromName(_selectedCorporateCountryName)??"", e164Sc: 1, geographic: true, level: 1, name: _selectedCorporateCountryName, example: '', displayName: '', displayNameNoCountryCode: '', e164Key: '', ),),
+              child: CountryPickerFlagName(
+                onCountryChange: !_enableCountryDropdown
+                    ? null
+                    : (country) {
+                        setState(() {
+                          _selectedCorporateCountryName = country.name;
+                        });
+                      },
+                initialValue: country_picker.Country(
+                  phoneCode: '1',
+                  countryCode:
+                      getCountryCodeFromName(_selectedCorporateCountryName) ??
+                          "",
+                  e164Sc: 1,
+                  geographic: true,
+                  level: 1,
+                  name: _selectedCorporateCountryName,
+                  example: '',
+                  displayName: '',
+                  displayNameNoCountryCode: '',
+                  e164Key: '',
+                ),
+              ),
             ),
           ],
         ),
@@ -1029,11 +1137,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               builder: (context, constraints) {
                 return Autocomplete<Companies>(
                   optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty || authNotifier.companyList == null) {
+                    if (textEditingValue.text.isEmpty ||
+                        authNotifier.companyList == null) {
                       return const Iterable<Companies>.empty();
                     }
                     return authNotifier.companyList!.where((Companies option) {
-                      return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                      return option.name
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase());
                     });
                   },
                   optionsViewBuilder: (context, onSelected, options) {
@@ -1041,11 +1152,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       alignment: Alignment.topLeft,
                       child: Material(
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(4.0)),
+                          borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(4.0)),
                         ),
                         child: Container(
                           height: 52.0 * options.length,
-                          width: MediaQuery.of(context).size.width, // Adjust the width to fit your needs
+                          width: MediaQuery.of(context)
+                              .size
+                              .width, // Adjust the width to fit your needs
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
                             itemCount: options.length,
@@ -1057,7 +1171,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 onTap: () => onSelected(option),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
-                                  child: Text('${option.name} (${option.countryName})', style: typography.Subtitle1),
+                                  child: Text(
+                                      '${option.name} (${option.countryName})',
+                                      style: typography.Subtitle1),
                                 ),
                               );
                             },
@@ -1071,13 +1187,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       selectedCompany = selection;
                       companyName = selection.name;
                       companyId = selection.id;
-                      selectedCompanyType = authNotifier.companyTypeList?.firstWhere((element) => element.id == selection.companyTypeId);
+                      selectedCompanyType = authNotifier.companyTypeList
+                          ?.firstWhere((element) =>
+                              element.id == selection.companyTypeId);
                       companyDisplayNameController.text = selection.displayName;
                       _enableCompanyTypeDropdown = false;
                       _enableCountryDropdown = false;
                       _customRoles = true;
                       _selectedCorporateCountryName = selection.countryName;
-                      print('Selected Company Country: $_selectedCorporateCountryName');
+                      print(
+                          'Selected Company Country: $_selectedCorporateCountryName');
                     });
                   },
                   displayStringForOption: (Companies option) => option.name,
@@ -1089,12 +1208,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       controller: textEditingController,
                       focusNode: focusNode,
                       onFieldSubmitted: (_) {},
-
                       onChanged: (value) {
                         final splitValue = value.split(' ');
                         final normalizedWords = splitValue.map((word) {
                           final matchedAbbr = abbreviationMap.keys.firstWhere(
-                                (abbr) => word.toLowerCase() == (abbr.toLowerCase()),
+                            (abbr) =>
+                                word.toLowerCase() == (abbr.toLowerCase()),
                             orElse: () => '',
                           );
 
@@ -1103,20 +1222,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           } else {
                             final fullForm = abbreviationMap[matchedAbbr]!;
                             //final prefix = word.substring(0, word.length - matchedAbbr.length);
-                           // if (prefix.isEmpty) {
-                              return fullForm;
-                           // } else {
-                          //    return '$prefix${fullForm.capitalizeAfterAbbr(matchedAbbr)}';
-                           // }
+                            // if (prefix.isEmpty) {
+                            return fullForm;
+                            // } else {
+                            //    return '$prefix${fullForm.capitalizeAfterAbbr(matchedAbbr)}';
+                            // }
                           }
                         }).toList();
 
                         final normalizedValue = normalizedWords.join(' ');
 
-
                         textEditingController.value = TextEditingValue(
                           text: normalizedValue,
-                          selection: TextSelection.collapsed(offset: normalizedValue.length),
+                          selection: TextSelection.collapsed(
+                              offset: normalizedValue.length),
                         );
                         setState(() {
                           companyId = "";
@@ -1137,16 +1256,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         });
                       },
                       decoration: InputDecoration(
-                        labelText:   LanguageService.getTranslated(context,"register_corporate_legalname_field_label"),
-
-                        hintText:   LanguageService.getTranslated(context,"register_corporate_legalname_filed_placeholder"),
-
+                        labelText: LanguageService.getTranslated(context,
+                            "register_corporate_legalname_field_label"),
+                        hintText: LanguageService.getTranslated(context,
+                            "register_corporate_legalname_filed_placeholder"),
                         border: const OutlineInputBorder(),
                       ),
                     );
                   },
                 );
-
               },
             );
           },
@@ -1158,69 +1276,77 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           builder: (context, authNotifier, child) {
             return FormField<String>(
               builder: (FormFieldState<String> state) {
-                return _showCompanyType?IgnorePointer(
-                  ignoring: !_enableCompanyTypeDropdown,
-                  child: DropdownButtonFormField<CompanyType>(
-                    value: selectedCompanyType, // Provide the currently selected value
+                return _showCompanyType
+                    ? IgnorePointer(
+                        ignoring: !_enableCompanyTypeDropdown,
+                        child: DropdownButtonFormField<CompanyType>(
+                          value: selectedCompanyType,
+                          // Provide the currently selected value
 
-                    onChanged: (CompanyType? newValue) {
-                      setState(() {
-                        _showRoles = false;
-                        selectedCompanyRole = null;
-                        selectedCompanyType = newValue; // Update the selected value
-                        state.didChange(null); // Reset validation state
-                      });
-                      Future.delayed(Duration(milliseconds: 1), () {
-                        setState(() {
-                          _showRoles = true;
-                        });
-                      });
-                    },
-                    items: authNotifier.companyTypeList?.map((CompanyType companyType) {
-                      return DropdownMenuItem<CompanyType>(
-                        value: companyType,
-                        child: Text(companyType.name),
+                          onChanged: (CompanyType? newValue) {
+                            setState(() {
+                              _showRoles = false;
+                              selectedCompanyRole = null;
+                              selectedCompanyType =
+                                  newValue; // Update the selected value
+                              state.didChange(null); // Reset validation state
+                            });
+                            Future.delayed(Duration(milliseconds: 1), () {
+                              setState(() {
+                                _showRoles = true;
+                              });
+                            });
+                          },
+                          items: authNotifier.companyTypeList
+                              ?.where((companyType) =>
+                          companyType.type.toLowerCase() != 'individual_account')
+                                  .map((CompanyType companyType) {
+                                return DropdownMenuItem<CompanyType>(
+                                  value: companyType,
+                                  child: Text(companyType.name),
+                                );
+                              }).toList() ??
+                              [],
+                          decoration: InputDecoration(
+                            enabled: _enableCompanyTypeDropdown,
+                            labelText: LanguageService.getTranslated(context,
+                                "register_corporate_company_type_field_label"),
+                            hintText: LanguageService.getTranslated(context,
+                                "register_corporate_company_type_field_placeholder"),
+                            border: const OutlineInputBorder(),
+                            errorText: state.errorText,
+                          ),
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Company Type is required'; // Add your validation logic here
+                            }
+                            return null;
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: CircularProgressIndicator(),
                       );
-                    }).toList() ?? [],
-                    decoration: InputDecoration(
-                      enabled: _enableCompanyTypeDropdown,
-                      labelText:   LanguageService.getTranslated(context,"register_corporate_company_type_field_label"),
-                      hintText:  LanguageService.getTranslated(context,"register_corporate_company_type_field_placeholder"),
-
-                      border: const OutlineInputBorder(),
-                      errorText: state.errorText,
-                    ),
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Company Type is required'; // Add your validation logic here
-                      }
-                      return null;
-                    },
-                  ),
-                ):Center(
-                  child: CircularProgressIndicator(),
-                );
               },
             );
           },
         ),
-
-
 
         SizedBox(height: CustomSpacing.four),
         // Company Display Name
         TextFormField(
           decoration: InputDecoration(
             enabled: _enableCompanyTypeDropdown,
-            labelText:   LanguageService.getTranslated(context,"register_corporate_company_displayname_field_label"),
-            hintText:   LanguageService.getTranslated(context,"register_corporate_comapny_displayname_field_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "register_corporate_company_displayname_field_label"),
+            hintText: LanguageService.getTranslated(context,
+                "register_corporate_comapny_displayname_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
             if (value == null ||
-                value.isEmpty ||
-                value.contains(RegExp(r'[0-9]'))) {
+                value.isEmpty /*||
+                value.contains(RegExp(r'[0-9]'))*/) {
               return 'Company display name is required and should not be empty or contain numbers';
             }
             // You can add more specific email validation here if needed
@@ -1235,7 +1361,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              _enableCompanyTypeDropdown?'Admin':'User & Role(s)',
+              _enableCompanyTypeDropdown ? 'Admin' : 'User & Role(s)',
               style: typography.Subtitle1.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),
@@ -1249,50 +1375,60 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.four),
-        !_enableCompanyTypeDropdown?Consumer<AuthNotifier>(
-          builder: (context, authNotifier, child) {
-
-            return FormField<String>(
-              builder: (FormFieldState<String> state) {
-                return _showRoles ? DropdownButtonFormField<Roles>(
-                  onChanged: (Roles? newValue) {
-                    setState(() {
-                      selectedCompanyRole = newValue;
-                      state.didChange(newValue?.name); // Notify form field state
-                    });
-                  },
-                  items: (_customRoles?selectedCompany?.roles:selectedCompanyType?.roles)?.map((Roles companyTypeRoles) {
-                    return DropdownMenuItem<Roles>(
-                      value: companyTypeRoles,
-                      child: Text(companyTypeRoles.name),
-                    );
-                  }).toList() ?? [],
-                  decoration: InputDecoration(
-                    labelText: 'Role(s)',
-                    labelStyle: typography.Subtitle1,
-                    hintText: 'Select Role',
-                    hintStyle: typography.Body1,
-                    border: const OutlineInputBorder(),
-                    errorText: state.errorText, // Display validation error message
-                  ),
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Role(s) is required'; // Add your validation logic here
-                    }
-                    return null;
-                  },
-                ) : Center(child: CircularProgressIndicator());
-              },
-            );
-          },
-        ):SizedBox(),
+        !_enableCompanyTypeDropdown
+            ? Consumer<AuthNotifier>(
+                builder: (context, authNotifier, child) {
+                  return FormField<String>(
+                    builder: (FormFieldState<String> state) {
+                      return _showRoles
+                          ? DropdownButtonFormField<Roles>(
+                              onChanged: (Roles? newValue) {
+                                setState(() {
+                                  selectedCompanyRole = newValue;
+                                  state.didChange(newValue
+                                      ?.name); // Notify form field state
+                                });
+                              },
+                              items: (_customRoles
+                                          ? selectedCompany?.roles
+                                          : selectedCompanyType?.roles)
+                                      ?.map((Roles companyTypeRoles) {
+                                    return DropdownMenuItem<Roles>(
+                                      value: companyTypeRoles,
+                                      child: Text(companyTypeRoles.name),
+                                    );
+                                  }).toList() ??
+                                  [],
+                              decoration: InputDecoration(
+                                labelText: 'Role(s)',
+                                labelStyle: typography.Subtitle1,
+                                hintText: 'Select Role',
+                                hintStyle: typography.Body1,
+                                border: const OutlineInputBorder(),
+                                errorText: state
+                                    .errorText, // Display validation error message
+                              ),
+                              validator: (value) {
+                                if (value == null) {
+                                  return 'Role(s) is required'; // Add your validation logic here
+                                }
+                                return null;
+                              },
+                            )
+                          : Center(child: CircularProgressIndicator());
+                    },
+                  );
+                },
+              )
+            : SizedBox(),
         SizedBox(height: CustomSpacing.four),
         // Admin Name
         TextFormField(
           decoration: InputDecoration(
-            labelText:   LanguageService.getTranslated(context,"usermanagement_name_field_label"),
-            hintText:   LanguageService.getTranslated(context,"usermanagemet_cuser_name_place_holder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "usermanagement_name_field_label"),
+            hintText: LanguageService.getTranslated(
+                context, "usermanagemet_cuser_name_place_holder"),
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -1310,10 +1446,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Admin Email
         TextFormField(
           decoration: InputDecoration(
-            labelText:   LanguageService.getTranslated(context,"connections_user_connection_email_filter"),
-
-            hintText:  LanguageService.getTranslated(context,"user_profile_user_management_email_placeholer"),
-
+            labelText: LanguageService.getTranslated(
+                context, "connections_user_connection_email_filter"),
+            hintText: LanguageService.getTranslated(
+                context, "user_profile_user_management_email_placeholer"),
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
@@ -1336,7 +1472,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 shouldFormat: true,
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(context, "register_mobile_number"),
+                  labelText: LanguageService.getTranslated(
+                      context, "register_mobile_number"),
                   hintText: _corporateAdminHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
@@ -1351,8 +1488,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 flagShape: BoxShape.circle,
                 flagSize: 35,
                 onChanged: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
+                  if (p == null) return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
                     _selectedAdminCorporateCountry = p.isoCode.name;
@@ -1361,8 +1497,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   print('changed ${p.countryCode}');
                 },
                 onSaved: (PhoneNumber? p) {
-                  if(p==null)
-                    return;
+                  if (p == null) return;
                   setState(() {
                     _selectedCountryCode = p.countryCode;
                   });
@@ -1376,10 +1511,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
-            labelText:   LanguageService.getTranslated(context,"emailsetup_field_password"),
-
-            hintText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "emailsetup_field_password"),
+            hintText: LanguageService.getTranslated(
+                context, "register_corporate_password_field_placeholder"),
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
               icon: _showPasswordCorporate
@@ -1406,9 +1541,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
-            labelText:   LanguageService.getTranslated(context,"register_corporate_password_field_placeholder"),
-            hintText:   LanguageService.getTranslated(context,"register_corporate_confirm_password_field_placeholder"),
-
+            labelText: LanguageService.getTranslated(
+                context, "register_corporate_password_field_placeholder"),
+            hintText: LanguageService.getTranslated(context,
+                "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           obscureText: !_showPasswordCorporate,
@@ -1447,17 +1583,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     });
   }
 
-  void handleBrightnessChange(bool useLightMode) {
-  }
+  void handleBrightnessChange(bool useLightMode) {}
 
-  void handleMaterialVersionChange() {
-  }
+  void handleMaterialVersionChange() {}
 
-  void handleColorSelect(int value) {
-  }
+  void handleColorSelect(int value) {}
 
-  void handleImageSelect(int value) {
-  }
+  void handleImageSelect(int value) {}
 
   // Define a function to validate the phone number based on the selected country
   String? validatePhoneNumber(String? value) {
@@ -1467,7 +1599,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
       // Construct a regular expression pattern based on the country's dialing code
       String pattern = '';
-print("dialingCode: $dialingCode");
+      print("dialingCode: $dialingCode");
       // Adjust the pattern based on the country dialing code format
       switch (dialingCode) {
         case '+1': // United States
@@ -1489,7 +1621,8 @@ print("dialingCode: $dialingCode");
           pattern = r'^[0-9]{10,11}$'; // 10 or 11 digits for Japan
           break;
         case '+82': // South Korea
-          pattern = r'^01(?:0|1|[6-9])-(?:\d{3}|\d{4})-\d{4}$'; // South Korea phone number format
+          pattern =
+              r'^01(?:0|1|[6-9])-(?:\d{3}|\d{4})-\d{4}$'; // South Korea phone number format
           break;
         case '+966': // Saudi Arabia
           pattern = r'^[0-9]{9}$'; // 9 digits for Saudi Arabia
@@ -1500,7 +1633,7 @@ print("dialingCode: $dialingCode");
         case '+20': // Egypt
           pattern = r'^01[0-9]{9}$'; // 11 digits for Egypt, starts with 01
           break;
-         // Add more cases for other countries as needed
+        // Add more cases for other countries as needed
         default:
           pattern = r'^[0-9]+$'; // Default pattern: any number of digits
           break;
@@ -1517,8 +1650,8 @@ print("dialingCode: $dialingCode");
   String? getCountryCodeFromName(String countryName) {
     return countryNameToCodeMap[countryName];
   }
-
 }
+
 extension StringExtensions on String {
   bool isSameStringCaseAs(String other) {
     if (length != other.length) return false;

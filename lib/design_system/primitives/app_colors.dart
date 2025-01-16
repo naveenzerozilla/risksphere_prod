@@ -24,6 +24,7 @@ class AppColors {
   static const Color primaryLight = Color(0xFFC3FDFF);
   static const Color primaryDark = Color(0xFF42A5F5);
   static const Color warning = Color(0xFFFFA726);
+  static const Color error = Color(0xFFD32F2F);
 
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);

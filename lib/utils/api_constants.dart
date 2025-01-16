@@ -122,4 +122,23 @@ class AppConstant {
 
   static String get GET_CURRENT_COMPANY_ID => '$baseURL/locations/current_company_id';
 
+  static String get CONFIGURATIONS => '$baseURL/locations/account_sub_global_configuration/global';
+
+  static String get CONFIGURATIONS_ACCOUNTS => '$baseURL/locations/account_sub_global_configuration/account';
+
+  static String get CONFIGURATIONS_SUB_ACCOUNTS => '$baseURL/locations/account_sub_global_configuration/sub_account';
+
+  static String UPDATE_CONFIGURATION = '$baseURL/locations/account_sub_global_configuration/global';
+
+  static String get VENDOR_MANAGEMENT_URL => '$baseURL/vendor_management/vendor_list/""';
+
+  static String get SUBSCRIBE_NOTIFICATION => '$baseURL/user_management_new/subscribe_notification';
+
+  static String get GET_NEWS_FEED => '$baseURL/user_management_new/getActivityFeed';
+  static String get GET_EVENT_INFO => '$baseURL/user_management_new/eventinfo';
+  static String get GET_EVENT_FEED => '$baseURL/user_management_new/getEventFeed';
+  static String get GET_EVENT_DATE => '$baseURL/user_management_new/getevent';
+  static String get UPDATE_HAZARD => '$baseURL/locations/updatehazard';
+
+
 }

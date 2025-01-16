@@ -1,9 +1,15 @@
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:green/providers/configuration_provider.dart';
 import 'package:green/providers/drawer_selection_provider.dart';
 import 'package:green/providers/job_monitoring_provier.dart';
 import 'package:green/providers/my_location_list_provider.dart';
+import 'package:green/providers/news_feed_provider.dart';
+import 'package:green/screens/event/notification_map_screen.dart';
+import 'package:green/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -49,8 +55,24 @@ void initializeNotifications() {
     android: initializationSettingsAndroid,
   );
 
-  flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
+      final String? payload = notificationResponse.payload;
+      if (payload != null) {
+        try {
+          print('Received notification payload top: $payload');
+          final Map<String, dynamic> data = jsonDecode(payload);
+          print('Received notification payload: $data');
+          handleNotificationNavigation(data);
+        } catch (e) {
+          print('Error parsing notification payload: $e');
+        }
+      }
+    },
+  );
 }
+
 
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -64,18 +86,95 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void checkForInitialMessage() async {
+  print('Checking for initial message');
   RemoteMessage? initialMessage =
   await FirebaseMessaging.instance.getInitialMessage();
+  print('Initial message: $initialMessage');
 
   if (initialMessage != null) {
     // Handle the notification that opened the app
     print('App launched by a notification: ${initialMessage.messageId}');
+    print('Notification data: ${initialMessage.data}');
+    print('Notification title: ${initialMessage.notification?.title}');
+    print('Notification body: ${initialMessage.notification?.body}');
+    print('Notification imageUrl: ${initialMessage.notification?.android?.imageUrl}');
+    print('Notification sent time: ${initialMessage.sentTime}');
     // Process the initial notification data here
+    if (initialMessage != null && initialMessage.data.isNotEmpty) {
+      print('App launched by a notification');
+      print('Notification data: ${initialMessage.data}');
+      handleNotificationNavigation(initialMessage.data);
+    }
+
+  }
+
+
+}
+
+// Clean up the Firebase message handlers
+void setupFirebaseMessaging() {
+  // Handle foreground messages
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Got a message whilst in the foreground!');
+    if (message.notification != null) {
+      showNotification(
+        message.notification!.title,
+        message.notification!.body,
+        message.notification?.android?.imageUrl ?? "",
+      );
+    }
+  });
+
+  // Handle when the app is opened from a notification
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('Notification opened app from background state');
+    if (message.data.isNotEmpty) {
+      print('Notification data: ${message.data}');
+      handleNotificationNavigation(message.data);
+    }
+  });
+}
+
+void handleNotificationNavigation(Map<String, dynamic> data) {
+  print('Handling notification navigation: $data');
+  String? type = data['type'];
+  print('event id: ${data['title']}');
+
+  // Ensure we're in a valid context before navigating
+  if (MyApp.navigatorKey.currentContext == null) {
+    print('No valid context for navigation');
+    return;
+  }
+
+  switch (type) {
+    case 'event':
+      Navigator.push(
+        MyApp.navigatorKey.currentContext!,
+        MaterialPageRoute(
+          builder: (context) => NotificationMapScreen(
+            notificationData: {'eventId': data['title']},
+          ),
+        ),
+      );
+      break;
+    case 'score':
+      if (data['payload'] != null) {
+        var provider = Provider.of<NewsFeedProvider>(
+          MyApp.navigatorKey.currentContext!,
+          listen: false,
+        );
+        provider.updateHazardData(
+          MyApp.navigatorKey.currentContext!,
+          jsonDecode(data['payload']!),
+        );
+      }
+      break;
+    default:
+      print('Unknown notification type: $type');
   }
 }
 
-
-Future<void> initFCM() async {
+Future<void> initFCM(String userId) async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
   NotificationSettings settings = await messaging.requestPermission(
@@ -90,59 +189,100 @@ Future<void> initFCM() async {
 
   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
     print('User granted permission');
-  } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-    print('User granted provisional permission');
+    String? token = await messaging.getToken();
+    print('FCM Token: $token');
+
+    if (token != null) {
+      SharedPreferenceService.saveFcmToken(token);
+      bool isSubscribed = await SharedPreferenceService.getNotificationSubscription();
+
+      if (!isSubscribed) {
+        // Call the subscription API
+        bool success = await _subscribeToNotifications(userId, token);
+
+        if (success) {
+          SharedPreferenceService.saveNotificationSubscription(true);
+          print('Subscribed to topic: general');
+        }
+      } else {
+        print('Already subscribed to notifications');
+      }
+    }
   } else {
     print('User declined or has not accepted permission');
   }
 
-  // getting token
-  String? token = await messaging.getToken();
-  print('FCM Token: $token');
-  SharedPreferenceService.saveFcmToken(token??"");
-
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
+    print('onMessage received: ${message.messageId}');
+    print('Foreground message received: ${message.notification?.title}');
     print('Message data: ${message.data}');
     print('Message notification: ${message.notification}');
+    print('Message sent time: ${message.sentTime}');
+    print('Message ttl: ${message.ttl}');
+    print('Message collapse key: ${message.collapseKey}');
+    print('Message messageId: ${message.messageId}');
+    print('Message messageType: ${message.messageType}');
+print('Message from: ${message.from}');
 
     if (message.notification != null) {
-      print('Message also contained a notification: ${message.notification?.body} ${message.notification?.title} ${message.notification?.android?.channelId} ${message.notification?.android?.clickAction} ${message.notification?.android?.color} ${message.notification?.android?.imageUrl} ${message.notification?.android?.link} ${message.notification?.android?.priority} ${message.notification?.android?.smallIcon} ${message.notification?.android?.ticker} ${message.notification?.android?.visibility}  ${message.notification?.android?.sound}  ${message.notification?.android?.visibility}');
-    }
-
-    if (message.notification != null) {
-      // Show notification using flutter_local_notifications
-      print('Showing notification');
-      print('Message notification title: ${message.notification!.title}');
-      print('Message notification body: ${message.notification!.body}');
-      print('Message notification imageUrl: ${message.notification!.android!.imageUrl}');
-
-      if (Platform.isAndroid && message.notification!.android!.imageUrl != null) {
-        showNotification(message.notification!.title, message.notification!.body, message.notification?.android?.imageUrl??"");
-      } else if (Platform.isIOS && message.notification!.apple!.imageUrl != null) {
-        showNotification(message.notification!.title, message.notification!.body, message.notification?.apple?.imageUrl??"");
-      } else {
-        showNotification(message.notification!.title, message.notification!.body, message.notification?.web?.image??"");
-      }
-      //showNotification(message.notification!.title, message.notification!.body, message.notification!.android!.imageUrl);
+      showNotification(
+        message.notification!.title,
+        message.notification!.body,
+        message.notification?.android?.imageUrl ?? "",
+      );
     }
   });
 
-
-
-
-
-
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('A new onMessageOpenedApp event was published!');
+    print('Notification opened app');
     print('Message data: ${message.data}');
+    print('Message notification: ${message.notification}');
+    print('Message sent time: ${message.sentTime}');
+    print('Message ttl: ${message.ttl}');
+    print('Message collapse key: ${message.collapseKey}');
+    print('Message messageId: ${message.messageId}');
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('Notification opened app');
+      if (message.data.isNotEmpty) {
+        print('Notification data: ${message.data}');
+        handleNotificationNavigation(message.data);
+      }
+    });
   });
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  await  FirebaseMessaging.instance.subscribeToTopic('test96');
-
 }
+
+Future<bool> _subscribeToNotifications(String userId, String token) async {
+  try {
+    var url = Uri.parse('${AppConstant.SUBSCRIBE_NOTIFICATION}');
+    var body = jsonEncode({
+      'user_id': userId,
+      'topic': 'general',
+      'mobile_token': token,
+    });
+
+    var response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 200) {
+      print('Successfully subscribed to notification');
+      return true;
+    } else {
+      print('Failed to subscribe: ${response.body}');
+      return false;
+    }
+  } catch (error) {
+    print('Error subscribing to notifications: $error');
+    return false;
+  }
+}
+
 
 
 Future<void> showNotification(String? title, String? body, String? imageUrl) async {
@@ -152,6 +292,14 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
     description: 'This is your channel description',
     importance: Importance.high,
   );
+
+  // Create the notification payload
+  final Map<String, dynamic> payload = {
+    'type': 'event', // Or whatever type you need
+    'title': title,
+    'body': body,
+    'imageUrl': imageUrl,
+  };
 
   AndroidNotificationDetails androidPlatformChannelSpecifics;
 
@@ -169,8 +317,8 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
       print('Image downloaded and saved at: $filePath');
 
       final BigPictureStyleInformation bigPicture = BigPictureStyleInformation(
-        FilePathAndroidBitmap(filePath), // Use the saved file path
-        largeIcon: const FilePathAndroidBitmap('ic_launcher'),  // Your app icon
+        FilePathAndroidBitmap(filePath),
+        largeIcon: const FilePathAndroidBitmap('ic_launcher'),
         contentTitle: title,
         summaryText: body,
         htmlFormatContentTitle: true,
@@ -181,13 +329,12 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
         'your_channel_id_test_1',
         'your_channel_name_test_1',
         icon: 'ic_launcher',
-        styleInformation: bigPicture,  // Attach the big picture style
+        styleInformation: bigPicture,
         importance: Importance.max,
         priority: Priority.high,
       );
     } catch (e) {
       print('Error downloading image: $e');
-      // Fallback to a notification without the image if the download fails
       androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'your_channel_id_test_1',
         'your_channel_name_test_1',
@@ -197,7 +344,6 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
       );
     }
   } else {
-    // No imageUrl provided, create a simple notification
     androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'your_channel_id_test_1',
       'your_channel_name_test_1',
@@ -218,10 +364,11 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
       ?.createNotificationChannel(channel);
 
   await flutterLocalNotificationsPlugin.show(
-    0,  // Notification ID
+    0,
     title,
     body,
     platformChannelSpecifics,
+    payload: jsonEncode(payload),
   );
 }
 
@@ -238,7 +385,11 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await initFCM();
+  initializeNotifications();
+  setupFirebaseMessaging();
+
+  String userId = FirebaseAuth.instance.currentUser?.uid??"";
+  await initFCM(userId);
   // Check if the app was opened by a notification
   checkForInitialMessage();
 
@@ -276,6 +427,8 @@ void main() async {
           ChangeNotifierProvider(create: (_) => JobMonitoringProvider()),
           ChangeNotifierProvider(create: (_) => MyLocationListProvider()),
           ChangeNotifierProvider(create: (_) => DrawerSelectionProvider()),
+          ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
+          ChangeNotifierProvider(create: (_) => NewsFeedProvider()),
         ],
         child: const MyApp(),
       ),
@@ -286,6 +439,8 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
@@ -293,6 +448,7 @@ class MyApp extends StatelessWidget {
         print('themeProvider.getTheme.brightness: ${themeProvider.getTheme.brightness}');
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
           title: 'Risk Sphere',
           locale: context.locale,
           supportedLocales: context.supportedLocales,

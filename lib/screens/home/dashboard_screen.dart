@@ -5,6 +5,7 @@ import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_pickers.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:green/design_system/components/custom_button.dart';
@@ -28,9 +29,11 @@ import '../../design_system/components/custom_month_year_picker.dart';
 import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
+import '../../providers/configuration_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
+import '../listings/widgets/message_card.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
@@ -58,6 +61,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool showCompanyOnboardingStats = false;
   bool showUserOnboardingStats = false;
   bool showVerificationRequests = false;
+
+  List<dynamic> vendorList = [];
+  var subscriptions = {};
 
   @override
   void initState() {
@@ -92,10 +98,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await SharedPreferenceService.getClaimForSubfeature(
                 SharedPreferenceService.CAMVU) ??
             false;
-    showVerificationRequests = showCorporateVerificationRequests || showUserVerificationRequests;
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.DASVR) ??
-            false;
+    showVerificationRequests =
+        showCorporateVerificationRequests || showUserVerificationRequests;
+    await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.DASVR) ??
+        false;
 
     _getData();
     setState(() {});
@@ -105,7 +112,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Provider.of<DashboardProvider>(context, listen: false)
         .getDashboardData(context);
     Provider.of<UserProfileProvider>(context, listen: false)
-        .getAllUserData(context,"", "");
+        .getAllUserData(context, "", "");
+    final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+    Future.wait([
+      provider.getConfiguration(
+        accountId: null,
+        subAccountId: null,
+      ),
+      provider.getVendors()
+    ]).then((value) {
+      var config = provider.configurations['result'] ?? {};
+      subscriptions = config['subscribe'] ?? {};
+      if (mounted) {
+        WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+          setState(() {
+            vendorList = provider.vendors['result'] ?? [];
+          });
+        });
+
+      }
+    });
+
   }
 
   @override
@@ -141,6 +168,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
 
               _homeScreenBody(typography),
+
+              // Overlay for trial expiration
+
+              Consumer<UserProfileProvider>(
+                builder: (context, userProfile, child) {
+                  final trialStatus = userProfile.trialInfo['status'] ?? '';
+
+                  if (trialStatus.contains('Expired')) {
+                    return Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.95),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(height: CustomSpacing.four),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: MessageCard(
+                              messageTextSpans: [
+                                TextSpan(
+                                  text:
+                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                  style: typography.Body1,
+                                ),
+                                // tappable
+                                TextSpan(
+                                  text: ' Upgrade Now!',
+                                  style: typography.Body1.copyWith(
+                                    color: AppColors.primaryMain,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      // Handle subscription logic
+                                      //Coming soon Snackbar
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text('Coming soon!',
+                                              style: typography.Body1.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .surface,
+                                              )),
+                                        ),
+                                      );
+                                    },
+                                ),
+                              ],
+                              isError: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
             ],
           ),
         );
@@ -180,7 +271,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     !showTotalCorporates
                         ? SizedBox()
                         : _overviewCardHorizontal(
-
                             title: LanguageService.getTranslated(
                                 context, 'usermanagement_dash_total_corps'),
                             amount: dashboardProvider
@@ -251,53 +341,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                           ),
-                    !showVerificationRequests?SizedBox():_overviewCardHorizontal(
-                      title: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_verification_req'),
-                      amount: ((dashboardProvider
-                              .dashboardModel?.verificationCount??0) + (dashboardProvider
-                          .dashboardModel?.companyUserLeadCount??0) )
-                              .toString() ??
-                          '0',
-                      icon: 'assets/images/verification_req_checks.svg',
-                      bottomWidget: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          CustomButton(
-                            type: ButtonType.outlined,
-                            onPressed: () {
-                              //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
-                              Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => UserManagementScreen(
-                                    initialIndex: 0,
-                                    subIndex: 0,
-                                    initialScreen: Screens.verificationList,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                    !showVerificationRequests
+                        ? SizedBox()
+                        : _overviewCardHorizontal(
+                            title: LanguageService.getTranslated(context,
+                                'usermanagement_dash_verification_req'),
+                            amount: ((dashboardProvider.dashboardModel
+                                                ?.verificationCount ??
+                                            0) +
+                                        (dashboardProvider.dashboardModel
+                                                ?.companyUserLeadCount ??
+                                            0))
+                                    .toString() ??
+                                '0',
+                            icon: 'assets/images/verification_req_checks.svg',
+                            bottomWidget: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Text(
-                                  LanguageService.getTranslated(
-                                      context, 'usermanagement_dash_verification_req_list_btn'),
-                                  style: typography.Body1,
-                                ),
-                                SizedBox(width: CustomSpacing.two),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 14,
+                                CustomButton(
+                                  type: ButtonType.outlined,
+                                  onPressed: () {
+                                    //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                                    Provider.of<DrawerSelectionProvider>(
+                                            context,
+                                            listen: false)
+                                        .setSelectedItem('user_management');
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            UserManagementScreen(
+                                          initialIndex: 0,
+                                          subIndex: 0,
+                                          initialScreen:
+                                              Screens.verificationList,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        LanguageService.getTranslated(context,
+                                            'usermanagement_dash_verification_req_list_btn'),
+                                        style: typography.Body1,
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
                     !showConnectionRequests
                         ? SizedBox()
                         : SizedBox(width: CustomSpacing.four),
@@ -324,7 +424,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               log(auth.currentUser.toString());
                               String name =
                                   claims['name'] ?? ''; //name of the user
-                              Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
+                              Provider.of<DrawerSelectionProvider>(context,
+                                      listen: false)
+                                  .setSelectedItem('user_management');
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => ConnectionsScreen(
@@ -340,8 +442,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  LanguageService.getTranslated(
-                                      context, 'usermanagement_dash_connection_req_list_btn'),
+                                  LanguageService.getTranslated(context,
+                                      'usermanagement_dash_connection_req_list_btn'),
                                   style: typography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
@@ -355,7 +457,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                   SizedBox(height: CustomSpacing.one,),
+                    SizedBox(
+                      height: CustomSpacing.one,
+                    ),
                     _subscriptionBody(typography),
                     SizedBox(height: CustomSpacing.one),
                     !showCompanyOnboardingStats
@@ -375,8 +479,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 isExpanded: isCompanyOnboardingStatsExpanded,
                                 collapsedChild: _collapsedCompanyCardWidget(
                                   title: Text(
-                                    LanguageService.getTranslated(
-                                        context, 'usermanagement_dash_company_onboarding_status_title'),
+                                    LanguageService.getTranslated(context,
+                                        'usermanagement_dash_company_onboarding_status_title'),
                                     style: typography.Body1,
                                   ),
                                 ),
@@ -402,8 +506,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 isExpanded: isUserOnboardingStatsExpanded,
                                 collapsedChild: _collapsedUserCardWidget(
                                   title: Text(
-                                    LanguageService.getTranslated(
-                                        context, 'usermanagement_dash_user_on_boarding_status'),
+                                    LanguageService.getTranslated(context,
+                                        'usermanagement_dash_user_on_boarding_status'),
                                     style: typography.Body1,
                                   ),
                                 ),
@@ -419,43 +523,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+
   Widget _subscriptionBody(CustomTypography typography) {
-    final subscriptionData = [
-      {
-        "title": "Earthquake Alerts",
-        "description":
-        "When an earthquake is detected nearby, you'll get an alert with the initial estimated magnitude at your location.",
-        "iconPath": "assets/images/earthquake.svg",
-        "isSubscribed": true,
-      },
-      {
-        "title": "Hurricane Alerts",
-        "description":
-        "When a hurricane is approaching, you'll receive an alert with the estimated wind speed at your location.",
-        "iconPath": "assets/images/hurricane.svg",
-        "isSubscribed": false,
-      },
-    ];
+    debugPrint('Subscription Keys: ${subscriptions.keys.toList()}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...subscriptionData.map((data) {
-          return Column(
-            children: [
-              SubscriptionCard(
-                title: data["title"] as String,
-                description: data["description"] as String,
-                iconPath: data["iconPath"] as String,
-                isSubscribed: data["isSubscribed"] as bool,
-              ),
-              SizedBox(height: CustomSpacing.one),
-            ],
-          );
-        }).toList(),
-      ],
+      children: subscriptions.keys.map((key) {
+        // Split the subscription key into vendor_id and hazard_name
+        final parts = key.split('_');
+        if (parts.length != 2) {
+          debugPrint('Invalid subscription key format: $key');
+          return SizedBox.shrink();
+        }
+
+        final vendorId = parts[0];
+        final hazardName = parts[1];
+
+        // Find the vendor by vendor_id
+        final vendor = vendorList.firstWhere(
+              (vendor) => vendor['vendor_id'] == vendorId,
+          orElse: () {
+            debugPrint('Vendor not found for ID: $vendorId');
+            return null;
+          },
+        );
+
+        if (vendor == null) return SizedBox.shrink();
+
+        // Find the hazard in the vendor's hazard_commercials by hazard_name
+        final hazardCommercials = vendor['hazard_commercials'] as List?;
+        final hazard = hazardCommercials?.firstWhere(
+              (commercial) => commercial['hazard_name'] == hazardName,
+          orElse: () {
+            debugPrint('Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+            return null;
+          },
+        );
+
+        if (hazard == null) return SizedBox.shrink();
+
+        // Extract subscription and hazard details
+        final subscription = subscriptions[key];
+        final vendorName = vendor['vendor_name_label'] ?? '';
+        final vendorImage = vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
+        final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+        final description = subscription['description'] ?? '';
+
+        return Column(
+          children: [
+            SubscriptionCard(
+              title: '$hazardLabel ($vendorName)',
+              description: description.isNotEmpty ? description : vendorName,
+              iconPath: vendorImage,
+              isSubscribed: subscription['is_subscribed'] == true ||
+                  subscription['is_subscribed'] == 'true',
+            ),
+            SizedBox(height: CustomSpacing.one),
+          ],
+        );
+      }).toList(),
     );
   }
+
+
 
 
   _overviewCardHorizontal(
@@ -587,8 +718,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateCompany!)),
                         decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(
-                              context, 'usermanagement_dash_select_period_label'),
+                          labelText: LanguageService.getTranslated(context,
+                              'usermanagement_dash_select_period_label'),
                           hintText: LanguageService.getTranslated(
                               context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
@@ -608,9 +739,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() {
                               _selectedDateCompany = pickedDate;
                             });
-                            Provider.of<DashboardProvider>(context, listen: false)
-                                .getDashboardDataForCompanies(context, pickedDate);
-
+                            Provider.of<DashboardProvider>(context,
+                                    listen: false)
+                                .getDashboardDataForCompanies(
+                                    context, pickedDate);
                           }
                         },
                       ),
@@ -656,8 +788,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SizedBox(width: CustomSpacing.two),
                 Flexible(
                   child: Text(
-                    LanguageService.getTranslated(
-                        context, 'usermanagement_dash_company_onboarding_status_title'),
+                    LanguageService.getTranslated(context,
+                        'usermanagement_dash_company_onboarding_status_title'),
                     style: typography.Body1,
                   ),
                 ),
@@ -700,7 +832,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         });
                         Provider.of<DashboardProvider>(context, listen: false)
                             .getDashboardDataForCompanies(context, pickedDate);
-
                       }
                     },
                   ),
@@ -750,16 +881,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: LanguageService.getTranslated(
-                                    context, 'usermanagement_dash_forcast_part_1'),
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_1'),
                                 style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
-                                text:
-                                    LanguageService.getTranslated(
-                                        context, 'usermanagement_dash_forcast_part_2'),
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_2'),
                                 style: typography.Body1,
                               ),
                             ],
@@ -859,8 +989,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateUser!)),
                         decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(
-                              context, 'usermanagement_dash_select_period_label'),
+                          labelText: LanguageService.getTranslated(context,
+                              'usermanagement_dash_select_period_label'),
                           hintText: LanguageService.getTranslated(
                               context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
@@ -880,7 +1010,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() {
                               _selectedDateUser = pickedDate;
                             });
-                            Provider.of<DashboardProvider>(context, listen: false)
+                            Provider.of<DashboardProvider>(context,
+                                    listen: false)
                                 .getDashboardDataForRoles(context, pickedDate);
                           }
                         },
@@ -1018,16 +1149,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: LanguageService.getTranslated(
-                                    context, 'usermanagement_dash_forcast_part_1'),
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_1'),
                                 style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
-                                text:
-                                    LanguageService.getTranslated(
-                                        context, 'usermanagement_dash_forcast_part_2'),
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_2'),
                                 style: typography.Body1,
                               ),
                             ],
@@ -1102,7 +1232,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
         : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
-    String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
+    String output = changeText +
+        LanguageService.getTranslated(
+            context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
@@ -1116,7 +1248,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
         : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
-    String output = changeText + LanguageService.getTranslated(context, 'usermanagement_dash_vs_last_month');
+    String output = changeText +
+        LanguageService.getTranslated(
+            context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
@@ -1134,9 +1268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // Remove '%' sign and any other non-digit characters
     String rolePercentCleaned =
         rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
-    if ( rolePercentCleaned.runtimeType != String) {
+    if (rolePercentCleaned.runtimeType != String) {
       rolePercentCleaned = rolePercentCleaned.toString();
-
     }
     if (rolePercentCleaned.isEmpty) {
       rolePercentCleaned = "0";
@@ -1147,9 +1280,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String changeText;
     if (rolePercent < 0) {
       rolePercent = -rolePercent; // Make it positive
-      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
+      changeText =
+          "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
     } else {
-      changeText = "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}";
+      changeText =
+          "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}";
     }
 
     print(changeText);
@@ -1166,5 +1301,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String normalized = base64Url.normalize(payload);
     final String decoded = utf8.decode(base64Url.decode(normalized));
     return json.decode(decoded);
+  }
+
+  String _getVendorName(String vendorId) {
+    var vendor = vendorList.firstWhere(
+          (vendor) => vendor['vendor_id'] == vendorId,
+      orElse: () {
+        debugPrint('Vendor not found for ID: $vendorId');
+        return {'vendor_name_label': ''};
+      },
+    );
+
+    debugPrint('Vendor found for ID: $vendorId - ${vendor['vendor_name_label']}');
+    return vendor['vendor_name_label'] ?? '';
+  }
+
+  String _getVendorDisplayName(String vendorId) {
+    var vendor = vendorList.firstWhere(
+          (vendor) => vendor['vendor_id'] == vendorId,
+      orElse: () {
+        debugPrint('Display Name not found for Vendor ID: $vendorId');
+        return {'display_name': ''};
+      },
+    );
+
+    debugPrint('Display name found for ID: $vendorId - ${vendor['display_name']}');
+    return vendor['display_name'] ?? '';
+  }
+
+  String _getVendorImage(String vendorId) {
+    var vendor = vendorList.firstWhere(
+          (vendor) => vendor['vendor_id'] == vendorId,
+      orElse: () {
+        debugPrint('Image not found for Vendor ID: $vendorId');
+        return {'display_image_url': 'assets/images/default_vendor.png'};
+      },
+    );
+
+    debugPrint('Image found for Vendor ID: $vendorId - ${vendor['display_image_url']}');
+    return vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
   }
 }

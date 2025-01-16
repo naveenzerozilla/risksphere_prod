@@ -25,9 +25,7 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   bool _isSubmitLoading = false;
-
   bool get isSubmitLoading => _isSubmitLoading;
-
   set isSubmitLoading(bool value) {
     _isSubmitLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -36,15 +34,41 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   SovUploadModel? _sovUploadModel;
-
   SovUploadModel? get sovUploadModel => _sovUploadModel;
-
   set sovUploadModel(SovUploadModel? value) {
     _sovUploadModel = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
+
+  List<Map<String, dynamic>> _geocodingList = [];
+  List<Map<String, dynamic>> get geocodingList => _geocodingList;
+  set geocodingList(List<Map<String, dynamic>> value) {
+    _geocodingList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  List<Map<String, dynamic>> _duplicateLocations = [];
+  List<Map<String, dynamic>> get duplicateLocations => _duplicateLocations;
+  set duplicateLocations(List<Map<String, dynamic>> value) {
+    _duplicateLocations = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  List<Map<String, dynamic>> _conflictLocations = [];
+  List<Map<String, dynamic>> get conflictLocations => _conflictLocations;
+  set conflictLocations(List<Map<String, dynamic>> value) {
+    _conflictLocations = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
 
   Future<void> createEmptySov(BuildContext context, String tempId) async {
     var typography = CustomTypography(context);
@@ -269,6 +293,22 @@ class UploadSovProvider extends ChangeNotifier {
 
       var response = await apiService.get(url);
       log(response.toString());
+      List<dynamic> data = response['result'] ?? [];
+      geocodingList = data.map((item) {
+        return {
+          'isChecked': false,
+          'formatted_address': item['formatted_address'] ?? 'No address available',
+          'line_no': item['line_no'] ?? '',
+          'city': item['property City'] ?? '',
+          'location_name': item['Location Name'] ?? '',
+          'state': item['State'] ?? '',
+          'country': item['Country'] ?? '',
+          'duplicates': item['duplicates'] ?? [],
+          'is_duplicate': item['is_duplicate'] ?? false,
+          'id': item['id'] ?? '',
+          'type': item['type'] ?? '',
+        };
+      }).toList();
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -301,6 +341,16 @@ class UploadSovProvider extends ChangeNotifier {
 
       var response = await apiService.get(url);
       log(response.toString());
+      List<dynamic> data = response['result'] ?? [];
+      duplicateLocations = data.map((item) {
+        return {
+          'formatted_address': item['formatted_address'],
+          'id': item['id'],
+          'top_duplicate': item['duplicates']?.isNotEmpty == true
+              ? item['duplicates'][0] // Pick the first duplicate
+              : null
+        };
+      }).toList();
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -332,6 +382,14 @@ class UploadSovProvider extends ChangeNotifier {
 
       var response = await apiService.get(url);
       log(response.toString());
+      List<dynamic> data = response['result'] ?? [];
+      conflictLocations = data.map((item) {
+        return {
+          'formatted_address': item['formatted_address'],
+          'id': item['id'],
+          'conflicts': item['similar'] ?? [],
+        };
+      }).toList();
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -632,6 +690,7 @@ class UploadSovProvider extends ChangeNotifier {
                     )));
       } else {
         String processId = await SharedPreferenceService.getSovUploadProcessId()??"";
+        print("Process ID: $processId");
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -659,6 +718,44 @@ class UploadSovProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString()),
       ));
+    }
+  }
+
+  List<Map<String, dynamic>> _getSelectedLocations() {
+    //if nothing is checked then return all locations else return only checked locations
+    if (geocodingList.every((element) => element['isChecked'] == false)) {
+      // geocoding + duplicate + conflict
+      return geocodingList + duplicateLocations + conflictLocations;
+    } else {
+      return geocodingList.where((element) => element['isChecked'] == true).toList();
+    }
+  }
+
+  Future<void> commitSelectedLocations(BuildContext context, String accountId, String accountName, String tempId) async {
+    List<Map<String, dynamic>> selectedLocations = _getSelectedLocations();
+    /* if (selectedLocations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(LanguageService.getTranslated(context, "app_no_locations_selected")),
+        ),
+      );
+      return;
+    }*/
+    await _submitLocations(context, selectedLocations, "use_sov_data", tempId, accountId, accountName);
+  }
+
+  void _commitAllLocations(BuildContext context, String accountId, String accountName, String tempId) {
+    _submitLocations(context, geocodingList + duplicateLocations + conflictLocations, "refresh_all_data", tempId, accountId, accountName);
+  }
+
+  Future<void> _submitLocations(BuildContext context, List<Map<String, dynamic>> locationsToSubmit, String formatType, String tempId, String accountId, String accountName) async {
+
+    if(accountId.isNotEmpty) {
+      await submitLocationsSubAccounts(context, tempId, locationsToSubmit, formatType, accountId, accountName);
+      return;
+    } else {
+      await submitLocationsAccounts(
+        context, tempId, locationsToSubmit, formatType,);
     }
   }
 }

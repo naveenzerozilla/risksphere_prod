@@ -48,6 +48,8 @@ enum Screens {
 
 
   certifiedLocationList,
+
+  activityFeed,
 }
 
 enum EmailOptions {
