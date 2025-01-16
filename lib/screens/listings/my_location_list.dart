@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -11,6 +12,7 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:green/models/my_location_list_model.dart';
 import 'package:green/providers/location_list_provider.dart';
 import 'package:green/providers/my_location_list_provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/sov_location_list.dart';
 import 'package:green/screens/listings/widgets/configurations_tab.dart';
@@ -20,6 +22,7 @@ import 'package:green/screens/listings/widgets/location_card.dart';
 import 'package:green/screens/listings/widgets/location_list_map_view.dart';
 import 'package:green/screens/listings/widgets/maintenance_widget.dart';
 import 'package:green/screens/listings/widgets/mapping_screen.dart';
+import 'package:green/screens/listings/widgets/message_card.dart';
 import 'package:green/screens/listings/widgets/overall_score_table.dart';
 import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:green/service/shared_preference_service.dart';
@@ -418,7 +421,8 @@ class _MyLocationListState extends State<MyLocationList>
                               'SOV upload is disabled during maintenance period.'),
                         ),
                       );
-                    } else if (isUploadInProgress) {
+                    }
+                    else if (isUploadInProgress) {
                       String tempProcessId =
                           await SharedPreferenceService.getSovUploadTempId() ??
                               "";
@@ -434,7 +438,8 @@ class _MyLocationListState extends State<MyLocationList>
                               widget.subAccountID,
                               tempProcessId,
                               state);
-                    } else {
+                    }
+                    else {
                       _showUploadBottomSheet(
                           widget.accountID, widget.subAccountID, "");
                     }
@@ -2609,445 +2614,521 @@ class _MyLocationListState extends State<MyLocationList>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, StateSetter setState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(height: 40),
-                    _uploadedFileName == null
-                        ? GestureDetector(
-                            onTap: () async {
-                              FilePickerResult? result =
-                                  await FilePicker.platform.pickFiles(
-                                type: FileType.custom,
-                                allowedExtensions: ['xls', 'xlsx'],
-                              );
-                              if (result != null) {
-                                File file = File(result.files.single.path!);
-                                setState(() {
-                                  files = file;
-                                  String fileNameWithExtension =
-                                      file.path.split('/').last;
-                                  _uploadedFileName =
-                                      fileNameWithExtension.split('.').first;
-                                  _sovNameController.text = _uploadedFileName!;
-                                });
-                              }
-                            },
-                            child: Container(
-                              height: 150,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.cloud_upload_outlined,
-                                        color: Colors.white),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      "Click to upload or drag and drop",
-                                      style: typography.Body1,
-                                    ),
-                                    SizedBox(height: 5),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.info_outline,
-                                            color: Colors.white54),
-                                        SizedBox(width: 3),
-                                        Text('Max file size is 200 MB',
-                                            style: typography.Body1),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        : Center(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 150,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+        return Consumer<UserProfileProvider>(
+          builder: (context, userProfileProvider, child) {
+            final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+            int locations = userProfileProvider.trialInfo['locations']??0;
+            int total = userProfileProvider.trialInfo['maxLocations']??0;
+            return StatefulBuilder(
+              builder: (context, StateSetter setState) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(height: 40),
+                        _uploadedFileName == null
+                            ? GestureDetector(
+                                onTap:
+                                locations>=total?null:
+                                    () async {
+                                  FilePickerResult? result =
+                                      await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['xls', 'xlsx'],
+                                  );
+                                  if (result != null) {
+                                    File file = File(result.files.single.path!);
+                                    setState(() {
+                                      files = file;
+                                      String fileNameWithExtension =
+                                          file.path.split('/').last;
+                                      _uploadedFileName =
+                                          fileNameWithExtension.split('.').first;
+                                      _sovNameController.text = _uploadedFileName!;
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
                                     child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.description, size: 25),
+                                        Icon(Icons.cloud_upload_outlined,
+                                            color: Colors.white),
                                         SizedBox(height: 10),
                                         Text(
-                                          _sovNameController.text,
+                                          "Click to upload or drag and drop",
                                           style: typography.Body1,
                                         ),
-                                        SizedBox(height: 10),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _uploadedFileName = null;
-                                              _sovNameController.clear();
-                                            });
-                                          },
-                                          child: Text(
-                                            "Cancel",
-                                            style: TextStyle(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .error,
-                                                fontSize: 14),
-                                          ),
-                                        ),
                                         SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.info_outline,
+                                                color: Colors.white54),
+                                            SizedBox(width: 3),
+                                            Text('Max file size is 200 MB',
+                                                style: typography.Body1),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              ],
+                              )
+                            : Center(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        height: 150,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.description, size: 25),
+                                            SizedBox(height: 10),
+                                            Text(
+                                              _sovNameController.text,
+                                              style: typography.Body1,
+                                            ),
+                                            SizedBox(height: 10),
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _uploadedFileName = null;
+                                                  _sovNameController.clear();
+                                                });
+                                              },
+                                              child: Text(
+                                                "Cancel",
+                                                style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                                    fontSize: 14),
+                                              ),
+                                            ),
+                                            SizedBox(height: 5),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                        SizedBox(height: 20),
+                        if(trialStatus.isNotEmpty)
+                          Column(
+                            children: [
+                              MessageCard(
+                                isError: locations>=total,
+                                  messageTextSpans: [
+                                    TextSpan(
+                                      text: '$locations of $total locations left.',
+                                    ),
+                                    TextSpan(
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                "Coming Soon!",
+                                                style: typography.Body1.copyWith(
+                                                  color: AppColors.primaryMain,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      text: ' Upgrade Now!',
+                                      style: TextStyle(
+                                        color: AppColors.primaryMain,
+                                      ),
+                                    ),
+                                  ]
+                              ),
+                              SizedBox(height: 16),
+                              if(!(total-locations<1))
+                              Text(
+                                'The system will only process the first ${total-locations
+                                } locations.',
+                                style: typography.Body1,
+                              ),
+                              SizedBox(height: 16),
+                            ],
+                          ),
+                        if (!addToSOVCheck) ...[
+                          TextField(
+                            controller: tagController,
+                            enabled: locations<=total,
+                            style: TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Enter Tags (separated by comma)",
+                              labelStyle: TextStyle(color: Colors.white),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue)),
+                              hintStyle: TextStyle(color: Colors.white54),
                             ),
-                          ),
-                    SizedBox(height: 20),
-                    if (!addToSOVCheck) ...[
-                      TextField(
-                        controller: tagController,
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Enter Tags (separated by comma)",
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.blue)),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                    ],
-                    if (addToSOVCheck) ...[
-                      // Fields displayed only if checkbox is checked
-                      TextField(
-                        controller: _sovNameController,
-                        /*
-                        readOnly: _uploadedFileName != null,*/
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Name of the SoV",
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.blue)),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                      TextField(
-                        controller: tagController,
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Enter Tags (separated by comma)",
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.blue)),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                      TextField(
-                        controller:
-                            TextEditingController(text: widget.accountName),
-                        style: TextStyle(color: Colors.white),
-                        enabled: false,
-                        decoration: InputDecoration(
-                          labelText: "Enter Account Name",
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.blue)),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                      TextField(
-                        enabled: false,
-                        controller:
-                            TextEditingController(text: widget.subAccountName),
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Enter Sub-account Name",
-                          labelStyle: TextStyle(color: Colors.white),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.blue)),
-                          hintStyle: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                    ],
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 0.0),
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: addToSOVCheck,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                addToSOVCheck = value ?? false;
-                              });
-                            },
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Add to SoV",
-                            style: typography.Body1,
                           ),
                         ],
-                      ),
-                    ),
-                    /* if (addToSOVCheck)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              controller: TextEditingController(text: widget.accountName),
-                              enabled: false,
-                              decoration: InputDecoration(
-                                labelText: "Account Name",
-                                border: OutlineInputBorder(),
-                              ),
+                        if (addToSOVCheck) ...[
+                          // Fields displayed only if checkbox is checked
+                          TextField(
+                            controller: _sovNameController,
+                            enabled: locations<=total,
+                            /*
+                            readOnly: _uploadedFileName != null,*/
+                            style: TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Name of the SoV",
+                              labelStyle: TextStyle(color: Colors.white),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue)),
+                              hintStyle: TextStyle(color: Colors.white54),
                             ),
-                            SizedBox(height: 8.0),
-                            TextField(
-                              controller: TextEditingController(text: widget.subAccountName),
-                              enabled: false,
-                              decoration: InputDecoration(
-                                labelText: "Sub-account Name",
-                                border: OutlineInputBorder(),
-                              ),
+                          ),
+                          SizedBox(height: 14),
+                          TextField(
+                            controller: tagController,
+                            style: TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Enter Tags (separated by comma)",
+                              labelStyle: TextStyle(color: Colors.white),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue)),
+                              hintStyle: TextStyle(color: Colors.white54),
                             ),
-                            SizedBox(height: 8.0),
-                          ],
+                          ),
+                          SizedBox(height: 14),
+                          TextField(
+                            controller:
+                                TextEditingController(text: widget.accountName),
+                            style: TextStyle(color: Colors.white),
+                            enabled: false,
+                            decoration: InputDecoration(
+                              labelText: "Enter Account Name",
+                              labelStyle: TextStyle(color: Colors.white),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              disabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue)),
+                              hintStyle: TextStyle(color: Colors.white54),
+                            ),
+                          ),
+                          SizedBox(height: 14),
+                          TextField(
+                            enabled: false,
+                            controller:
+                                TextEditingController(text: widget.subAccountName),
+                            style: TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Enter Sub-account Name",
+                              labelStyle: TextStyle(color: Colors.white),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              disabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue)),
+                              hintStyle: TextStyle(color: Colors.white54),
+                            ),
+                          ),
+                          SizedBox(height: 14),
+                        ],
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 0.0),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: addToSOVCheck,
+                                onChanged: trialStatus.isNotEmpty?null:
+                                    (bool? value) {
+                                  setState(() {
+                                    addToSOVCheck = value ?? false;
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                "Add to SoV",
+                                style: typography.Body1,
+                              ),
+                              if (trialStatus.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 16.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            "Coming Soon!",
+                                            style: typography.Body1.copyWith(
+                                              color: AppColors.primaryMain,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      "Upgrade Now to create SOV!",
+                                      style: typography.Body1.copyWith(
+                                        color: AppColors.primaryMain,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),*/
-                    SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Column(
-                        children: [
-                          Consumer<MyLocationListProvider>(
-                            builder: (_, locationListProvider, child) {
-                              return locationListProvider.isImageUploadLoading
-                                  ? Center(child: CircularProgressIndicator())
-                                  : Row(
-                                      children: [
-                                        Expanded(
-                                            child: CustomButton(
-                                                type: ButtonType.elevated,
-                                                onPressed: () async {
-                                                  // Upload the file
-                                                  // return if file is null
-                                                  if (files.path.isEmpty) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(
-                                                                "Please select a file to upload")));
-                                                    return;
-                                                  }
-                                                  // return if file is not xlsx
-                                                  if (!files.path
-                                                      .endsWith('.xlsx')) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(
-                                                                "Please select a valid file to upload")));
-                                                    return;
-                                                  }
-                                                  String success =
-                                                      await locationListProvider
-                                                          .uploadSov(
-                                                              context,
-                                                              files,
-                                                              accountId,
-                                                              subAccountId,
-                                                              sovId,
-                                                              tagController
-                                                                  .text,
-                                                              _sovNameController
-                                                                  .text);
-                                                  Navigator.pop(context);
-
-                                                  print('Success: $success');
-                                                  // contain symbol +
-                                                  if (success.isNotEmpty &&
-                                                      success.contains('+')) {
-                                                    print(
-                                                        'Inside + success: $success');
-                                                    // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                                    showDialog(
-                                                        context: context,
-                                                        builder: (BuildContext
-                                                            context) {
-                                                          return AlertDialog(
-                                                            title: Text(
-                                                              /*LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_empty_sov_title")*/
-                                                              'Empty SOV',
-                                                              style: typography
-                                                                  .H5_Regular,
-                                                            ),
-                                                            content: Column(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Text(
-                                                                  /* LanguageService.getTranslated(
-                                                            context,
-                                                            "account_list_app_empty_sov_text"),*/
-                                                                  'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                                  style:
-                                                                      typography
-                                                                          .Body1,
-                                                                ),
-                                                                SizedBox(
-                                                                  height:
-                                                                      CustomSpacing
-                                                                          .two,
-                                                                ),
-                                                                Column(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .stretch,
-                                                                  children: [
-                                                                    Consumer<UploadSovProvider>(builder:
-                                                                        (context,
-                                                                            uploadSovProvider,
-                                                                            child) {
-                                                                      return uploadSovProvider
-                                                                              .isLoading
-                                                                          ? const Center(
-                                                                              child: CircularProgressIndicator(),
-                                                                            )
-                                                                          : CustomButton(
-                                                                              onPressed: () async {
-                                                                                // Create empty SOV
-                                                                                var provider = Provider.of<UploadSovProvider>(context, listen: false);
-                                                                                await provider.createEmptySov(context, success);
-                                                                                Navigator.pop(context);
-                                                                              },
-                                                                              child: Text(
-                                                                                /*LanguageService.getTranslated(
-                                                                      context,
-                                                                      "account_list_app_empty_sov_create"),*/
-                                                                                'Create',
-                                                                                style: typography.ButtonLarge,
-                                                                              ),
-                                                                              type: ButtonType.elevated,
-                                                                            );
-                                                                    }),
-                                                                    CustomButton(
-                                                                      onPressed:
-                                                                          () {
-                                                                        Navigator.pop(
-                                                                            context);
-                                                                      },
-                                                                      child:
-                                                                          Text(
-                                                                        /*LanguageService.getTranslated(
+                        /* if (addToSOVCheck)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextField(
+                                  controller: TextEditingController(text: widget.accountName),
+                                  enabled: false,
+                                  decoration: InputDecoration(
+                                    labelText: "Account Name",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                                SizedBox(height: 8.0),
+                                TextField(
+                                  controller: TextEditingController(text: widget.subAccountName),
+                                  enabled: false,
+                                  decoration: InputDecoration(
+                                    labelText: "Sub-account Name",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                                SizedBox(height: 8.0),
+                              ],
+                            ),
+                          ),*/
+                        SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Column(
+                            children: [
+                              Consumer<MyLocationListProvider>(
+                                builder: (_, locationListProvider, child) {
+                                  return locationListProvider.isImageUploadLoading
+                                      ? Center(child: CircularProgressIndicator())
+                                      : Row(
+                                          children: [
+                                            Expanded(
+                                                child: CustomButton(
+                                                    type: ButtonType.elevated,
+                                                    onPressed: (locations>=total)? null:() async {
+                                                      // Upload the file
+                                                      // return if file is null
+                                                      if (files.path.isEmpty) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(SnackBar(
+                                                                content: Text(
+                                                                    "Please select a file to upload")));
+                                                        return;
+                                                      }
+                                                      // return if file is not xlsx
+                                                      if (!files.path
+                                                          .endsWith('.xlsx')) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(SnackBar(
+                                                                content: Text(
+                                                                    "Please select a valid file to upload")));
+                                                        return;
+                                                      }
+                                                      String success =
+                                                          await locationListProvider
+                                                              .uploadSov(
                                                                   context,
-                                                                  "account_list_app_empty_sov_abort")*/
-                                                                        'Abort',
-                                                                        style: typography
-                                                                            .ButtonLarge,
-                                                                      ),
-                                                                      type: ButtonType
-                                                                          .text,
+                                                                  files,
+                                                                  accountId,
+                                                                  subAccountId,
+                                                                  sovId,
+                                                                  tagController
+                                                                      .text,
+                                                                  _sovNameController
+                                                                      .text);
+                                                      Navigator.pop(context);
+
+                                                      print('Success: $success');
+                                                      // contain symbol +
+                                                      if (success.isNotEmpty &&
+                                                          success.contains('+')) {
+                                                        print(
+                                                            'Inside + success: $success');
+                                                        // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                                        showDialog(
+                                                            context: context,
+                                                            builder: (BuildContext
+                                                                context) {
+                                                              return AlertDialog(
+                                                                title: Text(
+                                                                  /*LanguageService.getTranslated(
+                                                            context,
+                                                            "account_list_app_empty_sov_title")*/
+                                                                  'Empty SOV',
+                                                                  style: typography
+                                                                      .H5_Regular,
+                                                                ),
+                                                                content: Column(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    Text(
+                                                                      /* LanguageService.getTranslated(
+                                                                context,
+                                                                "account_list_app_empty_sov_text"),*/
+                                                                      'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                                      style:
+                                                                          typography
+                                                                              .Body1,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      height:
+                                                                          CustomSpacing
+                                                                              .two,
+                                                                    ),
+                                                                    Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .stretch,
+                                                                      children: [
+                                                                        Consumer<UploadSovProvider>(builder:
+                                                                            (context,
+                                                                                uploadSovProvider,
+                                                                                child) {
+                                                                          return uploadSovProvider
+                                                                                  .isLoading
+                                                                              ? const Center(
+                                                                                  child: CircularProgressIndicator(),
+                                                                                )
+                                                                              : CustomButton(
+                                                                                  onPressed: () async {
+                                                                                    // Create empty SOV
+                                                                                    var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                                    await provider.createEmptySov(context, success);
+                                                                                    Navigator.pop(context);
+                                                                                  },
+                                                                                  child: Text(
+                                                                                    /*LanguageService.getTranslated(
+                                                                          context,
+                                                                          "account_list_app_empty_sov_create"),*/
+                                                                                    'Create',
+                                                                                    style: typography.ButtonLarge,
+                                                                                  ),
+                                                                                  type: ButtonType.elevated,
+                                                                                );
+                                                                        }),
+                                                                        CustomButton(
+                                                                          onPressed:
+                                                                              () {
+                                                                            Navigator.pop(
+                                                                                context);
+                                                                          },
+                                                                          child:
+                                                                              Text(
+                                                                            /*LanguageService.getTranslated(
+                                                                      context,
+                                                                      "account_list_app_empty_sov_abort")*/
+                                                                            'Abort',
+                                                                            style: typography
+                                                                                .ButtonLarge,
+                                                                          ),
+                                                                          type: ButtonType
+                                                                              .text,
+                                                                        ),
+                                                                      ],
                                                                     ),
                                                                   ],
                                                                 ),
-                                                              ],
-                                                            ),
-                                                          );
-                                                        });
-                                                  } else if (success
-                                                      .isNotEmpty) {
-                                                    Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                            builder: (_) =>
-                                                                MappingScreen(
-                                                                  tempId:
-                                                                      success,
-                                                                  accountId: widget
-                                                                      .accountID,
-                                                                  accountName:
-                                                                      widget.accountName ??
-                                                                          "",
-                                                                  subAccountId:
-                                                                      widget
-                                                                          .subAccountID,
-                                                                )));
-                                                  }
-                                                },
-                                                child: Text("Upload",
-                                                    style:
-                                                        typography.ButtonLarge
-                                                            .copyWith(
-                                                                color: Colors
-                                                                    .white)))),
-                                      ],
-                                    );
-                            },
+                                                              );
+                                                            });
+                                                      } else if (success
+                                                          .isNotEmpty) {
+                                                        Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                                builder: (_) =>
+                                                                    MappingScreen(
+                                                                      tempId:
+                                                                          success,
+                                                                      accountId: widget
+                                                                          .accountID,
+                                                                      accountName:
+                                                                          widget.accountName ??
+                                                                              "",
+                                                                      subAccountId:
+                                                                          widget
+                                                                              .subAccountID,
+                                                                    )));
+                                                      }
+                                                    },
+                                                    child: Text("Upload",
+                                                        style:
+                                                            typography.ButtonLarge
+                                                                .copyWith(
+                                                                    color: Colors
+                                                                        .white)))),
+                                          ],
+                                        );
+                                },
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _uploadedFileName = null;
+                                    _sovNameController.clear();
+                                  });
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text("Close", style: typography.Body1),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _uploadedFileName = null;
-                                _sovNameController.clear();
-                              });
-                              Navigator.of(context).pop();
-                            },
-                            child: Text("Close", style: typography.Body1),
-                          ),
-                        ],
-                      ),
+                        ),
+                        SizedBox(height: 20),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
-          },
+          }
         );
       },
     );

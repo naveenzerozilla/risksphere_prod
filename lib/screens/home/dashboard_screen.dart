@@ -112,7 +112,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Provider.of<DashboardProvider>(context, listen: false)
         .getDashboardData(context);
     Provider.of<UserProfileProvider>(context, listen: false)
-        .getAllUserData(context, "", "");
+        .getAllUserData(context, "", "").then((value) {
+      Provider.of<UserProfileProvider>(context, listen: false).fetchTrialInfo();
+    });
+
     final provider = Provider.of<ConfigurationProvider>(context, listen: false);
     Future.wait([
       provider.getConfiguration(

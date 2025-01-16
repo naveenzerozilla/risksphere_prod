@@ -5,6 +5,7 @@
   import 'package:flutter_svg/svg.dart';
   import 'package:google_maps_flutter/google_maps_flutter.dart';
   import 'package:green/design_system/primitives/custom_typography.dart';
+import 'package:green/providers/user_profile_provider.dart';
   import 'package:provider/provider.dart';
   import '../../../constants/enums.dart';
   import '../../../design_system/components/custom_button.dart';
@@ -17,6 +18,8 @@ import '../../../models/my_location_list_model.dart';
   import '../../../providers/custom_tile_providers_main_hazards.dart';
 import 'location_details_popup.dart';
   import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart' as cluster_manager;
+
+import 'message_card.dart';
 
   class LocationListMapView extends StatefulWidget {
     final String accountId;
@@ -256,6 +259,9 @@ import 'location_details_popup.dart';
           // Fetch hazard data unconditionally if regenerate is true
           if (regenerate || provider.hazardData == null || provider.hazardData?['heatmap'] == null) {
             print("Fetching hazard data from API...");
+            var userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+            var trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+            if (trialStatus.isNotEmpty) return;
             await provider.generateHeatMapForLocationsGeocoding(
               context, widget.accountId, widget.subAccountId, false, regenerate, widget.sovId,
             );
@@ -1052,6 +1058,45 @@ import 'location_details_popup.dart';
                                     builder: (context, controller, child) {
                                       return InkWell(
                                         onTap: () {
+                                          var userProfileProvider =
+                                          Provider.of<UserProfileProvider>(context, listen: false);
+                                          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                          final trialSubdestinations =
+                                              userProfileProvider.trialInfo['subDestinations'] ?? 0;
+                                          if (trialStatus != '') {
+                                            showDialog(
+                                              context: context,
+                                              barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+                                              builder: (BuildContext context) {
+                                                return Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.end,
+                                                      children: [
+                                                        IconButton(
+                                                          icon: Icon(Icons.close),
+                                                          onPressed: () {
+                                                            Navigator.of(context).pop();
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    MessageCard(
+                                                      isUpgrade: true,
+                                                      messageTextSpans: [
+                                                        TextSpan(
+                                                          text: 'Upgrade your account to generate heat map!',
+                                                          style: CustomTypography(context).Body1,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                            return;
+                                          }
                                           if (_isLoading || Provider.of<MyLocationListProvider>(context, listen: false).isHeatMapGeneratingLive) {
                                             // Prevent opening the menu if loading or heatmap is being generated
                                             return;

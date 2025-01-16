@@ -1191,27 +1191,35 @@ class _LocationProfileState extends State<LocationProfile>
                             ),
                             Row(
                               children: [
-                                IconButton(
-                                  icon: Icon(Icons.download),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return ExportDialog(
-                                          accountId: widget.accountId,
-                                          subAccountId: widget.subAccountId,
-                                          sovId: widget.sovId,
-                                          locationId: [
-                                            locationProfileProvider
-                                                    .locationProfile
-                                                    ?.finalAddress
-                                                    ?.locationId ??
-                                                ''
-                                          ],
+
+                                Consumer<UserProfileProvider>(
+                                  builder: (context, userProfileProvider, child) {
+                                    var trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                    return IconButton(
+                                      icon: Icon(Icons.download),
+                                      onPressed:
+                                      trialStatus.isNotEmpty?null:
+                                          () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return ExportDialog(
+                                              accountId: widget.accountId,
+                                              subAccountId: widget.subAccountId,
+                                              sovId: widget.sovId,
+                                              locationId: [
+                                                locationProfileProvider
+                                                        .locationProfile
+                                                        ?.finalAddress
+                                                        ?.locationId ??
+                                                    ''
+                                              ],
+                                            );
+                                          },
                                         );
                                       },
                                     );
-                                  },
+                                  }
                                 ),
                                 (locationProfileProvider.locationProfile
                                                 ?.finalAddress?.score ??
@@ -1229,24 +1237,42 @@ class _LocationProfileState extends State<LocationProfile>
                                               userProfileProvider.trialInfo['subDestinations'] ?? 0;
                                           if (trialStatus != '' && trialSubdestinations < 1) {
                                             showDialog(
+                                              barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
                                               context: context,
                                               builder: (BuildContext context) {
-                                                return MessageCard(
-                                                  messageTextSpans: [
-                                                    TextSpan(
-                                                      text: 'You\'ve reached your limit for ',
-                                                      style: CustomTypography(context).Body1,
+                                                return Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.end,
+                                                      children: [
+                                                        IconButton(
+                                                          icon: Icon(Icons.close),
+                                                          onPressed: () {
+                                                            Navigator.of(context).pop();
+                                                          },
+                                                        ),
+                                                      ],
                                                     ),
-                                                    TextSpan(
-                                                      text: '“editing locations”',
-                                                      style: CustomTypography(context).Body1.copyWith(
-                                                        color: AppColors.warning,
-                                                      ),
-                                                    ),
-                                                    TextSpan(
-                                                      text:
-                                                      '.  Consider upgrading your account to unlock more possibilities!',
-                                                      style: CustomTypography(context).Body1,
+                                                    MessageCard(
+                                                      isUpgrade: true,
+                                                      messageTextSpans: [
+                                                        TextSpan(
+                                                          text: 'You\'ve reached your limit for ',
+                                                          style: CustomTypography(context).Body1,
+                                                        ),
+                                                        TextSpan(
+                                                          text: '“editing locations”',
+                                                          style: CustomTypography(context).Body1.copyWith(
+                                                            color: AppColors.warning,
+                                                          ),
+                                                        ),
+                                                        TextSpan(
+                                                          text:
+                                                          '.  Consider upgrading your account to unlock more possibilities!',
+                                                          style: CustomTypography(context).Body1,
+                                                        ),
+                                                      ],
                                                     ),
                                                   ],
                                                 );
@@ -2009,25 +2035,30 @@ class _LocationProfileState extends State<LocationProfile>
                         ),
                         Row(
                           children: [
-                            IconButton(
-                              icon: Icon(Icons.download),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return ExportDialog(
-                                      accountId: widget.accountId,
-                                      subAccountId: widget.subAccountId,
-                                      sovId: widget.sovId,
-                                      locationId: [
-                                        locationProfileProvider.locationProfile
-                                                ?.finalAddress?.locationId ??
-                                            ''
-                                      ],
+                            Consumer<UserProfileProvider>(
+                              builder: (context, userProfileProvider, child) {
+                                var trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                return IconButton(
+                                  icon: Icon(Icons.download),
+                                  onPressed: trialStatus.isNotEmpty?null:() {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return ExportDialog(
+                                          accountId: widget.accountId,
+                                          subAccountId: widget.subAccountId,
+                                          sovId: widget.sovId,
+                                          locationId: [
+                                            locationProfileProvider.locationProfile
+                                                    ?.finalAddress?.locationId ??
+                                                ''
+                                          ],
+                                        );
+                                      },
                                     );
                                   },
                                 );
-                              },
+                              }
                             ),
                             // edit location
                             (locationProfileProvider.locationProfile
@@ -2047,23 +2078,41 @@ class _LocationProfileState extends State<LocationProfile>
                                       if (trialStatus != '' && trialSubdestinations < 1) {
                                         showDialog(
                                           context: context,
+                                          barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
                                           builder: (BuildContext context) {
-                                            return MessageCard(
-                                              messageTextSpans: [
-                                                TextSpan(
-                                                  text: 'You\'ve reached your limit for ',
-                                                  style: CustomTypography(context).Body1,
+                                            return Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    IconButton(
+                                                      icon: Icon(Icons.close),
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                      },
+                                                    ),
+                                                  ],
                                                 ),
-                                                TextSpan(
-                                                  text: '“editing locations”',
-                                                  style: CustomTypography(context).Body1.copyWith(
-                                                    color: AppColors.warning,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text:
-                                                  '.  Consider upgrading your account to unlock more possibilities!',
-                                                  style: CustomTypography(context).Body1,
+                                                MessageCard(
+                                                  isUpgrade: true,
+                                                  messageTextSpans: [
+                                                    TextSpan(
+                                                      text: 'You\'ve reached your limit for ',
+                                                      style: CustomTypography(context).Body1,
+                                                    ),
+                                                    TextSpan(
+                                                      text: '“editing locations”',
+                                                      style: CustomTypography(context).Body1.copyWith(
+                                                        color: AppColors.warning,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text:
+                                                      '.  Consider upgrading your account to unlock more possibilities!',
+                                                      style: CustomTypography(context).Body1,
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             );
@@ -2863,24 +2912,42 @@ class _LocationProfileState extends State<LocationProfile>
         userProfileProvider.trialInfo['subDestinations'] ?? 0;
     if (trialStatus != '' && trialSubdestinations < 1) {
       showDialog(
+        barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         context: context,
         builder: (BuildContext context) {
-          return MessageCard(
-            messageTextSpans: [
-              TextSpan(
-                text: 'You\'ve reached your limit for ',
-                style: CustomTypography(context).Body1,
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
               ),
-              TextSpan(
-                text: '“creating campus”',
-                style: CustomTypography(context).Body1.copyWith(
-                      color: AppColors.warning,
-                    ),
-              ),
-              TextSpan(
-                text:
-                    '.  Consider upgrading your account to unlock more possibilities!',
-                style: CustomTypography(context).Body1,
+              MessageCard(
+                isUpgrade: true,
+                messageTextSpans: [
+                  TextSpan(
+                    text: 'You\'ve reached your limit for ',
+                    style: CustomTypography(context).Body1,
+                  ),
+                  TextSpan(
+                    text: '“creating campus”',
+                    style: CustomTypography(context).Body1.copyWith(
+                          color: AppColors.warning,
+                        ),
+                  ),
+                  TextSpan(
+                    text:
+                        '.  Consider upgrading your account to unlock more possibilities!',
+                    style: CustomTypography(context).Body1,
+                  ),
+                ],
               ),
             ],
           );

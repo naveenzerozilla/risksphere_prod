@@ -71,6 +71,8 @@ class SharedPreferenceService {
   static const String IS_TRIAL_APPLICABLE = 'is_trial_period_applicable';
   static const String TRIAL_SUBDESTINATIONS = 'trial_subdestinations';
   static const String TRIAL_EDITLOCATIONS = 'trial_max_updates';
+  static const String TRIAL_MAX_LOCATIONS = 'trial_max_locations';
+  static const String TRIAL_LOCATIONS = 'trial_locations';
 
   // Save and get FCM Token
   static Future<void> saveFcmToken(String fcmToken) async {
@@ -429,12 +431,14 @@ class SharedPreferenceService {
   }
 
   // Save Trial Info with Firebase Timestamp
-  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations) async {
+  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations, int trialMaxLocations, int trialLocations) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(TRIAL_PERIOD_DAYS, trialDays);
     await prefs.setBool(IS_TRIAL_APPLICABLE, isApplicable);
     await prefs.setInt(TRIAL_SUBDESTINATIONS, trialSubDestinations);
     await prefs.setInt(TRIAL_EDITLOCATIONS, trialEditLocations);
+    await prefs.setInt(TRIAL_MAX_LOCATIONS, trialMaxLocations);
+    await prefs.setInt(TRIAL_LOCATIONS, trialLocations);
   }
 
 // Get Trial Period Days
@@ -461,14 +465,26 @@ class SharedPreferenceService {
     return prefs.getInt(TRIAL_EDITLOCATIONS);
   }
 
+  static Future<int?> getTrialMaxLocations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TRIAL_MAX_LOCATIONS);
+  }
+
+  static Future<int?> getTrialLocations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TRIAL_LOCATIONS);
+  }
+
   Future<void> saveUserTrialData(Map<String, dynamic> user) async {
     if (user.containsKey('trial_period_days')) {
       int trialDays = user['trial_period_days'];
       bool isTrialApplicable = user['is_trial_period_applicable'];
       int trialSubDestinations = user['trial_subdestinations'];
       int trialEditLocations = user['trial_max_updates'];
+      int trialMaxLocations = user['trial_max_locations'];
+      int trialLocations = user['trial_locations'];
 
-      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations);
+      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations, trialMaxLocations, trialLocations);
     }
   }
 
