@@ -1198,12 +1198,14 @@ class AuthNotifier extends ChangeNotifier {
         int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
         int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
         int? trialLocations = response.data['trial_locations'] ?? 0;
+        int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
+        int? trialTotalUsersVerified = response.data['total_users_verified'] ?? 0;
 
 
 
         // Store trial info in shared preferences
         await SharedPreferenceService.saveTrialInfo(
-            trialDays ?? 0, isTrialApplicable, trialSubdestinations ?? 0, trialEditLocations ?? 0, trialMaxLocations ?? 0, trialLocations ?? 0);
+            trialDays ?? 0, isTrialApplicable, trialSubdestinations ?? 0, trialEditLocations ?? 0, trialMaxLocations ?? 0, trialLocations ?? 0, trailTotalUsers ?? 0, trialTotalUsersVerified ?? 0);
 
         print(
             "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");

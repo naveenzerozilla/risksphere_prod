@@ -262,7 +262,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
                                             child: MessageCard(
-                                                isError: locations>=total,
+                                                isError: locations<1,
                                                 messageTextSpans: [
                                                   TextSpan(
                                                     text: '$locations of $total locations left.',
@@ -559,14 +559,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           padding: const EdgeInsets.all(8.0),
                                           child: DropdownButtonFormField<String>(
                                             decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_location_type"),
+                                              labelText: LanguageService.getTranslated(
+                                                  context, "addlocation_location_type"),
                                               border: OutlineInputBorder(),
                                             ),
                                             value: _selectedLocationType,
-                                            onChanged: (String? newValue) {
+                                            onChanged: areFieldsDisabled()
+                                                ? null // Disable dropdown if `areFieldsDisabled` is true
+                                                : (String? newValue) {
                                               setState(() {
                                                 _selectedLocationType = newValue;
                                               });
@@ -575,8 +575,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               'Residential',
                                               'Commercial',
                                               'Industrial',
-                                            ].map<DropdownMenuItem<String>>(
-                                                (String value) {
+                                            ].map<DropdownMenuItem<String>>((String value) {
                                               return DropdownMenuItem<String>(
                                                 value: value,
                                                 child: Text(value),
@@ -584,11 +583,13 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             }).toList(),
                                           ),
                                         ),
+
                                         SizedBox(height: CustomSpacing.three),
                                         // Location City
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: TextFormField(
+                                            enabled: !areFieldsDisabled(),
                                             controller: _locationCityController,
                                             decoration: InputDecoration(
                                               labelText:
@@ -605,6 +606,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: TextFormField(
+                                            enabled: !areFieldsDisabled(),
                                             controller: _locationStateController,
                                             decoration: InputDecoration(
                                               labelText:
@@ -621,6 +623,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: TextFormField(
+                                            enabled: !areFieldsDisabled(),
                                             maxLines: 3,
                                             controller:
                                                 _locationDescriptionController,
@@ -644,13 +647,15 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             children: [
                                               Checkbox(
                                                 value: addToSOVCheck,
-                                                onChanged: disableToggle?null:(bool? value) {
+                                                onChanged: areFieldsDisabled()
+                                                    ? null // Disable checkbox if `areFieldsDisabled` is true
+                                                    : (bool? value) {
                                                   setState(() {
                                                     addToSOVCheck = !addToSOVCheck;
                                                   });
                                                 },
                                               ),
-                                              SizedBox(width: 8,),
+                                              SizedBox(width: 8),
                                               Text(
                                                 "Add to SOV",
                                                 style: typography.Body1,
@@ -729,272 +734,56 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             ),
                                           ),
                                         SizedBox(height: CustomSpacing.three),
-                                        // Save Button
-                                        Consumer<MyLocationListProvider>(builder:
-                                            (context, locationProfileProvider,
-                                                child) {
-                                          return Consumer<LocationListProvider>(
-                                              builder: (context, locationListProvider,
-                                                  child) {
-                                            return Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8.0),
-                                              child: Row(
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                          child: Column(
+                                            children: [
+                                              Row(
                                                 children: [
                                                   Expanded(
                                                     child: CustomButton(
                                                       type: ButtonType.elevated,
                                                       onPressed: () async {
-                                                        if (widget
-                                                            .locationId.isEmpty) {
-                                                          // add location api
-                                                          // Required fields are location name, address, zip, country others are optional
-
-                                                          if (_formKey.currentState!
-                                                              .validate()) {
-                                                            var body = {
-                                                              "data": {
-                                                                "account_id":
-                                                                    widget.accountId,
-                                                                "sub_account_id":
-                                                                    widget
-                                                                        .subAccountId,
-                                                                "sov_id":
-                                                                    widget.sovId,
-                                                                "by_search": false,
-                                                                "location_name":
-                                                                    _locationNameController
-                                                                        .text,
-                                                                "location_type":
-                                                                    _selectedLocationType,
-                                                                "description":
-                                                                    _locationDescriptionController
-                                                                        .text,
-                                                                "address":
-                                                                    _locationAddressController
-                                                                        .text,
-                                                                "city":
-                                                                    _locationCityController
-                                                                        .text,
-                                                                "state":
-                                                                    _locationStateController
-                                                                        .text,
-                                                                "zip":
-                                                                    _locationZipCodeController
-                                                                        .text,
-                                                                "country":
-                                                                    _selectedCountry,
-                                                                "new":
-                                                                    //_isSelectedFromAutocomplete
-                                                            addToSOVCheck,
-                                                                "rented": rented,
-                                                                "leased": leased,
-                                                                "latitude": markers.values.first.position.latitude,
-                                                                "longitude": markers.values.first.position.longitude,
-                                                                "user_id": FirebaseAuth.instance.currentUser!.uid,
-                                                                "add_to_sov": addToSOVCheck.toString(),
-                                                                "tags": "",
-                                                                "name": "",
-                                                              }
-                                                            };
-                                                            locationListProvider
-                                                                .addLocation(
-                                                                    context,
-                                                                    widget.accountId,
-                                                                    widget
-                                                                        .subAccountId,
-                                                                    widget.sovId,
-                                                                    body);
-                                                          }
-                                                        } else {
-                                                          // update location api
-                                                          // Required fields are location name, address, zip, country others are optional
-
-                                                          if (_formKey.currentState!
-                                                              .validate()) {
-                                                            var body = {
-                                                              "data": {
-                                                                "add_to_sov": addToSOVCheck.toString(),
-                                                                "account_id":
-                                                                    widget.accountId,
-                                                                "sub_account_id":
-                                                                    widget
-                                                                        .subAccountId,
-                                                                "sov_id":
-                                                                    widget.sovId,
-                                                                "by_search": false,
-                                                                "location_name":
-                                                                    _locationNameController
-                                                                        .text,
-                                                                "location_type":
-                                                                    _selectedLocationType,
-                                                                "description":
-                                                                    _locationDescriptionController
-                                                                        .text,
-                                                                "address":
-                                                                    _locationAddressController
-                                                                        .text,
-                                                                "city":
-                                                                    _locationCityController
-                                                                        .text,
-                                                                "state":
-                                                                    _locationStateController
-                                                                        .text,
-                                                                "zip":
-                                                                    _locationZipCodeController
-                                                                        .text,
-                                                                "country":
-                                                                    _selectedCountry,
-                                                                "location_id":
-                                                                    widget.locationId,
-                                                                "new":
-                                                                //_isSelectedFromAutocomplete
-                                                                addToSOVCheck,
-                                                                "rented": rented,
-                                                                "leased": leased,
-                                                                "latitude": markers.values.first.position.latitude,
-                                                                "longitude": markers.values.first.position.longitude,
-                                                                "user_id": FirebaseAuth.instance.currentUser!.uid,
-                                                                "tags": "",
-                                                                "name": "",
-                                                              }
-                                                            };
-
-                                                            var success = await locationProfileProvider
-                                                                .updateLocationDetails(
-                                                                    context,
-                                                                    widget.accountId,
-                                                                    widget
-                                                                        .subAccountId,
-                                                                    widget.sovId,
-                                                                    widget.locationId,
-                                                                    body);
-                                                            if (success
-                                                                    .toLowerCase() ==
-                                                                'true') {
-                                                              /*Navigator
-                                                                  .pushReplacement(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder: (_) =>
-                                                                      LocationProfile(
-                                                                    accountId: widget
-                                                                        .accountId,
-                                                                    accountName: widget
-                                                                        .accountName,
-                                                                    subAccountId: widget
-                                                                        .subAccountId,
-                                                                    subAccountName: widget
-                                                                        .subAccountName,
-                                                                    sovId:
-                                                                        widget.sovId,
-                                                                    sovName: widget
-                                                                        .sovName,
-                                                                    searchQuery: widget
-                                                                        .searchQuery,
-                                                                    page: widget.page,
-                                                                    totalPages: widget
-                                                                        .totalPages,
-                                                                  ),
-                                                                ),
-                                                              );*/
-                                                             // Navigator.pop(context, true);
-                                                              print('location id provided: ${widget.locationId}');
-                                                           //   if (mounted) {
-                                                               // await Navigator.maybePop(context);
-                                                              if (mounted) {
-                                                                // Pop twice
-                                                                Navigator.pop(context);
-                                                                Future.microtask(() {
-                                                                  Navigator.pop(context);
-
-                                                                  // Push and remove until the stack is clear
-                                                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                                    if (mounted) {
-                                                                      Navigator.pushAndRemoveUntil(
-                                                                        context,
-                                                                        MaterialPageRoute(
-                                                                          builder: (context) => LocationProfile(
-                                                                            accountId: widget.accountId,
-                                                                            subAccountId: widget.subAccountId,
-                                                                            sovId: widget.sovId,
-                                                                            accountName: widget.accountName,
-                                                                            subAccountName: widget.subAccountName,
-                                                                            sovName: widget.sovName,
-                                                                            locationId: widget.locationId,
-                                                                            searchQuery: widget.searchQuery,
-                                                                            page: widget.page,
-                                                                            totalPages: widget.totalPages,
-                                                                          ),
-                                                                        ),
-                                                                            (route) => true, // Clear the stack
-                                                                      );
-                                                                    }
-                                                                  });
-                                                                });
-                                                              }
-
-                                                              //   }
-
-                                                            }
+                                                        if (_formKey.currentState!.validate()) {
+                                                          var body = _buildRequestBody(); // Use a helper method for the body
+                                                          if (widget.locationId.isEmpty) {
+                                                            // Add Location
+                                                            await _handleAddLocation(context, body);
+                                                          } else {
+                                                            // Update Location
+                                                            await _handleUpdateLocation(context, body);
                                                           }
                                                         }
                                                       },
-                                                      child: locationListProvider
-                                                                  .isAddLocationLoading ||
-                                                              locationProfileProvider
-                                                                  .isLoading
-                                                          ? Center(
-                                                              child: SizedBox(
-                                                                  height: 25,
-                                                                  width: 25,
-                                                                  child:
-                                                                      CircularProgressIndicator(
-                                                                        color: themeProvider
-                                                                        .getTheme
-                                                                        .colorScheme
-                                                                        .onPrimary,
-                                                                      )))
-                                                          : Text(
-                                                              widget.locationId
-                                                                      .isEmpty
-                                                                  ? LanguageService
-                                                                      .getTranslated(
-                                                                          context,
-                                                                          "addlocation_create_button_text")
-                                                                  : "Update",
-                                                              style: typography
-                                                                  .ButtonLarge.copyWith(color: themeProvider.getTheme.colorScheme.onPrimary),)),
+                                                      child: _buildButtonChild(context),
                                                     ),
+                                                  ),
                                                 ],
                                               ),
-                                            );
-                                          });
-                                        }),
-                                        SizedBox(height: CustomSpacing.two),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8.0),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: CustomButton(
-                                                  type: ButtonType.outlined,
-                                                  onPressed: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "addlocation_cancel_button_text"),
-                                                      style: typography.ButtonLarge.copyWith(
-                                                        color: themeProvider.getTheme.colorScheme.primary,
-                                                      )),
-                                                ),
+                                              SizedBox(height: CustomSpacing.two),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: CustomButton(
+                                                      type: ButtonType.outlined,
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: Text(
+                                                        LanguageService.getTranslated(
+                                                            context, "addlocation_cancel_button_text"),
+                                                        style: typography.ButtonLarge.copyWith(
+                                                          color: themeProvider.getTheme.colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
                                         ),
+
                                       ],
                                     ),
                                   ),
@@ -1015,13 +804,122 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
   }
 
+ Map<String, dynamic> _buildRequestBody() {
+    return {
+      "data": {
+        "account_id": widget.accountId,
+        "sub_account_id": widget.subAccountId,
+        "sov_id": widget.sovId,
+        "by_search": false,
+        "location_name": _locationNameController.text,
+        "location_type": _selectedLocationType,
+        "description": _locationDescriptionController.text,
+        "address": _locationAddressController.text,
+        "city": _locationCityController.text,
+        "state": _locationStateController.text,
+        "zip": _locationZipCodeController.text,
+        "country": _selectedCountry,
+        "new": addToSOVCheck,
+        "rented": rented,
+        "leased": leased,
+        "latitude": markers.values.first.position.latitude,
+        "longitude": markers.values.first.position.longitude,
+        "user_id": FirebaseAuth.instance.currentUser!.uid,
+        "add_to_sov": addToSOVCheck.toString(),
+        "tags": "",
+        "name": "",
+        if (widget.locationId.isNotEmpty) "location_id": widget.locationId,
+      }
+    };
+  }
+
+  Future<void> _handleAddLocation(BuildContext context, Map<String, dynamic> body) async {
+    final locationListProvider = Provider.of<LocationListProvider>(context, listen: false);
+    await locationListProvider.addLocation(
+      context,
+      widget.accountId,
+      widget.subAccountId,
+      widget.sovId,
+      body,
+    );
+  }
+
+  Future<void> _handleUpdateLocation(BuildContext context, Map<String, dynamic> body) async {
+    final locationProfileProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+    var success = await locationProfileProvider.updateLocationDetails(
+      context,
+      widget.accountId,
+      widget.subAccountId,
+      widget.sovId,
+      widget.locationId,
+      body,
+    );
+
+    if (success.toLowerCase() == 'true' && mounted) {
+      // Navigate and clear stack
+      Navigator.pop(context);
+      Future.microtask(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LocationProfile(
+                  accountId: widget.accountId,
+                  subAccountId: widget.subAccountId,
+                  sovId: widget.sovId,
+                  accountName: widget.accountName,
+                  subAccountName: widget.subAccountName,
+                  sovName: widget.sovName,
+                  locationId: widget.locationId,
+                  searchQuery: widget.searchQuery,
+                  page: widget.page,
+                  totalPages: widget.totalPages,
+                ),
+              ),
+                  (route) => false,
+            );
+          }
+        });
+      });
+    }
+  }
+
+  Widget _buildButtonChild(BuildContext context) {
+    final locationListProvider = Provider.of<LocationListProvider>(context);
+    final locationProfileProvider = Provider.of<MyLocationListProvider>(context);
+
+    var typography = CustomTypography(context);
+    if (locationListProvider.isAddLocationLoading || locationProfileProvider.isLoading) {
+      return Center(
+        child: SizedBox(
+          height: 25,
+          width: 25,
+          child: CircularProgressIndicator(
+            color: AppColors.primaryMain,
+          ),
+        ),
+      );
+    } else {
+      return Text(
+        widget.locationId.isEmpty
+            ? LanguageService.getTranslated(context, "addlocation_create_button_text")
+            : "Update",
+        style: typography.ButtonLarge.copyWith(
+          color: Colors.black,
+        ),
+      );
+    }
+  }
+
+
   bool areFieldsDisabled() {
     var provider = Provider.of<UserProfileProvider>(context, listen: false);
     var trialStatus = provider.trialInfo['status'] ?? '';
     var locations = provider.trialInfo['locations'] ?? 0;
     var total = provider.trialInfo['maxLocations'] ?? 0;
     bool isAdd = widget.locationId.isEmpty;
-    return trialStatus.isNotEmpty && locations >= total && isAdd;
+    return trialStatus.isNotEmpty && locations <1 && isAdd;
   }
 
   String? getCountryCodeFromName(String countryName) {

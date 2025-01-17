@@ -33,9 +33,11 @@ class MyLocationModel {
     }
     if (json['filter_by_location_result'] != null) {
       filterByLocationResult = <MyLocation>[];
-        filterByLocationResult!.add(MyLocation.fromJson(json['filter_by_location_result']));
-
+      json['filter_by_location_result'].forEach((v) {
+        filterByLocationResult!.add(MyLocation.fromJson(v));
+      });
     }
+
   }
 
   Map<String, dynamic> toJson() {
@@ -67,10 +69,11 @@ class MyLocation with ClusterItem{
   bool? isSelected;
   List<String>? tags;
   int? overallScore;
-  Map<String, Hazard>? hazard;
+  Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
   String? geocodedAddress;
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
+
 
 
   MyLocation({
@@ -111,12 +114,15 @@ class MyLocation with ClusterItem{
       overallScore = int.tryParse(json['overallScore']?.toString() ?? '');
     }
     geocodedAddress = json['geocoded_address']??'';
+    // Parse hazard as Map<String, HazardDetails>
     if (json['hazard'] != null) {
       hazard = {};
       json['hazard'].forEach((key, value) {
-        hazard![key] = Hazard.fromJson(value);
+        hazard![key] = HazardDetails.fromJson(value);
       });
     }
+
+
     if (json['subdestinations'] != null) {
       subdestinations = <Subdestination>[];
       json['subdestinations'].forEach((v) {
@@ -168,46 +174,147 @@ class MyLocation with ClusterItem{
 
 class Hazard {
   int? priority;
-  String? vendorName;
-  dynamic value; // Can be a String, double, or "No Rating" etc.
-  int? rating;
-  //Date? date;
+  String? vendorName; // Vendor providing the data (e.g., Kineticast, USGS)
+  dynamic value; // Raw value from the vendor (can be String, double, or null)
+  int? rating; // Rating of the hazard
+  DateTime? date; // Hazard date, if provided
 
   Hazard({
     this.priority,
     this.vendorName,
     this.value,
     this.rating,
-   // this.date,
+    this.date,
   });
 
   Hazard.fromJson(Map<String, dynamic> json) {
-    priority = json['priority'] is int
-        ? json['priority']
-        : int.tryParse(json['priority']?.toString() ?? '');
+    priority = json['priority'];
     vendorName = json['vendor_name'];
     value = json['value'];
     rating = json['rating'];
-   // date = json['date'] != null ? Date.fromJson(json['date']) : null;
+    date = json['date'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['date']['_seconds'] * 1000)
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'priority': priority,
+      'vendor_name': vendorName,
+      'value': value,
+      'rating': rating,
+      'date': date?.toIso8601String(),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Hazard(priority: $priority, vendorName: $vendorName, value: $value, rating: $rating, date: $date)';
+  }
+}
+
+class VendorData {
+  String? key; // Key representing the type of information (e.g., "PGA", "Risk Impact")
+  String? value; // Value corresponding to the key (e.g., "Moderate", "0.31")
+  String? vendorName; // Vendor providing the data (e.g., "Kineticast", "USGS")
+  int? rating; // Rating of the hazard provided by the vendor, if applicable
+
+  VendorData({this.key, this.value, this.vendorName, this.rating});
+
+  VendorData.fromJson(Map<String, dynamic> json) {
+    key = json['key'];
+    value = json['value'];
+    vendorName = json['vendor_name'];
+    rating = json['rating']; // Ensure 'rating' is being parsed from JSON
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'key': key,
+      'value': value,
+      'vendor_name': vendorName,
+      'rating': rating,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'VendorData(key: $key, value: $value, vendorName: $vendorName, rating: $rating)';
+  }
+}
+
+
+
+
+class HazardDetails {
+  String? vendorName; // Primary vendor providing the data
+  dynamic value; // The hazard value (can be String, int, or double)
+  int? rating; // Hazard rating
+  int? priority; // Hazard priority
+  DateTime? date; // Date of hazard information
+  Map<String, HazardDetails>? others; // Additional vendor-specific data
+
+  HazardDetails({
+    this.vendorName,
+    this.value,
+    this.rating,
+    this.priority,
+    this.date,
+    this.others,
+  });
+
+  HazardDetails.fromJson(Map<String, dynamic> json) {
+    vendorName = json['vendor_name'];
+    value = json['value'];
+    rating = json['rating'];
+    priority = json['priority'];
+    date = json['date'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(
+      json['date']['_seconds'] * 1000 + (json['date']['_nanoseconds'] ~/ 1000000),
+    )
+        : null;
+
+    // Parsing the `others` field
+    if (json['others'] != null) {
+      others = {};
+      json['others'].forEach((key, value) {
+        others![key] = HazardDetails.fromJson(value);
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['priority'] = priority;
     data['vendor_name'] = vendorName;
     data['value'] = value;
     data['rating'] = rating;
-  /*  if (date != null) {
-      data['date'] = date!.toJson();
-    }*/
+    data['priority'] = priority;
+    if (date != null) {
+      data['date'] = {
+        '_seconds': date!.millisecondsSinceEpoch ~/ 1000,
+        '_nanoseconds': (date!.microsecondsSinceEpoch % 1000000) * 1000,
+      };
+    }
+
+    if (others != null) {
+      data['others'] = others!.map((key, value) => MapEntry(key, value.toJson()));
+    }
+
     return data;
   }
 
   @override
   String toString() {
-    return 'Hazard(priority: $priority, vendorName: $vendorName, value: $value, rating: $rating)';
+    return 'HazardDetails(vendorName: $vendorName, value: $value, rating: $rating, priority: $priority, date: $date, others: $others)';
   }
 }
+
+
+
+
+
+
+
 
 class FinalAddress {
   String? campusId;

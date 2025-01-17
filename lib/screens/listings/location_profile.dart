@@ -1881,7 +1881,6 @@ class _LocationProfileState extends State<LocationProfile>
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.hazard?['Overall']?.rating ?? 0,
-          //location.riskScore ?? 0,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
           occupancy: location.finalAddress?.placeTypes ?? ["--"],
@@ -1894,6 +1893,7 @@ class _LocationProfileState extends State<LocationProfile>
           sovName: widget.sovName,
           hideNavigation: hideNavigation,
         );
+
       },
     );
   }

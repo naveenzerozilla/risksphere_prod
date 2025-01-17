@@ -73,6 +73,8 @@ class SharedPreferenceService {
   static const String TRIAL_EDITLOCATIONS = 'trial_max_updates';
   static const String TRIAL_MAX_LOCATIONS = 'trial_max_locations';
   static const String TRIAL_LOCATIONS = 'trial_locations';
+  static const String TOTAL_TRIAL_USERS = 'total_trial_users';
+  static const String TOTAL_USERS_VERIFIED = 'total_users_verified';
 
   // Save and get FCM Token
   static Future<void> saveFcmToken(String fcmToken) async {
@@ -431,7 +433,7 @@ class SharedPreferenceService {
   }
 
   // Save Trial Info with Firebase Timestamp
-  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations, int trialMaxLocations, int trialLocations) async {
+  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations, int trialMaxLocations, int trialLocations, int totalTrialUsers, int totalUsersVerified) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(TRIAL_PERIOD_DAYS, trialDays);
     await prefs.setBool(IS_TRIAL_APPLICABLE, isApplicable);
@@ -439,6 +441,8 @@ class SharedPreferenceService {
     await prefs.setInt(TRIAL_EDITLOCATIONS, trialEditLocations);
     await prefs.setInt(TRIAL_MAX_LOCATIONS, trialMaxLocations);
     await prefs.setInt(TRIAL_LOCATIONS, trialLocations);
+    await prefs.setInt(TOTAL_TRIAL_USERS, totalTrialUsers);
+    await prefs.setInt(TOTAL_USERS_VERIFIED, totalUsersVerified);
   }
 
 // Get Trial Period Days
@@ -475,6 +479,16 @@ class SharedPreferenceService {
     return prefs.getInt(TRIAL_LOCATIONS);
   }
 
+  static Future<int?> getTotalTrialUsers() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TOTAL_TRIAL_USERS);
+  }
+
+  static Future<int?> getTotalUsersVerified() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(TOTAL_USERS_VERIFIED);
+  }
+
   Future<void> saveUserTrialData(Map<String, dynamic> user) async {
     if (user.containsKey('trial_period_days')) {
       int trialDays = user['trial_period_days'];
@@ -483,8 +497,10 @@ class SharedPreferenceService {
       int trialEditLocations = user['trial_max_updates'];
       int trialMaxLocations = user['trial_max_locations'];
       int trialLocations = user['trial_locations'];
+      int totalTrialUsers = user['total_trial_users'];
+      int totalUsersVerified = user['total_users_verified'];
 
-      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations, trialMaxLocations, trialLocations);
+      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations, trialMaxLocations, trialLocations, totalTrialUsers, totalUsersVerified);
     }
   }
 

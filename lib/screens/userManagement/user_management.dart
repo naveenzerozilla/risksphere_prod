@@ -17,6 +17,7 @@ import 'package:green/models/role_model.dart' as roleModel;
 import 'package:green/providers/company_provider.dart';
 import 'package:green/providers/employee_provider.dart';
 import 'package:green/providers/non_corporate_user_Provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/providers/verification_provider.dart';
 import 'package:green/screens/userManagement/connections_screen.dart';
 import 'package:green/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
@@ -46,6 +47,8 @@ import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 import 'package:dropdown_button2/dropdown_button2.dart';
+
+import '../listings/widgets/message_card.dart';
 
 class UserManagementScreen extends StatefulWidget {
   final Screens? initialScreen;
@@ -892,6 +895,46 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           clearFilters();
                         });
                       } else if (_selectedScreen == Screens.corporateEmployeeList) {
+                        var userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+                        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                        int totalTrialUsers = userProfileProvider.trialInfo['totalUsers'] ?? 0;
+                        int totalUsersVerified =
+                            userProfileProvider.trialInfo['totalUsersVerified'] ?? 0;
+                        if(trialStatus.isNotEmpty && (totalUsersVerified>=totalTrialUsers)) {
+                          showDialog(
+                            context: context,
+                            barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+                            builder: (BuildContext context) {
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(Icons.close),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  MessageCard(
+                                    isUpgrade: true,
+                                    messageTextSpans: [
+                                      TextSpan(
+                                        text: 'You have reached the maximum limit of users for your account. Please upgrade your account to add more users.',
+                                        style: CustomTypography(context).Body1,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          return;
+                        }
+
                         filterRoleList = await Provider.of<CorporateProvider>(
                                 context,
                                 listen: false)
@@ -6121,7 +6164,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   /// Non Corporate Management
-  ///
   _getNonCorporateManagementUI() {
     if (_selectedScreen == Screens.nonCorporateList) {
       return _nonCorporateManagement();
@@ -9180,265 +9222,321 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     DateFormat dateFormat = DateFormat('MMM d, yyyy HH:mm');
     String? date = dateFormat.format(dateTime.toLocal());
     var typography = CustomTypography(context);
-    return Container(
-      margin: const EdgeInsets.only(top: 0.0, bottom: 8),
-      child: Card(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: CustomSpacing.one,
-                  ),
-                  //Use rich Text and color inverted values to white
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text:
-                              '“${verificationProvider.userRequests[index].name ?? ""}”',
-                          style: typography.Body1_5.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontWeight: FontWeight.w500,
-                          ),
+    return Consumer<UserProfileProvider>(
+      builder: (context, userProfileProvider, child) {
+        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+        int totalTrialUsers = userProfileProvider.trialInfo['totalUsers'] ?? 0;
+        int totalUsersVerified =
+            userProfileProvider.trialInfo['totalUsersVerified'] ?? 0;
+        return Container(
+          margin: const EdgeInsets.only(top: 0.0, bottom: 8),
+          child: Card(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: CustomSpacing.one,
+                      ),
+                      //Use rich Text and color inverted values to white
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text:
+                                  '“${verificationProvider.userRequests[index].name ?? ""}”',
+                              style: typography.Body1_5.copyWith(
+                                color:
+                                    Theme.of(context).brightness == Brightness.dark
+                                        ? AppColors.white
+                                        : AppColors.black,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            TextSpan(
+                              text: LanguageService.getTranslated(context,
+                                  'usermanagement_app_corporate_verification_request_text'),
+                              style: typography.Body1_5,
+                            ),
+                          ],
                         ),
-                        TextSpan(
-                          text: LanguageService.getTranslated(context,
-                              'usermanagement_app_corporate_verification_request_text'),
-                          style: typography.Body1_5,
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.one,
-                  ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        CustomChip(
-                            label: Text(
-                                verificationProvider
-                                        .userRequests[index].email ??
-                                    "",
-                                style: typography.InputLabel)),
-                        SizedBox(width: CustomSpacing.two),
-                        CustomChip(
-                            label: Text(
-                                verificationProvider
-                                        .userRequests[index].phone ??
-                                    "",
-                                style: typography.InputLabel)),
-                        SizedBox(width: CustomSpacing.two),
-                        CustomChip(
-                            onPressed: () {
-                              //Show a dialog with outlined dropdown with allRoles, user can save or cancel (as column)
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return AlertDialog(
-                                    title: Text('Select Role',
-                                        style: typography.H6),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          height: CustomSpacing.two,
-                                        ),
-                                        DropdownButtonFormField(
-                                          items: allRoles
-                                              .where((role) =>
-                                                  role.isApplicableForInternal ==
-                                                  true) // Filter out roles where isApplicableForTrial is not true
-                                              .map((role) {
-                                            return DropdownMenuItem(
-                                              child: Text(role.name ?? ""),
-                                              value: role,
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) {
-                                            // Handle dropdown value change
-                                            selectedRole =
-                                                value as roleModel.Roles;
-                                          },
-                                          value: selectedRole,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: CustomSpacing.two,
-                                        ),
-                                        Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.one,
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            CustomChip(
+                                label: Text(
+                                    verificationProvider
+                                            .userRequests[index].email ??
+                                        "",
+                                    style: typography.InputLabel)),
+                            SizedBox(width: CustomSpacing.two),
+                            CustomChip(
+                                label: Text(
+                                    verificationProvider
+                                            .userRequests[index].phone ??
+                                        "",
+                                    style: typography.InputLabel)),
+                            SizedBox(width: CustomSpacing.two),
+                            CustomChip(
+                                onPressed: () {
+                                  //Show a dialog with outlined dropdown with allRoles, user can save or cancel (as column)
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text('Select Role',
+                                            style: typography.H6),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: CustomButton(
-                                                    type: ButtonType.filled,
-                                                    onPressed: () {
-                                                      // Handle save role
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: Text('Save',
-                                                        style: typography
-                                                            .BottomNavigationActiveLabel),
-                                                  ),
-                                                ),
-                                              ],
+                                            SizedBox(
+                                              height: CustomSpacing.two,
                                             ),
-                                            Row(
+                                            DropdownButtonFormField(
+                                              items: allRoles
+                                                  .where((role) =>
+                                                      role.isApplicableForInternal ==
+                                                      true) // Filter out roles where isApplicableForTrial is not true
+                                                  .map((role) {
+                                                return DropdownMenuItem(
+                                                  child: Text(role.name ?? ""),
+                                                  value: role,
+                                                );
+                                              }).toList(),
+                                              onChanged: (value) {
+                                                // Handle dropdown value change
+                                                selectedRole =
+                                                    value as roleModel.Roles;
+                                              },
+                                              value: selectedRole,
+                                              decoration: InputDecoration(
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: CustomSpacing.two,
+                                            ),
+                                            Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
                                               children: [
-                                                Expanded(
-                                                  child: CustomButton(
-                                                    type: ButtonType.text,
-                                                    onPressed: () {
-                                                      // Handle cancel
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: Text('Cancel',
-                                                        style: typography
-                                                                .BottomNavigationActiveLabel
-                                                            .copyWith(
-                                                                color: AppColors
-                                                                    .primaryMain)),
-                                                  ),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: CustomButton(
+                                                        type: ButtonType.filled,
+                                                        onPressed: () {
+                                                          // Handle save role
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: Text('Save',
+                                                            style: typography
+                                                                .BottomNavigationActiveLabel),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: CustomButton(
+                                                        type: ButtonType.text,
+                                                        onPressed: () {
+                                                          // Handle cancel
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: Text('Cancel',
+                                                            style: typography
+                                                                    .BottomNavigationActiveLabel
+                                                                .copyWith(
+                                                                    color: AppColors
+                                                                        .primaryMain)),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                            label: Text(
-                                verificationProvider.userRequests[index].role ??
-                                    "",
-                                style: typography.InputLabel)),
-                        SizedBox(width: CustomSpacing.two),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                // bottom left and right corners curved
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(8),
-                  bottomRight: Radius.circular(8),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  verificationProvider.isCorporateAcceptLoading &&
-                          selectedUserVerificationAcceptListIndex == index
-                      ? Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 24),
-                            height: 20,
-                            width: 20,
-                            child: const CircularProgressIndicator(),
-                          ),
-                        )
-                      : CustomButton(
-                          type: ButtonType.outlined,
-                          onPressed: () {
-                            // Handle accept
-                            selectedUserVerificationAcceptListIndex = index;
-                            verificationProvider
-                                .changeUserVerificationStatus(
-                                    context,
-                                    verificationProvider
-                                            .userRequests[index].id ??
+                                label: Text(
+                                    verificationProvider.userRequests[index].role ??
                                         "",
-                                    true)
-                                .then((value) {
-                              if (value) {
-                                if (value) {
-                                  verificationProvider
-                                      .getAllUserRequests(context);
-                                }
-                              }
-                            });
-                          },
-                          child: Text('Accept',
-                              style:
-                                  typography.BottomNavigationActiveLabel
-                                      .copyWith(color: AppColors.primaryMain)),
+                                    style: typography.InputLabel)),
+                            SizedBox(width: CustomSpacing.two),
+                          ],
                         ),
-                  SizedBox(width: CustomSpacing.two),
-                  verificationProvider.isUserRejectLoading &&
-                          selectedUserVerificationRejectListIndex == index
-                      ? Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 16),
-                            height: 20,
-                            width: 20,
-                            child: const CircularProgressIndicator(),
-                          ),
-                        )
-                      : CustomButton(
-                          type: ButtonType.text,
-                          onPressed: () {
-                            // Handle reject
-                            selectedUserVerificationRejectListIndex = index;
-                            verificationProvider
-                                .changeUserVerificationStatus(
-                                    context,
-                                    verificationProvider
-                                            .userRequests[index].id ??
-                                        "",
-                                    false)
-                                .then((value) {
-                              if (value) {
-                                verificationProvider
-                                    .getAllUserRequests(context);
-                              }
-                            });
-                          },
-                          child: Text('Reject',
-                              style:
-                                  typography.BottomNavigationActiveLabel
-                                      .copyWith(color: AppColors.primaryMain)),
-                        ),
-                  const Spacer(),
-                  //date
-                  // uncomment for time
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today),
-                      SizedBox(width: CustomSpacing.two),
-                      Text(
-                        '$date',
-                        //'Mar 7, 2024 23:26',
-                          style: typography.Caption),
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    // bottom left and right corners curved
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      verificationProvider.isCorporateAcceptLoading &&
+                              selectedUserVerificationAcceptListIndex == index
+                          ? Center(
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 24),
+                                height: 20,
+                                width: 20,
+                                child: const CircularProgressIndicator(),
+                              ),
+                            )
+                          : CustomButton(
+                              type: ButtonType.outlined,
+                              onPressed: () {
+                                print('Total Users Verified: $totalUsersVerified');
+                                print('Total Trial Users: $totalTrialUsers');
+                                print('Trial Status: $trialStatus');
+                                if(trialStatus.isNotEmpty && (totalUsersVerified>=totalTrialUsers)) {
+                                  showDialog(
+                                    context: context,
+                                    barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+                                    builder: (BuildContext context) {
+                                      return Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(Icons.close),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          MessageCard(
+                                            isUpgrade: true,
+                                            messageTextSpans: [
+                                              TextSpan(
+                                                text: 'You have ',
+                                                style: CustomTypography(context).Body1,
+                                              ),
+                                              TextSpan(
+                                                text: 'reached the maximum limit',
+                                                style: CustomTypography(context).Body1.copyWith(
+                                                  color: AppColors.warning,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                ' of users for your account. Please upgrade your account to add more users.',
+                                                style: CustomTypography(context).Body1,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  return;
+                                }
+                                // Handle accept
+                                selectedUserVerificationAcceptListIndex = index;
+                                verificationProvider
+                                    .changeUserVerificationStatus(
+                                        context,
+                                        verificationProvider
+                                                .userRequests[index].id ??
+                                            "",
+                                        true)
+                                    .then((value) {
+                                  if (value) {
+                                    if (value) {
+                                      verificationProvider
+                                          .getAllUserRequests(context);
+                                    }
+                                  }
+                                });
+                              },
+                              child: Text('Accept',
+                                  style:
+                                      typography.BottomNavigationActiveLabel
+                                          .copyWith(color: AppColors.primaryMain)),
+                            ),
+                      SizedBox(width: CustomSpacing.two),
+                      verificationProvider.isUserRejectLoading &&
+                              selectedUserVerificationRejectListIndex == index
+                          ? Center(
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 16),
+                                height: 20,
+                                width: 20,
+                                child: const CircularProgressIndicator(),
+                              ),
+                            )
+                          : CustomButton(
+                              type: ButtonType.text,
+                              onPressed: () {
+                                // Handle reject
+                                selectedUserVerificationRejectListIndex = index;
+                                verificationProvider
+                                    .changeUserVerificationStatus(
+                                        context,
+                                        verificationProvider
+                                                .userRequests[index].id ??
+                                            "",
+                                        false)
+                                    .then((value) {
+                                  if (value) {
+                                    verificationProvider
+                                        .getAllUserRequests(context);
+                                  }
+                                });
+                              },
+                              child: Text('Reject',
+                                  style:
+                                      typography.BottomNavigationActiveLabel
+                                          .copyWith(color: AppColors.primaryMain)),
+                            ),
+                      const Spacer(),
+                      //date
+                      // uncomment for time
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today),
+                          SizedBox(width: CustomSpacing.two),
+                          Text(
+                            '$date',
+                            //'Mar 7, 2024 23:26',
+                              style: typography.Caption),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 

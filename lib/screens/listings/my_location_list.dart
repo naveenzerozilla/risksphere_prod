@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -146,13 +147,18 @@ class _MyLocationListState extends State<MyLocationList>
     Provider.of<MyLocationListProvider>(context, listen: false)
         .clearAllFilters();
 
+    var userProfileProvider =
+    Provider.of<UserProfileProvider>(context, listen: false);
+    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+    // Determine the number of tabs based on trial status
+    int tabCount = trialStatus.isEmpty ? 5 : 4;
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
       setState(() {
         selectedMainTab = _mainTabController?.index ?? 0;
       }); // This ensures that the widget rebuilds when the tab changes
     });
-    _masterTabController = TabController(length: 5, vsync: this);
+    _masterTabController = TabController(length: tabCount, vsync: this);
     _masterTabController?.addListener(() {
       setState(() {
         selectedMasterTab = _masterTabController?.index ?? 0;
@@ -340,316 +346,325 @@ class _MyLocationListState extends State<MyLocationList>
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
     return SafeArea(
-      child: Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
-          return Scaffold(
-            key: _scaffoldKey,
-            backgroundColor:
-                themeProvider.getTheme.colorScheme.surfaceContainerLowest,
-            appBar: CustomAppBar(
-              isExpanded: _isExpanded,
-              showNotificationDot: _showNotificationDot,
-              onExpandPressed: (isExpanded) {
-                setState(() {
-                  _isExpanded = isExpanded;
-                });
-              },
-              onSearchPressed: () {
-                setState(() {
-                  _isExpanded = !_isExpanded;
-                });
-              },
-            ),
-            drawer: CustomDrawer(),
-            floatingActionButton: SpeedDial(
-              animatedIcon: AnimatedIcons.menu_close,
-              animatedIconTheme: IconThemeData(size: 22.0),
-              backgroundColor: AppColors.primaryMain,
-              foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-              children: [
-                if ((selectedMasterTab) == 0)
-                  SpeedDialChild(
-                    child: Icon(Icons.add),
-                    backgroundColor: AppColors.primaryMain,
-                    foregroundColor:
-                        themeProvider.getTheme.colorScheme.onPrimary,
-                    label: 'Add Location',
-                    labelStyle: typography.Body1,
-                    onTap: () {
-                      Navigator.of(context)
-                          .push(MaterialPageRoute(
-                        builder: (_) => AddLocationScreen(
-                          accountId: widget.accountID,
-                          subAccountId: widget.subAccountID,
-                          sovId: "",
-                          accountName: widget.accountName,
-                          subAccountName: widget.subAccountName,
-                        ),
-                      ))
-                          .then((value) {
-                        if (value != null) {
-                          if (value) {
-                            Provider.of<MyLocationListProvider>(context,
-                                    listen: false)
-                                .fetchLocationList(
-                                  context,
-                                  "",
-                                  1,
-                                  40,
-                                  widget.accountID,
-                                  widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
-                                )
-                                .then((value) => setState(() {}));
-                          }
-                        }
-                      });
-                    },
-                  ),
-                SpeedDialChild(
-                  child: Icon(Icons.upload),
-                  backgroundColor: AppColors.primaryMain,
-                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  label: isUploadInProgress ? 'Continue' : 'Upload SOV',
-                  labelStyle: typography.Body1,
-                  onTap: () async {
-                    if (isMaintenance) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'SOV upload is disabled during maintenance period.'),
-                        ),
-                      );
-                    }
-                    else if (isUploadInProgress) {
-                      String tempProcessId =
-                          await SharedPreferenceService.getSovUploadTempId() ??
-                              "";
-                      String state =
-                          await SharedPreferenceService.getSovUploadState() ??
-                              "";
-                      // Call API to get get necessary data and navigate to the respective screen
-                      Provider.of<UploadSovProvider>(context, listen: false)
-                          .fetchSovUploadData(
-                              context,
-                              widget.accountID,
-                              widget.accountName,
-                              widget.subAccountID,
-                              tempProcessId,
-                              state);
-                    }
-                    else {
-                      _showUploadBottomSheet(
-                          widget.accountID, widget.subAccountID, "");
-                    }
+      child: Consumer<UserProfileProvider>(
+        builder: (context, userProfileProvider, child) {
+          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+          return Consumer<ThemeProvider>(
+            builder: (buildContext, themeProvider, child) {
+              return Scaffold(
+                key: _scaffoldKey,
+                backgroundColor:
+                    themeProvider.getTheme.colorScheme.surfaceContainerLowest,
+                appBar: CustomAppBar(
+                  isExpanded: _isExpanded,
+                  showNotificationDot: _showNotificationDot,
+                  onExpandPressed: (isExpanded) {
+                    setState(() {
+                      _isExpanded = isExpanded;
+                    });
+                  },
+                  onSearchPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
                   },
                 ),
-                if ((_masterTabController?.index ?? 0) == 0)
-                  SpeedDialChild(
-                    child: Icon(Icons.download),
-                    backgroundColor: AppColors.primaryMain,
-                    foregroundColor:
-                        themeProvider.getTheme.colorScheme.onPrimary,
-                    label: 'Export Locations',
-                    labelStyle: typography.Body1,
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return ExportDialog(
-                            accountId: widget.accountID,
-                            subAccountId: widget.subAccountID,
-                            sovId: "",
-                            locationId: selectedMainTab == 0
-                                ? Provider.of<MyLocationListProvider>(context,
+                drawer: CustomDrawer(),
+                floatingActionButton: SpeedDial(
+                  animatedIcon: AnimatedIcons.menu_close,
+                  animatedIconTheme: IconThemeData(size: 22.0),
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                  children: [
+                    if ((selectedMasterTab) == 0)
+                      SpeedDialChild(
+                        child: Icon(Icons.add),
+                        backgroundColor: AppColors.primaryMain,
+                        foregroundColor:
+                            themeProvider.getTheme.colorScheme.onPrimary,
+                        label: 'Add Location',
+                        labelStyle: typography.Body1,
+                        onTap: () {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(
+                            builder: (_) => AddLocationScreen(
+                              accountId: widget.accountID,
+                              subAccountId: widget.subAccountID,
+                              sovId: "",
+                              accountName: widget.accountName,
+                              subAccountName: widget.subAccountName,
+                            ),
+                          ))
+                              .then((value) {
+                            if (value != null) {
+                              if (value) {
+                                Provider.of<MyLocationListProvider>(context,
                                         listen: false)
-                                    .myLocationList
-                                    .map((location) => location.id ?? "")
-                                    .toList()
-                                : Provider.of<MyLocationListProvider>(context,
-                                        listen: false)
-                                    .certifiedLocationList
-                                    .map((location) => location.id ?? "")
-                                    .toList(),
+                                    .fetchLocationList(
+                                      context,
+                                      "",
+                                      1,
+                                      40,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                  widget.initialProcessId,
+                                  widget.initialSubProcessId,
+                                    )
+                                    .then((value) => setState(() {}));
+                              }
+                            }
+                          });
+                        },
+                      ),
+                    SpeedDialChild(
+                      child: Icon(Icons.upload),
+                      backgroundColor: AppColors.primaryMain,
+                      foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                      label: isUploadInProgress ? 'Continue' : 'Upload SOV',
+                      labelStyle: typography.Body1,
+                      onTap: () async {
+                        if (isMaintenance) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'SOV upload is disabled during maintenance period.'),
+                            ),
+                          );
+                        }
+                        else if (isUploadInProgress) {
+                          String tempProcessId =
+                              await SharedPreferenceService.getSovUploadTempId() ??
+                                  "";
+                          String state =
+                              await SharedPreferenceService.getSovUploadState() ??
+                                  "";
+                          // Call API to get get necessary data and navigate to the respective screen
+                          Provider.of<UploadSovProvider>(context, listen: false)
+                              .fetchSovUploadData(
+                                  context,
+                                  widget.accountID,
+                                  widget.accountName,
+                                  widget.subAccountID,
+                                  tempProcessId,
+                                  state);
+                        }
+                        else {
+                          _showUploadBottomSheet(
+                              widget.accountID, widget.subAccountID, "");
+                        }
+                      },
+                    ),
+                    if ((_masterTabController?.index ?? 0) == 0)
+                      SpeedDialChild(
+                        child: Icon(Icons.download),
+                        backgroundColor:
+                        trialStatus.isNotEmpty?Colors.grey:AppColors.primaryMain,
+                        foregroundColor:
+                            themeProvider.getTheme.colorScheme.onPrimary,
+                        label: 'Export Locations',
+                        labelStyle: typography.Body1,
+                        onTap: trialStatus.isNotEmpty?null:
+                            () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return ExportDialog(
+                                accountId: widget.accountID,
+                                subAccountId: widget.subAccountID,
+                                sovId: "",
+                                locationId: selectedMainTab == 0
+                                    ? Provider.of<MyLocationListProvider>(context,
+                                            listen: false)
+                                        .myLocationList
+                                        .map((location) => location.id ?? "")
+                                        .toList()
+                                    : Provider.of<MyLocationListProvider>(context,
+                                            listen: false)
+                                        .certifiedLocationList
+                                        .map((location) => location.id ?? "")
+                                        .toList(),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  ),
-              ],
-            ),
-            body: Stack(
-              children: [
-                /*  Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/mesh.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),*/
-                Column(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          SizedBox(height: CustomSpacing.two),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Row(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0, bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      Text(widget.accountName,
-                                          style: typography.InputLabel),
-                                      Text(' > ', style: typography.InputLabel),
-                                      Text(widget.subAccountName,
-                                          style: typography.InputLabel),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Consumer<JobMonitoringProvider>(
-                                          builder: (context, jobMonitoringProvider, child) {
-                                            return Container(
-                                              child: _getLiveUI(jobMonitoringProvider),
-                                            );
-                                          }),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: CustomSpacing.four),
-                          // Master TabBar
-                          Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHigh,
-                              borderRadius:
-                                  BorderRadius.circular(16), // Rounded edges
-                            ),
-                            margin: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 0),
-                            child: DefaultTabController(
-                              length: 4,
-                              child: Column(
-                                children: <Widget>[
-                                  // Container for the TabBar with arrows
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surfaceContainerHigh,
-                                    ),
-                                    height: 50,
-                                    child: Row(
-                                      children: <Widget>[
-                                        // Left arrow button
-                                        IconButton(
-                                          icon: Icon(Icons.arrow_left,
-                                              color: Colors.grey),
-                                          onPressed: _scrollLeft,
-                                        ),
-                                        // Scrollable TabBar
-                                        Expanded(
-                                          child: SingleChildScrollView(
-                                            controller: _scrollController,
-                                            scrollDirection: Axis.horizontal,
-                                            child: TabBar(
-                                              controller: _masterTabController,
-                                              tabAlignment: TabAlignment.start,
-                                              labelStyle: typography.Subtitle2,
-                                              isScrollable: true,
-                                              indicatorColor:
-                                                  Colors.lightBlueAccent,
-                                              labelColor:
-                                                  Colors.lightBlueAccent,
-                                              unselectedLabelColor: Colors.grey,
-                                              tabs: [
-                                                Tab(
-                                                  text: 'Locations',
-                                                ),
-                                                Tab(
-                                                  text: 'SOVs',
-                                                ),
-                                                Tab(text: 'Shared'),
-                                                Tab(text: 'Access Requests'),
-
-                                                Tab(text: 'Configuration'),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        // Right arrow button
-                                        IconButton(
-                                          icon: Icon(Icons.arrow_right,
-                                              color: Colors.grey),
-                                          onPressed: _scrollRight,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Master TabBarView for the Tab Content
-                          Expanded(
-                            child: TabBarView(
-                              physics: NeverScrollableScrollPhysics(),
-                              controller: _masterTabController,
-                              children: [
-                                Consumer<MyLocationListProvider>(builder:
-                                    (context, myLocationListProvider, child) {
-                                  return _getLocationListBodyUI(
-                                      myLocationListProvider, "");
-                                }),
-                                Container(
-                                  margin: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  child: sovBody(typography),
-                                ),
-                                _getComingSoonUI(),
-                                _getComingSoonUI(),
-                                ConfigurationTab(
-                                  accountId: widget.accountID,
-                                  subaccountId: widget.subAccountID,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ),
+                  ],
+                ),
+                body: Stack(
+                  children: [
+                    /*  Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/mesh.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),*/
+                    Column(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              SizedBox(height: CustomSpacing.two),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16.0),
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8.0, bottom: 6),
+                                      child: Row(
+                                        children: [
+                                          Text(widget.accountName,
+                                              style: typography.InputLabel),
+                                          Text(' > ', style: typography.InputLabel),
+                                          Text(widget.subAccountName,
+                                              style: typography.InputLabel),
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Consumer<JobMonitoringProvider>(
+                                              builder: (context, jobMonitoringProvider, child) {
+                                                return Container(
+                                                  child: _getLiveUI(jobMonitoringProvider),
+                                                );
+                                              }),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: CustomSpacing.four),
+                              // Master TabBar
+                              Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHigh,
+                                  borderRadius:
+                                      BorderRadius.circular(16), // Rounded edges
+                                ),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 0),
+                                child: DefaultTabController(
+                                  length: _masterTabController?.length ?? 4,
+                                  child: Column(
+                                    children: <Widget>[
+                                      // Container for the TabBar with arrows
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHigh,
+                                        ),
+                                        height: 50,
+                                        child: Row(
+                                          children: <Widget>[
+                                            // Left arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_left,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollLeft,
+                                            ),
+                                            // Scrollable TabBar
+                                            Expanded(
+                                              child: SingleChildScrollView(
+                                                controller: _scrollController,
+                                                scrollDirection: Axis.horizontal,
+                                                child: TabBar(
+                                                  controller: _masterTabController,
+                                                  tabAlignment: TabAlignment.start,
+                                                  labelStyle: typography.Subtitle2,
+                                                  isScrollable: true,
+                                                  indicatorColor:
+                                                      Colors.lightBlueAccent,
+                                                  labelColor:
+                                                      Colors.lightBlueAccent,
+                                                  unselectedLabelColor: Colors.grey,
+                                                  tabs: [
+                                                    Tab(
+                                                      text: 'Locations',
+                                                    ),
+                                                    Tab(
+                                                      text: 'SOVs',
+                                                    ),
+                                                    Tab(text: 'Shared'),
+                                                    Tab(text: 'Access Requests'),
+
+                                                    if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
+                                                      Tab(text: 'Configuration'),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            // Right arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_right,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollRight,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Master TabBarView for the Tab Content
+                              Expanded(
+                                child: TabBarView(
+                                  physics: NeverScrollableScrollPhysics(),
+                                  controller: _masterTabController,
+                                  children: [
+                                    Consumer<MyLocationListProvider>(builder:
+                                        (context, myLocationListProvider, child) {
+                                      return _getLocationListBodyUI(
+                                          myLocationListProvider, "");
+                                    }),
+                                    Container(
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      child: sovBody(typography),
+                                    ),
+                                    _getComingSoonUI(),
+                                    _getComingSoonUI(),
+                                    if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
+                                      ConfigurationTab(
+                                        accountId: widget.accountID,
+                                        subaccountId: widget.subAccountID,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-            endDrawer: Drawer(
-              child: SafeArea(
-                child: ListingsFilterScreen(
-                  accountId: widget.accountID,
-                  subAccountId: widget.subAccountID,
-                  sovId: "widget.sovId",
-                  searchQuery: locationQuery,
-                  showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
-                  initialProcessId: widget.initialProcessId,
-                  initialSubProcessId: widget.initialSubProcessId,
+                endDrawer: Drawer(
+                  child: SafeArea(
+                    child: ListingsFilterScreen(
+                      accountId: widget.accountID,
+                      subAccountId: widget.subAccountID,
+                      sovId: "widget.sovId",
+                      searchQuery: locationQuery,
+                      showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
+                      initialProcessId: widget.initialProcessId,
+                      initialSubProcessId: widget.initialSubProcessId,
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
-        },
+        }
       ),
     );
   }
@@ -675,409 +690,417 @@ class _MyLocationListState extends State<MyLocationList>
             ),
             //color: Theme.of(context).colorScheme.surfaceContainerHigh,
           ),
-          child: Consumer<MyLocationListProvider>(
-              builder: (context, locationListProvider, child) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (isSelectionMode) ...[
-                  // Show selection count and select all button
-                  SizedBox(width: CustomSpacing.two),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "${locationListProvider.selectedLocations.length}",
-                      style: typography.Body1.copyWith(
-                        fontWeight: FontWeight.bold,
+          child: Consumer<UserProfileProvider>(
+            builder: (context, userProfileProvider, child) {
+              final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+              return Consumer<MyLocationListProvider>(
+                  builder: (context, locationListProvider, child) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (isSelectionMode) ...[
+                      // Show selection count and select all button
+                      SizedBox(width: CustomSpacing.two),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "${locationListProvider.selectedLocations.length}",
+                          style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  SizedBox(width: 2),
-                  TextButton(
-                    onPressed: () {
-                      if (_selectedScreen == Screens.locationList) {
-                        if (locationListProvider.selectedLocations.length <
-                            locationListProvider.myLocationList.length) {
-                          locationListProvider.selectAllLocations(false);
-                        } else {
-                          locationListProvider.clearSelection();
-                        }
-                      } else if (_selectedScreen ==
-                          Screens.certifiedLocationList) {
-                        if (locationListProvider.selectedLocations.length <
-                            locationListProvider.certifiedLocationList.length) {
-                          locationListProvider.selectAllLocations(true);
-                        } else {
-                          locationListProvider.clearSelection();
-                        }
-                      }
-                    },
-                    child: Text(
-                      _selectedScreen == Screens.locationList
-                          ? locationListProvider.selectedLocations.length <
-                                  locationListProvider.myLocationList.length
-                              ? 'Select All'
-                              : 'Deselect All'
-                          : locationListProvider.selectedLocations.length <
-                                  locationListProvider
-                                      .certifiedLocationList.length
-                              ? 'Select All'
-                              : 'Deselect All',
-                      style: typography.Body1.copyWith(
-                        color: AppColors.primaryMain,
+                      SizedBox(width: 2),
+                      TextButton(
+                        onPressed: () {
+                          if (_selectedScreen == Screens.locationList) {
+                            if (locationListProvider.selectedLocations.length <
+                                locationListProvider.myLocationList.length) {
+                              locationListProvider.selectAllLocations(false);
+                            } else {
+                              locationListProvider.clearSelection();
+                            }
+                          } else if (_selectedScreen ==
+                              Screens.certifiedLocationList) {
+                            if (locationListProvider.selectedLocations.length <
+                                locationListProvider.certifiedLocationList.length) {
+                              locationListProvider.selectAllLocations(true);
+                            } else {
+                              locationListProvider.clearSelection();
+                            }
+                          }
+                        },
+                        child: Text(
+                          _selectedScreen == Screens.locationList
+                              ? locationListProvider.selectedLocations.length <
+                                      locationListProvider.myLocationList.length
+                                  ? 'Select All'
+                                  : 'Deselect All'
+                              : locationListProvider.selectedLocations.length <
+                                      locationListProvider
+                                          .certifiedLocationList.length
+                                  ? 'Select All'
+                                  : 'Deselect All',
+                          style: typography.Body1.copyWith(
+                            color: AppColors.primaryMain,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Spacer(),
-                  // Action buttons for selected items
-                  // export
-                  IconButton(
-                    onPressed: () {
-                      // Implement bulk export
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Export Selected Locations'),
-                          content: Text(
-                              'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                if (_selectedScreen == Screens.locationList) {
-                                  // On export button click
-                                  List<String> selectedSovIds =
-                                      Provider.of<MyLocationListProvider>(
-                                              context,
-                                              listen: false)
-                                          .myLocationList
-                                          .where((location) =>
-                                              location.isSelected ?? false)
-                                          .map((sov) => sov.id!)
-                                          .toList();
-
-                                  if (selectedSovIds.isNotEmpty) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return ExportDialog(
-                                          accountId: widget.accountID,
-                                          subAccountId: widget.subAccountID,
-                                          locationId: selectedSovIds,
-                                        );
-                                      },
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      content: Text(
-                                        LanguageService.getTranslated(
-                                            context, "no_items_selected_error"),
-                                        style: typography.Body1,
-                                      ),
-                                    ));
-                                  }
-                                } else if (_selectedScreen ==
-                                    Screens.certifiedLocationList) {
-                                  // On export button click
-                                  List<String> selectedLoactionIds =
-                                      Provider.of<MyLocationListProvider>(
-                                              context,
-                                              listen: false)
-                                          .certifiedLocationList
-                                          .where((location) =>
-                                              location.isSelected ?? false)
-                                          .map((sov) => sov.id!)
-                                          .toList();
-
-                                  if (selectedLoactionIds.isNotEmpty) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return ExportDialog(
-                                          accountId: widget.accountID,
-                                          subAccountId: widget.subAccountID,
-                                          locationId: selectedLoactionIds,
-                                        );
-                                      },
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      content: Text(
-                                        LanguageService.getTranslated(
-                                            context, "no_items_selected_error"),
-                                        style: typography.Body1,
-                                      ),
-                                    ));
-                                  }
-                                }
-                              },
-                              child: Text('Export', style: typography.Body1),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.download),
-                    tooltip: 'Export Selected',
-                  ),
-                  IconButton(
-                      onPressed: () {
-                        // Implement bulk add to SOV
-                        locationListProvider.addTagsToSelectedLocations(
-                            context, widget.accountID, widget.subAccountID);
-                      },
-                      icon: Icon(Symbols.note_stack_add),
-                      tooltip: 'Add Tag'),
-                  IconButton(
-                    onPressed: () {
-                      // Implement bulk add to SOV
-                      locationListProvider.addSelectedToSOV(
-                          context,
-                          widget.accountID,
-                          widget.subAccountID,
-                          widget.accountName,
-                          widget.subAccountName,
-                          _masterTabController);
-                    },
-                    icon: Icon(Symbols.list_alt_add),
-                    tooltip: 'Add to SOV',
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      // Show delete confirmation dialog
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Delete Selected Locations'),
-                          content: Text(
-                              'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel', style: typography.Body1),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                locationListProvider.deleteSelectedLocations(
-                                  context,
-                                  widget.accountID,
-                                  widget.subAccountID,
-                                );
-                                Navigator.pop(context);
-                              },
-                              child: Text('Delete', style: typography.Body1),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.delete_outline),
-                    tooltip: 'Delete Selected',
-                  ),
-                ] else ...[
-                  SizedBox(
-                    width: 8,
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        //SizedBox(width: CustomSpacing.two),
-                        Text(
-                          "My Locations",
-                          style: typography.Body1,
-                        ),
-                        /*
-                                              RatingHalfStars(
-                                                rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
-                                                maxRating: 5,
-                                                iconSize: 18,
-                                              ),*/
-                        Spacer(),
-                        SizedBox(width: CustomSpacing.two),
-                        selectedMainTab == 0
-                            ? Row(
-                                children: [
-                                  InkWell(
-                                    onTap: () {
-                                      // Show end drawer
-                                      Scaffold.of(context).openEndDrawer();
-                                    },
-                                    child: Icon(
-                                      Icons.filter_list,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  SizedBox(width: CustomSpacing.two),
-                                ],
-                              )
-                            : SizedBox(),
-                        // if selected main tab is 1 then show the Generate Heatmap button
-                        SizedBox(width: CustomSpacing.two),
-                        TooltipTheme(
-                          data: TooltipThemeData(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: 14,
-                            ),
-                            padding: EdgeInsets.all(8),
-                            verticalOffset: 20,
-                            preferBelow: false,
-                          ),
-                          child: Tooltip(
-                            showDuration: Duration(seconds: 5),
-                            triggerMode: TooltipTriggerMode.tap,
-                            preferBelow: true,
-                            richMessage: TextSpan(
-                              children: [
-                                for (int i = 0;
-                                    i < locationListProvider.summaryList.length;
-                                    i++)
-                                  TextSpan(
-                                    text:
-                                        '• ${locationListProvider.summaryList[i]}\n',
-                                    style: typography.Subtitle1,
-                                  ),
-                              ],
-                              style: typography.Subtitle1,
-                            ),
-                            child: Icon(
-                              Icons.info,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: CustomSpacing.four),
-                  SizedBox(height: CustomSpacing.eight),
-                  // Options are Upload SOV, Add Location, Export Locations
-                  /*PopupMenuButton(
-                    icon: Icon(Icons.more_vert),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        child: ListTile(
-                          leading: Icon(Icons.upload),
-                          title: Text(
-                            isUploadInProgress?'Continue': 'Upload SOV',
-                            style: typography.Body1,
-                          ),
-                          onTap: () async {
-                            // Add your logic for uploading SOV
-                            if (isMaintenance) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'SOV upload is disabled during maintenance period.'),
+                      Spacer(),
+                      // Action buttons for selected items
+                      // export
+                      IconButton(
+                        onPressed: trialStatus.isNotEmpty?null:
+                    () {
+                          // Implement bulk export
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Export Selected Locations'),
+                              content: Text(
+                                  'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Cancel'),
                                 ),
-                              );
-                            } else if (isUploadInProgress) {
-                              String tempProcessId =
-                                  await SharedPreferenceService
-                                          .getSovUploadTempId() ??
-                                      "";
-                              String state = await SharedPreferenceService
-                                      .getSovUploadState() ??
-                                  "";
-                              // Call API to get get necessary data and navigate to the respective screen
-                              Provider.of<UploadSovProvider>(context,
-                                      listen: false)
-                                  .fetchSovUploadData(
+                                TextButton(
+                                  onPressed: () {
+                                    if (_selectedScreen == Screens.locationList) {
+                                      // On export button click
+                                      List<String> selectedSovIds =
+                                          Provider.of<MyLocationListProvider>(
+                                                  context,
+                                                  listen: false)
+                                              .myLocationList
+                                              .where((location) =>
+                                                  location.isSelected ?? false)
+                                              .map((sov) => sov.id!)
+                                              .toList();
+
+                                      if (selectedSovIds.isNotEmpty) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return ExportDialog(
+                                              accountId: widget.accountID,
+                                              subAccountId: widget.subAccountID,
+                                              locationId: selectedSovIds,
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                          content: Text(
+                                            LanguageService.getTranslated(
+                                                context, "no_items_selected_error"),
+                                            style: typography.Body1,
+                                          ),
+                                        ));
+                                      }
+                                    } else if (_selectedScreen ==
+                                        Screens.certifiedLocationList) {
+                                      // On export button click
+                                      List<String> selectedLoactionIds =
+                                          Provider.of<MyLocationListProvider>(
+                                                  context,
+                                                  listen: false)
+                                              .certifiedLocationList
+                                              .where((location) =>
+                                                  location.isSelected ?? false)
+                                              .map((sov) => sov.id!)
+                                              .toList();
+
+                                      if (selectedLoactionIds.isNotEmpty) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return ExportDialog(
+                                              accountId: widget.accountID,
+                                              subAccountId: widget.subAccountID,
+                                              locationId: selectedLoactionIds,
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                          content: Text(
+                                            LanguageService.getTranslated(
+                                                context, "no_items_selected_error"),
+                                            style: typography.Body1,
+                                          ),
+                                        ));
+                                      }
+                                    }
+                                  },
+                                  child: Text('Export', style: typography.Body1),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.download),
+                        tooltip: 'Export Selected',
+                      ),
+                      IconButton(
+                          onPressed:
+                          () {
+                            // Implement bulk add to SOV
+                            locationListProvider.addTagsToSelectedLocations(
+                                context, widget.accountID, widget.subAccountID);
+                          },
+                          icon: Icon(Symbols.note_stack_add),
+                          tooltip: 'Add Tag'),
+                      IconButton(
+                        onPressed: trialStatus.isNotEmpty?null:
+                            () {
+                          // Implement bulk add to SOV
+                          locationListProvider.addSelectedToSOV(
+                              context,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.accountName,
+                              widget.subAccountName,
+                              _masterTabController);
+                        },
+                        icon: Icon(Symbols.list_alt_add),
+                        tooltip: 'Add to SOV',
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          // Show delete confirmation dialog
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Delete Selected Locations'),
+                              content: Text(
+                                  'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Cancel', style: typography.Body1),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    locationListProvider.deleteSelectedLocations(
                                       context,
                                       widget.accountID,
-                                      widget.accountName,
                                       widget.subAccountID,
-                                      tempProcessId,
-                                      state);
-                            } else {
-                              */
-                  /* _showUploadDialog(
-                                  widget.accountID, widget.subAccountID, "");*/
-                  /*
-                              _showUploadBottomSheet(
-                                  widget.accountID, widget.subAccountID, "");
-                            }
-                          },
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('Delete', style: typography.Body1),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.delete_outline),
+                        tooltip: 'Delete Selected',
+                      ),
+                    ] else ...[
+                      SizedBox(
+                        width: 8,
+                      ),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            //SizedBox(width: CustomSpacing.two),
+                            Text(
+                              "My Locations",
+                              style: typography.Body1,
+                            ),
+                            /*
+                                                  RatingHalfStars(
+                                                    rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
+                                                    maxRating: 5,
+                                                    iconSize: 18,
+                                                  ),*/
+                            Spacer(),
+                            SizedBox(width: CustomSpacing.two),
+                            selectedMainTab == 0
+                                ? Row(
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          // Show end drawer
+                                          Scaffold.of(context).openEndDrawer();
+                                        },
+                                        child: Icon(
+                                          Icons.filter_list,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      SizedBox(width: CustomSpacing.two),
+                                    ],
+                                  )
+                                : SizedBox(),
+                            // if selected main tab is 1 then show the Generate Heatmap button
+                            SizedBox(width: CustomSpacing.two),
+                            TooltipTheme(
+                              data: TooltipThemeData(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                ),
+                                padding: EdgeInsets.all(8),
+                                verticalOffset: 20,
+                                preferBelow: false,
+                              ),
+                              child: Tooltip(
+                                showDuration: Duration(seconds: 5),
+                                triggerMode: TooltipTriggerMode.tap,
+                                preferBelow: true,
+                                richMessage: TextSpan(
+                                  children: [
+                                    for (int i = 0;
+                                        i < locationListProvider.summaryList.length;
+                                        i++)
+                                      TextSpan(
+                                        text:
+                                            '• ${locationListProvider.summaryList[i]}\n',
+                                        style: typography.Subtitle1,
+                                      ),
+                                  ],
+                                  style: typography.Subtitle1,
+                                ),
+                                child: Icon(
+                                  Icons.info,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      PopupMenuItem(
-                        child: ListTile(
-                          leading: Icon(Icons.add),
-                          title: Text('Add Location', style: typography.Body1),
-                          onTap: () {
-                            print(
-                                "sending account name: ${widget.accountName}");
-                            if (isMaintenance) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Adding locations is disabled during maintenance period.'),
-                                ),
-                              );
-                            } else {
-                              _selectedScreen = Screens.addLocation;
-                              print(
-                                  "sending account name: ${widget.accountName}");
-                              print(
-                                  "sending sub account name: ${widget.subAccountName}");
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => AddLocationScreen(
-                                  accountId: widget.accountID,
-                                  subAccountId: widget.subAccountID,
-                                  sovId: "",
-                                  accountName: widget.accountName,
-                                  subAccountName: widget.subAccountName,
-                                ),
-                              ));
-                            }
-                          },
-                        ),
-                      ),
-                      PopupMenuItem(
-                        child: ListTile(
-                          leading: Icon(Icons.download),
-                          title:
-                              Text('Export Locations', style: typography.Body1),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return ExportDialog(
-                                  accountId: widget.accountID,
-                                  subAccountId: widget.subAccountID,
-                                  sovId: "",
-                                  locationId: selectedMainTab == 0
-                                      ? myLocationListProvider.myLocationList
-                                          .map((location) => location.id ?? "")
-                                          .toList()
-                                      : myLocationListProvider
-                                          .certifiedLocationList
-                                          .map((location) => location.id ?? "")
-                                          .toList(),
+                      SizedBox(width: CustomSpacing.four),
+                      SizedBox(height: CustomSpacing.eight),
+                      // Options are Upload SOV, Add Location, Export Locations
+                      /*PopupMenuButton(
+                        icon: Icon(Icons.more_vert),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            child: ListTile(
+                              leading: Icon(Icons.upload),
+                              title: Text(
+                                isUploadInProgress?'Continue': 'Upload SOV',
+                                style: typography.Body1,
+                              ),
+                              onTap: () async {
+                                // Add your logic for uploading SOV
+                                if (isMaintenance) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'SOV upload is disabled during maintenance period.'),
+                                    ),
+                                  );
+                                } else if (isUploadInProgress) {
+                                  String tempProcessId =
+                                      await SharedPreferenceService
+                                              .getSovUploadTempId() ??
+                                          "";
+                                  String state = await SharedPreferenceService
+                                          .getSovUploadState() ??
+                                      "";
+                                  // Call API to get get necessary data and navigate to the respective screen
+                                  Provider.of<UploadSovProvider>(context,
+                                          listen: false)
+                                      .fetchSovUploadData(
+                                          context,
+                                          widget.accountID,
+                                          widget.accountName,
+                                          widget.subAccountID,
+                                          tempProcessId,
+                                          state);
+                                } else {
+                                  */
+                      /* _showUploadDialog(
+                                      widget.accountID, widget.subAccountID, "");*/
+                      /*
+                                  _showUploadBottomSheet(
+                                      widget.accountID, widget.subAccountID, "");
+                                }
+                              },
+                            ),
+                          ),
+                          PopupMenuItem(
+                            child: ListTile(
+                              leading: Icon(Icons.add),
+                              title: Text('Add Location', style: typography.Body1),
+                              onTap: () {
+                                print(
+                                    "sending account name: ${widget.accountName}");
+                                if (isMaintenance) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Adding locations is disabled during maintenance period.'),
+                                    ),
+                                  );
+                                } else {
+                                  _selectedScreen = Screens.addLocation;
+                                  print(
+                                      "sending account name: ${widget.accountName}");
+                                  print(
+                                      "sending sub account name: ${widget.subAccountName}");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (_) => AddLocationScreen(
+                                      accountId: widget.accountID,
+                                      subAccountId: widget.subAccountID,
+                                      sovId: "",
+                                      accountName: widget.accountName,
+                                      subAccountName: widget.subAccountName,
+                                    ),
+                                  ));
+                                }
+                              },
+                            ),
+                          ),
+                          PopupMenuItem(
+                            child: ListTile(
+                              leading: Icon(Icons.download),
+                              title:
+                                  Text('Export Locations', style: typography.Body1),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return ExportDialog(
+                                      accountId: widget.accountID,
+                                      subAccountId: widget.subAccountID,
+                                      sovId: "",
+                                      locationId: selectedMainTab == 0
+                                          ? myLocationListProvider.myLocationList
+                                              .map((location) => location.id ?? "")
+                                              .toList()
+                                          : myLocationListProvider
+                                              .certifiedLocationList
+                                              .map((location) => location.id ?? "")
+                                              .toList(),
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),*/
-                ]
-              ],
-            );
-          }),
+                            ),
+                          ),
+                        ],
+                      ),*/
+                    ]
+                  ],
+                );
+              });
+            }
+          ),
         ),
         SizedBox(height: CustomSpacing.two),
         Container(
@@ -1782,8 +1805,7 @@ class _MyLocationListState extends State<MyLocationList>
                   : locationListProvider.myLocationList.isEmpty
                       ? Center(
                           child: Text(
-                            LanguageService.getTranslated(
-                                context, "location_list_app_no_accounts_text"),
+                            "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
                             style: typography.Body1,
                           ),
                         )
@@ -2325,8 +2347,7 @@ class _MyLocationListState extends State<MyLocationList>
                   : locationListProvider.certifiedLocationList.isEmpty
                       ? Center(
                           child: Text(
-                              LanguageService.getTranslated(context,
-                                  "location_list_app_no_accounts_text"),
+                              "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
                               style: typography.Body1),
                         )
                       : RefreshIndicator(
@@ -2634,7 +2655,7 @@ class _MyLocationListState extends State<MyLocationList>
                         _uploadedFileName == null
                             ? GestureDetector(
                                 onTap:
-                                locations>=total?null:
+                                locations<1?null:
                                     () async {
                                   FilePickerResult? result =
                                       await FilePicker.platform.pickFiles(
@@ -2741,10 +2762,10 @@ class _MyLocationListState extends State<MyLocationList>
                           Column(
                             children: [
                               MessageCard(
-                                isError: locations>=total,
+                                isError: locations<1,
                                   messageTextSpans: [
                                     TextSpan(
-                                      text: '$locations of $total locations left.',
+                                      text: '$locations of $total locations left to upload.',
                                     ),
                                     TextSpan(
                                       recognizer: TapGestureRecognizer()
@@ -2768,9 +2789,9 @@ class _MyLocationListState extends State<MyLocationList>
                                   ]
                               ),
                               SizedBox(height: 16),
-                              if(!(total-locations<1))
+                              if(!(locations<1))
                               Text(
-                                'The system will only process the first ${total-locations
+                                'The system will only process the first ${locations
                                 } locations.',
                                 style: typography.Body1,
                               ),
@@ -2780,7 +2801,7 @@ class _MyLocationListState extends State<MyLocationList>
                         if (!addToSOVCheck) ...[
                           TextField(
                             controller: tagController,
-                            enabled: locations<=total,
+                            enabled: locations>0,
                             style: TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               labelText: "Enter Tags (separated by comma)",
@@ -2797,7 +2818,7 @@ class _MyLocationListState extends State<MyLocationList>
                           // Fields displayed only if checkbox is checked
                           TextField(
                             controller: _sovNameController,
-                            enabled: locations<=total,
+                            enabled: locations>0,
                             /*
                             readOnly: _uploadedFileName != null,*/
                             style: TextStyle(color: Colors.white),
@@ -2949,7 +2970,7 @@ class _MyLocationListState extends State<MyLocationList>
                                             Expanded(
                                                 child: CustomButton(
                                                     type: ButtonType.elevated,
-                                                    onPressed: (locations>=total)? null:() async {
+                                                    onPressed: (locations<1)? null:() async {
                                                       // Upload the file
                                                       // return if file is null
                                                       if (files.path.isEmpty) {

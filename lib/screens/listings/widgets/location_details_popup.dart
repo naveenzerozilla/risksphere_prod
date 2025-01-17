@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/models/my_location_list_model.dart';
 import 'package:green/screens/listings/location_profile.dart';
 import 'package:green/screens/listings/widgets/my_scrollable_scores_widget.dart';
-import 'package:green/screens/listings/widgets/vertical_bar_indicator.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
 import 'hazard_section_widget.dart';
@@ -13,7 +12,7 @@ class LocationDetailsPopup extends StatelessWidget {
   final String locationId;
   final int geocodingScore;
   final int riskScore;
-  final Map<String, Hazard> hazards;
+  final Map<String, HazardDetails> hazards;
   final List<String> geocodedAt;
   final List<String> occupancy;
   final String? campus;
@@ -25,7 +24,6 @@ class LocationDetailsPopup extends StatelessWidget {
   final String? sovName;
   final bool? rented;
   final bool? hideNavigation;
-
 
   LocationDetailsPopup({
     required this.address,
@@ -61,7 +59,7 @@ class LocationDetailsPopup extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Address and Location ID
+            // Address and Location Details
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -72,87 +70,56 @@ class LocationDetailsPopup extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 8),
-
-                if((campus??"").isNotEmpty)Text(
-                  campus??"",
-                  style: typography.Body2,
-                ),
+                if ((campus ?? "").isNotEmpty)
+                  Text(
+                    campus ?? "",
+                    style: typography.Body2,
+                  ),
                 SizedBox(height: 8),
-
                 Chip(
-                  label: Text((rented??true)?'Rented':"Leased", style: typography.Caption),
+                  label: Text(
+                    (rented ?? true) ? 'Rented' : "Leased",
+                    style: typography.Caption,
+                  ),
                 ),
               ],
             ),
             SizedBox(height: 16),
 
-            // Scores
+            // Scores Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: MyScrollableScoresWidget(geocodingScore: geocodingScore, riskScore: riskScore),
+              child: MyScrollableScoresWidget(
+                geocodingScore: geocodingScore,
+                riskScore: riskScore,
+              ),
             ),
             SizedBox(height: 16),
 
+            // Hazard Ratings Section
             Text(
               'Hazard Ratings',
               style: typography.Body1,
             ),
-            // Hazards Section
             HazardsSection(hazards: hazards),
             SizedBox(height: 16),
 
             // Information Section
             _buildInformationSection(typography),
 
-            hideNavigation??false?
-            Row(
-              mainAxisAlignment: (hideNavigation??false)? MainAxisAlignment.center:MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Close', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)  ),
-                  ),
-                ),
-                (hideNavigation??false)? SizedBox.shrink(): ElevatedButton(
-                  onPressed: (hideNavigation??false)?null:() {
-                    // Add your View Profile action here
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: accountId??"", accountName: accountName??"", subAccountId: subAccountId??"", subAccountName: subAccountName??"", sovId: sovId??"", sovName: sovName??"", page: "0", totalPages: "0", searchQuery: "")));
-                  },
-
-
-                  child: Text('View Profile', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)),
-                ),
-              ],
-            ):Row(
-              mainAxisAlignment: (hideNavigation??false)? MainAxisAlignment.center:MainAxisAlignment.spaceBetween,
-              children: [
-                Center(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Close', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)  ),
-                  ),
-                ),
-                (hideNavigation??false)? SizedBox.shrink(): ElevatedButton(
-                  onPressed: (hideNavigation??false)?null:() {
-                    // Add your View Profile action here
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => LocationProfile(accountId: accountId??"", accountName: accountName??"", subAccountId: subAccountId??"", subAccountName: subAccountName??"", sovId: sovId??"", sovName: sovName??"", page: "0", totalPages: "0", searchQuery: "")));
-                  },
-
-
-                  child: Text('View Profile', style: typography.ButtonLarge.copyWith(color: Theme.of(context).colorScheme.onSurface)),
-                ),
-              ],
-            ),
+            // Navigation and Close Buttons
+            SizedBox(height: 16),
+            hideNavigation ?? false
+                ? _buildCloseButton(context, typography)
+                : _buildNavigationButtons(context, typography),
           ],
         ),
       ),
     );
   }
 
-  // Method to build the new information section
+  // Information Section Widget
   Widget _buildInformationSection(CustomTypography typography) {
-
     final information = {
       'Location Geocoded at': geocodedAt.join(', '),
       'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
@@ -177,13 +144,80 @@ class LocationDetailsPopup extends StatelessWidget {
               children: [
                 Text(entry.key, style: typography.Body2),
                 SizedBox(width: 8),
-                Flexible(child: Text(entry.value, style: typography.Body2, overflow: TextOverflow.ellipsis, maxLines: 2, textAlign: TextAlign.center,)),
-
+                Flexible(
+                  child: Text(
+                    entry.value,
+                    style: typography.Body2,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
             ),
           );
         }).toList(),
       ),
+    );
+  }
+
+  // Close Button for Hide Navigation = true
+  Widget _buildCloseButton(BuildContext context, CustomTypography typography) {
+    return Center(
+      child: OutlinedButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(
+          'Close',
+          style: typography.ButtonLarge.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Navigation Buttons for Hide Navigation = false
+  Widget _buildNavigationButtons(
+      BuildContext context, CustomTypography typography) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Close',
+            style: typography.ButtonLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LocationProfile(
+                  accountId: accountId ?? "",
+                  accountName: accountName ?? "",
+                  subAccountId: subAccountId ?? "",
+                  subAccountName: subAccountName ?? "",
+                  sovId: sovId ?? "",
+                  sovName: sovName ?? "",
+                  page: "0",
+                  totalPages: "0",
+                  searchQuery: "",
+                ),
+              ),
+            );
+          },
+          child: Text(
+            'View Profile',
+            style: typography.ButtonLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

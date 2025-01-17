@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:green/design_system/primitives/custom_typography.dart';
 import 'package:green/models/my_location_list_model.dart';
 import 'package:green/providers/my_location_list_provider.dart';
+import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:provider/provider.dart';
 
@@ -443,18 +444,23 @@ class CustomPopupMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (details) {
-        _showCustomMenu(context, details.globalPosition);
-      },
-      child: Icon(
-        Icons.more_vert,
-        size: 26,
-      ),
+    return Consumer<UserProfileProvider>(
+      builder: (context, userProfileProvider, child ) {
+        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+        return GestureDetector(
+          onTapDown: (details) {
+            _showCustomMenu(context, details.globalPosition, trialStatus);
+          },
+          child: Icon(
+            Icons.more_vert,
+            size: 26,
+          ),
+        );
+      }
     );
   }
 
-  void _showCustomMenu(BuildContext context, Offset offset) async {
+  void _showCustomMenu(BuildContext context, Offset offset, trialStatus) async {
     var typography = CustomTypography(context);
     final result = await showMenu(
       context: context,
@@ -478,6 +484,7 @@ class CustomPopupMenuButton extends StatelessWidget {
           value: 'delete',
           child: Text('Delete Location', style: typography.Body1),
         ),
+        if(trialStatus.isEmpty)
         PopupMenuItem<String>(
           value: 'add_sov',
           child: Text('Add to SOV', style: typography.Body1),

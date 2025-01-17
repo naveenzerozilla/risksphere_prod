@@ -236,7 +236,7 @@ class NewsFeedProvider extends ChangeNotifier {
     try {
       ApiService apiService = ApiService('${AppConstant.UPDATE_HAZARD}');
       var response = await apiService.post(payload);
-      if (response != null && response.containsKey('result')) {
+      if (response.containsKey('result')) {
         CustomToast.success(context, 'Hazard data updated successfully');
       } else {
         log('Error updating hazard data');

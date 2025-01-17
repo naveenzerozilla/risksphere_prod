@@ -1676,9 +1676,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                     : subAccountListProvider.subAccountList.isEmpty
                     ? Center(
                   child: Text(
-                    LanguageService.getTranslated(
-                        context,
-                        "sub_account_list_app_no_sub_accounts_text"),
+                    "Looks like you don't have an sub-account yet. No worries! Just create a new one and start adding your locations.",
                     style: typography.Body1,
                   ),
                 )

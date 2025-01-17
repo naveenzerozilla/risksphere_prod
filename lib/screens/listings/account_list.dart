@@ -1991,8 +1991,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                 : accountListProvider.accountList.isEmpty
                     ? Center(
                         child: Text(
-                          LanguageService.getTranslated(
-                              context, "account_list_app_no_accounts_text"),
+                          "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
                           style: typography.Body1,
                         ),
                       )

@@ -172,6 +172,8 @@ class UserProfileProvider with ChangeNotifier {
     int trialEditLocations = await SharedPreferenceService.getTrialEditLocations() ?? 0;
     int trialMaxLocations = await SharedPreferenceService.getTrialMaxLocations() ?? 0;
     int trialLocations = await SharedPreferenceService.getTrialLocations() ?? 0;
+    int totalTrialUsers = await SharedPreferenceService.getTotalTrialUsers() ?? 0;
+    int totalTrialUsersVerified = await SharedPreferenceService.getTotalUsersVerified() ?? 0;
 
     print("trial period details: $isTrialApplicable, $trialDays");
 
@@ -188,6 +190,8 @@ class UserProfileProvider with ChangeNotifier {
         'editLocations': trialEditLocations,
         'maxLocations': trialMaxLocations,
         'locations': trialLocations,
+        'totalUsers': totalTrialUsers,
+        'totalUsersVerified': totalTrialUsersVerified,
       };
     } else {
       _trialInfo = {'status': ''};  // No trial case
