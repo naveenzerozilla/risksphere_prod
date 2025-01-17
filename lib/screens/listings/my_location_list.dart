@@ -3214,8 +3214,7 @@ class _MyLocationListState extends State<MyLocationList>
                 : sovListProvider.sovList.isEmpty
                     ? Center(
                         child: Text(
-                          LanguageService.getTranslated(
-                              context, "sov_list_app_no_sov_text"),
+                          "Looks like you don't have a sov yet. No worries! Just create a new one and start adding your locations.",
                           style: typography.Body1,
                         ),
                       )
