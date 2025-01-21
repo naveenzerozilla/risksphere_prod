@@ -75,6 +75,7 @@ class ConfigurationProvider extends ChangeNotifier {
       BuildContext context,
       String id,
       String key,
+      String level,
       dynamic value, {
         String? accountId,
         String? subAccountId,
@@ -88,9 +89,11 @@ class ConfigurationProvider extends ChangeNotifier {
         "id": id,
         "key": key,
         "value": value,
+        "level": "global", // Include level
+        "update_all": true // Include update_all
       };
 
-      var response = await apiService.patch({'data': body});
+      var response = await apiService.patch(body); // Assuming PATCH is correct
       log(response.toString());
 
       // Refresh Configuration after update
@@ -109,6 +112,7 @@ class ConfigurationProvider extends ChangeNotifier {
       isLoading = false;
     }
   }
+
 
 
 

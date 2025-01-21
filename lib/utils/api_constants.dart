@@ -128,7 +128,7 @@ class AppConstant {
 
   static String get CONFIGURATIONS_SUB_ACCOUNTS => '$baseURL/locations/account_sub_global_configuration/sub_account';
 
-  static String UPDATE_CONFIGURATION = '$baseURL/locations/account_sub_global_configuration/global';
+  static String UPDATE_CONFIGURATION = '$baseURL/locations/update_account_sub_global_configuration';
 
   static String get VENDOR_MANAGEMENT_URL => '$baseURL/vendor_management/vendor_list/""';
 

@@ -80,6 +80,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         }
 
         var config = provider.configurations['result'] ?? {};
+        var mainId = config['id'] ?? '';
+        var level = config['level'] ?? '';
         var services = config['services'] ?? {};
         var ratings = config['geocoding_rating_enabled'] ?? {};
         var subscriptions = config['subscribe'] ?? {};
@@ -143,6 +145,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     services[key]['description'],
                     services[key]['enabled'],
                     typography,
+                    mainId,
+                    level,
                   ),
 
                 SizedBox(height: CustomSpacing.six),
@@ -162,6 +166,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     ratings[key]['description'],
                     typography,
                     !ratings[key]['enabled'],
+                    mainId,
+                    level,
                   ),
 
                 SizedBox(height: CustomSpacing.four),
@@ -220,11 +226,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildSubscriptionCard(
+                        key,
                         vendorImage,
                         '$hazardLabel ($vendorName)',
                         description.isNotEmpty ? description : vendorName,
                         '$vendorName',
                         subscription['is_subscribed'] == true || subscription['is_subscribed'] == 'true',
+                        mainId,
+                        level,
                         typography,
                       ),
                       SizedBox(height: CustomSpacing.one),
@@ -281,7 +290,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
 
   Widget _buildServiceCheckbox(
-      String title, String description, bool isEnabled, CustomTypography typography) {
+      String title, String description, bool isEnabled, CustomTypography typography, String mainId, String level) {
     bool isGeocoding = title.toLowerCase() == 'geocoding';
     bool isSelected = selectedServices.contains(title) || isGeocoding;
 
@@ -305,7 +314,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               print('Toggling up $title to $value');
 
               // Show dialog to save changes
-              _showSaveDialog(title, description, typography, value!);
+              _showSaveDialog(title, description, typography, value!, mainId, level);
             },
             activeColor: AppColors.primaryMain,
           ),
@@ -348,7 +357,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   }
 
 
-  void _showSaveDialog(String title, String description, CustomTypography typography, bool value) {
+  void _showSaveDialog(String title, String description, CustomTypography typography, bool value, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
@@ -381,10 +390,12 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   onPressed: () async {
                     setState(() => isLoading = true);
 
+                    var key = generateServiceKey(title.toLowerCase().replaceAll(' ', '_'));
                     await provider.updateConfiguration(
                       context,
-                      widget.accountId ?? '',
-                      title,  // Ensure key is used here correctly
+                      mainId,
+                      key,  // Ensure key is used here correctly
+                      level,
                       value,
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
@@ -407,7 +418,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
 
   void _showSaveDialogForStar(
-      int star, String description, CustomTypography typography, bool value) {
+      int star, String description, CustomTypography typography, bool value, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
@@ -442,8 +453,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                     await provider.updateConfiguration(
                       context,
-                      widget.accountId ?? '',
+                      mainId,
                       generateRatingKey(star.toString()),
+                      level,
                       value,
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
@@ -465,7 +477,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   }
 
 
-  void _updateSubscription(String vendorId, bool isSubscribed) {
+  void _updateSubscription(String vendorId, bool isSubscribed, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
@@ -479,9 +491,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text('Update Subscription'),
-              content: provider.isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : Text(
+              content:Text(
                 isSubscribed
                     ? 'Do you want to unsubscribe from this vendor?'
                     : 'Do you want to subscribe to this vendor?',
@@ -489,7 +499,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
+                  onPressed: provider.isLoading?null:() {
                     if (!provider.isLoading) Navigator.pop(context);
                   },
                   child: Text(
@@ -498,7 +508,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () async {
+                  onPressed: provider.isLoading?null:() async {
                     setState(() {
                       isLoading = true;
                     });
@@ -507,8 +517,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                     await provider.updateConfiguration(
                       context,
-                      widget.accountId ?? '',
+                      mainId,
                       key,
+                      level,
                       !isSubscribed,
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
@@ -520,7 +531,17 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                     if (!provider.isLoading) Navigator.pop(context);
                   },
-                  child: Text(
+                  child:  provider.isLoading
+                      ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                          height: 38,
+                          width: 38,
+                          child: CircularProgressIndicator()),
+                        ],
+                      )
+                      : Text(
                     'Save',
                     style: typography.Body1.copyWith(color: AppColors.primaryMain),
                   ),
@@ -536,7 +557,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
 
   Widget _buildStarCheckbox(
-      String title, String description, CustomTypography typography, bool isDisabled) {
+      String title, String description, CustomTypography typography, bool isDisabled, String mainId, String level) {
     bool isStarDisabled = ['3', '4', '5'].contains(title);
     bool isChecked = selectedStars.contains(int.parse(title));
 
@@ -562,6 +583,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 description,
                 typography,
                 value!,
+                mainId,
+                level,
               );
             },
             activeColor: AppColors.primaryMain,
@@ -594,11 +617,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
 
   Widget _buildSubscriptionCard(
+      String id,
       String iconPath,
       String title,
       String description,
       String name,
       bool isSubscribed,
+      String mainId,
+      String level,
       CustomTypography typography,
       ) {
     return Card(
@@ -632,7 +658,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             ),
             SizedBox(height: CustomSpacing.two),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                _updateSubscription(id, isSubscribed, mainId, level);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSubscribed
                     ? Colors.amber

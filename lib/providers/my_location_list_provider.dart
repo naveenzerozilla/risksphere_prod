@@ -2237,6 +2237,8 @@ class MyLocationListProvider extends ChangeNotifier {
     required String locationId,
     required String subDestinationId,
     required String occupancy,
+    required String accountName,
+    required String subAccountName,
   }) async {
     var typography = CustomTypography(context);
     try {
@@ -2274,6 +2276,8 @@ class MyLocationListProvider extends ChangeNotifier {
               "rented": occupancy.toLowerCase() == "Rented".toLowerCase()
                   ? true
                   : false,
+              "account_name": accountName,
+              "sub_account_name": subAccountName,
             }
           ]
         }

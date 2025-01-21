@@ -828,6 +828,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "add_to_sov": addToSOVCheck.toString(),
         "tags": "",
         "name": "",
+        "account_name": widget.accountName,
+        "sub_account_name": widget.subAccountName,
         if (widget.locationId.isNotEmpty) "location_id": widget.locationId,
       }
     };

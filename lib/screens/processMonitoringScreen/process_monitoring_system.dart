@@ -334,7 +334,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
 
               var locationSetData = entry.value as Map<String, dynamic>;
 
-              String locationSetName = locationSetData['sub_process_name'] ?? 'Location Set $count';
+              String locationSetName = locationSetData['sub_process_name'] ?? 'Location Set ${(totalLocations == 1)?1:count}';
 
               var assetUploadStatus = (locationSetData['asset_upload_status'] ?? false) ? 'completed' : 'in progress';
               var geocodingStatus = locationSetData['status'] ?? "pending"; // Placeholder as it is "yet to be made"

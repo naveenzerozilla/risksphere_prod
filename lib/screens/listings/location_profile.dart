@@ -3543,6 +3543,8 @@ class _LocationProfileState extends State<LocationProfile>
       locationId: provider.locationProfile?.finalAddress?.locationId ?? '',
       subDestinationId: subdestinationId,
       occupancy: occupancy,
+      accountName: widget.accountName,
+      subAccountName: widget.subAccountName,
     )
         .then((value) {
       _getData();
