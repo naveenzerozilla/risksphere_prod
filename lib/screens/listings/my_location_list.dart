@@ -17,6 +17,7 @@ import 'package:green/providers/user_profile_provider.dart';
 import 'package:green/screens/listings/add_location_screen.dart';
 import 'package:green/screens/listings/sov_location_list.dart';
 import 'package:green/screens/listings/widgets/configurations_tab.dart';
+import 'package:green/screens/listings/widgets/data_tab.dart';
 import 'package:green/screens/listings/widgets/export_dialog.dart';
 import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:green/screens/listings/widgets/location_card.dart';
@@ -148,10 +149,10 @@ class _MyLocationListState extends State<MyLocationList>
         .clearAllFilters();
 
     var userProfileProvider =
-    Provider.of<UserProfileProvider>(context, listen: false);
+        Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
-    int tabCount = trialStatus.isEmpty ? 5 : 4;
+    int tabCount = trialStatus.isEmpty ? 6 : 5;
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
       setState(() {
@@ -182,8 +183,8 @@ class _MyLocationListState extends State<MyLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
-          widget.initialProcessId,
-          widget.initialSubProcessId,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
             )
             .then((value) => setState(() {}));
       } else {
@@ -200,8 +201,8 @@ class _MyLocationListState extends State<MyLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
-          widget.initialProcessId,
-          widget.initialSubProcessId,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
             )
             .then((value) => setState(() {}));
         /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
@@ -264,13 +265,12 @@ class _MyLocationListState extends State<MyLocationList>
   _getSovUploadStatus() async {
     String tempProcessId =
         await SharedPreferenceService.getSovUploadTempId() ?? "";
-    String accountId = await SharedPreferenceService.getSovAccountId() ??
-        "";
+    String accountId = await SharedPreferenceService.getSovAccountId() ?? "";
     String subAccountId =
         await SharedPreferenceService.getSovSubAccountId() ?? "";
     isUploadInProgress = tempProcessId.isNotEmpty &&
-    widget.accountID == accountId &&
-    widget.subAccountID == subAccountId;
+        widget.accountID == accountId &&
+        widget.subAccountID == subAccountId;
   }
 
   _getMaintainancePeriod() async {
@@ -288,9 +288,8 @@ class _MyLocationListState extends State<MyLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
-
-      widget.initialProcessId,
-      widget.initialSubProcessId,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
         )
         .then((value) => setState(() {}));
     Provider.of<MyLocationListProvider>(context, listen: false)
@@ -301,8 +300,8 @@ class _MyLocationListState extends State<MyLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
-      widget.initialProcessId,
-      widget.initialSubProcessId,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
         )
         .then((value) => WidgetsBinding.instance!.addPostFrameCallback((_) {
               setState(() {});
@@ -315,7 +314,10 @@ class _MyLocationListState extends State<MyLocationList>
         .fetchAutoCompleteSovListLocations(
             context, widget.accountID, widget.subAccountID);
     Provider.of<MyLocationListProvider>(context, listen: false)
-        .fetchAllLocationList(context, widget.accountID, widget.subAccountID,
+        .fetchAllLocationList(
+      context,
+      widget.accountID,
+      widget.subAccountID,
       processId: widget.initialProcessId,
       subProcessId: widget.initialSubProcessId,
     );
@@ -347,325 +349,346 @@ class _MyLocationListState extends State<MyLocationList>
     var typography = CustomTypography(context);
     return SafeArea(
       child: Consumer<UserProfileProvider>(
-        builder: (context, userProfileProvider, child) {
-          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-          return Consumer<ThemeProvider>(
-            builder: (buildContext, themeProvider, child) {
-              return Scaffold(
-                key: _scaffoldKey,
-                backgroundColor:
-                    themeProvider.getTheme.colorScheme.surfaceContainerLowest,
-                appBar: CustomAppBar(
-                  isExpanded: _isExpanded,
-                  showNotificationDot: _showNotificationDot,
-                  onExpandPressed: (isExpanded) {
-                    setState(() {
-                      _isExpanded = isExpanded;
-                    });
-                  },
-                  onSearchPressed: () {
-                    setState(() {
-                      _isExpanded = !_isExpanded;
-                    });
-                  },
-                ),
-                drawer: CustomDrawer(),
-                floatingActionButton: SpeedDial(
-                  animatedIcon: AnimatedIcons.menu_close,
-                  animatedIconTheme: IconThemeData(size: 22.0),
-                  backgroundColor: AppColors.primaryMain,
-                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  children: [
-                    if ((selectedMasterTab) == 0)
-                      SpeedDialChild(
-                        child: Icon(Icons.add),
-                        backgroundColor: AppColors.primaryMain,
-                        foregroundColor:
-                            themeProvider.getTheme.colorScheme.onPrimary,
-                        label: 'Add Location',
-                        labelStyle: typography.Body1,
-                        onTap: () {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(
-                            builder: (_) => AddLocationScreen(
-                              accountId: widget.accountID,
-                              subAccountId: widget.subAccountID,
-                              sovId: "",
-                              accountName: widget.accountName,
-                              subAccountName: widget.subAccountName,
-                            ),
-                          ))
-                              .then((value) {
-                            if (value != null) {
-                              if (value) {
-                                Provider.of<MyLocationListProvider>(context,
-                                        listen: false)
-                                    .fetchLocationList(
-                                      context,
-                                      "",
-                                      1,
-                                      40,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                  widget.initialProcessId,
-                                  widget.initialSubProcessId,
-                                    )
-                                    .then((value) => setState(() {}));
-                              }
-                            }
-                          });
-                        },
-                      ),
+          builder: (context, userProfileProvider, child) {
+        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+        return Consumer<ThemeProvider>(
+          builder: (buildContext, themeProvider, child) {
+            return Scaffold(
+              key: _scaffoldKey,
+              backgroundColor:
+                  themeProvider.getTheme.colorScheme.surfaceContainerLowest,
+              appBar: CustomAppBar(
+                isExpanded: _isExpanded,
+                showNotificationDot: _showNotificationDot,
+                onExpandPressed: (isExpanded) {
+                  setState(() {
+                    _isExpanded = isExpanded;
+                  });
+                },
+                onSearchPressed: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+              drawer: CustomDrawer(),
+              floatingActionButton: SpeedDial(
+                animatedIcon: AnimatedIcons.menu_close,
+                animatedIconTheme: IconThemeData(size: 22.0),
+                backgroundColor: AppColors.primaryMain,
+                foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                children: [
+                  if ((selectedMasterTab) == 0)
                     SpeedDialChild(
-                      child: Icon(Icons.upload),
+                      child: Icon(Icons.add),
                       backgroundColor: AppColors.primaryMain,
-                      foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                      label: isUploadInProgress ? 'Continue' : 'Upload SOV',
+                      foregroundColor:
+                          themeProvider.getTheme.colorScheme.onPrimary,
+                      label: 'Add Location',
                       labelStyle: typography.Body1,
-                      onTap: () async {
-                        if (isMaintenance) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'SOV upload is disabled during maintenance period.'),
-                            ),
-                          );
-                        }
-                        else if (isUploadInProgress) {
-                          String tempProcessId =
-                              await SharedPreferenceService.getSovUploadTempId() ??
-                                  "";
-                          String state =
-                              await SharedPreferenceService.getSovUploadState() ??
-                                  "";
-                          // Call API to get get necessary data and navigate to the respective screen
-                          Provider.of<UploadSovProvider>(context, listen: false)
-                              .fetchSovUploadData(
-                                  context,
-                                  widget.accountID,
-                                  widget.accountName,
-                                  widget.subAccountID,
-                                  tempProcessId,
-                                  state);
-                        }
-                        else {
-                          _showUploadBottomSheet(
-                              widget.accountID, widget.subAccountID, "");
-                        }
+                      onTap: () {
+                        Navigator.of(context)
+                            .push(MaterialPageRoute(
+                          builder: (_) => AddLocationScreen(
+                            accountId: widget.accountID,
+                            subAccountId: widget.subAccountID,
+                            sovId: "",
+                            accountName: widget.accountName,
+                            subAccountName: widget.subAccountName,
+                          ),
+                        ))
+                            .then((value) {
+                          if (value != null) {
+                            if (value) {
+                              Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
+                                  .fetchLocationList(
+                                    context,
+                                    "",
+                                    1,
+                                    40,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
+                                  )
+                                  .then((value) => setState(() {}));
+                            }
+                          }
+                        });
                       },
                     ),
-                    if ((_masterTabController?.index ?? 0) == 0)
-                      SpeedDialChild(
-                        child: Icon(Icons.download),
-                        backgroundColor:
-                        trialStatus.isNotEmpty?Colors.grey:AppColors.primaryMain,
-                        foregroundColor:
-                            themeProvider.getTheme.colorScheme.onPrimary,
-                        label: 'Export Locations',
-                        labelStyle: typography.Body1,
-                        onTap: trialStatus.isNotEmpty?null:
-                            () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return ExportDialog(
-                                accountId: widget.accountID,
-                                subAccountId: widget.subAccountID,
-                                sovId: "",
-                                locationId: selectedMainTab == 0
-                                    ? Provider.of<MyLocationListProvider>(context,
-                                            listen: false)
-                                        .myLocationList
-                                        .map((location) => location.id ?? "")
-                                        .toList()
-                                    : Provider.of<MyLocationListProvider>(context,
-                                            listen: false)
-                                        .certifiedLocationList
-                                        .map((location) => location.id ?? "")
-                                        .toList(),
+                  SpeedDialChild(
+                    child: Icon(Icons.upload),
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor:
+                        themeProvider.getTheme.colorScheme.onPrimary,
+                    label: isUploadInProgress ? 'Continue' : 'Upload SOV',
+                    labelStyle: typography.Body1,
+                    onTap: () async {
+                      if (isMaintenance) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'SOV upload is disabled during maintenance period.'),
+                          ),
+                        );
+                      } else if (isUploadInProgress) {
+                        String tempProcessId = await SharedPreferenceService
+                                .getSovUploadTempId() ??
+                            "";
+                        String state =
+                            await SharedPreferenceService.getSovUploadState() ??
+                                "";
+                        // Call API to get get necessary data and navigate to the respective screen
+                        Provider.of<UploadSovProvider>(context, listen: false)
+                            .fetchSovUploadData(
+                                context,
+                                widget.accountID,
+                                widget.accountName,
+                                widget.subAccountID,
+                                tempProcessId,
+                                state);
+                      } else {
+                        _showUploadBottomSheet(
+                            widget.accountID, widget.subAccountID, "");
+                      }
+                    },
+                  ),
+                  if ((_masterTabController?.index ?? 0) == 0)
+                    SpeedDialChild(
+                      child: Icon(Icons.download),
+                      backgroundColor: trialStatus.isNotEmpty
+                          ? Colors.grey
+                          : AppColors.primaryMain,
+                      foregroundColor:
+                          themeProvider.getTheme.colorScheme.onPrimary,
+                      label: 'Export Locations',
+                      labelStyle: typography.Body1,
+                      onTap: trialStatus.isNotEmpty
+                          ? null
+                          : () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return ExportDialog(
+                                    accountId: widget.accountID,
+                                    subAccountId: widget.subAccountID,
+                                    sovId: "",
+                                    locationId: selectedMainTab == 0
+                                        ? Provider.of<MyLocationListProvider>(
+                                                context,
+                                                listen: false)
+                                            .myLocationList
+                                            .map(
+                                                (location) => location.id ?? "")
+                                            .toList()
+                                        : Provider.of<MyLocationListProvider>(
+                                                context,
+                                                listen: false)
+                                            .certifiedLocationList
+                                            .map(
+                                                (location) => location.id ?? "")
+                                            .toList(),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-                  ],
-                ),
-                body: Stack(
-                  children: [
-                    /*  Positioned.fill(
+                    ),
+                ],
+              ),
+              body: Stack(
+                children: [
+                  /*  Positioned.fill(
                       child: Image.asset(
                         'assets/images/mesh.png',
                         fit: BoxFit.cover,
                       ),
                     ),*/
-                    Column(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              SizedBox(height: CustomSpacing.two),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8.0, bottom: 6),
-                                      child: Row(
-                                        children: [
-                                          Text(widget.accountName,
-                                              style: typography.InputLabel),
-                                          Text(' > ', style: typography.InputLabel),
-                                          Text(widget.subAccountName,
-                                              style: typography.InputLabel),
-                                        ],
-                                      ),
+                  Column(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            SizedBox(height: CustomSpacing.two),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Row(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 8.0, bottom: 6),
+                                    child: Row(
+                                      children: [
+                                        Text(widget.accountName,
+                                            style: typography.InputLabel),
+                                        Text(' > ',
+                                            style: typography.InputLabel),
+                                        Text(widget.subAccountName,
+                                            style: typography.InputLabel),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          Consumer<JobMonitoringProvider>(
-                                              builder: (context, jobMonitoringProvider, child) {
-                                                return Container(
-                                                  child: _getLiveUI(jobMonitoringProvider),
-                                                );
-                                              }),
-                                        ],
-                                      ),
+                                  ),
+                                  Expanded(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Consumer<JobMonitoringProvider>(builder:
+                                            (context, jobMonitoringProvider,
+                                                child) {
+                                          return Container(
+                                            child: _getLiveUI(
+                                                jobMonitoringProvider),
+                                          );
+                                        }),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: CustomSpacing.four),
-                              // Master TabBar
-                              Container(
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
-                                  borderRadius:
-                                      BorderRadius.circular(16), // Rounded edges
-                                ),
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 0),
-                                child: DefaultTabController(
-                                  length: _masterTabController?.length ?? 4,
-                                  child: Column(
-                                    children: <Widget>[
-                                      // Container for the TabBar with arrows
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHigh,
-                                        ),
-                                        height: 50,
-                                        child: Row(
-                                          children: <Widget>[
-                                            // Left arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_left,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollLeft,
-                                            ),
-                                            // Scrollable TabBar
-                                            Expanded(
-                                              child: SingleChildScrollView(
-                                                controller: _scrollController,
-                                                scrollDirection: Axis.horizontal,
-                                                child: TabBar(
-                                                  controller: _masterTabController,
-                                                  tabAlignment: TabAlignment.start,
-                                                  labelStyle: typography.Subtitle2,
-                                                  isScrollable: true,
-                                                  indicatorColor:
-                                                      Colors.lightBlueAccent,
-                                                  labelColor:
-                                                      Colors.lightBlueAccent,
-                                                  unselectedLabelColor: Colors.grey,
-                                                  tabs: [
-                                                    Tab(
-                                                      text: 'Locations',
-                                                    ),
-                                                    Tab(
-                                                      text: 'SOVs',
-                                                    ),
-                                                    Tab(text: 'Shared'),
-                                                    Tab(text: 'Access Requests'),
-
-                                                    if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
-                                                      Tab(text: 'Configuration'),
-                                                  ],
-                                                ),
+                            ),
+                            SizedBox(height: CustomSpacing.four),
+                            // Master TabBar
+                            Container(
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
+                                borderRadius:
+                                    BorderRadius.circular(16), // Rounded edges
+                              ),
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 0),
+                              child: DefaultTabController(
+                                length: _masterTabController?.length ?? 4,
+                                child: Column(
+                                  children: <Widget>[
+                                    // Container for the TabBar with arrows
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHigh,
+                                      ),
+                                      height: 50,
+                                      child: Row(
+                                        children: <Widget>[
+                                          // Left arrow button
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_left,
+                                                color: Colors.grey),
+                                            onPressed: _scrollLeft,
+                                          ),
+                                          // Scrollable TabBar
+                                          Expanded(
+                                            child: SingleChildScrollView(
+                                              controller: _scrollController,
+                                              scrollDirection: Axis.horizontal,
+                                              child: TabBar(
+                                                controller:
+                                                    _masterTabController,
+                                                tabAlignment:
+                                                    TabAlignment.start,
+                                                labelStyle:
+                                                    typography.Subtitle2,
+                                                isScrollable: true,
+                                                indicatorColor:
+                                                    Colors.lightBlueAccent,
+                                                labelColor:
+                                                    Colors.lightBlueAccent,
+                                                unselectedLabelColor:
+                                                    Colors.grey,
+                                                tabs: [
+                                                  Tab(
+                                                    text: 'Locations',
+                                                  ),
+                                                  Tab(
+                                                    text: 'SOVs',
+                                                  ),
+                                                  Tab(text: 'Shared'),
+                                                  Tab(text: 'Access Requests'),
+                                                  Tab(text: 'Data'),
+                                                  if (userProfileProvider
+                                                          .trialInfo['status']
+                                                          ?.isEmpty ??
+                                                      true)
+                                                    Tab(text: 'Configuration'),
+                                                ],
                                               ),
                                             ),
-                                            // Right arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_right,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollRight,
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                          // Right arrow button
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_right,
+                                                color: Colors.grey),
+                                            onPressed: _scrollRight,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              // Master TabBarView for the Tab Content
-                              Expanded(
-                                child: TabBarView(
-                                  physics: NeverScrollableScrollPhysics(),
-                                  controller: _masterTabController,
-                                  children: [
-                                    Consumer<MyLocationListProvider>(builder:
-                                        (context, myLocationListProvider, child) {
-                                      return _getLocationListBodyUI(
-                                          myLocationListProvider, "");
-                                    }),
-                                    Container(
-                                      margin: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      child: sovBody(typography),
                                     ),
-                                    _getComingSoonUI(),
-                                    _getComingSoonUI(),
-                                    if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
-                                      ConfigurationTab(
-                                        accountId: widget.accountID,
-                                        subaccountId: widget.subAccountID,
-                                      ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            // Master TabBarView for the Tab Content
+                            Expanded(
+                              child: TabBarView(
+                                physics: NeverScrollableScrollPhysics(),
+                                controller: _masterTabController,
+                                children: [
+                                  Consumer<MyLocationListProvider>(builder:
+                                      (context, myLocationListProvider, child) {
+                                    return _getLocationListBodyUI(
+                                        myLocationListProvider, "");
+                                  }),
+                                  Container(
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    child: sovBody(typography),
+                                  ),
+                                  _getComingSoonUI(),
+                                  _getComingSoonUI(),
+                                  DataTab(
+                                    accountId: widget.accountID,
+                                    subaccountId: widget.subAccountID,
+                                  ),
+                                  if (userProfileProvider
+                                          .trialInfo['status']?.isEmpty ??
+                                      true)
+                                    ConfigurationTab(
+                                      accountId: widget.accountID,
+                                      subaccountId: widget.subAccountID,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                endDrawer: Drawer(
-                  child: SafeArea(
-                    child: ListingsFilterScreen(
-                      accountId: widget.accountID,
-                      subAccountId: widget.subAccountID,
-                      sovId: "widget.sovId",
-                      searchQuery: locationQuery,
-                      showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
-                      initialProcessId: widget.initialProcessId,
-                      initialSubProcessId: widget.initialSubProcessId,
-                    ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              endDrawer: Drawer(
+                child: SafeArea(
+                  child: ListingsFilterScreen(
+                    accountId: widget.accountID,
+                    subAccountId: widget.subAccountID,
+                    sovId: "widget.sovId",
+                    searchQuery: locationQuery,
+                    showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
+                    initialProcessId: widget.initialProcessId,
+                    initialSubProcessId: widget.initialSubProcessId,
                   ),
                 ),
-              );
-            },
-          );
-        }
-      ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 
@@ -691,301 +714,314 @@ class _MyLocationListState extends State<MyLocationList>
             //color: Theme.of(context).colorScheme.surfaceContainerHigh,
           ),
           child: Consumer<UserProfileProvider>(
-            builder: (context, userProfileProvider, child) {
-              final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-              return Consumer<MyLocationListProvider>(
-                  builder: (context, locationListProvider, child) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (isSelectionMode) ...[
-                      // Show selection count and select all button
-                      SizedBox(width: CustomSpacing.two),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "${locationListProvider.selectedLocations.length}",
-                          style: typography.Body1.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+              builder: (context, userProfileProvider, child) {
+            final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+            return Consumer<MyLocationListProvider>(
+                builder: (context, locationListProvider, child) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (isSelectionMode) ...[
+                    // Show selection count and select all button
+                    SizedBox(width: CustomSpacing.two),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "${locationListProvider.selectedLocations.length}",
+                        style: typography.Body1.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 2),
-                      TextButton(
-                        onPressed: () {
-                          if (_selectedScreen == Screens.locationList) {
-                            if (locationListProvider.selectedLocations.length <
-                                locationListProvider.myLocationList.length) {
-                              locationListProvider.selectAllLocations(false);
-                            } else {
-                              locationListProvider.clearSelection();
-                            }
-                          } else if (_selectedScreen ==
-                              Screens.certifiedLocationList) {
-                            if (locationListProvider.selectedLocations.length <
-                                locationListProvider.certifiedLocationList.length) {
-                              locationListProvider.selectAllLocations(true);
-                            } else {
-                              locationListProvider.clearSelection();
-                            }
+                    ),
+                    SizedBox(width: 2),
+                    TextButton(
+                      onPressed: () {
+                        if (_selectedScreen == Screens.locationList) {
+                          if (locationListProvider.selectedLocations.length <
+                              locationListProvider.myLocationList.length) {
+                            locationListProvider.selectAllLocations(false);
+                          } else {
+                            locationListProvider.clearSelection();
                           }
-                        },
-                        child: Text(
-                          _selectedScreen == Screens.locationList
-                              ? locationListProvider.selectedLocations.length <
-                                      locationListProvider.myLocationList.length
-                                  ? 'Select All'
-                                  : 'Deselect All'
-                              : locationListProvider.selectedLocations.length <
-                                      locationListProvider
-                                          .certifiedLocationList.length
-                                  ? 'Select All'
-                                  : 'Deselect All',
-                          style: typography.Body1.copyWith(
-                            color: AppColors.primaryMain,
-                          ),
+                        } else if (_selectedScreen ==
+                            Screens.certifiedLocationList) {
+                          if (locationListProvider.selectedLocations.length <
+                              locationListProvider
+                                  .certifiedLocationList.length) {
+                            locationListProvider.selectAllLocations(true);
+                          } else {
+                            locationListProvider.clearSelection();
+                          }
+                        }
+                      },
+                      child: Text(
+                        _selectedScreen == Screens.locationList
+                            ? locationListProvider.selectedLocations.length <
+                                    locationListProvider.myLocationList.length
+                                ? 'Select All'
+                                : 'Deselect All'
+                            : locationListProvider.selectedLocations.length <
+                                    locationListProvider
+                                        .certifiedLocationList.length
+                                ? 'Select All'
+                                : 'Deselect All',
+                        style: typography.Body1.copyWith(
+                          color: AppColors.primaryMain,
                         ),
                       ),
-                      Spacer(),
-                      // Action buttons for selected items
-                      // export
-                      IconButton(
-                        onPressed: trialStatus.isNotEmpty?null:
-                    () {
-                          // Implement bulk export
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Export Selected Locations'),
-                              content: Text(
-                                  'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    if (_selectedScreen == Screens.locationList) {
-                                      // On export button click
-                                      List<String> selectedSovIds =
-                                          Provider.of<MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
+                    ),
+                    Spacer(),
+                    // Action buttons for selected items
+                    // export
+                    IconButton(
+                      onPressed: trialStatus.isNotEmpty
+                          ? null
+                          : () {
+                              // Implement bulk export
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Export Selected Locations'),
+                                  content: Text(
+                                      'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        if (_selectedScreen ==
+                                            Screens.locationList) {
+                                          // On export button click
+                                          List<String> selectedSovIds = Provider
+                                                  .of<MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
                                               .myLocationList
                                               .where((location) =>
                                                   location.isSelected ?? false)
                                               .map((sov) => sov.id!)
                                               .toList();
 
-                                      if (selectedSovIds.isNotEmpty) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return ExportDialog(
-                                              accountId: widget.accountID,
-                                              subAccountId: widget.subAccountID,
-                                              locationId: selectedSovIds,
+                                          if (selectedSovIds.isNotEmpty) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return ExportDialog(
+                                                  accountId: widget.accountID,
+                                                  subAccountId:
+                                                      widget.subAccountID,
+                                                  locationId: selectedSovIds,
+                                                );
+                                              },
                                             );
-                                          },
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                          content: Text(
-                                            LanguageService.getTranslated(
-                                                context, "no_items_selected_error"),
-                                            style: typography.Body1,
-                                          ),
-                                        ));
-                                      }
-                                    } else if (_selectedScreen ==
-                                        Screens.certifiedLocationList) {
-                                      // On export button click
-                                      List<String> selectedLoactionIds =
-                                          Provider.of<MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
-                                              .certifiedLocationList
-                                              .where((location) =>
-                                                  location.isSelected ?? false)
-                                              .map((sov) => sov.id!)
-                                              .toList();
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                              content: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "no_items_selected_error"),
+                                                style: typography.Body1,
+                                              ),
+                                            ));
+                                          }
+                                        } else if (_selectedScreen ==
+                                            Screens.certifiedLocationList) {
+                                          // On export button click
+                                          List<String> selectedLoactionIds =
+                                              Provider.of<MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .certifiedLocationList
+                                                  .where((location) =>
+                                                      location.isSelected ??
+                                                      false)
+                                                  .map((sov) => sov.id!)
+                                                  .toList();
 
-                                      if (selectedLoactionIds.isNotEmpty) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return ExportDialog(
-                                              accountId: widget.accountID,
-                                              subAccountId: widget.subAccountID,
-                                              locationId: selectedLoactionIds,
+                                          if (selectedLoactionIds.isNotEmpty) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return ExportDialog(
+                                                  accountId: widget.accountID,
+                                                  subAccountId:
+                                                      widget.subAccountID,
+                                                  locationId:
+                                                      selectedLoactionIds,
+                                                );
+                                              },
                                             );
-                                          },
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                          content: Text(
-                                            LanguageService.getTranslated(
-                                                context, "no_items_selected_error"),
-                                            style: typography.Body1,
-                                          ),
-                                        ));
-                                      }
-                                    }
-                                  },
-                                  child: Text('Export', style: typography.Body1),
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                              content: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "no_items_selected_error"),
+                                                style: typography.Body1,
+                                              ),
+                                            ));
+                                          }
+                                        }
+                                      },
+                                      child: Text('Export',
+                                          style: typography.Body1),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                        icon: Icon(Icons.download),
-                        tooltip: 'Export Selected',
-                      ),
-                      IconButton(
-                          onPressed:
-                          () {
-                            // Implement bulk add to SOV
-                            locationListProvider.addTagsToSelectedLocations(
-                                context, widget.accountID, widget.subAccountID);
-                          },
-                          icon: Icon(Symbols.note_stack_add),
-                          tooltip: 'Add Tag'),
-                      IconButton(
-                        onPressed: trialStatus.isNotEmpty?null:
-                            () {
-                          // Implement bulk add to SOV
-                          locationListProvider.addSelectedToSOV(
-                              context,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.accountName,
-                              widget.subAccountName,
-                              _masterTabController);
-                        },
-                        icon: Icon(Symbols.list_alt_add),
-                        tooltip: 'Add to SOV',
-                      ),
-                      IconButton(
+                              );
+                            },
+                      icon: Icon(Icons.download),
+                      tooltip: 'Export Selected',
+                    ),
+                    IconButton(
                         onPressed: () {
-                          // Show delete confirmation dialog
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Delete Selected Locations'),
-                              content: Text(
-                                  'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text('Cancel', style: typography.Body1),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    locationListProvider.deleteSelectedLocations(
-                                      context,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                    );
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text('Delete', style: typography.Body1),
-                                ),
-                              ],
-                            ),
-                          );
+                          // Implement bulk add to SOV
+                          locationListProvider.addTagsToSelectedLocations(
+                              context, widget.accountID, widget.subAccountID);
                         },
-                        icon: Icon(Icons.delete_outline),
-                        tooltip: 'Delete Selected',
-                      ),
-                    ] else ...[
-                      SizedBox(
-                        width: 8,
-                      ),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            //SizedBox(width: CustomSpacing.two),
-                            Text(
-                              "My Locations",
-                              style: typography.Body1,
-                            ),
-                            /*
+                        icon: Icon(Symbols.note_stack_add),
+                        tooltip: 'Add Tag'),
+                    IconButton(
+                      onPressed: trialStatus.isNotEmpty
+                          ? null
+                          : () {
+                              // Implement bulk add to SOV
+                              locationListProvider.addSelectedToSOV(
+                                  context,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                  widget.accountName,
+                                  widget.subAccountName,
+                                  _masterTabController);
+                            },
+                      icon: Icon(Symbols.list_alt_add),
+                      tooltip: 'Add to SOV',
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        // Show delete confirmation dialog
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Delete Selected Locations'),
+                            content: Text(
+                                'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Cancel', style: typography.Body1),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  locationListProvider.deleteSelectedLocations(
+                                    context,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                  );
+                                  Navigator.pop(context);
+                                },
+                                child: Text('Delete', style: typography.Body1),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.delete_outline),
+                      tooltip: 'Delete Selected',
+                    ),
+                  ] else ...[
+                    SizedBox(
+                      width: 8,
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          //SizedBox(width: CustomSpacing.two),
+                          Text(
+                            "My Locations",
+                            style: typography.Body1,
+                          ),
+                          /*
                                                   RatingHalfStars(
                                                     rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
                                                     maxRating: 5,
                                                     iconSize: 18,
                                                   ),*/
-                            Spacer(),
-                            SizedBox(width: CustomSpacing.two),
-                            selectedMainTab == 0
-                                ? Row(
-                                    children: [
-                                      InkWell(
-                                        onTap: () {
-                                          // Show end drawer
-                                          Scaffold.of(context).openEndDrawer();
-                                        },
-                                        child: Icon(
-                                          Icons.filter_list,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                    ],
-                                  )
-                                : SizedBox(),
-                            // if selected main tab is 1 then show the Generate Heatmap button
-                            SizedBox(width: CustomSpacing.two),
-                            TooltipTheme(
-                              data: TooltipThemeData(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                textStyle: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  fontSize: 14,
-                                ),
-                                padding: EdgeInsets.all(8),
-                                verticalOffset: 20,
-                                preferBelow: false,
-                              ),
-                              child: Tooltip(
-                                showDuration: Duration(seconds: 5),
-                                triggerMode: TooltipTriggerMode.tap,
-                                preferBelow: true,
-                                richMessage: TextSpan(
+                          Spacer(),
+                          SizedBox(width: CustomSpacing.two),
+                          selectedMainTab == 0
+                              ? Row(
                                   children: [
-                                    for (int i = 0;
-                                        i < locationListProvider.summaryList.length;
-                                        i++)
-                                      TextSpan(
-                                        text:
-                                            '• ${locationListProvider.summaryList[i]}\n',
-                                        style: typography.Subtitle1,
+                                    InkWell(
+                                      onTap: () {
+                                        // Show end drawer
+                                        Scaffold.of(context).openEndDrawer();
+                                      },
+                                      child: Icon(
+                                        Icons.filter_list,
+                                        size: 24,
                                       ),
+                                    ),
+                                    SizedBox(width: CustomSpacing.two),
                                   ],
-                                  style: typography.Subtitle1,
-                                ),
-                                child: Icon(
-                                  Icons.info,
-                                ),
+                                )
+                              : SizedBox(),
+                          // if selected main tab is 1 then show the Generate Heatmap button
+                          SizedBox(width: CustomSpacing.two),
+                          TooltipTheme(
+                            data: TooltipThemeData(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14,
+                              ),
+                              padding: EdgeInsets.all(8),
+                              verticalOffset: 20,
+                              preferBelow: false,
+                            ),
+                            child: Tooltip(
+                              showDuration: Duration(seconds: 5),
+                              triggerMode: TooltipTriggerMode.tap,
+                              preferBelow: true,
+                              richMessage: TextSpan(
+                                children: [
+                                  for (int i = 0;
+                                      i <
+                                          locationListProvider
+                                              .summaryList.length;
+                                      i++)
+                                    TextSpan(
+                                      text:
+                                          '• ${locationListProvider.summaryList[i]}\n',
+                                      style: typography.Subtitle1,
+                                    ),
+                                ],
+                                style: typography.Subtitle1,
+                              ),
+                              child: Icon(
+                                Icons.info,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: CustomSpacing.four),
-                      SizedBox(height: CustomSpacing.eight),
-                      // Options are Upload SOV, Add Location, Export Locations
-                      /*PopupMenuButton(
+                    ),
+                    SizedBox(width: CustomSpacing.four),
+                    SizedBox(height: CustomSpacing.eight),
+                    // Options are Upload SOV, Add Location, Export Locations
+                    /*PopupMenuButton(
                         icon: Icon(Icons.more_vert),
                         itemBuilder: (context) => [
                           PopupMenuItem(
@@ -1024,9 +1060,9 @@ class _MyLocationListState extends State<MyLocationList>
                                           state);
                                 } else {
                                   */
-                      /* _showUploadDialog(
+                    /* _showUploadDialog(
                                       widget.accountID, widget.subAccountID, "");*/
-                      /*
+                    /*
                                   _showUploadBottomSheet(
                                       widget.accountID, widget.subAccountID, "");
                                 }
@@ -1095,12 +1131,11 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
                         ],
                       ),*/
-                    ]
-                  ],
-                );
-              });
-            }
-          ),
+                  ]
+                ],
+              );
+            });
+          }),
         ),
         SizedBox(height: CustomSpacing.two),
         Container(
@@ -1385,7 +1420,8 @@ class _MyLocationListState extends State<MyLocationList>
       processStream = FirebaseFirestore.instance
           .collection('processes')
           .where('company_id', whereIn: provider.docIds) // Filter by company_id
-          .where('process_type', isEqualTo: 'hazard') // Skip documents with heatmap
+          .where('process_type',
+              isEqualTo: 'hazard') // Skip documents with heatmap
           .orderBy('created_at', descending: true)
           .limit(1)
           .snapshots()
@@ -1490,7 +1526,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       fontWeight: FontWeight.w500),
                                 ),
                               ],
-                            ),/*
+                            ), /*
                             CircularProgressIndicator(
                               value: percentage / 100,
                             ),*/
@@ -2015,7 +2051,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     locationQuery,
                                     // Pass the search query if any
                                     locationListProvider.page,
-                                    40, // Page size
+                                    40,
+                                    // Page size
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -2636,300 +2673,307 @@ class _MyLocationListState extends State<MyLocationList>
       ),
       builder: (BuildContext context) {
         return Consumer<UserProfileProvider>(
-          builder: (context, userProfileProvider, child) {
-            final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-            int locations = userProfileProvider.trialInfo['locations']??0;
-            int total = userProfileProvider.trialInfo['maxLocations']??0;
-            return StatefulBuilder(
-              builder: (context, StateSetter setState) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        SizedBox(height: 40),
-                        _uploadedFileName == null
-                            ? GestureDetector(
-                                onTap:
-                                locations<1?null:
-                                    () async {
-                                  FilePickerResult? result =
-                                      await FilePicker.platform.pickFiles(
-                                    type: FileType.custom,
-                                    allowedExtensions: ['xls', 'xlsx'],
-                                  );
-                                  if (result != null) {
-                                    File file = File(result.files.single.path!);
-                                    setState(() {
-                                      files = file;
-                                      String fileNameWithExtension =
-                                          file.path.split('/').last;
-                                      _uploadedFileName =
-                                          fileNameWithExtension.split('.').first;
-                                      _sovNameController.text = _uploadedFileName!;
-                                    });
-                                  }
-                                },
-                                child: Container(
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.cloud_upload_outlined,
-                                            color: Colors.white),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          "Click to upload or drag and drop",
-                                          style: typography.Body1,
-                                        ),
-                                        SizedBox(height: 5),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.info_outline,
-                                                color: Colors.white54),
-                                            SizedBox(width: 3),
-                                            Text('Max file size is 200 MB',
-                                                style: typography.Body1),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+            builder: (context, userProfileProvider, child) {
+          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+          int locations = userProfileProvider.trialInfo['locations'] ?? 0;
+          int total = userProfileProvider.trialInfo['maxLocations'] ?? 0;
+          return StatefulBuilder(
+            builder: (context, StateSetter setState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      SizedBox(height: 40),
+
+                      _uploadedFileName == null
+                          ? GestureDetector(
+                              onTap: locations < 0
+                                  //&& trailStatus.isNotEmpty
+                                  ? null
+                                  : () async {
+                                      FilePickerResult? result =
+                                          await FilePicker.platform.pickFiles(
+                                        type: FileType.custom,
+                                        allowedExtensions: ['xls', 'xlsx'],
+                                      );
+                                      if (result != null) {
+                                        File file =
+                                            File(result.files.single.path!);
+                                        setState(() {
+                                          files = file;
+                                          String fileNameWithExtension =
+                                              file.path.split('/').last;
+                                          _uploadedFileName =
+                                              fileNameWithExtension
+                                                  .split('.')
+                                                  .first;
+                                          _sovNameController.text =
+                                              _uploadedFileName!;
+                                        });
+                                      }
+                                    },
+                              child: Container(
+                                height: 150,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.cloud_upload_outlined,
+                                          color: Colors.white),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "Click to upload or drag and drop",
+                                        style: typography.Body1,
+                                      ),
+                                      SizedBox(height: 5),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.info_outline,
+                                              color: Colors.white54),
+                                          SizedBox(width: 3),
+                                          Text('Max file size is 200 MB',
+                                              style: typography.Body1),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              )
-                            : Center(
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Container(
-                                        height: 150,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.grey),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.description, size: 25),
-                                            SizedBox(height: 10),
-                                            Text(
-                                              _sovNameController.text,
-                                              style: typography.Body1,
-                                            ),
-                                            SizedBox(height: 10),
-                                            GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  _uploadedFileName = null;
-                                                  _sovNameController.clear();
-                                                });
-                                              },
-                                              child: Text(
-                                                "Cancel",
-                                                style: TextStyle(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .error,
-                                                    fontSize: 14),
-                                              ),
-                                            ),
-                                            SizedBox(height: 5),
-                                          ],
-                                        ),
+                              ),
+                            )
+                          : Center(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 150,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                        SizedBox(height: 20),
-                        if(trialStatus.isNotEmpty)
-                          Column(
-                            children: [
-                              MessageCard(
-                                isError: locations<1,
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text: '$locations of $total locations left to upload.',
-                                    ),
-                                    TextSpan(
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                "Coming Soon!",
-                                                style: typography.Body1.copyWith(
-                                                  color: AppColors.primaryMain,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      text: ' Upgrade Now!',
-                                      style: TextStyle(
-                                        color: AppColors.primaryMain,
-                                      ),
-                                    ),
-                                  ]
-                              ),
-                              SizedBox(height: 16),
-                              if(!(locations<1))
-                              Text(
-                                'The system will only process the first ${locations
-                                } locations.',
-                                style: typography.Body1,
-                              ),
-                              SizedBox(height: 16),
-                            ],
-                          ),
-                        if (!addToSOVCheck) ...[
-                          TextField(
-                            controller: tagController,
-                            enabled: locations>0,
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Enter Tags (separated by comma)",
-                              labelStyle: TextStyle(color: Colors.white),
-                              enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue)),
-                              hintStyle: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                        ],
-                        if (addToSOVCheck) ...[
-                          // Fields displayed only if checkbox is checked
-                          TextField(
-                            controller: _sovNameController,
-                            enabled: locations>0,
-                            /*
-                            readOnly: _uploadedFileName != null,*/
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Name of the SoV",
-                              labelStyle: TextStyle(color: Colors.white),
-                              enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue)),
-                              hintStyle: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                          SizedBox(height: 14),
-                          TextField(
-                            controller: tagController,
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Enter Tags (separated by comma)",
-                              labelStyle: TextStyle(color: Colors.white),
-                              enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue)),
-                              hintStyle: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                          SizedBox(height: 14),
-                          TextField(
-                            controller:
-                                TextEditingController(text: widget.accountName),
-                            style: TextStyle(color: Colors.white),
-                            enabled: false,
-                            decoration: InputDecoration(
-                              labelText: "Enter Account Name",
-                              labelStyle: TextStyle(color: Colors.white),
-                              enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              disabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue)),
-                              hintStyle: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                          SizedBox(height: 14),
-                          TextField(
-                            enabled: false,
-                            controller:
-                                TextEditingController(text: widget.subAccountName),
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Enter Sub-account Name",
-                              labelStyle: TextStyle(color: Colors.white),
-                              enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              disabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue)),
-                              hintStyle: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                          SizedBox(height: 14),
-                        ],
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 0.0),
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: addToSOVCheck,
-                                onChanged: trialStatus.isNotEmpty?null:
-                                    (bool? value) {
-                                  setState(() {
-                                    addToSOVCheck = value ?? false;
-                                  });
-                                },
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                "Add to SoV",
-                                style: typography.Body1,
-                              ),
-                              if (trialStatus.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 16.0),
-                                  child: InkWell(
-                                    onTap: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            "Coming Soon!",
-                                            style: typography.Body1.copyWith(
-                                              color: AppColors.primaryMain,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.description, size: 25),
+                                          SizedBox(height: 10),
+                                          Text(
+                                            _sovNameController.text,
+                                            style: typography.Body1,
+                                          ),
+                                          SizedBox(height: 10),
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _uploadedFileName = null;
+                                                _sovNameController.clear();
+                                              });
+                                            },
+                                            child: Text(
+                                              "Cancel",
+                                              style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                  fontSize: 14),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      "Upgrade Now to create SOV!",
-                                      style: typography.Body1.copyWith(
-                                        color: AppColors.primaryMain,
+                                          SizedBox(height: 5),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
+                                ],
+                              ),
+                            ),
+                      SizedBox(height: 20),
+                      if (trialStatus.isNotEmpty)
+                        Column(
+                          children: [
+                            MessageCard(
+                                isError: locations < 1,
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text:
+                                        '$locations of $total locations left to upload.',
+                                  ),
+                                  TextSpan(
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              "Coming Soon!",
+                                              style: typography.Body1.copyWith(
+                                                color: AppColors.primaryMain,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    text: ' Upgrade Now!',
+                                    style: TextStyle(
+                                      color: AppColors.primaryMain,
+                                    ),
+                                  ),
+                                ]),
+                            SizedBox(height: 16),
+                            if (!(locations < 1))
+                              Text(
+                                'The system will only process the first ${locations} locations.',
+                                style: typography.Body1,
+                              ),
+                            SizedBox(height: 16),
+                          ],
+                        ),
+                      if (!addToSOVCheck) ...[
+                        TextField(
+                          controller: tagController,
+                          enabled: locations > 0,
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Tags (separated by comma)",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
-                        /* if (addToSOVCheck)
+                      ],
+                      if (addToSOVCheck) ...[
+                        // Fields displayed only if checkbox is checked
+                        TextField(
+                          controller: _sovNameController,
+                          enabled: locations > 0,
+                          /*
+                            readOnly: _uploadedFileName != null,*/
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Name of the SoV",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 14),
+                        TextField(
+                          controller: tagController,
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Tags (separated by comma)",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 14),
+                        TextField(
+                          controller:
+                              TextEditingController(text: widget.accountName),
+                          style: TextStyle(color: Colors.white),
+                          enabled: false,
+                          decoration: InputDecoration(
+                            labelText: "Enter Account Name",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            disabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 14),
+                        TextField(
+                          enabled: false,
+                          controller: TextEditingController(
+                              text: widget.subAccountName),
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter Sub-account Name",
+                            labelStyle: TextStyle(color: Colors.white),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            disabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
+                            hintStyle: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        SizedBox(height: 14),
+                      ],
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 0.0),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: addToSOVCheck,
+                              onChanged: trialStatus.isNotEmpty
+                                  ? null
+                                  : (bool? value) {
+                                      setState(() {
+                                        addToSOVCheck = value ?? false;
+                                      });
+                                    },
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "Add to SoV",
+                              style: typography.Body1,
+                            ),
+                            if (trialStatus.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: InkWell(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Coming Soon!",
+                                          style: typography.Body1.copyWith(
+                                            color: AppColors.primaryMain,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    "Upgrade Now to create SOV!",
+                                    style: typography.Body1.copyWith(
+                                      color: AppColors.primaryMain,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      /* if (addToSOVCheck)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
                             child: Column(
@@ -2956,44 +3000,50 @@ class _MyLocationListState extends State<MyLocationList>
                               ],
                             ),
                           ),*/
-                        SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Column(
-                            children: [
-                              Consumer<MyLocationListProvider>(
-                                builder: (_, locationListProvider, child) {
-                                  return locationListProvider.isImageUploadLoading
-                                      ? Center(child: CircularProgressIndicator())
-                                      : Row(
-                                          children: [
-                                            Expanded(
-                                                child: CustomButton(
-                                                    type: ButtonType.elevated,
-                                                    onPressed: (locations<1)? null:() async {
-                                                      // Upload the file
-                                                      // return if file is null
-                                                      if (files.path.isEmpty) {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(SnackBar(
-                                                                content: Text(
-                                                                    "Please select a file to upload")));
-                                                        return;
-                                                      }
-                                                      // return if file is not xlsx
-                                                      if (!files.path
-                                                          .endsWith('.xlsx')) {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(SnackBar(
-                                                                content: Text(
-                                                                    "Please select a valid file to upload")));
-                                                        return;
-                                                      }
-                                                      String success =
-                                                          await locationListProvider
-                                                              .uploadSov(
+                      SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Column(
+                          children: [
+                            Consumer<MyLocationListProvider>(
+                              builder: (_, locationListProvider, child) {
+                                return locationListProvider.isImageUploadLoading
+                                    ? Center(child: CircularProgressIndicator())
+                                    : Row(
+                                        children: [
+                                          Expanded(
+                                              child: CustomButton(
+                                                  type: ButtonType.elevated,
+                                                  onPressed:
+                                                  (locations < 0)
+                                                      ? null
+                                                      : () async {
+                                                          // Upload the file
+                                                          // return if file is null
+                                                          if (files
+                                                              .path.isEmpty) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    SnackBar(
+                                                                        content:
+                                                                            Text("Please select a file to upload")));
+                                                            return;
+                                                          }
+                                                          // return if file is not xlsx
+                                                          if (!files.path
+                                                              .endsWith(
+                                                                  '.xlsx')) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    SnackBar(
+                                                                        content:
+                                                                            Text("Please select a valid file to upload")));
+                                                            return;
+                                                          }
+                                                          String success =
+                                                              await locationListProvider.uploadSov(
                                                                   context,
                                                                   files,
                                                                   accountId,
@@ -3003,154 +3053,148 @@ class _MyLocationListState extends State<MyLocationList>
                                                                       .text,
                                                                   _sovNameController
                                                                       .text);
-                                                      Navigator.pop(context);
+                                                          Navigator.pop(
+                                                              context);
 
-                                                      print('Success: $success');
-                                                      // contain symbol +
-                                                      if (success.isNotEmpty &&
-                                                          success.contains('+')) {
-                                                        print(
-                                                            'Inside + success: $success');
-                                                        // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                                        showDialog(
-                                                            context: context,
-                                                            builder: (BuildContext
-                                                                context) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                  /*LanguageService.getTranslated(
+                                                          print(
+                                                              'Success: $success');
+                                                          // contain symbol +
+                                                          if (success
+                                                                  .isNotEmpty &&
+                                                              success.contains(
+                                                                  '+')) {
+                                                            print(
+                                                                'Inside + success: $success');
+                                                            // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                                            showDialog(
+                                                                context:
+                                                                    context,
+                                                                builder:
+                                                                    (BuildContext
+                                                                        context) {
+                                                                  return AlertDialog(
+                                                                    title: Text(
+                                                                      /*LanguageService.getTranslated(
                                                             context,
                                                             "account_list_app_empty_sov_title")*/
-                                                                  'Empty SOV',
-                                                                  style: typography
-                                                                      .H5_Regular,
-                                                                ),
-                                                                content: Column(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    Text(
-                                                                      /* LanguageService.getTranslated(
+                                                                      'Empty SOV',
+                                                                      style: typography
+                                                                          .H5_Regular,
+                                                                    ),
+                                                                    content:
+                                                                        Column(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        Text(
+                                                                          /* LanguageService.getTranslated(
                                                                 context,
                                                                 "account_list_app_empty_sov_text"),*/
-                                                                      'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                                                      style:
-                                                                          typography
-                                                                              .Body1,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height:
-                                                                          CustomSpacing
-                                                                              .two,
-                                                                    ),
-                                                                    Column(
-                                                                      crossAxisAlignment:
-                                                                          CrossAxisAlignment
-                                                                              .stretch,
-                                                                      children: [
-                                                                        Consumer<UploadSovProvider>(builder:
-                                                                            (context,
+                                                                          'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                                          style:
+                                                                              typography.Body1,
+                                                                        ),
+                                                                        SizedBox(
+                                                                          height:
+                                                                              CustomSpacing.two,
+                                                                        ),
+                                                                        Column(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.stretch,
+                                                                          children: [
+                                                                            Consumer<UploadSovProvider>(builder: (context,
                                                                                 uploadSovProvider,
                                                                                 child) {
-                                                                          return uploadSovProvider
-                                                                                  .isLoading
-                                                                              ? const Center(
-                                                                                  child: CircularProgressIndicator(),
-                                                                                )
-                                                                              : CustomButton(
-                                                                                  onPressed: () async {
-                                                                                    // Create empty SOV
-                                                                                    var provider = Provider.of<UploadSovProvider>(context, listen: false);
-                                                                                    await provider.createEmptySov(context, success);
-                                                                                    Navigator.pop(context);
-                                                                                  },
-                                                                                  child: Text(
-                                                                                    /*LanguageService.getTranslated(
+                                                                              return uploadSovProvider.isLoading
+                                                                                  ? const Center(
+                                                                                      child: CircularProgressIndicator(),
+                                                                                    )
+                                                                                  : CustomButton(
+                                                                                      onPressed: () async {
+                                                                                        // Create empty SOV
+                                                                                        var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                                        await provider.createEmptySov(context, success);
+                                                                                        Navigator.pop(context);
+                                                                                      },
+                                                                                      child: Text(
+                                                                                        /*LanguageService.getTranslated(
                                                                           context,
                                                                           "account_list_app_empty_sov_create"),*/
-                                                                                    'Create',
-                                                                                    style: typography.ButtonLarge,
-                                                                                  ),
-                                                                                  type: ButtonType.elevated,
-                                                                                );
-                                                                        }),
-                                                                        CustomButton(
-                                                                          onPressed:
-                                                                              () {
-                                                                            Navigator.pop(
-                                                                                context);
-                                                                          },
-                                                                          child:
-                                                                              Text(
-                                                                            /*LanguageService.getTranslated(
+                                                                                        'Create',
+                                                                                        style: typography.ButtonLarge,
+                                                                                      ),
+                                                                                      type: ButtonType.elevated,
+                                                                                    );
+                                                                            }),
+                                                                            CustomButton(
+                                                                              onPressed: () {
+                                                                                Navigator.pop(context);
+                                                                              },
+                                                                              child: Text(
+                                                                                /*LanguageService.getTranslated(
                                                                       context,
                                                                       "account_list_app_empty_sov_abort")*/
-                                                                            'Abort',
-                                                                            style: typography
-                                                                                .ButtonLarge,
-                                                                          ),
-                                                                          type: ButtonType
-                                                                              .text,
+                                                                                'Abort',
+                                                                                style: typography.ButtonLarge,
+                                                                              ),
+                                                                              type: ButtonType.text,
+                                                                            ),
+                                                                          ],
                                                                         ),
                                                                       ],
                                                                     ),
-                                                                  ],
-                                                                ),
-                                                              );
-                                                            });
-                                                      } else if (success
-                                                          .isNotEmpty) {
-                                                        Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                                builder: (_) =>
-                                                                    MappingScreen(
-                                                                      tempId:
-                                                                          success,
-                                                                      accountId: widget
-                                                                          .accountID,
-                                                                      accountName:
-                                                                          widget.accountName ??
-                                                                              "",
-                                                                      subAccountId:
-                                                                          widget
-                                                                              .subAccountID,
-                                                                    )));
-                                                      }
-                                                    },
-                                                    child: Text("Upload",
-                                                        style:
-                                                            typography.ButtonLarge
-                                                                .copyWith(
-                                                                    color: Colors
-                                                                        .white)))),
-                                          ],
-                                        );
-                                },
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _uploadedFileName = null;
-                                    _sovNameController.clear();
-                                  });
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text("Close", style: typography.Body1),
-                              ),
-                            ],
-                          ),
+                                                                  );
+                                                                });
+                                                          } else if (success
+                                                              .isNotEmpty) {
+                                                            Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        MappingScreen(
+                                                                          tempId:
+                                                                              success,
+                                                                          accountId:
+                                                                              widget.accountID,
+                                                                          accountName:
+                                                                              widget.accountName ?? "",
+                                                                          subAccountId:
+                                                                              widget.subAccountID,
+                                                                        )));
+                                                          }
+                                                        },
+                                                  child: Text("Upload",
+                                                      style: typography
+                                                              .ButtonLarge
+                                                          .copyWith(
+                                                              color: Colors
+                                                                  .white)))),
+                                        ],
+                                      );
+                              },
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _uploadedFileName = null;
+                                  _sovNameController.clear();
+                                });
+                                Navigator.of(context).pop();
+                              },
+                              child: Text("Close", style: typography.Body1),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 20),
-                      ],
-                    ),
+                      ),
+                      SizedBox(height: 20),
+                    ],
                   ),
-                );
-              },
-            );
-          }
-        );
+                ),
+              );
+            },
+          );
+        });
       },
     );
   }
@@ -3894,16 +3938,15 @@ class _MyLocationListState extends State<MyLocationList>
                                               NetworkImage(user.imageUrl),
                                         )
                                       : CircleAvatar(
-                                          child: Text(user.name[0]
-                                              .toUpperCase()),
+                                          child:
+                                              Text(user.name[0].toUpperCase()),
                                         ),
                                   title: Text(user.name),
                                   subtitle: Text(user.email),
                                   onTap: () {
                                     setState(() {
                                       _selectedUser = user;
-                                      _userSearchController.text =
-                                          user.name;
+                                      _userSearchController.text = user.name;
                                     });
                                   },
                                 );
@@ -3911,8 +3954,8 @@ class _MyLocationListState extends State<MyLocationList>
                             )
                           : Padding(
                               padding: EdgeInsets.all(16),
-                              child: Text(
-                                  'Selected User: ${_selectedUser!.name}'),
+                              child:
+                                  Text('Selected User: ${_selectedUser!.name}'),
                             ),
                     ),
                     Padding(
@@ -3922,40 +3965,47 @@ class _MyLocationListState extends State<MyLocationList>
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(dialogContext),
-
-                            child: Text('Cancel', style: CustomTypography(context).Body1,),
+                            child: Text(
+                              'Cancel',
+                              style: CustomTypography(context).Body1,
+                            ),
                           ),
                           CustomButton(
                             type: ButtonType.elevated,
-                            onPressed:
-                                _selectedUser != null && !_isTransferLoading
-                                    ? () async {
-                                        setState(() {
-                                          _isTransferLoading = true;
-                                        });
-                                        var provider =
-                                            Provider.of<SOVListProvider>(context,
-                                                listen: false);
-                                        await provider.transferSOV(
+                            onPressed: _selectedUser != null &&
+                                    !_isTransferLoading
+                                ? () async {
+                                    setState(() {
+                                      _isTransferLoading = true;
+                                    });
+                                    var provider = Provider.of<SOVListProvider>(
+                                        context,
+                                        listen: false);
+                                    await provider
+                                        .transferSOV(
                                             context,
                                             widget.accountID,
                                             widget.subAccountID,
                                             sov.id,
-                                            _selectedUser!.id).then((value) {
-                                          if (value) {
-                                            _getData();
-                                          }
-                                        });
-                                        setState(() {
-                                          _isTransferLoading = false;
-                                        });
-
-                                        Navigator.pop(dialogContext);
+                                            _selectedUser!.id)
+                                        .then((value) {
+                                      if (value) {
+                                        _getData();
                                       }
-                                    : null,
+                                    });
+                                    setState(() {
+                                      _isTransferLoading = false;
+                                    });
+
+                                    Navigator.pop(dialogContext);
+                                  }
+                                : null,
                             child: _isTransferLoading
                                 ? CircularProgressIndicator(strokeWidth: 2.0)
-                                : Text('Transfer', style: CustomTypography(context).Body1,),
+                                : Text(
+                                    'Transfer',
+                                    style: CustomTypography(context).Body1,
+                                  ),
                           ),
                         ],
                       ),
@@ -3976,7 +4026,8 @@ class _MyLocationListState extends State<MyLocationList>
   Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
       String query) async {
     try {
-      ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+      ApiService apiService =
+          ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
       String url = '?search=$query';
       var response = await apiService.get(url);
 

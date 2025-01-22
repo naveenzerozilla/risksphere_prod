@@ -210,20 +210,20 @@ class _LoginScreenState extends State<LoginScreen> {
             height: CustomSpacing.one,
           ),
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-              return SocialMediaButton(
-                onPressed: () async {
-                  // Add your onPressed function here
-                  await authNotifier.signInWithMicrosoft(context: context);
-                  // Check if the user is authenticated after login attempt
-                  if (authNotifier.user != null && !authNotifier.isNewUser) {
-                    // Navigate to the home screen or any other screen after login
-                    Provider.of<UserProfileProvider>(context, listen: false)
-                        .getAllUserData(context, '', '');
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => /*Home(
+            return SocialMediaButton(
+              onPressed: () async {
+                // Add your onPressed function here
+                await authNotifier.signInWithMicrosoft(context: context);
+                // Check if the user is authenticated after login attempt
+                if (authNotifier.user != null && !authNotifier.isNewUser) {
+                  // Navigate to the home screen or any other screen after login
+                  Provider.of<UserProfileProvider>(context, listen: false)
+                      .getAllUserData(context, '', '');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => /*Home(
                           useLightMode: false,
                           useMaterial3: true,
                           colorSelected: ColorSeed.baseColor,
@@ -235,25 +235,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           handleImageSelect: handleImageSelect,
                           colorSelectionMethod: ColorSelectionMethod.colorSeed,
                         ),*/
-                        DashboardScreen(),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Email not found. Please enter a valid email address.'),
-                      ),
-                    );
-                  }
-                },
-                buttonText: LanguageService.getTranslated(
-                    context, "login_microsoft_button"),
-                iconPath: 'assets/images/microsoftLogo.svg',
-              );
-            }
-
-          ),
+                              DashboardScreen(),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'Email not found. Please enter a valid email address.'),
+                    ),
+                  );
+                }
+              },
+              buttonText: LanguageService.getTranslated(
+                  context, "login_microsoft_button"),
+              iconPath: 'assets/images/microsoftLogo.svg',
+            );
+          }),
           SizedBox(height: CustomSpacing.eight),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -501,7 +499,10 @@ class _LoginScreenState extends State<LoginScreen> {
           GestureDetector(
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => CreateAccountScreen()),
+                MaterialPageRoute(
+                    builder: (context) =>
+                        // WebViewExample()),
+                        CreateAccountScreen()),
               );
             },
             child: Row(

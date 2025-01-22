@@ -1,8 +1,8 @@
-
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:green/firebase_options.dart';
 import 'package:green/providers/configuration_provider.dart';
 import 'package:green/providers/drawer_selection_provider.dart';
 import 'package:green/providers/job_monitoring_provier.dart';
@@ -41,15 +41,16 @@ import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
 import 'design_system/primitives/app_colors.dart';
-import 'firebase_options.dart';
+
 import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void initializeNotifications() {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -57,7 +58,8 @@ void initializeNotifications() {
 
   flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
+    onDidReceiveNotificationResponse:
+        (NotificationResponse notificationResponse) {
       final String? payload = notificationResponse.payload;
       if (payload != null) {
         try {
@@ -73,22 +75,24 @@ void initializeNotifications() {
   );
 }
 
-
-
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
 
   if (message.notification == null) {
     return;
   }
-  String imageUrl = message.notification!.android?.imageUrl ?? message.notification!.apple?.imageUrl ?? message.notification!.android?.imageUrl ?? "";
-  showNotification(message.notification!.title, message.notification!.body, imageUrl);
+  String imageUrl = message.notification!.android?.imageUrl ??
+      message.notification!.apple?.imageUrl ??
+      message.notification!.android?.imageUrl ??
+      "";
+  showNotification(
+      message.notification!.title, message.notification!.body, imageUrl);
 }
 
 void checkForInitialMessage() async {
   print('Checking for initial message');
   RemoteMessage? initialMessage =
-  await FirebaseMessaging.instance.getInitialMessage();
+      await FirebaseMessaging.instance.getInitialMessage();
   print('Initial message: $initialMessage');
 
   if (initialMessage != null) {
@@ -97,7 +101,8 @@ void checkForInitialMessage() async {
     print('Notification data: ${initialMessage.data}');
     print('Notification title: ${initialMessage.notification?.title}');
     print('Notification body: ${initialMessage.notification?.body}');
-    print('Notification imageUrl: ${initialMessage.notification?.android?.imageUrl}');
+    print(
+        'Notification imageUrl: ${initialMessage.notification?.android?.imageUrl}');
     print('Notification sent time: ${initialMessage.sentTime}');
     // Process the initial notification data here
     if (initialMessage != null && initialMessage.data.isNotEmpty) {
@@ -105,10 +110,7 @@ void checkForInitialMessage() async {
       print('Notification data: ${initialMessage.data}');
       handleNotificationNavigation(initialMessage.data);
     }
-
   }
-
-
 }
 
 // Clean up the Firebase message handlers
@@ -194,7 +196,8 @@ Future<void> initFCM(String userId) async {
 
     if (token != null) {
       SharedPreferenceService.saveFcmToken(token);
-      bool isSubscribed = await SharedPreferenceService.getNotificationSubscription();
+      bool isSubscribed =
+          await SharedPreferenceService.getNotificationSubscription();
 
       if (!isSubscribed) {
         // Call the subscription API
@@ -222,7 +225,7 @@ Future<void> initFCM(String userId) async {
     print('Message collapse key: ${message.collapseKey}');
     print('Message messageId: ${message.messageId}');
     print('Message messageType: ${message.messageType}');
-print('Message from: ${message.from}');
+    print('Message from: ${message.from}');
 
     if (message.notification != null) {
       showNotification(
@@ -283,9 +286,8 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
   }
 }
 
-
-
-Future<void> showNotification(String? title, String? body, String? imageUrl) async {
+Future<void> showNotification(
+    String? title, String? body, String? imageUrl) async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'your_channel_id_test_1',
     'your_channel_name_test_1',
@@ -360,7 +362,7 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
   // Ensure the channel is created
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
   await flutterLocalNotificationsPlugin.show(
@@ -372,12 +374,6 @@ Future<void> showNotification(String? title, String? body, String? imageUrl) asy
   );
 }
 
-
-
-
-
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
@@ -388,25 +384,33 @@ void main() async {
   initializeNotifications();
   setupFirebaseMessaging();
 
-  String userId = FirebaseAuth.instance.currentUser?.uid??"";
-  await initFCM(userId);
+  // String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+  // await initFCM(userId);
   // Check if the app was opened by a notification
   checkForInitialMessage();
 
-
-  final themeProvider = ThemeProvider(AppThemes.darkTheme); // Default to dark theme
+  final themeProvider =
+      ThemeProvider(AppThemes.darkTheme); // Default to dark theme
   await themeProvider.loadTheme(); // Load the saved theme
 
   runApp(
     EasyLocalization(
-      supportedLocales: [Locale('en'), Locale('es'), Locale('fr'), Locale('ja'), Locale('zh')],
-      path: 'assets/translations', // Path to translation files
+      supportedLocales: [
+        Locale('en'),
+        Locale('es'),
+        Locale('fr'),
+        Locale('ja'),
+        Locale('zh')
+      ],
+      path: 'assets/translations',
+      // Path to translation files
       fallbackLocale: Locale('en'),
       saveLocale: true,
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AuthNotifier()),
-          ChangeNotifierProvider(create: (_) => ThemeProvider(AppThemes.darkTheme)),
+          ChangeNotifierProvider(
+              create: (_) => ThemeProvider(AppThemes.darkTheme)),
           ChangeNotifierProvider(create: (_) => CompanyProvider()),
           ChangeNotifierProvider(create: (_) => FeatureProvider()),
           ChangeNotifierProvider(create: (_) => RoleProvider()),
@@ -439,13 +443,15 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        print('themeProvider.getTheme.brightness: ${themeProvider.getTheme.brightness}');
+        print(
+            'themeProvider.getTheme.brightness: ${themeProvider.getTheme.brightness}');
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
@@ -454,12 +460,15 @@ class MyApp extends StatelessWidget {
           supportedLocales: context.supportedLocales,
           localizationsDelegates: context.localizationDelegates,
           theme: themeProvider.getTheme,
-          darkTheme:  ThemeData(
+          darkTheme: ThemeData(
             colorSchemeSeed: AppColors.primaryMain,
             useMaterial3: true,
             brightness: Brightness.dark,
-          ),// Define your dark theme here
-          themeMode: themeProvider.getTheme.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+          ),
+          // Define your dark theme here
+          themeMode: themeProvider.getTheme.brightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light,
           home: SplashScreen(),
         );
       },
