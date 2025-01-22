@@ -1840,9 +1840,14 @@ class _MyLocationListState extends State<MyLocationList>
                     )
                   : locationListProvider.myLocationList.isEmpty
                       ? Center(
-                          child: Text(
-                            "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
-                            style: typography.Body1,
+                          child: Container(
+                            padding: EdgeInsets.only(right:20,left:20),
+                            child: Text(
+                              "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
+
+                            textAlign: TextAlign.justify,
+                              style: typography.Body1,
+                            ),
                           ),
                         )
                       : RefreshIndicator(
@@ -2383,9 +2388,12 @@ class _MyLocationListState extends State<MyLocationList>
                     )
                   : locationListProvider.certifiedLocationList.isEmpty
                       ? Center(
-                          child: Text(
-                              "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
-                              style: typography.Body1),
+                          child: Container(
+                            padding: EdgeInsets.only(right: 20,left: 20),
+                            child: Text(
+                                "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
+                                style: typography.Body1),
+                          ),
                         )
                       : RefreshIndicator(
                           onRefresh: () async {
