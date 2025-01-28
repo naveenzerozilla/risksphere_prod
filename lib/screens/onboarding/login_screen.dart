@@ -283,6 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(height: CustomSpacing.eight),
           // Email
           TextFormField(
+            keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               labelText: LanguageService.getTranslated(
                   context, "register_non_corporate_emailfield_label"),

@@ -230,14 +230,17 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                         ],
                       );
                     })
-                  : FloatingActionButton(
-            onPressed: () {
-              // Add sub account dialog with autocomplete from api and create account
-              _showAddSubAccountDialog(context);
+                  : Container(
+            padding: EdgeInsets.only(bottom: 43),
+                    child: FloatingActionButton(
+                                onPressed: () {
+                                  // Add sub account dialog with autocomplete from api and create account
+                                  _showAddSubAccountDialog(context);
 
-            },
-            child: Icon(Icons.add),
-          )
+                                },
+                                child: Icon(Icons.add),
+                              ),
+                  )
 
               : SizedBox(),
           body: PopScope(

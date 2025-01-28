@@ -8534,6 +8534,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     // Email
                     TextFormField(
+                      keyboardType: TextInputType.emailAddress,
                       controller: _employeeEmailController,
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(

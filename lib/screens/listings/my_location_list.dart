@@ -372,130 +372,133 @@ class _MyLocationListState extends State<MyLocationList>
                 },
               ),
               drawer: CustomDrawer(),
-              floatingActionButton: SpeedDial(
-                animatedIcon: AnimatedIcons.menu_close,
-                animatedIconTheme: IconThemeData(size: 22.0),
-                backgroundColor: AppColors.primaryMain,
-                foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                children: [
-                  if ((selectedMasterTab) == 0)
+              floatingActionButton: Container(
+                margin: EdgeInsets.only(bottom: 42.0),
+                child: SpeedDial(
+                  animatedIcon: AnimatedIcons.menu_close,
+                  animatedIconTheme: IconThemeData(size: 22.0),
+                  backgroundColor: AppColors.primaryMain,
+                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                  children: [
+                    if ((selectedMasterTab) == 0)
+                      SpeedDialChild(
+                        child: Icon(Icons.add),
+                        backgroundColor: AppColors.primaryMain,
+                        foregroundColor:
+                            themeProvider.getTheme.colorScheme.onPrimary,
+                        label: 'Add Location',
+                        labelStyle: typography.Body1,
+                        onTap: () {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(
+                            builder: (_) => AddLocationScreen(
+                              accountId: widget.accountID,
+                              subAccountId: widget.subAccountID,
+                              sovId: "",
+                              accountName: widget.accountName,
+                              subAccountName: widget.subAccountName,
+                            ),
+                          ))
+                              .then((value) {
+                            if (value != null) {
+                              if (value) {
+                                Provider.of<MyLocationListProvider>(context,
+                                        listen: false)
+                                    .fetchLocationList(
+                                      context,
+                                      "",
+                                      1,
+                                      40,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                    )
+                                    .then((value) => setState(() {}));
+                              }
+                            }
+                          });
+                        },
+                      ),
                     SpeedDialChild(
-                      child: Icon(Icons.add),
+                      child: Icon(Icons.upload),
                       backgroundColor: AppColors.primaryMain,
                       foregroundColor:
                           themeProvider.getTheme.colorScheme.onPrimary,
-                      label: 'Add Location',
+                      label: isUploadInProgress ? 'Continue' : 'Upload SOV',
                       labelStyle: typography.Body1,
-                      onTap: () {
-                        Navigator.of(context)
-                            .push(MaterialPageRoute(
-                          builder: (_) => AddLocationScreen(
-                            accountId: widget.accountID,
-                            subAccountId: widget.subAccountID,
-                            sovId: "",
-                            accountName: widget.accountName,
-                            subAccountName: widget.subAccountName,
-                          ),
-                        ))
-                            .then((value) {
-                          if (value != null) {
-                            if (value) {
-                              Provider.of<MyLocationListProvider>(context,
-                                      listen: false)
-                                  .fetchLocationList(
-                                    context,
-                                    "",
-                                    1,
-                                    40,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  )
-                                  .then((value) => setState(() {}));
-                            }
-                          }
-                        });
+                      onTap: () async {
+                        if (isMaintenance) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'SOV upload is disabled during maintenance period.'),
+                            ),
+                          );
+                        } else if (isUploadInProgress) {
+                          String tempProcessId = await SharedPreferenceService
+                                  .getSovUploadTempId() ??
+                              "";
+                          String state =
+                              await SharedPreferenceService.getSovUploadState() ??
+                                  "";
+                          // Call API to get get necessary data and navigate to the respective screen
+                          Provider.of<UploadSovProvider>(context, listen: false)
+                              .fetchSovUploadData(
+                                  context,
+                                  widget.accountID,
+                                  widget.accountName,
+                                  widget.subAccountID,
+                                  tempProcessId,
+                                  state);
+                        } else {
+                          _showUploadBottomSheet(
+                              widget.accountID, widget.subAccountID, "");
+                        }
                       },
                     ),
-                  SpeedDialChild(
-                    child: Icon(Icons.upload),
-                    backgroundColor: AppColors.primaryMain,
-                    foregroundColor:
-                        themeProvider.getTheme.colorScheme.onPrimary,
-                    label: isUploadInProgress ? 'Continue' : 'Upload SOV',
-                    labelStyle: typography.Body1,
-                    onTap: () async {
-                      if (isMaintenance) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'SOV upload is disabled during maintenance period.'),
-                          ),
-                        );
-                      } else if (isUploadInProgress) {
-                        String tempProcessId = await SharedPreferenceService
-                                .getSovUploadTempId() ??
-                            "";
-                        String state =
-                            await SharedPreferenceService.getSovUploadState() ??
-                                "";
-                        // Call API to get get necessary data and navigate to the respective screen
-                        Provider.of<UploadSovProvider>(context, listen: false)
-                            .fetchSovUploadData(
-                                context,
-                                widget.accountID,
-                                widget.accountName,
-                                widget.subAccountID,
-                                tempProcessId,
-                                state);
-                      } else {
-                        _showUploadBottomSheet(
-                            widget.accountID, widget.subAccountID, "");
-                      }
-                    },
-                  ),
-                  if ((_masterTabController?.index ?? 0) == 0)
-                    SpeedDialChild(
-                      child: Icon(Icons.download),
-                      backgroundColor: trialStatus.isNotEmpty
-                          ? Colors.grey
-                          : AppColors.primaryMain,
-                      foregroundColor:
-                          themeProvider.getTheme.colorScheme.onPrimary,
-                      label: 'Export Locations',
-                      labelStyle: typography.Body1,
-                      onTap: trialStatus.isNotEmpty
-                          ? null
-                          : () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return ExportDialog(
-                                    accountId: widget.accountID,
-                                    subAccountId: widget.subAccountID,
-                                    sovId: "",
-                                    locationId: selectedMainTab == 0
-                                        ? Provider.of<MyLocationListProvider>(
-                                                context,
-                                                listen: false)
-                                            .myLocationList
-                                            .map(
-                                                (location) => location.id ?? "")
-                                            .toList()
-                                        : Provider.of<MyLocationListProvider>(
-                                                context,
-                                                listen: false)
-                                            .certifiedLocationList
-                                            .map(
-                                                (location) => location.id ?? "")
-                                            .toList(),
-                                  );
-                                },
-                              );
-                            },
-                    ),
-                ],
+                    if ((_masterTabController?.index ?? 0) == 0)
+                      SpeedDialChild(
+                        child: Icon(Icons.download),
+                        backgroundColor: trialStatus.isNotEmpty
+                            ? Colors.grey
+                            : AppColors.primaryMain,
+                        foregroundColor:
+                            themeProvider.getTheme.colorScheme.onPrimary,
+                        label: 'Export Locations',
+                        labelStyle: typography.Body1,
+                        onTap: trialStatus.isNotEmpty
+                            ? null
+                            : () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return ExportDialog(
+                                      accountId: widget.accountID,
+                                      subAccountId: widget.subAccountID,
+                                      sovId: "",
+                                      locationId: selectedMainTab == 0
+                                          ? Provider.of<MyLocationListProvider>(
+                                                  context,
+                                                  listen: false)
+                                              .myLocationList
+                                              .map(
+                                                  (location) => location.id ?? "")
+                                              .toList()
+                                          : Provider.of<MyLocationListProvider>(
+                                                  context,
+                                                  listen: false)
+                                              .certifiedLocationList
+                                              .map(
+                                                  (location) => location.id ?? "")
+                                              .toList(),
+                                    );
+                                  },
+                                );
+                              },
+                      ),
+                  ],
+                ),
               ),
               body: Stack(
                 children: [
@@ -544,7 +547,9 @@ class _MyLocationListState extends State<MyLocationList>
                                         }),
                                       ],
                                     ),
-                                  ),
+                                  )
+
+                                  ,
                                 ],
                               ),
                             ),
@@ -1407,28 +1412,45 @@ class _MyLocationListState extends State<MyLocationList>
     // Define the secondary stream with proper caching
     Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
     print('docids: ${provider.docIds}');
-
-    if (provider.isSuperAdmin) {
       processStream = FirebaseFirestore.instance
           .collection('processes')
+          .where('location_data.account_id',
+          isEqualTo: widget.accountID)
+          .where('location_data.sub_account_id',
+          isEqualTo: widget.subAccountID)
           .where('process_type', isEqualTo: 'hazard')
           .orderBy('created_at', descending: true)
           .limit(1)
           .snapshots()
           .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
-    } else if (provider.docIds.isNotEmpty) {
-      processStream = FirebaseFirestore.instance
-          .collection('processes')
-          .where('company_id', whereIn: provider.docIds) // Filter by company_id
-          .where('process_type',
-              isEqualTo: 'hazard') // Skip documents with heatmap
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .snapshots()
-          .asBroadcastStream();
-    } else {
-      processStream = Stream.empty();
-    }
+
+
+
+
+
+
+    // if (provider.isSuperAdmin) {
+    //   processStream = FirebaseFirestore.instance
+    //       .collection('processes')
+    //       .where('process_type', isEqualTo: 'hazard')
+    //       .orderBy('created_at', descending: true)
+    //       .limit(1)
+    //       .snapshots()
+    //       .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
+    // }
+    // else if (provider.docIds.isNotEmpty) {
+    //   processStream = FirebaseFirestore.instance
+    //       .collection('processes')
+    //       .where('company_id', whereIn: provider.docIds) // Filter by company_id
+    //       .where('process_type',
+    //           isEqualTo: 'hazard') // Skip documents with heatmap
+    //       .orderBy('created_at', descending: true)
+    //       .limit(1)
+    //       .snapshots()
+    //       .asBroadcastStream();
+    // } else {
+    //   processStream = Stream.empty();
+    // }
 
     // Cache the subaccount stream
     final subaccountStream = FirebaseFirestore.instance
@@ -1495,12 +1517,15 @@ class _MyLocationListState extends State<MyLocationList>
             // Add key for proper animation
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (processStatus.toString().toLowerCase() != 'completed')
+              if (processStatus.toString().toLowerCase() == 'processing')
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context)
                         .push(MaterialPageRoute(
-                          builder: (_) => ProcessMonitoringScreen(),
+                          builder: (_) => ProcessMonitoringScreen(
+                            accountId:widget.accountID,
+                            subAccountId:widget.subAccountID,
+                          ),
                         ))
                         .then((value) => _getData());
                   },
@@ -1844,7 +1869,6 @@ class _MyLocationListState extends State<MyLocationList>
                             padding: EdgeInsets.only(right:20,left:20),
                             child: Text(
                               "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
-
                             textAlign: TextAlign.justify,
                               style: typography.Body1,
                             ),
@@ -2392,6 +2416,7 @@ class _MyLocationListState extends State<MyLocationList>
                             padding: EdgeInsets.only(right: 20,left: 20),
                             child: Text(
                                 "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
+                                textAlign: TextAlign.justify,
                                 style: typography.Body1),
                           ),
                         )

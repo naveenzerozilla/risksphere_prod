@@ -812,10 +812,12 @@ class AuthNotifier extends ChangeNotifier {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => MyApp()),
-                            (route) => false);
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                    // Navigator.pushAndRemoveUntil(
+                    //     context,
+                    //     MaterialPageRoute(builder: (context) => MyApp()),
+                    //         (route) => false);
                   },
                   child: Row(
                     children: [

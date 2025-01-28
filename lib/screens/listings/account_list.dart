@@ -243,17 +243,20 @@ class _AccountListScreenState extends State<AccountListScreen>
                           ],
                         );
                       })
-                    : _tabController?.index != 0? SizedBox():FloatingActionButton(
-                        backgroundColor: AppColors.primaryMain,
-                        onPressed: () {
-                          // Add account dialog with autocomplete from api and create account
-                          _showAddAccountDialog(context);
-                        },
-                        child: Icon(
-                          Icons.add,
-                          color: Theme.of(context).colorScheme.surface,
+                    : _tabController?.index != 0? SizedBox():Container(
+              margin: EdgeInsets.only(bottom: 42.0),
+              child: FloatingActionButton(
+                          backgroundColor: AppColors.primaryMain,
+                          onPressed: () {
+                            // Add account dialog with autocomplete from api and create account
+                            _showAddAccountDialog(context);
+                          },
+                          child: Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
                         ),
-                      )
+                    )
                 : SizedBox(),
             body: PopScope(
               canPop: /*_selectedScreen == Screens.connectionList ||

@@ -183,8 +183,8 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       );
                     },
                   ),
-                  _buildTab("News Feed", "1"),
-                  _buildTab("Pending Actions", "5"),
+                  _buildTab("News Feed", ""),
+                  _buildTab("Pending Actions", ""),
                 ],
               ),
             ),
@@ -204,11 +204,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
         children: [
           Text(label),
           SizedBox(width: 6),
-          Chip(
-            label: Text(count, style: TextStyle(fontSize: 12)),
-            padding: EdgeInsets.zero,
-            backgroundColor: Colors.blueAccent,
-          ),
+          //future need to uncommand
+          // Chip(
+          //   label: Text(count, style: TextStyle(fontSize: 12)),
+          //   padding: EdgeInsets.zero,
+          //   backgroundColor: Colors.blueAccent,
+          // ),
         ],
       ),
     );

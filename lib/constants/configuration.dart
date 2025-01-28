@@ -2,7 +2,7 @@
 import 'environment.dart';
 
 class Configuration {
-  static String environment = Environment.qa
+  static String environment = Environment.dev
   ; // Set default environment
 
   static const Map<String, String> projectIds = {

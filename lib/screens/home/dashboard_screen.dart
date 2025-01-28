@@ -346,7 +346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                     !showVerificationRequests
                         ? SizedBox()
-                        : _overviewCardHorizontal(
+                        :
+                    _overviewCardHorizontal(
                             title: LanguageService.getTranslated(context,
                                 'usermanagement_dash_verification_req'),
                             amount: ((dashboardProvider.dashboardModel
@@ -464,6 +465,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: CustomSpacing.one,
                     ),
                     _subscriptionBody(typography),
+
                     SizedBox(height: CustomSpacing.one),
                     !showCompanyOnboardingStats
                         ? SizedBox()
@@ -575,6 +577,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return Column(
           children: [
+
             SubscriptionCard(
               title: '$hazardLabel ($vendorName)',
               description: description.isNotEmpty ? description : vendorName,
