@@ -530,62 +530,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _subscriptionBody(CustomTypography typography) {
     debugPrint('Subscription Keys: ${subscriptions.keys.toList()}');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: subscriptions.keys.map((key) {
-        // Split the subscription key into vendor_id and hazard_name
-        final parts = key.split('_');
-        if (parts.length != 2) {
-          debugPrint('Invalid subscription key format: $key');
-          return SizedBox.shrink();
-        }
-
-        final vendorId = parts[0];
-        final hazardName = parts[1];
-
-        // Find the vendor by vendor_id
-        final vendor = vendorList.firstWhere(
-              (vendor) => vendor['vendor_id'] == vendorId,
-          orElse: () {
-            debugPrint('Vendor not found for ID: $vendorId');
-            return null;
-          },
-        );
-
-        if (vendor == null) return SizedBox.shrink();
-
-        // Find the hazard in the vendor's hazard_commercials by hazard_name
-        final hazardCommercials = vendor['hazard_commercials'] as List?;
-        final hazard = hazardCommercials?.firstWhere(
-              (commercial) => commercial['hazard_name'] == hazardName,
-          orElse: () {
-            debugPrint('Hazard not found for name: $hazardName in Vendor ID: $vendorId');
-            return null;
-          },
-        );
-
-        if (hazard == null) return SizedBox.shrink();
-
-        // Extract subscription and hazard details
-        final subscription = subscriptions[key];
-        final vendorName = vendor['vendor_name_label'] ?? '';
-        final vendorImage = vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
-        final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
-        final description = subscription['description'] ?? '';
-
+    return Consumer<ConfigurationProvider>(
+        builder: (context, provider, child) {
         return Column(
-          children: [
-            SubscriptionCard(
-              title: '$hazardLabel ($vendorName)',
-              description: description.isNotEmpty ? description : vendorName,
-              iconPath: vendorImage,
-              isSubscribed: subscription['is_subscribed'] == true ||
-                  subscription['is_subscribed'] == 'true',
-            ),
-            SizedBox(height: CustomSpacing.one),
-          ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: subscriptions.keys.map((key) {
+            // Split the subscription key into vendor_id and hazard_name
+            final parts = key.split('_');
+            if (parts.length != 2) {
+              debugPrint('Invalid subscription key format: $key');
+              return SizedBox.shrink();
+            }
+
+            final vendorId = parts[0];
+            final hazardName = parts[1];
+
+            // Find the vendor by vendor_id
+            final vendor = vendorList.firstWhere(
+                  (vendor) => vendor['vendor_id'] == vendorId,
+              orElse: () {
+                debugPrint('Vendor not found for ID: $vendorId');
+                return null;
+              },
+            );
+
+            if (vendor == null) return SizedBox.shrink();
+
+            // Find the hazard in the vendor's hazard_commercials by hazard_name
+            final hazardCommercials = vendor['hazard_commercials'] as List?;
+            final hazard = hazardCommercials?.firstWhere(
+                  (commercial) => commercial['hazard_name'] == hazardName,
+              orElse: () {
+                debugPrint('Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+                return null;
+              },
+            );
+
+            if (hazard == null) return SizedBox.shrink();
+
+            // Extract subscription and hazard details
+            final subscription = subscriptions[key];
+            final vendorName = vendor['vendor_name_label'] ?? '';
+            final vendorImage = vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
+            final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+            final description = subscription['description'] ?? '';
+
+            var config = provider.configurations['result'] ?? {};
+            var mainId = config['id'] ?? '';
+            var level = config['level'] ?? '';
+
+            return Column(
+              children: [
+                SubscriptionCard(
+                  title: '$hazardLabel ($vendorName)',
+                  description: description.isNotEmpty ? description : vendorName,
+                  iconPath: vendorImage,
+                  isSubscribed: subscription['is_subscribed'] == true ||
+                      subscription['is_subscribed'] == 'true',
+                  onSubscribe: () {
+                    print('Subscribing to $key');
+                    print('Main ID: $mainId');
+                    print('Level: $level');
+                    print('Subscription: ${subscription['is_subscribed']}');
+                    _updateSubscription(key, subscription['is_subscribed'], mainId, level);
+                  },
+                ),
+                SizedBox(height: CustomSpacing.one),
+              ],
+            );
+          }).toList(),
         );
-      }).toList(),
+      }
     );
   }
 
@@ -1306,42 +1321,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return json.decode(decoded);
   }
 
-  String _getVendorName(String vendorId) {
-    var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
-      orElse: () {
-        debugPrint('Vendor not found for ID: $vendorId');
-        return {'vendor_name_label': ''};
+  void _updateSubscription(String vendorId, bool isSubscribed, String mainId, String level) {
+    var typography = CustomTypography(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+        bool isLoading = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Update Subscription'),
+              content:Text(
+                isSubscribed
+                    ? 'Do you want to unsubscribe from this vendor?'
+                    : 'Do you want to subscribe to this vendor?',
+                style: typography.Body1,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: provider.isLoading?null:() {
+                    if (!provider.isLoading) Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: typography.Body1.copyWith(color: AppColors.primaryMain),
+                  ),
+                ),
+                TextButton(
+                  onPressed: provider.isLoading?null:() async {
+                    setState(() {
+                      isLoading = true;
+                    });
+
+                    String key = 'subscribe.$vendorId.is_subscribed';
+
+                    await provider.updateConfiguration(
+                      context,
+                      mainId,
+                      key,
+                      level,
+                      !isSubscribed,
+                    );
+
+                    setState(() {
+                      isLoading = false;
+                    });
+
+                    if (!provider.isLoading) Navigator.pop(context);
+                    _getData();
+                  },
+                  child:  provider.isLoading
+                      ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                          height: 38,
+                          width: 38,
+                          child: CircularProgressIndicator()),
+                    ],
+                  )
+                      : Text(
+                    'Save',
+                    style: typography.Body1.copyWith(color: AppColors.primaryMain),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
-
-    debugPrint('Vendor found for ID: $vendorId - ${vendor['vendor_name_label']}');
-    return vendor['vendor_name_label'] ?? '';
-  }
-
-  String _getVendorDisplayName(String vendorId) {
-    var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
-      orElse: () {
-        debugPrint('Display Name not found for Vendor ID: $vendorId');
-        return {'display_name': ''};
-      },
-    );
-
-    debugPrint('Display name found for ID: $vendorId - ${vendor['display_name']}');
-    return vendor['display_name'] ?? '';
-  }
-
-  String _getVendorImage(String vendorId) {
-    var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
-      orElse: () {
-        debugPrint('Image not found for Vendor ID: $vendorId');
-        return {'display_image_url': 'assets/images/default_vendor.png'};
-      },
-    );
-
-    debugPrint('Image found for Vendor ID: $vendorId - ${vendor['display_image_url']}');
-    return vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
   }
 }

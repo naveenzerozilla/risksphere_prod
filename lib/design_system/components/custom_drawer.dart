@@ -122,7 +122,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         },
                         decoration: InputDecoration(
                           prefixIcon: Icon(Icons.search, color: iconColor),
-                          hintText: 'Search',
+                          hintText: 'Search Locations',
                           hintStyle: typography.Body1,
                           filled: true,
                           fillColor: Theme.of(context).brightness == Brightness.dark

@@ -14,6 +14,7 @@ class SubscriptionCard extends StatelessWidget {
   final String description;
   final String iconPath;
   final bool isSubscribed;
+  final Function()? onSubscribe;
 
   const SubscriptionCard({
     Key? key,
@@ -21,6 +22,7 @@ class SubscriptionCard extends StatelessWidget {
     required this.description,
     required this.iconPath,
     required this.isSubscribed,
+    this.onSubscribe,
   }) : super(key: key);
 
   @override
@@ -114,22 +116,7 @@ class SubscriptionCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ElevatedButton(
-                              onPressed: () {
-                                // Handle subscription logic
-                                //Coming soon Snackbar
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Coming soon!',
-                                      style: typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                              onPressed: onSubscribe,
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4.0),
@@ -150,20 +137,7 @@ class SubscriptionCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ElevatedButton(
-                              onPressed: () {
-                                // Handle subscription logic
-                                //Coming soon Snackbar
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Coming soon!',
-                                        style: typography.Body1.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                        )),
-                                  ),
-                                );
-                              },
+                              onPressed: onSubscribe,
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4.0),

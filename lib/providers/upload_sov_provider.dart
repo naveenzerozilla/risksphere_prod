@@ -643,13 +643,15 @@ class UploadSovProvider extends ChangeNotifier {
             content: Text(response['message'] ?? "Submitted successfully"),
           ),
         );
-        Navigator.pushReplacement(
+        // remove until we reach location list screeen
+        Navigator.popUntil(context, ModalRoute.withName(AccountListScreen.routeName));
+        /*Navigator.pushReplacement(
           context,
           MaterialPageRoute(
               builder: (context) => SubAccountListScreen(
                   accountId: accountId,
                   accountName: accountName)), // Navigate to AccountsScreen
-        );
+        );*/
         // Navigator.push(context, MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
         //Navigator.pop(context);
         return true; // Indicate success

@@ -301,7 +301,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);  // Close dialog
                       if (geocodingCount + duplicateCount > 0) {
                         // Proceed only if there are locations to commit
                         // Call the function to commit locations

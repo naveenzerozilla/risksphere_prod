@@ -43,11 +43,14 @@ import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:green/models/role_model.dart' as roleModel;
 
+import '../../providers/user_profile_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
 
 class AccountListScreen extends StatefulWidget {
+  static const String routeName = '/accountList';
+
   const AccountListScreen({
     super.key,
   });
@@ -166,7 +169,12 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   @override
   void initState() {
-    _tabController = TabController(length: 3, vsync: this);
+    var userProfileProvider =
+    Provider.of<UserProfileProvider>(context, listen: false);
+    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+    // Determine the number of tabs based on trial status
+    int tabCount = trialStatus.isEmpty ? 3 : 2;
+    _tabController = TabController(length: tabCount, vsync: this);
     super.initState();
     _getData();
   }
@@ -255,178 +263,184 @@ class _AccountListScreenState extends State<AccountListScreen>
                         ),
                       )
                 : SizedBox(),
-            body: PopScope(
-              canPop: /*_selectedScreen == Screens.connectionList ||
-                      _selectedScreen == Screens.corporateConnectionList,*/
-                  true,
-              onPopInvoked: (canPop) {
-                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-                      setState(() {
-                        _selectedScreen = Screens.corporateConnectionList;
-                      });
-                    } else if (_selectedScreen == Screens.requestList) {
-                      setState(() {
-                        _tabController?.animateTo(0);
-                        _selectedScreen = Screens.corporateConnectionList;
-                      });
-                    }*/
-              },
-              child: Stack(
-                children: [
-                  // Background image
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        'assets/images/mesh.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Column(
+            body: Consumer<UserProfileProvider>(
+                builder: (context, userProfileProvider, child) {
+                return PopScope(
+                  canPop: /*_selectedScreen == Screens.connectionList ||
+                          _selectedScreen == Screens.corporateConnectionList,*/
+                      true,
+                  onPopInvoked: (canPop) {
+                    print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                    /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                          setState(() {
+                            _selectedScreen = Screens.corporateConnectionList;
+                          });
+                        } else if (_selectedScreen == Screens.requestList) {
+                          setState(() {
+                            _tabController?.animateTo(0);
+                            _selectedScreen = Screens.corporateConnectionList;
+                          });
+                        }*/
+                  },
+                  child: Stack(
                     children: [
-                      Expanded(
-                        child: Container(
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              /*     Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          RolesDropdown(),
-                                        ],
-                                      ),
-                                    ],
-                                  ),*/
-                              SizedBox(height: CustomSpacing.two),
-                              Container(
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
-                                  borderRadius:
-                                      BorderRadius.circular(16), // Rounded edges
-                                ),
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: 0, vertical: 0),
-                                child: DefaultTabController(
-                                  length: 3,
-                                  child: Column(
-                                    children: <Widget>[
-                                      // Container for the TabBar with arrows
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHigh,
-                                        ),
-                                        height: 50,
-                                        child: Row(
-                                          children: <Widget>[
-                                            // Left arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_left,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollLeft,
-                                            ),
-                                            // Scrollable TabBar
-                                            Consumer<AccountListProvider>(
-                                              builder: (context, accountListProvider, _) {
-                                                return Expanded(
-                                                  child: SingleChildScrollView(
-                                                    controller: _scrollController,
-                                                    scrollDirection: Axis.horizontal,
-                                                    child: TabBar(
-                                                      controller: _tabController,
-                                                      tabAlignment:
-                                                          TabAlignment.start,
-                                                      labelStyle:
-                                                          typography.Subtitle2,
-                                                      isScrollable: true,
-                                                      indicatorColor:
-                                                          Colors.lightBlueAccent,
-                                                      labelColor:
-                                                          Colors.lightBlueAccent,
-                                                      unselectedLabelColor:
-                                                          Colors.grey,
-                                                      tabs: [
-                                                        Tab(
-                                                          child:  Row(
-                                                            children: [
-                                                              Text('My Accounts', style: typography.Subtitle2),
-                                                              accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(width: CustomSpacing.two,),
-                                                              accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(
-                                                                height: 25,
-                                                                child: Chip(
-                                                                  labelPadding: EdgeInsets.all(0),
-                                                                  materialTapTargetSize:
-                                                                  MaterialTapTargetSize.shrinkWrap,
-                                                                  label: Text(
-                                                                    accountListProvider.accountHits
-                                                                        .toString(),
-                                                                    style:
-                                                                    typography.BottomNavigationActiveLabel
-                                                                        .copyWith(height: -0.6),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        Tab(text: 'Shared'),
-                                                        Tab(text: 'Configuration'),
-                                                        //Tab(text: 'Access Requests'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            ),
-                                            // Right arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_right,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollRight,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              // TabBarView for the tab content
-                              Expanded(
-                                child
-                                    : TabBarView(
-                                  controller: _tabController,
-                                  children: [
-                                    _getAccountUI(),
-                                    _getComingSoonUI(),
-                                    ConfigurationTab(),
-                                    //_getComingSoonUI(),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      // Background image
+                      Positioned.fill(
+                        child: Opacity(
+                          opacity: 0.3,
+                          child: Image.asset(
+                            'assets/images/mesh.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
+                      Column(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin:
+                                  EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /*     Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              RolesDropdown(),
+                                            ],
+                                          ),
+                                        ],
+                                      ),*/
+                                  SizedBox(height: CustomSpacing.two),
+                                  Container(
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHigh,
+                                      borderRadius:
+                                          BorderRadius.circular(16), // Rounded edges
+                                    ),
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 0, vertical: 0),
+                                    child: DefaultTabController(
+                                      length: _tabController?.length??3,
+                                      child: Column(
+                                        children: <Widget>[
+                                          // Container for the TabBar with arrows
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(16),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHigh,
+                                            ),
+                                            height: 50,
+                                            child: Row(
+                                              children: <Widget>[
+                                                // Left arrow button
+                                                IconButton(
+                                                  icon: Icon(Icons.arrow_left,
+                                                      color: Colors.grey),
+                                                  onPressed: _scrollLeft,
+                                                ),
+                                                // Scrollable TabBar
+                                                Consumer<AccountListProvider>(
+                                                  builder: (context, accountListProvider, _) {
+                                                    return Expanded(
+                                                      child: SingleChildScrollView(
+                                                        controller: _scrollController,
+                                                        scrollDirection: Axis.horizontal,
+                                                        child: TabBar(
+                                                          controller: _tabController,
+                                                          tabAlignment:
+                                                              TabAlignment.start,
+                                                          labelStyle:
+                                                              typography.Subtitle2,
+                                                          isScrollable: true,
+                                                          indicatorColor:
+                                                              Colors.lightBlueAccent,
+                                                          labelColor:
+                                                              Colors.lightBlueAccent,
+                                                          unselectedLabelColor:
+                                                              Colors.grey,
+                                                          tabs: [
+                                                            Tab(
+                                                              child:  Row(
+                                                                children: [
+                                                                  Text('My Accounts', style: typography.Subtitle2),
+                                                                  accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(width: CustomSpacing.two,),
+                                                                  accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(
+                                                                    height: 25,
+                                                                    child: Chip(
+                                                                      labelPadding: EdgeInsets.all(0),
+                                                                      materialTapTargetSize:
+                                                                      MaterialTapTargetSize.shrinkWrap,
+                                                                      label: Text(
+                                                                        accountListProvider.accountHits
+                                                                            .toString(),
+                                                                        style:
+                                                                        typography.BottomNavigationActiveLabel
+                                                                            .copyWith(height: -0.6),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            Tab(text: 'Shared'),
+                                                            if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
+                                                            Tab(text: 'Configuration'),
+                                                            //Tab(text: 'Access Requests'),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                ),
+                                                // Right arrow button
+                                                IconButton(
+                                                  icon: Icon(Icons.arrow_right,
+                                                      color: Colors.grey),
+                                                  onPressed: _scrollRight,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // TabBarView for the tab content
+                                  Expanded(
+                                    child
+                                        : TabBarView(
+                                      controller: _tabController,
+                                      children: [
+                                        _getAccountUI(),
+                                        _getComingSoonUI(),
+                                        if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
+                                        ConfigurationTab(),
+                                        //_getComingSoonUI(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                );
+              }
             ),
           ),
         );
