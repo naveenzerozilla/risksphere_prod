@@ -931,7 +931,11 @@ class _SovLocationListState extends State<SovLocationList> with TickerProviderSt
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()),
+                        MaterialPageRoute(builder: (_) => ProcessMonitoringScreen(
+                          accountId: widget.accountID,
+                          subAccountId: widget.subAccountID,
+
+                        )),
                       );
                     },
                     child: Row(

@@ -11,6 +11,7 @@ class UploadPreviewButtons extends StatefulWidget {
   final String accountId;
   final String accountName;
   final String tempId;
+  final String subAccountId;
 
   const UploadPreviewButtons({
     Key? key,
@@ -18,6 +19,7 @@ class UploadPreviewButtons extends StatefulWidget {
     required this.accountId,
     required this.accountName,
     required this.tempId,
+    required this.subAccountId,
   }) : super(key: key);
 
   @override
@@ -301,6 +303,8 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pop(context);
                       if (geocodingCount + duplicateCount > 0) {
                         // Proceed only if there are locations to commit
                         // Call the function to commit locations
@@ -337,7 +341,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
     });
 
     await provider.commitSelectedLocations(
-        context, widget.accountId, widget.accountName, widget.tempId);
+        context, widget.accountId, widget.accountName, widget.tempId,widget.subAccountId);
 
     setState(() {
       _isSubmitLoading = false;  // Hide loader after submission

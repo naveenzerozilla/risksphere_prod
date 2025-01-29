@@ -416,6 +416,8 @@ class ConflictsTabState extends State<ConflictsTab> {
                       accountName: widget.accountName,
                       tempId: widget.tempId,
                       processId: widget.processId,
+                      subAccountId: widget.subAccountId,
+
                     ),
                   ],
                 ),

@@ -105,27 +105,36 @@ class JobMonitoringProvider extends ChangeNotifier {
   }*/
 
   // Fetch Job Monitoring Data (handle filtering by `company_id`)
-  Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData() {
-    if (_isSuperAdmin) {
-      // Fetch all processes if the user is a super admin
+  Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(String accountId, String subAccountId) {
+    // if (_isSuperAdmin) {
+    //   // Fetch all processes if the user is a super admin
+    //   return _fireStore
+    //       .collection('processes')
+    //
+    //       .where('process_type', isEqualTo: 'hazard')
+    //       .orderBy('created_at', descending: true)
+    //       .snapshots();
+    // }
+    //
+    // if (_docIds.isNotEmpty) {
+    //   // Query for non-super-admins filtered by company IDs
+    //   return _fireStore
+    //       .collection('processes')
+    //       .where('company_id', whereIn: _docIds) // Filter by company IDs
+    //
+    //       .where('process_type', isEqualTo: 'hazard')
+    //
+    //       .orderBy('created_at', descending: true)
+    //       .snapshots();
+    // }
       return _fireStore
           .collection('processes')
+        .where('location_data.account_id',  isEqualTo: accountId)
+        .where('location_data.sub_account_id',  isEqualTo: subAccountId)
 
           .where('process_type', isEqualTo: 'hazard')
           .orderBy('created_at', descending: true)
           .snapshots();
-    }
-
-    if (_docIds.isNotEmpty) {
-      // Query for non-super-admins filtered by company IDs
-      return _fireStore
-          .collection('processes')
-          .where('company_id', whereIn: _docIds) // Filter by company IDs
-
-          .where('process_type', isEqualTo: 'hazard')
-          .orderBy('created_at', descending: true)
-          .snapshots();
-    }
 
     // Return an empty stream if there are no company IDs
     return Stream.empty();

@@ -67,7 +67,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
         _getData();
       }
     });
-    //_getData(); // Initial data fetch
+  // Initial data fetch
   }
 
   @override
@@ -753,6 +753,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
               accountName: widget.accountName,
               tempId: widget.tempId,
               processId: widget.processId,
+              subAccountId: widget.subAccountId,
             ),
           ],
         );

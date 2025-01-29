@@ -297,12 +297,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () {
-                                                      Navigator.pushReplacement(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                              builder:
-                                                                  (context) =>
-                                                                      MyApp()));
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      // Navigator.pushReplacement(
+                                                      //     context,
+                                                      //     MaterialPageRoute(
+                                                      //         builder:
+                                                      //             (context) =>
+                                                      //                 MyApp()));
                                                     },
                                                     child: Row(
                                                       children: [
@@ -1445,6 +1447,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.four),
         // Admin Email
         TextFormField(
+          keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
             labelText: LanguageService.getTranslated(
                 context, "connections_user_connection_email_filter"),

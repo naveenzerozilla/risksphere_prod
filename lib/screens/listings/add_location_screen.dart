@@ -287,7 +287,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     ),
                                                   ),
                                                 ]
-                                            ),
+                                             ),
                                             ),
                                         Padding(
                                           padding: const EdgeInsets.only(left: 8.0),

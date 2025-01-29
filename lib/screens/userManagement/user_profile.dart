@@ -453,30 +453,32 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 16.0),
                               child: Center(
-                                child: CountryListPicker(
-                                  initialCountry: Countries.United_States,
-                                  border: InputBorder.none,
-                                  flagSize: Size(35, 30),
-                                  onChanged: (code) {
-                                    setState(() {
-                                      _selectedCountryCode = code;
-                                    });
-                                  },
-                                  diallingCodeStyle: typography.Body1,
-                                  isShowInputField: false,
-                                  dialogTheme: DialogThemeData(
-                                    style: typography.Body1,
-                                    isShowFloatButton: false,
-                                  ),
-                                  countryNameStyle: typography.Body1,
-                                  isShowCountryName: false,
-                                  onCountryChanged: (country) {
-                                    print('This is the country code: $country');
-                                    setState(() {
-                                      _selectedCountryCode = country.dialing_code;
-                                    });
-                                  },
-                                ),
+                                child:
+                                    Container(),
+                                // CountryListPicker(
+                                //   initialCountry: Countries.United_States,
+                                //   border: InputBorder.none,
+                                //   flagSize: Size(35, 30),
+                                //   onChanged: (code) {
+                                //     setState(() {
+                                //       _selectedCountryCode = code;
+                                //     });
+                                //   },
+                                //   diallingCodeStyle: typography.Body1,
+                                //   isShowInputField: false,
+                                //   // dialogTheme: DialogThemeData(
+                                //   //   style: typography.Body1,
+                                //   //   isShowFloatButton: false,
+                                //   // ),
+                                //   countryNameStyle: typography.Body1,
+                                //   isShowCountryName: false,
+                                //   onCountryChanged: (country) {
+                                //     print('This is the country code: $country');
+                                //     setState(() {
+                                //       _selectedCountryCode = country.dialing_code;
+                                //     });
+                                //   },
+                                // ),
                               ),
                             ),
                           ),

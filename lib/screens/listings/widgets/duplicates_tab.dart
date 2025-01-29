@@ -348,6 +348,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                         accountName: widget.accountName,
                         tempId: widget.tempId,
                         processId: widget.processId,
+                        subAccountId: widget.subAccountId,
                       ),
                     ],
                   ),

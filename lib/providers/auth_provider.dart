@@ -313,24 +313,25 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
       _isSigningIn = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      notifyListeners(); // Immediately notify listeners about signing in state
 
-      final GoogleSignInAccount? googleSignInAccount =
-      await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
         final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
+
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleSignInAuthentication.accessToken,
           idToken: googleSignInAuthentication.idToken,
         );
+
         final UserCredential userCredential =
         await _auth.signInWithCredential(credential);
+
         _user = userCredential.user;
         log('user: $userCredential');
         print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
+
         IdTokenResult token = await userCredential.user!.getIdTokenResult();
         Map<String, dynamic>? claims = token.claims ?? {};
         log("Claims: $claims");
@@ -339,10 +340,13 @@ class AuthNotifier extends ChangeNotifier {
         await SharedPreferenceService.getAllClaims();
 
         print('Is Individual? ${claims['isIndividual']}');
+        _isSigningIn = false; // Stop loader before navigation
+        notifyListeners();
+
         if (claims['isIndividual'] == null) {
           isNewUser = true;
           // Navigate to create account screen and pass the user data
-          Navigator.push(
+          await Navigator.push(
             context!,
             MaterialPageRoute(
               builder: (context) =>
@@ -353,38 +357,108 @@ class AuthNotifier extends ChangeNotifier {
           );
         } else {
           isNewUser = false;
-          Navigator.pushAndRemoveUntil(
-              context!,
-              MaterialPageRoute(builder: (context) => MyApp()),
-                  (route) => false);
+          await Navigator.pushAndRemoveUntil(
+            context!,
+            MaterialPageRoute(builder: (context) => MyApp()),
+                (route) => false,
+          );
         }
+      } else {
+        _isSigningIn = false;
+        notifyListeners(); // Ensure the loader is hidden if sign-in is canceled
       }
-      _isSigningIn = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
     } on FirebaseAuthException catch (e) {
       _isSigningIn = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
-      // Handle error
+      notifyListeners(); // Stop loader
       print("Error signing in with Google: $e");
+
       ScaffoldMessenger.of(context!).showSnackBar(
         SnackBar(
-          content: Text(e.message!),
+          content: Text(e.message ?? 'An error occurred.'),
         ),
       );
     } catch (e) {
-      print("Error signing in with Google: $e");
       _isSigningIn = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
-      // Handle error
+      notifyListeners(); // Stop loader
       print("Error signing in with Google: $e");
     }
   }
+
+  // Future<void> signInWithGoogle({BuildContext? context}) async {
+  //   try {
+  //     _isSigningIn = true;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //
+  //     final GoogleSignInAccount? googleSignInAccount =
+  //     await _googleSignIn.signIn();
+  //     if (googleSignInAccount != null) {
+  //       final GoogleSignInAuthentication googleSignInAuthentication =
+  //       await googleSignInAccount.authentication;
+  //       final AuthCredential credential = GoogleAuthProvider.credential(
+  //         accessToken: googleSignInAuthentication.accessToken,
+  //         idToken: googleSignInAuthentication.idToken,
+  //       );
+  //       final UserCredential userCredential =
+  //       await _auth.signInWithCredential(credential);
+  //       _user = userCredential.user;
+  //       log('user: $userCredential');
+  //       print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
+  //       IdTokenResult token = await userCredential.user!.getIdTokenResult();
+  //       Map<String, dynamic>? claims = token.claims ?? {};
+  //       log("Claims: $claims");
+  //
+  //       await SharedPreferenceService.setClaims(claims);
+  //       await SharedPreferenceService.getAllClaims();
+  //
+  //       print('Is Individual? ${claims['isIndividual']}');
+  //       if (claims['isIndividual'] == null) {
+  //         isNewUser = true;
+  //         // Navigate to create account screen and pass the user data
+  //         Navigator.push(
+  //           context!,
+  //           MaterialPageRoute(
+  //             builder: (context) =>
+  //                 CreateAccountScreen(
+  //                   userCredential: userCredential,
+  //                 ),
+  //           ),
+  //         );
+  //       } else {
+  //         isNewUser = false;
+  //         Navigator.pushAndRemoveUntil(
+  //             context!,
+  //             MaterialPageRoute(builder: (context) => MyApp()),
+  //                 (route) => false);
+  //       }
+  //     }
+  //     _isSigningIn = false;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //   } on FirebaseAuthException catch (e) {
+  //     _isSigningIn = false;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //     // Handle error
+  //     print("Error signing in with Google: $e");
+  //     ScaffoldMessenger.of(context!).showSnackBar(
+  //       SnackBar(
+  //         content: Text(e.message!),
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     print("Error signing in with Google: $e");
+  //     _isSigningIn = false;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //     // Handle error
+  //     print("Error signing in with Google: $e");
+  //   }
+  // }
 
   Future<void> signInWithMicrosoft({BuildContext? context}) async {
     try {
@@ -738,10 +812,12 @@ class AuthNotifier extends ChangeNotifier {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => MyApp()),
-                            (route) => false);
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                    // Navigator.pushAndRemoveUntil(
+                    //     context,
+                    //     MaterialPageRoute(builder: (context) => MyApp()),
+                    //         (route) => false);
                   },
                   child: Row(
                     children: [

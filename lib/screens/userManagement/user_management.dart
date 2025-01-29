@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:country_list_picker/country_list_picker.dart' as clp;
+
 import 'package:country_list_picker/country_list_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -7322,40 +7324,41 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 16.0),
                                   child: Center(
-                                    child: CountryListPicker(
-                                      initialCountry: Countries.Australia,
-                                      // Ensure this is correctly set or dynamically assigned
-                                      border: InputBorder.none,
-                                      flagSize: const Size(35, 30),
-                                      onChanged: (code) {
-                                        // This is typically triggered when a new selection is made in the picker
-                                        setState(() {
-                                          _selectedCountryCode =
-                                              code; // Maintaining a state variable for other uses
-                                          _employeeCountryCodeController.text =
-                                              code; // Update the controller
-                                        });
-                                      },
-                                      diallingCodeStyle: typography.Body1,
-                                      isShowInputField: false,
-                                      dialogTheme: DialogThemeData(
-                                        style: typography.Body1,
-                                        isShowFloatButton: false,
-                                      ),
-                                      countryNameStyle: typography.Body1,
-                                      isShowCountryName: false,
-                                      onCountryChanged: (country) {
-                                        // This may be triggered based on specific implementations of CountryListPicker
-                                        print(
-                                            'This is the country code: $country');
-                                        setState(() {
-                                          _selectedCountryCode =
-                                              country.dialing_code;
-                                          _employeeCountryCodeController.text =
-                                              country.dialing_code;
-                                        });
-                                      },
-                                    ),
+                                    child:Container(),
+                                    // clp.CountryListPicker(
+                                    //   initialCountry: Countries.Australia,
+                                    //   // Ensure this is correctly set or dynamically assigned
+                                    //   border: InputBorder.none,
+                                    //   flagSize: const Size(35, 30),
+                                    //   onChanged: (code) {
+                                    //     // This is typically triggered when a new selection is made in the picker
+                                    //     setState(() {
+                                    //       _selectedCountryCode =
+                                    //           code; // Maintaining a state variable for other uses
+                                    //       _employeeCountryCodeController.text =
+                                    //           code; // Update the controller
+                                    //     });
+                                    //   },
+                                    //   diallingCodeStyle: typography.Body1,
+                                    //   isShowInputField: false,
+                                    //   dialogTheme: clp.DialogThemeData(
+                                    //     style: typography.Body1,
+                                    //     isShowFloatButton: false,
+                                    //   ),
+                                    //   countryNameStyle: typography.Body1,
+                                    //   isShowCountryName: false,
+                                    //   onCountryChanged: (country) {
+                                    //     // This may be triggered based on specific implementations of CountryListPicker
+                                    //     print(
+                                    //         'This is the country code: $country');
+                                    //     setState(() {
+                                    //       _selectedCountryCode =
+                                    //           country.dialing_code;
+                                    //       _employeeCountryCodeController.text =
+                                    //           country.dialing_code;
+                                    //     });
+                                    //   },
+                                    // ),
                                   ),
                                 ),
                               ),
@@ -8531,6 +8534,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     // Email
                     TextFormField(
+                      keyboardType: TextInputType.emailAddress,
                       controller: _employeeEmailController,
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
@@ -8565,32 +8569,34 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               borderRadius: BorderRadius.circular(4),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(
-                              child: CountryListPicker(
-                                initialCountry: Countries.United_States,
-                                border: InputBorder.none,
-                                flagSize: const Size(35, 30),
-                                onChanged: (code) {
-                                  setState(() {
-                                    _selectedCountryCode = code;
-                                  });
-                                },
-                                diallingCodeStyle: typography.Body1,
-                                isShowInputField: false,
-                                dialogTheme: DialogThemeData(
-                                  style: typography.Body1,
-                                  isShowFloatButton: false,
-                                ),
-                                countryNameStyle: typography.Body1,
-                                isShowCountryName: false,
-                                onCountryChanged: (country) {
-                                  print('This is the country code: $country');
-                                  setState(() {
-                                    _selectedCountryCode = country.dialing_code;
-                                  });
-                                },
-                              ),
-                            ),
+                            child: Container(),
+
+                            //     Center(
+                            //   child: clp.CountryListPicker(
+                            //     initialCountry: Countries.United_States,
+                            //     border: InputBorder.none,
+                            //     flagSize: const Size(35, 30),
+                            //     onChanged: (code) {
+                            //       setState(() {
+                            //         _selectedCountryCode = code;
+                            //       });
+                            //     },
+                            //     diallingCodeStyle: typography.Body1,
+                            //     isShowInputField: false,
+                            //     dialogTheme: clp.DialogThemeData(
+                            //       style: typography.Body1,
+                            //       isShowFloatButton: false,
+                            //     ),
+                            //     countryNameStyle: typography.Body1,
+                            //     isShowCountryName: false,
+                            //     onCountryChanged: (country) {
+                            //       print('This is the country code: $country');
+                            //       setState(() {
+                            //         _selectedCountryCode = country.dialing_code;
+                            //       });
+                            //     },
+                            //   ),
+                            // ),
                           ),
                         ),
                         SizedBox(width: CustomSpacing.two),

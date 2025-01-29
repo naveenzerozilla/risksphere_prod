@@ -551,7 +551,10 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   Future<bool> submitLocationsAccounts(BuildContext context, String tempId,
-      List<Map<String, dynamic>> locationsToSubmit, String formatType) async {
+      List<Map<String, dynamic>> locationsToSubmit, String formatType,
+
+      String accountId,String subAccountId
+      ) async {
     try {
       isSubmitLoading = true;
       final formattedLocations = locationsToSubmit.map((location) {
@@ -586,7 +589,12 @@ class UploadSovProvider extends ChangeNotifier {
           context,
           MaterialPageRoute(
               builder: (context) =>
-                  ProcessMonitoringScreen()), // Navigate to AccountsScreen
+                  ProcessMonitoringScreen(
+                    accountId: accountId,
+                    subAccountId: subAccountId,
+
+
+                  )), // Navigate to AccountsScreen
         );
         return true; // Indicate success
       } else {
@@ -733,7 +741,7 @@ class UploadSovProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> commitSelectedLocations(BuildContext context, String accountId, String accountName, String tempId) async {
+  Future<void> commitSelectedLocations(BuildContext context, String accountId, String accountName, String tempId,String subAccountId) async {
     List<Map<String, dynamic>> selectedLocations = _getSelectedLocations();
     /* if (selectedLocations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -743,21 +751,25 @@ class UploadSovProvider extends ChangeNotifier {
       );
       return;
     }*/
-    await _submitLocations(context, selectedLocations, "use_sov_data", tempId, accountId, accountName);
+    await _submitLocations(context, selectedLocations, "use_sov_data", tempId, accountId, accountName,subAccountId);
   }
 
   void _commitAllLocations(BuildContext context, String accountId, String accountName, String tempId) {
-    _submitLocations(context, geocodingList + duplicateLocations + conflictLocations, "refresh_all_data", tempId, accountId, accountName);
+    _submitLocations(context, geocodingList + duplicateLocations + conflictLocations, "refresh_all_data", tempId, accountId, accountName,'');
   }
 
-  Future<void> _submitLocations(BuildContext context, List<Map<String, dynamic>> locationsToSubmit, String formatType, String tempId, String accountId, String accountName) async {
+  Future<void> _submitLocations(BuildContext context, List<Map<String, dynamic>> locationsToSubmit, String formatType, String tempId, String accountId, String accountName,String subAccountId) async {
 
     if(accountId.isNotEmpty) {
       await submitLocationsSubAccounts(context, tempId, locationsToSubmit, formatType, accountId, accountName);
       return;
     } else {
       await submitLocationsAccounts(
-        context, tempId, locationsToSubmit, formatType,);
+        context, tempId, locationsToSubmit, formatType,
+          accountId,
+        subAccountId,
+
+      );
     }
   }
 }
