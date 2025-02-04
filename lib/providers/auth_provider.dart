@@ -12,6 +12,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:green/constants/enums.dart';
 import 'package:green/design_system/components/custom_button.dart';
 import 'package:green/main.dart';
+import 'package:green/screens/onboarding/login_screen.dart';
 import 'package:green/service/api_service.dart';
 import 'package:green/service/language_service.dart';
 
@@ -77,6 +78,7 @@ class AuthNotifier extends ChangeNotifier {
   List<Role>? _roleList;
   List<Companies>? _companyList;
   List<CompanyType>? _companyTypeList;
+  bool isRemindLoadings = false;
 
 // Getters for role list, company list, and company type list
   List<Role>? get roleList => _roleList;
@@ -133,28 +135,31 @@ class AuthNotifier extends ChangeNotifier {
 
   /// Login
 
-  Future<void> signInWithEmailAndPassword(String email, String password,
-      BuildContext context) async {
+  Future<void> signInWithEmailAndPassword(
+      String email, String password, BuildContext context) async {
     try {
       _isSigningIn = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
-      });
+      }) ;
 
       final UserCredential userCredential =
-      await _auth.signInWithEmailAndPassword(
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       _user = userCredential.user;
 
+
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims ?? {};
-      log("Claims: $claims");
+      log("Claims231: $claims");
 
       String isAdminVerified = await getAllClaims();
+      print("is admin verified"+isAdminVerified.length.toString() );
 
-      if (isAdminVerified.toLowerCase() == "false") {
+
+      if (isAdminVerified.toLowerCase() == "false" || isAdminVerified.length.toString() == "0") {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
@@ -183,40 +188,72 @@ class AuthNotifier extends ChangeNotifier {
                         Expanded(
                           child: CustomButton(
                               type: ButtonType.elevated,
-                              onPressed: () async {
-                                isRemindLoading = true;
-                                print("Remind user: ${_user?.email}");
-                                bool result = await remindUser();
-                                isRemindLoading = false;
-                                if (result) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        LanguageService.getTranslated(context,
-                                            "login_admin_not_verified_remind_success"),
-                                        style: typography.Body1,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                final _googleSignIn = GoogleSignIn();
-                                var isSignedIn =
-                                await _googleSignIn.isSignedIn();
-                                if (isSignedIn)
-                                  await _googleSignIn.disconnect();
-                                await _auth.signOut();
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  notifyListeners();
-                                });
-                              },
-                              child: isRemindLoading
+              // Add this to the state of your widget
+
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false, // Prevent dismissing the dialog
+                    builder: (BuildContext context) {
+                      return Center(
+                        child: CircularProgressIndicator(), // Show loading spinner
+                      );
+                    },
+                  );
+
+                  // Wait for 2 seconds before proceeding
+                  await Future.delayed(Duration(seconds: 1));
+
+                  // Close the dialog after 2 seconds
+                  Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => LoginScreen()),
+                          (route) => false);
+              //     WidgetsBinding.instance.addPostFrameCallback((_) {
+              //       notifyListeners();
+              //       isRemindLoading =true;
+              //     });
+              //
+              // print("Remind user: ${_user?.email}");
+              //
+              // bool result = await remindUser();
+              //
+              //     WidgetsBinding.instance.addPostFrameCallback((_) {
+              //       notifyListeners();
+              //       isRemindLoading =false;
+              //     });
+              //
+              //
+              //     if (result) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      LanguageService.getTranslated(context, "login_admin_not_verified_remind_success"),
+                      style: typography.Body1,
+                    ),
+                  ),
+                );
+              // }
+
+              // final _googleSignIn = GoogleSignIn();
+              // var isSignedIn = await _googleSignIn.isSignedIn();
+              //
+              // if (isSignedIn) await _googleSignIn.disconnect();
+              // await _auth.signOut();
+              //
+              // WidgetsBinding.instance.addPostFrameCallback((_) {
+              //   notifyListeners();
+              // });
+            },
+
+            child: !isRemindLoading
                                   ? Center(child: CircularProgressIndicator())
                                   : Text(
-                                LanguageService.getTranslated(context,
-                                    "login_admin_not_verified_remind_button"),
-                                style: typography.Body1,
-                              )),
+                                      LanguageService.getTranslated(context,
+                                          "login_admin_not_verified_remind_button"),
+                                      style: typography.Body1,
+                                    )),
                         ),
                       ],
                     ),
@@ -229,7 +266,7 @@ class AuthNotifier extends ChangeNotifier {
                               onPressed: () async {
                                 final _googleSignIn = GoogleSignIn();
                                 var isSignedIn =
-                                await _googleSignIn.isSignedIn();
+                                    await _googleSignIn.isSignedIn();
                                 if (isSignedIn)
                                   await _googleSignIn.disconnect();
                                 await _auth.signOut();
@@ -241,7 +278,7 @@ class AuthNotifier extends ChangeNotifier {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) => SplashScreen()),
-                                        (route) => false);
+                                    (route) => false);
                               },
                               child: Text(
                                 LanguageService.getTranslated(context,
@@ -315,10 +352,11 @@ class AuthNotifier extends ChangeNotifier {
       _isSigningIn = true;
       notifyListeners(); // Immediately notify listeners about signing in state
 
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount =
+          await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
         final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
+            await googleSignInAccount.authentication;
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleSignInAuthentication.accessToken,
@@ -326,7 +364,7 @@ class AuthNotifier extends ChangeNotifier {
         );
 
         final UserCredential userCredential =
-        await _auth.signInWithCredential(credential);
+            await _auth.signInWithCredential(credential);
 
         _user = userCredential.user;
         log('user: $userCredential');
@@ -349,10 +387,9 @@ class AuthNotifier extends ChangeNotifier {
           await Navigator.push(
             context!,
             MaterialPageRoute(
-              builder: (context) =>
-                  CreateAccountScreen(
-                    userCredential: userCredential,
-                  ),
+              builder: (context) => CreateAccountScreen(
+                userCredential: userCredential,
+              ),
             ),
           );
         } else {
@@ -360,7 +397,7 @@ class AuthNotifier extends ChangeNotifier {
           await Navigator.pushAndRemoveUntil(
             context!,
             MaterialPageRoute(builder: (context) => MyApp()),
-                (route) => false,
+            (route) => false,
           );
         }
       } else {
@@ -475,10 +512,10 @@ class AuthNotifier extends ChangeNotifier {
       UserCredential userCredential;
       if (kIsWeb) {
         userCredential =
-        await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
+            await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
       } else {
         userCredential =
-        await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
+            await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
       }
 
       // Handle user data or token claims if necessary
@@ -500,10 +537,9 @@ class AuthNotifier extends ChangeNotifier {
         Navigator.push(
           context!,
           MaterialPageRoute(
-            builder: (context) =>
-                CreateAccountScreen(
-                  userCredential: userCredential,
-                ),
+            builder: (context) => CreateAccountScreen(
+              userCredential: userCredential,
+            ),
           ),
         );
       } else {
@@ -511,7 +547,7 @@ class AuthNotifier extends ChangeNotifier {
         Navigator.pushAndRemoveUntil(
           context!,
           MaterialPageRoute(builder: (context) => MyApp()),
-              (route) => false,
+          (route) => false,
         );
       }
 
@@ -604,7 +640,7 @@ class AuthNotifier extends ChangeNotifier {
     final FirebaseAuth _auth = FirebaseAuth.instance;
     try {
       UserCredential userCredential =
-      await _auth.createUserWithEmailAndPassword(
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: 'TemporaryPassword123!', // Use a temporary password
       );
@@ -625,7 +661,8 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual on Google Signup
-  Future<String> signUpIndividualWithGoogle(UserCredential userCredential,
+  Future<String> signUpIndividualWithGoogle(
+      UserCredential userCredential,
       String phone,
       String selectedCountryCode,
       List<Categories> selectedRoles,
@@ -654,7 +691,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -684,7 +721,8 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual on Microsoft Signup
-  Future<String> signUpIndividualWithMicrosoft(UserCredential userCredential,
+  Future<String> signUpIndividualWithMicrosoft(
+      UserCredential userCredential,
       String phone,
       String selectedCountryCode,
       List<Categories> selectedRoles,
@@ -713,7 +751,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -743,7 +781,8 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Individual
-  Future<void> signUpIndividualWithEmailAndPassword(String mail,
+  Future<void> signUpIndividualWithEmailAndPassword(
+      String mail,
       String password,
       String name,
       String displayName,
@@ -761,7 +800,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Create a new user with email and password
       final UserCredential userCredential =
-      await _auth.createUserWithEmailAndPassword(
+          await _auth.createUserWithEmailAndPassword(
         email: mail,
         password: password,
       );
@@ -783,7 +822,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -805,8 +844,7 @@ class AuthNotifier extends ChangeNotifier {
               content: Text(
                 isApplicableForTrial
                     ? 'Trial account created with full features. Upgrade for continued access or remain free after ${trialPeriodDays} days. Activate email by clicking link sent.'
-                    : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(
-                    mail)}" to complete the process.',
+                    : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.',
                 style: typography.Body1.copyWith(color: Colors.white),
               ),
               actions: [
@@ -902,7 +940,8 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Registration for Corporate
-  Future<void> signUpCorporateWithEmailAndPassword(String companyId,
+  Future<void> signUpCorporateWithEmailAndPassword(
+      String companyId,
       String companyLegalName,
       CompanyType companyType,
       String companyDisplayName,
@@ -925,7 +964,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Create a new user with email and password
       final UserCredential userCredential =
-      await _auth.createUserWithEmailAndPassword(
+          await _auth.createUserWithEmailAndPassword(
         email: adminEmail,
         password: adminPassword,
       );
@@ -933,6 +972,9 @@ class AuthNotifier extends ChangeNotifier {
 
       var body = {
         "company_id": companyId,
+        "accountType": "corporate",
+        "trial_period_days": trialPeriodDays,
+        "is_applicable_for_trial": isApplicableForTrial,
         "company_name": companyLegalName.trim(),
         "company_type": companyType.type,
         "company_display_name": companyDisplayName,
@@ -958,7 +1000,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -966,14 +1008,9 @@ class AuthNotifier extends ChangeNotifier {
         //Send email to verify
         await userCredential.user?.sendEmailVerification();
         print(
-            "company verified by admin and selected company is null: ${initialData!
-                .config[0].companyVerificationByAdmin} ${selectedCompany ==
-                null}");
+            "company verified by admin and selected company is null: ${initialData!.config[0].companyVerificationByAdmin} ${selectedCompany == null}");
         print(
-            "selected company is not null: ${selectedCompany !=
-                null} ${selectedCompany
-                ?.corporateUserVerificationByAdmin} ${roles?.name
-                .toLowerCase() != 'admin'}");
+            "selected company is not null: ${selectedCompany != null} ${selectedCompany?.corporateUserVerificationByAdmin} ${roles?.name.toLowerCase() != 'admin'}");
         if (initialData != null &&
             initialData!.config[0].companyVerificationByAdmin &&
             selectedCompany == null) {
@@ -987,23 +1024,25 @@ class AuthNotifier extends ChangeNotifier {
                   isApplicableForTrial
                       ? 'Enjoy your ${trialPeriodDays}-day free trial!'
                       : LanguageService.getTranslated(
-                      context, "login_check_your_inbox_dialog_title"),
+                          context, "login_check_your_inbox_dialog_title"),
                   style: typography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
                   isApplicableForTrial
                       ? 'Trial account created with full features. Upgrade for continued access or remain free after ${trialPeriodDays} days. Activate email by clicking link sent.'
                       : LanguageService.getTranslated(
-                      context, "login_check_your_inbox_dialog_description"),
+                          context, "login_check_your_inbox_dialog_description"),
                   style: typography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => MyApp()),
-                              (route) => false);
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                      // Navigator.pushAndRemoveUntil(
+                      //     context,
+                      //     MaterialPageRoute(builder: (context) => MyApp()),
+                      //         (route) => false);
                     },
                     child: Row(
                       children: [
@@ -1036,23 +1075,25 @@ class AuthNotifier extends ChangeNotifier {
                   isApplicableForTrial
                       ? 'Enjoy your ${trialPeriodDays}-day free trial!'
                       : LanguageService.getTranslated(
-                      context, "login_check_your_inbox_dialog_title"),
+                          context, "login_check_your_inbox_dialog_title"),
                   style: typography.H6.copyWith(color: Colors.white),
                 ),
                 content: Text(
                   isApplicableForTrial
                       ? 'Trial account created with full features. Upgrade for continued access or remain free after ${trialPeriodDays} days. Activate email by clicking link sent.'
                       : LanguageService.getTranslated(context,
-                      "login_registration_request_dialog_description"),
+                          "login_registration_request_dialog_description"),
                   style: typography.Body1.copyWith(color: Colors.white),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => MyApp()),
-                              (route) => false);
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                      // Navigator.pushAndRemoveUntil(
+                      //     context,
+                      //     MaterialPageRoute(builder: (context) => MyApp()),
+                      //         (route) => false);
                     },
                     child: Row(
                       children: [
@@ -1084,7 +1125,7 @@ class AuthNotifier extends ChangeNotifier {
                 ),
                 content: Text(
                   LanguageService.getTranslated(context,
-                      "login_registration_request_dialog_description_part_1") +
+                          "login_registration_request_dialog_description_part_1") +
                       "${obscureEmail(adminEmail)}" +
                       LanguageService.getTranslated(context,
                           "login_registration_request_dialog_description_part_2"),
@@ -1093,10 +1134,12 @@ class AuthNotifier extends ChangeNotifier {
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => MyApp()),
-                              (route) => false);
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                      // Navigator.pushAndRemoveUntil(
+                      //     context,
+                      //     MaterialPageRoute(builder: (context) => MyApp()),
+                      //         (route) => false);
                     },
                     child: Row(
                       children: [
@@ -1182,9 +1225,10 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> initialOptions() async {
     try {
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('send_default_data');
+          FirebaseFunctions.instance.httpsCallable('send_default_data');
       final result = await callable.call();
-      // log('Cloud Function result: ${json.encode(result.data)}');
+      log('Cloud Function result: ${json.encode(result.data)}');
+      print('Cloud Function result: ${json.encode(result.data)}');
 
       // Parse the data as JSON
       final jsonData = json.decode(json.encode(result.data));
@@ -1235,66 +1279,41 @@ class AuthNotifier extends ChangeNotifier {
 
     return '$localPart@$domainPart';
   }
-
   Future<String> getAllClaims() async {
     try {
       if (isAssignClaimsLoading) return "";
       isAssignClaimsLoading = true;
+
+      if (_auth.currentUser == null) {
+        print("User is not authenticated.");
+        return "";
+      }
+
       final HttpsCallable callable =
       FirebaseFunctions.instance.httpsCallable('assignClaims');
+
       String? token = await _auth.currentUser!.getIdToken(true);
-      log("Old: $token");
+      log("Old Token: $token");
+
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
-      print("update claims response: ${response.data}");
-      SharedPreferenceService.setScheduleInProgress(
-          response.data['schedule_inprogress'] ?? false);
-      SharedPreferenceService.setSovUploadTempId(
-          response.data['last_process_temp_id'] ?? "");
-      SharedPreferenceService.setSovUploadProcessId(
-          response.data['last_process_id'] ?? "");
-      SharedPreferenceService.setSovUploadState(
-          response.data['last_process_state'] ?? "");
-      SharedPreferenceService.setSovAccountId(
-          response.data['last_account'] ?? "");
-      SharedPreferenceService.setSovSubAccountId(
-          response.data['last_sub_account'] ?? "");
-      SharedPreferenceService.setSovAccountName(
-          response.data['last_account_name'] ?? "");
-      SharedPreferenceService.setSovSubAccountName(
-          response.data['last_sub_account_name'] ?? "");
 
-      // Save trial information from the response
-      if (response.data.containsKey('remaining_trial_days')) {
-        int? trialDays = response.data['remaining_trial_days'];
-        bool isTrialApplicable =
-            response.data['is_applicable_for_trial'] ?? false;
-        int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
-        int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
-        int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
-        int? trialLocations = response.data['trial_locations'] ?? 0;
-        int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
-        int? trialTotalUsersVerified = response.data['total_users_verified'] ?? 0;
+      print("Raw Firebase Response: $response"); // Log full response
 
-
-
-        // Store trial info in shared preferences
-        await SharedPreferenceService.saveTrialInfo(
-            trialDays ?? 0, isTrialApplicable, trialSubdestinations ?? 0, trialEditLocations ?? 0, trialMaxLocations ?? 0, trialLocations ?? 0, trailTotalUsers ?? 0, trialTotalUsersVerified ?? 0);
-
-        print(
-            "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
-      } else {
-        print("No trial info found in claims response.");
-        //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
+      if (!response.data.containsKey('is_user_exists')) {
+        print("Response missing expected field");
+        return "";
+        // throw Exception("Response missing expected field: is_user_exists");
+      }
+      if (response.data == null) {
+        throw Exception("Response data is null");
+      }
+      if (response.data is! Map) {
+        throw Exception("Response data is not a Map: ${response.data}");
       }
 
-      String? newToken = await _auth.currentUser!
-          .getIdTokenResult(true)
-          .then((value) => value.token);
-      log("New: $newToken");
-      print('response: ${response.data}');
+
       print("is_user_exists: ${response.data["is_user_exists"]}");
       return response.data["is_user_exists"].toString();
     } catch (e, stack) {
@@ -1305,6 +1324,86 @@ class AuthNotifier extends ChangeNotifier {
       isAssignClaimsLoading = false;
     }
   }
+
+
+  // Future<String> getAllClaims() async {
+  //   try {
+  //     if (isAssignClaimsLoading) return "";
+  //     isAssignClaimsLoading = true;
+  //     final HttpsCallable callable =
+  //         FirebaseFunctions.instance.httpsCallable('assignClaims');
+  //     String? token = await _auth.currentUser!.getIdToken(true);
+  //     log("Old: $token");
+  //
+  //     HttpsCallableResult response = await callable.call(<String, dynamic>{
+  //       'Authorization': 'Bearer ${token ?? ""}',
+  //     });
+  //     print("is_user_exists: ${response.data["is_user_exists"]}");
+  //     print("update claims response:");
+  //     print("update claims response: ${response.data}");
+  //     SharedPreferenceService.setScheduleInProgress(
+  //         response.data['schedule_inprogress'] ?? false);
+  //     SharedPreferenceService.setSovUploadTempId(
+  //         response.data['last_process_temp_id'] ?? "");
+  //     SharedPreferenceService.setSovUploadProcessId(
+  //         response.data['last_process_id'] ?? "");
+  //     SharedPreferenceService.setSovUploadState(
+  //         response.data['last_process_state'] ?? "");
+  //     SharedPreferenceService.setSovAccountId(
+  //         response.data['last_account'] ?? "");
+  //     SharedPreferenceService.setSovSubAccountId(
+  //         response.data['last_sub_account'] ?? "");
+  //     SharedPreferenceService.setSovAccountName(
+  //         response.data['last_account_name'] ?? "");
+  //     SharedPreferenceService.setSovSubAccountName(
+  //         response.data['last_sub_account_name'] ?? "");
+  //
+  //     // Save trial information from the response
+  //     if (response.data.containsKey('remaining_trial_days')) {
+  //       int? trialDays = response.data['remaining_trial_days'];
+  //       bool isTrialApplicable =
+  //           response.data['is_applicable_for_trial'] ?? false;
+  //       int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
+  //       int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
+  //       int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
+  //       int? trialLocations = response.data['trial_locations'] ?? 0;
+  //       int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
+  //       int? trialTotalUsersVerified =
+  //           response.data['total_users_verified'] ?? 0;
+  //
+  //       // Store trial info in shared preferences
+  //       await SharedPreferenceService.saveTrialInfo(
+  //           trialDays ?? 0,
+  //           isTrialApplicable,
+  //           trialSubdestinations ?? 0,
+  //           trialEditLocations ?? 0,
+  //           trialMaxLocations ?? 0,
+  //           trialLocations ?? 0,
+  //           trailTotalUsers ?? 0,
+  //           trialTotalUsersVerified ?? 0);
+  //
+  //       print(
+  //           "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
+  //     } else {
+  //       print("No trial info found in claims response.");
+  //       //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
+  //     }
+  //
+  //     String? newToken = await _auth.currentUser!
+  //         .getIdTokenResult(true)
+  //         .then((value) => value.token);
+  //     log("New: $newToken");
+  //     print('response: ${response.data}');
+  //     print("is_user_exists: ${response.data["is_user_exists"]}");
+  //     return response.data["is_user_exists"].toString();
+  //   } catch (e, stack) {
+  //     print(stack);
+  //     print('Error getting all claims: $e');
+  //     return "";
+  //   } finally {
+  //     isAssignClaimsLoading = false;
+  //   }
+  // }
 
   int _parseFirestoreTimestamp(Map<String, dynamic> timestamp) {
     try {
@@ -1348,7 +1447,7 @@ class AuthNotifier extends ChangeNotifier {
       print('URL: $url');
       // Make the POST request
       final response =
-      await http.post(Uri.parse(url), headers: headers, body: body);
+          await http.post(Uri.parse(url), headers: headers, body: body);
 
       // Handle the response
       if (response.statusCode == 200) {
@@ -1365,7 +1464,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 }
-
 
 extension UserCredentialExtension on UserCredential {
   Map<String, dynamic> toJson() {
@@ -1384,15 +1482,14 @@ extension UserCredentialExtension on UserCredential {
       'phoneNumber': user?.phoneNumber,
       'photoURL': user?.photoURL,
       'providerData': user?.providerData
-          .map((userInfo) =>
-      {
-        'displayName': userInfo.displayName,
-        'email': userInfo.email,
-        'phoneNumber': userInfo.phoneNumber,
-        'photoURL': userInfo.photoURL,
-        'providerId': userInfo.providerId,
-        'uid': userInfo.uid,
-      })
+          .map((userInfo) => {
+                'displayName': userInfo.displayName,
+                'email': userInfo.email,
+                'phoneNumber': userInfo.phoneNumber,
+                'photoURL': userInfo.photoURL,
+                'providerId': userInfo.providerId,
+                'uid': userInfo.uid,
+              })
           .toList(),
       'refreshToken': user?.refreshToken,
       'tenantId': user?.tenantId,
@@ -1406,17 +1503,16 @@ extension UserCredentialExtension on UserCredential {
       },
       'credential': credential is EmailAuthCredential
           ? {
-        'email': (credential as EmailAuthCredential).email,
-        'password': (credential as EmailAuthCredential).password,
-      }
+              'email': (credential as EmailAuthCredential).email,
+              'password': (credential as EmailAuthCredential).password,
+            }
           : credential is GoogleAuthCredential
-          ? {
-        'accessToken':
-        (credential as GoogleAuthCredential).accessToken,
-        'idToken': (credential as GoogleAuthCredential).idToken,
-      }
-          : null,
+              ? {
+                  'accessToken':
+                      (credential as GoogleAuthCredential).accessToken,
+                  'idToken': (credential as GoogleAuthCredential).idToken,
+                }
+              : null,
     };
   }
 }
-

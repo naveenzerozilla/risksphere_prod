@@ -391,6 +391,7 @@ class CompanyProvider with ChangeNotifier {
       // Use API Service to update company status
       ApiService apiService = ApiService(AppConstant.CORPORATE_MANAGEMENT_URL_NEW);
       // Send a GET request to the API
+
       Map<String, dynamic> response =
           await apiService.get("?company_id=$companyId");
       isLoading = false;

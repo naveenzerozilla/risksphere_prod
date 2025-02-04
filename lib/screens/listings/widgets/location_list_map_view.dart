@@ -499,7 +499,7 @@ import 'message_card.dart';
 
       // If heatmap is off, use the existing menu with mainHazards and vendors
       if (!_isHeatmapOn || _isLoading) {
-        if (!(_selectedTabIndex == 0 || _selectedTabIndex == 1) || mainHazards.isEmpty) {
+        if (!(_selectedTabIndex == 2 || _selectedTabIndex == 1) || mainHazards.isEmpty) {
           return SizedBox();
         }
 

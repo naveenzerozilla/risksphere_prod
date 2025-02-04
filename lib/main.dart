@@ -384,8 +384,8 @@ void main() async {
   initializeNotifications();
   setupFirebaseMessaging();
 
-  // String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
-  // await initFCM(userId);
+  String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+  await initFCM(userId);
   // Check if the app was opened by a notification
   checkForInitialMessage();
 

@@ -459,7 +459,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
-                                  log("Claims: " + parseJwt(token!).toString());
+
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(

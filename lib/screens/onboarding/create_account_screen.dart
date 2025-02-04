@@ -344,19 +344,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             ),
                                           );
                                         }
-                                        bool isApplicableForTrial = authNotifier.companyTypeList
+                                        bool isApplicableForTrial = authNotifier
+                                                .companyTypeList
                                                 ?.where((companyType) =>
                                                     companyType.type
-                                                            .toLowerCase() ==
-                                                        'individual_account')
+                                                        .toLowerCase() ==
+                                                    'individual_account')
                                                 .first
                                                 .isApplicableForTrial ??
                                             false;
-                                        int trialPeriodDays = authNotifier.companyTypeList
+                                        int trialPeriodDays = authNotifier
+                                                .companyTypeList
                                                 ?.where((companyType) =>
                                                     companyType.type
-                                                            .toLowerCase() ==
-                                                        'individual_account')
+                                                        .toLowerCase() ==
+                                                    'individual_account')
                                                 .first
                                                 .trialPeriodDays ??
                                             0;
@@ -388,19 +390,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
                                         print('Roles: $_selectedRoles');
                                         print('Account Type: $_selectedOption');
-                                        bool isApplicableForTrial = authNotifier.companyTypeList
+                                        bool isApplicableForTrial = authNotifier
+                                                .companyTypeList
                                                 ?.where((companyType) =>
                                                     companyType.id ==
                                                     selectedCompanyType?.id)
                                                 .first
                                                 .isApplicableForTrial ??
                                             false;
-                                        int trialPeriodDays = authNotifier.companyTypeList
+                                        int trialPeriodDays = authNotifier
+                                                .companyTypeList
                                                 ?.where((companyType) =>
                                                     companyType.id ==
                                                     selectedCompanyType?.id)
                                                 .first
-                                                .trialPeriodDays ?? 0;
+                                                .trialPeriodDays ??
+                                            0;
                                         authNotifier
                                             .signUpCorporateWithEmailAndPassword(
                                           companyId,
@@ -416,13 +421,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                           !_enableCompanyTypeDropdown
                                               ? selectedCompanyRole
                                               : Roles(
-                                                  isForIndividual: true,
-                                                  isApplicableForTrial: false,
+                                                  // isForIndividual: true,
+                                                  // isApplicableForTrial: false,
                                                   role: "admin",
-                                                  name: "Admin",
-                                                  isMultipleRoleEnabled: false,
-                                                  id: ""),
-
+                                                  name: "Admin"
+                                                  // isMultipleRoleEnabled: false,
+                                                  // id: ""
+                                          ),
                                           context,
                                           selectedCompany,
                                           isApplicableForTrial,
@@ -432,53 +437,67 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       }
                                     }
                                   },
-                                  child: _selectedOption == SignUpOptions.individual?
-                                  Text(
-                                    // If companyTypeList contains an individual_account with isApplicableForTrial as true, show 'Start Trial' else 'Create Account'
-                                    (authNotifier.companyTypeList ?? [])
-                                        .any((companyType) {
-                                      log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
-                                      return companyType.type.toLowerCase() == 'individual_account' &&
-                                          companyType.isApplicableForTrial;
-                                    })
-                                        ? "Start your ${(authNotifier.companyTypeList ?? [])
-                                        .where((companyType) {
-                                      log("Processing companyType for trial days: ${companyType.type}");
-                                      return companyType.type.toLowerCase() == 'individual_account' &&
-                                          companyType.isApplicableForTrial;
-                                    })
-                                        .map((companyType) {
-                                      log("Free trial days: ${companyType.trialPeriodDays}");
-                                      return companyType.trialPeriodDays;
-                                    })
-                                        .first}-day free trial"
-                                        : LanguageService.getTranslated(
-                                        context, "usermanagement_cuser_create_account_btn"),
-                                    style: typography.ButtonLarge.copyWith(color: Colors.black),
-                                  ):Text(
-                                    // Check selected_company_type in the companyTypeList
-                                    (authNotifier.companyTypeList ?? []).any((companyType) {
-                                      log("Checking selectedCompanyType: ${selectedCompanyType}");
-                                      return companyType.id == selectedCompanyType?.id &&
-                                          companyType.isApplicableForTrial;
-                                    })
-                                        ? "Start your ${(authNotifier.companyTypeList ?? [])
-                                        .where((companyType) {
-                                      return companyType.id == selectedCompanyType?.id &&
-                                          companyType.isApplicableForTrial;
-                                    })
-                                        .map((companyType) {
-                                      log("Selected Free trial days: ${companyType.trialPeriodDays}");
-                                      return companyType.trialPeriodDays;
-                                    })
-                                        .first}-day free trial"
-                                        : LanguageService.getTranslated(
-                                        context, "usermanagement_cuser_create_account_btn"),
-                                    style: typography.ButtonLarge.copyWith(color: Colors.black),
-                                  ),
-
-
-                          ),
+                                  child: _selectedOption ==
+                                          SignUpOptions.individual
+                                      ? Text(
+                                          // If companyTypeList contains an individual_account with isApplicableForTrial as true, show 'Start Trial' else 'Create Account'
+                                          (authNotifier.companyTypeList ?? [])
+                                                  .any((companyType) {
+                                            log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
+                                            return companyType.type
+                                                        .toLowerCase() ==
+                                                    'individual_account' &&
+                                                companyType
+                                                    .isApplicableForTrial;
+                                          })
+                                              ? "Start your ${(authNotifier.companyTypeList ?? []).where((companyType) {
+                                                  log("Processing companyType for trial days: ${companyType.type}");
+                                                  return companyType.type
+                                                              .toLowerCase() ==
+                                                          'individual_account' &&
+                                                      companyType
+                                                          .isApplicableForTrial;
+                                                }).map((companyType) {
+                                                  log("Free trial days: ${companyType.trialPeriodDays}");
+                                                  return companyType
+                                                      .trialPeriodDays;
+                                                }).first}-day free trial"
+                                              : LanguageService.getTranslated(
+                                                  context,
+                                                  "usermanagement_cuser_create_account_btn"),
+                                          style:
+                                              typography.ButtonLarge.copyWith(
+                                                  color: Colors.black),
+                                        )
+                                      : Text(
+                                          // Check selected_company_type in the companyTypeList
+                                          (authNotifier.companyTypeList ?? [])
+                                                  .any((companyType) {
+                                            log("Checking selectedCompanyType: ${selectedCompanyType}");
+                                            return companyType.id ==
+                                                    selectedCompanyType?.id &&
+                                                companyType
+                                                    .isApplicableForTrial;
+                                          })
+                                              ? "Start your ${(authNotifier.companyTypeList ?? []).where((companyType) {
+                                                  return companyType.id ==
+                                                          selectedCompanyType
+                                                              ?.id &&
+                                                      companyType
+                                                          .isApplicableForTrial;
+                                                }).map((companyType) {
+                                                  log("Selected Free trial days: ${companyType.trialPeriodDays}");
+                                                  return companyType
+                                                      .trialPeriodDays;
+                                                }).first}-day free trial"
+                                              : LanguageService.getTranslated(
+                                                  context,
+                                                  "usermanagement_cuser_create_account_btn"),
+                                          style:
+                                              typography.ButtonLarge.copyWith(
+                                                  color: Colors.black),
+                                        ),
+                                ),
                         ),
                       ),
                     ],
@@ -1231,9 +1250,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             // }
                           }
                         }).toList();
-
                         final normalizedValue = normalizedWords.join(' ');
-
                         textEditingController.value = TextEditingValue(
                           text: normalizedValue,
                           selection: TextSelection.collapsed(
@@ -1300,8 +1317,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             });
                           },
                           items: authNotifier.companyTypeList
-                              ?.where((companyType) =>
-                          companyType.type.toLowerCase() != 'individual_account')
+                                  ?.where((companyType) =>
+                                      companyType.type.toLowerCase() !=
+                                      'individual_account')
                                   .map((CompanyType companyType) {
                                 return DropdownMenuItem<CompanyType>(
                                   value: companyType,
@@ -1347,8 +1365,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ),
           validator: (value) {
             if (value == null ||
-                value.isEmpty /*||
-                value.contains(RegExp(r'[0-9]'))*/) {
+                    value
+                        .isEmpty /*||
+                value.contains(RegExp(r'[0-9]'))*/
+                ) {
               return 'Company display name is required and should not be empty or contain numbers';
             }
             // You can add more specific email validation here if needed

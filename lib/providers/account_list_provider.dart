@@ -235,9 +235,9 @@ class AccountListProvider extends ChangeNotifier {
       } else {
         addToAccountList(accountListModel.results ?? []);
       }
-      log(accountList.toString());
-      log(totalPages.toString());
-      log(page.toString());
+      // log(accountList.toString());
+      // log(totalPages.toString());
+      // log(page.toString());
       isLoading = false;
       isNextPageLoading = false;
     } on BackendException catch (e, stackTrace) {
