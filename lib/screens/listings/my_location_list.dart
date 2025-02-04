@@ -981,7 +981,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 )
                               : SizedBox(),
                           // if selected main tab is 1 then show the Generate Heatmap button
-                          SizedBox(width: CustomSpacing.two),
+                          /*SizedBox(width: CustomSpacing.two),
                           TooltipTheme(
                             data: TooltipThemeData(
                               decoration: BoxDecoration(
@@ -1019,7 +1019,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 Icons.info,
                               ),
                             ),
-                          ),
+                          ),*/
                         ],
                       ),
                     ),
@@ -2523,7 +2523,7 @@ class _MyLocationListState extends State<MyLocationList>
   MyLocationCard myLocationCertifiedCard(
       MyLocationListProvider locationListProvider,
       int index,
-      BuildContext context) {
+      BuildContext context1) {
     return MyLocationCard(
       campusId: locationListProvider
               .certifiedLocationList[index].finalAddress?.campusId ??

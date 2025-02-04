@@ -60,7 +60,7 @@ dependencies:
   image: ^4.2.0
   cloud_firestore: ^5.4.0
   country_picker: ^2.0.26
-  location: ^8.0.0
+  location: 7.0.1
   file_picker: ^8.0.0+1
   carousel_slider: ^5.0.0
   screenshot: ^3.0.0

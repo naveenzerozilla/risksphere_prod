@@ -1720,17 +1720,21 @@ class MyLocationListProvider extends ChangeNotifier {
                                               locationId,
                                               tag);
                                           //Locally update the tags
-                                          MyLocation location =
-                                              getLocationById(locationId);
-                                          location.tags?.remove(tag);
-                                          MyLocation certifiedLocation =
-                                              getCertifiedLocationById(
-                                                  locationId);
-                                          certifiedLocation.tags?.remove(tag);
-                                          fullLocationList.forEach((element) {
-                                            MyLocation location = element;
+                                          try {
+                                            MyLocation location =
+                                                getLocationById(locationId);
                                             location.tags?.remove(tag);
-                                          });
+                                            MyLocation certifiedLocation =
+                                                getCertifiedLocationById(
+                                                    locationId);
+                                            certifiedLocation.tags?.remove(tag);
+                                            fullLocationList.forEach((element) {
+                                              MyLocation location = element;
+                                              location.tags?.remove(tag);
+                                            });
+                                          } catch (e) {
+                                            print(e);
+                                          }
                                         },
                                         child: Text(
                                           "Delete",
