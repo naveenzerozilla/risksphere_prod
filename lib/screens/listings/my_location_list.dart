@@ -81,7 +81,7 @@ class _MyLocationListState extends State<MyLocationList>
   bool _showNotificationDot = true;
   TabController? _masterTabController;
   TabController? _tabController;
-  Screens _selectedScreen = Screens.connectionList;
+  Screens _selectedScreen = Screens.locationList;
   TextEditingController _locationSearchController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
 
@@ -348,352 +348,359 @@ class _MyLocationListState extends State<MyLocationList>
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
     return SafeArea(
-      child: Consumer<UserProfileProvider>(
-          builder: (context, userProfileProvider, child) {
-        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-        return Consumer<ThemeProvider>(
-          builder: (buildContext, themeProvider, child) {
-            return Scaffold(
-              key: _scaffoldKey,
-              backgroundColor:
-                  themeProvider.getTheme.colorScheme.surfaceContainerLowest,
-              appBar: CustomAppBar(
-                isExpanded: _isExpanded,
-                showNotificationDot: _showNotificationDot,
-                onExpandPressed: (isExpanded) {
-                  setState(() {
-                    _isExpanded = isExpanded;
-                  });
-                },
-                onSearchPressed: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-              ),
-              drawer: CustomDrawer(),
-              floatingActionButton: Container(
-                margin: EdgeInsets.only(bottom: 42.0),
-                child: SpeedDial(
-                  animatedIcon: AnimatedIcons.menu_close,
-                  animatedIconTheme: IconThemeData(size: 22.0),
-                  backgroundColor: AppColors.primaryMain,
-                  foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                  children: [
-                    if ((selectedMasterTab) == 0)
+      child: PopScope(
+        onPopInvokedWithResult: (canPop, result) {
+          print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+          Provider.of<MyLocationListProvider>(context, listen: false)
+              .clearSelection();
+        },
+        child: Consumer<UserProfileProvider>(
+            builder: (context, userProfileProvider, child) {
+          final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+          return Consumer<ThemeProvider>(
+            builder: (buildContext, themeProvider, child) {
+              return Scaffold(
+                key: _scaffoldKey,
+                backgroundColor:
+                    themeProvider.getTheme.colorScheme.surfaceContainerLowest,
+                appBar: CustomAppBar(
+                  isExpanded: _isExpanded,
+                  showNotificationDot: _showNotificationDot,
+                  onExpandPressed: (isExpanded) {
+                    setState(() {
+                      _isExpanded = isExpanded;
+                    });
+                  },
+                  onSearchPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                ),
+                drawer: CustomDrawer(),
+                floatingActionButton: Container(
+                  margin: EdgeInsets.only(bottom: 42.0),
+                  child: SpeedDial(
+                    animatedIcon: AnimatedIcons.menu_close,
+                    animatedIconTheme: IconThemeData(size: 22.0),
+                    backgroundColor: AppColors.primaryMain,
+                    foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                    children: [
+                      if ((selectedMasterTab) == 0)
+                        SpeedDialChild(
+                          child: Icon(Icons.add),
+                          backgroundColor: AppColors.primaryMain,
+                          foregroundColor:
+                              themeProvider.getTheme.colorScheme.onPrimary,
+                          label: 'Add Location',
+                          labelStyle: typography.Body1,
+                          onTap: () {
+                            Navigator.of(context)
+                                .push(MaterialPageRoute(
+                              builder: (_) => AddLocationScreen(
+                                accountId: widget.accountID,
+                                subAccountId: widget.subAccountID,
+                                sovId: "",
+                                accountName: widget.accountName,
+                                subAccountName: widget.subAccountName,
+                              ),
+                            ))
+                                .then((value) {
+                              if (value != null) {
+                                if (value) {
+                                  Provider.of<MyLocationListProvider>(context,
+                                          listen: false)
+                                      .fetchLocationList(
+                                        context,
+                                        "",
+                                        1,
+                                        40,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                      )
+                                      .then((value) => setState(() {}));
+                                }
+                              }
+                            });
+                          },
+                        ),
                       SpeedDialChild(
-                        child: Icon(Icons.add),
+                        child: Icon(Icons.upload),
                         backgroundColor: AppColors.primaryMain,
                         foregroundColor:
                             themeProvider.getTheme.colorScheme.onPrimary,
-                        label: 'Add Location',
+                        label: isUploadInProgress ? 'Continue' : 'Upload SOV',
                         labelStyle: typography.Body1,
-                        onTap: () {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(
-                            builder: (_) => AddLocationScreen(
-                              accountId: widget.accountID,
-                              subAccountId: widget.subAccountID,
-                              sovId: "",
-                              accountName: widget.accountName,
-                              subAccountName: widget.subAccountName,
-                            ),
-                          ))
-                              .then((value) {
-                            if (value != null) {
-                              if (value) {
-                                Provider.of<MyLocationListProvider>(context,
-                                        listen: false)
-                                    .fetchLocationList(
-                                      context,
-                                      "",
-                                      1,
-                                      40,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                    )
-                                    .then((value) => setState(() {}));
-                              }
-                            }
-                          });
+                        onTap: () async {
+                          if (isMaintenance) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'SOV upload is disabled during maintenance period.'),
+                              ),
+                            );
+                          } else if (isUploadInProgress) {
+                            String tempProcessId = await SharedPreferenceService
+                                    .getSovUploadTempId() ??
+                                "";
+                            String state =
+                                await SharedPreferenceService.getSovUploadState() ??
+                                    "";
+                            // Call API to get get necessary data and navigate to the respective screen
+                            Provider.of<UploadSovProvider>(context, listen: false)
+                                .fetchSovUploadData(
+                                    context,
+                                    widget.accountID,
+                                    widget.accountName,
+                                    widget.subAccountID,
+                                    tempProcessId,
+                                    state);
+                          } else {
+                            _showUploadBottomSheet(
+                                widget.accountID, widget.subAccountID, "");
+                          }
                         },
                       ),
-                    SpeedDialChild(
-                      child: Icon(Icons.upload),
-                      backgroundColor: AppColors.primaryMain,
-                      foregroundColor:
-                          themeProvider.getTheme.colorScheme.onPrimary,
-                      label: isUploadInProgress ? 'Continue' : 'Import Locations',
-                      labelStyle: typography.Body1,
-                      onTap: () async {
-                        if (isMaintenance) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'SOV upload is disabled during maintenance period.'),
-                            ),
-                          );
-                        } else if (isUploadInProgress) {
-                          String tempProcessId = await SharedPreferenceService
-                                  .getSovUploadTempId() ??
-                              "";
-                          String state =
-                              await SharedPreferenceService.getSovUploadState() ??
-                                  "";
-                          // Call API to get get necessary data and navigate to the respective screen
-                          Provider.of<UploadSovProvider>(context, listen: false)
-                              .fetchSovUploadData(
-                                  context,
-                                  widget.accountID,
-                                  widget.accountName,
-                                  widget.subAccountID,
-                                  tempProcessId,
-                                  state);
-                        } else {
-                          _showUploadBottomSheet(
-                              widget.accountID, widget.subAccountID, "");
-                        }
-                      },
-                    ),
-                    if ((_masterTabController?.index ?? 0) == 0)
-                      SpeedDialChild(
-                        child: Icon(Icons.download),
-                        backgroundColor: trialStatus.isNotEmpty
-                            ? Colors.grey
-                            : AppColors.primaryMain,
-                        foregroundColor:
-                            themeProvider.getTheme.colorScheme.onPrimary,
-                        label: 'Export Locations',
-                        labelStyle: typography.Body1,
-                        onTap: trialStatus.isNotEmpty
-                            ? null
-                            : () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return ExportDialog(
-                                      accountId: widget.accountID,
-                                      subAccountId: widget.subAccountID,
-                                      sovId: "",
-                                      locationId: selectedMainTab == 0
-                                          ? Provider.of<MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
-                                              .myLocationList
-                                              .map(
-                                                  (location) => location.id ?? "")
-                                              .toList()
-                                          : Provider.of<MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
-                                              .certifiedLocationList
-                                              .map(
-                                                  (location) => location.id ?? "")
-                                              .toList(),
-                                    );
-                                  },
-                                );
-                              },
-                      ),
-                  ],
+                      if ((_masterTabController?.index ?? 0) == 0)
+                        SpeedDialChild(
+                          child: Icon(Icons.download),
+                          backgroundColor: trialStatus.isNotEmpty
+                              ? Colors.grey
+                              : AppColors.primaryMain,
+                          foregroundColor:
+                              themeProvider.getTheme.colorScheme.onPrimary,
+                          label: 'Export Locations',
+                          labelStyle: typography.Body1,
+                          onTap: trialStatus.isNotEmpty
+                              ? null
+                              : () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return ExportDialog(
+                                        accountId: widget.accountID,
+                                        subAccountId: widget.subAccountID,
+                                        sovId: "",
+                                        locationId: selectedMainTab == 0
+                                            ? Provider.of<MyLocationListProvider>(
+                                                    context,
+                                                    listen: false)
+                                                .myLocationList
+                                                .map(
+                                                    (location) => location.id ?? "")
+                                                .toList()
+                                            : Provider.of<MyLocationListProvider>(
+                                                    context,
+                                                    listen: false)
+                                                .certifiedLocationList
+                                                .map(
+                                                    (location) => location.id ?? "")
+                                                .toList(),
+                                      );
+                                    },
+                                  );
+                                },
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              body: Stack(
-                children: [
-                  /*  Positioned.fill(
-                      child: Image.asset(
-                        'assets/images/mesh.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),*/
-                  Column(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            SizedBox(height: CustomSpacing.two),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Row(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 8.0, bottom: 6),
-                                    child: Row(
-                                      children: [
-                                        Text(widget.accountName,
-                                            style: typography.InputLabel),
-                                        Text(' > ',
-                                            style: typography.InputLabel),
-                                        Text(widget.subAccountName,
-                                            style: typography.InputLabel),
-                                      ],
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Consumer<JobMonitoringProvider>(builder:
-                                            (context, jobMonitoringProvider,
-                                                child) {
-                                          return Container(
-                                            child: _getLiveUI(
-                                                jobMonitoringProvider),
-                                          );
-                                        }),
-                                      ],
-                                    ),
-                                  )
-
-                                  ,
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: CustomSpacing.four),
-                            // Master TabBar
-                            Container(
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
-                                borderRadius:
-                                    BorderRadius.circular(16), // Rounded edges
-                              ),
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 0),
-                              child: DefaultTabController(
-                                length: _masterTabController?.length ?? 4,
-                                child: Column(
-                                  children: <Widget>[
-                                    // Container for the TabBar with arrows
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHigh,
-                                      ),
-                                      height: 50,
+                body: Stack(
+                  children: [
+                    /*  Positioned.fill(
+                        child: Image.asset(
+                          'assets/images/mesh.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),*/
+                    Column(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              SizedBox(height: CustomSpacing.two),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16.0),
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 8.0, bottom: 6),
                                       child: Row(
-                                        children: <Widget>[
-                                          // Left arrow button
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_left,
-                                                color: Colors.grey),
-                                            onPressed: _scrollLeft,
-                                          ),
-                                          // Scrollable TabBar
-                                          Expanded(
-                                            child: SingleChildScrollView(
-                                              controller: _scrollController,
-                                              scrollDirection: Axis.horizontal,
-                                              child: TabBar(
-                                                controller:
-                                                    _masterTabController,
-                                                tabAlignment:
-                                                    TabAlignment.start,
-                                                labelStyle:
-                                                    typography.Subtitle2,
-                                                isScrollable: true,
-                                                indicatorColor:
-                                                    Colors.lightBlueAccent,
-                                                labelColor:
-                                                    Colors.lightBlueAccent,
-                                                unselectedLabelColor:
-                                                    Colors.grey,
-                                                tabs: [
-                                                  Tab(
-                                                    text: 'Locations',
-                                                  ),
-                                                  Tab(
-                                                    text: 'SOVs',
-                                                  ),
-                                                  Tab(text: 'Shared'),
-                                                  Tab(text: 'Access Requests'),
-                                                  Tab(text: 'Data'),
-                                                  if (userProfileProvider
-                                                          .trialInfo['status']
-                                                          ?.isEmpty ??
-                                                      true)
-                                                    Tab(text: 'Configuration'),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          // Right arrow button
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_right,
-                                                color: Colors.grey),
-                                            onPressed: _scrollRight,
-                                          ),
+                                        children: [
+                                          Text(widget.accountName,
+                                              style: typography.InputLabel),
+                                          Text(' > ',
+                                              style: typography.InputLabel),
+                                          Text(widget.subAccountName,
+                                              style: typography.InputLabel),
                                         ],
                                       ),
                                     ),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Consumer<JobMonitoringProvider>(builder:
+                                              (context, jobMonitoringProvider,
+                                                  child) {
+                                            return Container(
+                                              child: _getLiveUI(
+                                                  jobMonitoringProvider),
+                                            );
+                                          }),
+                                        ],
+                                      ),
+                                    )
+
+                                    ,
                                   ],
                                 ),
                               ),
-                            ),
-                            // Master TabBarView for the Tab Content
-                            Expanded(
-                              child: TabBarView(
-                                physics: NeverScrollableScrollPhysics(),
-                                controller: _masterTabController,
-                                children: [
-                                  Consumer<MyLocationListProvider>(builder:
-                                      (context, myLocationListProvider, child) {
-                                    return _getLocationListBodyUI(
-                                        myLocationListProvider, "");
-                                  }),
-                                  Container(
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    child: sovBody(typography),
+                              SizedBox(height: CustomSpacing.four),
+                              // Master TabBar
+                              Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHigh,
+                                  borderRadius:
+                                      BorderRadius.circular(16), // Rounded edges
+                                ),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 0),
+                                child: DefaultTabController(
+                                  length: _masterTabController?.length ?? 4,
+                                  child: Column(
+                                    children: <Widget>[
+                                      // Container for the TabBar with arrows
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHigh,
+                                        ),
+                                        height: 50,
+                                        child: Row(
+                                          children: <Widget>[
+                                            // Left arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_left,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollLeft,
+                                            ),
+                                            // Scrollable TabBar
+                                            Expanded(
+                                              child: SingleChildScrollView(
+                                                controller: _scrollController,
+                                                scrollDirection: Axis.horizontal,
+                                                child: TabBar(
+                                                  controller:
+                                                      _masterTabController,
+                                                  tabAlignment:
+                                                      TabAlignment.start,
+                                                  labelStyle:
+                                                      typography.Subtitle2,
+                                                  isScrollable: true,
+                                                  indicatorColor:
+                                                      Colors.lightBlueAccent,
+                                                  labelColor:
+                                                      Colors.lightBlueAccent,
+                                                  unselectedLabelColor:
+                                                      Colors.grey,
+                                                  tabs: [
+                                                    Tab(
+                                                      text: 'Locations',
+                                                    ),
+                                                    Tab(
+                                                      text: 'SOVs',
+                                                    ),
+                                                    Tab(text: 'Shared'),
+                                                    Tab(text: 'Access Requests'),
+                                                    Tab(text: 'Data'),
+                                                    if (userProfileProvider
+                                                            .trialInfo['status']
+                                                            ?.isEmpty ??
+                                                        true)
+                                                      Tab(text: 'Configuration'),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            // Right arrow button
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_right,
+                                                  color: Colors.grey),
+                                              onPressed: _scrollRight,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  _getComingSoonUI(),
-                                  _getComingSoonUI(),
-                                  DataTab(
-                                    accountId: widget.accountID,
-                                    subaccountId: widget.subAccountID,
-                                  ),
-                                  if (userProfileProvider
-                                          .trialInfo['status']?.isEmpty ??
-                                      true)
-                                    ConfigurationTab(
+                                ),
+                              ),
+                              // Master TabBarView for the Tab Content
+                              Expanded(
+                                child: TabBarView(
+                                  physics: NeverScrollableScrollPhysics(),
+                                  controller: _masterTabController,
+                                  children: [
+                                    Consumer<MyLocationListProvider>(builder:
+                                        (context, myLocationListProvider, child) {
+                                      return _getLocationListBodyUI(
+                                          myLocationListProvider, "");
+                                    }),
+                                    Container(
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      child: sovBody(typography),
+                                    ),
+                                    _getComingSoonUI(),
+                                    _getComingSoonUI(),
+                                    DataTab(
                                       accountId: widget.accountID,
                                       subaccountId: widget.subAccountID,
                                     ),
-                                ],
+                                    if (userProfileProvider
+                                            .trialInfo['status']?.isEmpty ??
+                                        true)
+                                      ConfigurationTab(
+                                        accountId: widget.accountID,
+                                        subaccountId: widget.subAccountID,
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              endDrawer: Drawer(
-                child: SafeArea(
-                  child: ListingsFilterScreen(
-                    accountId: widget.accountID,
-                    subAccountId: widget.subAccountID,
-                    sovId: "widget.sovId",
-                    searchQuery: locationQuery,
-                    showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
-                    initialProcessId: widget.initialProcessId,
-                    initialSubProcessId: widget.initialSubProcessId,
+                      ],
+                    ),
+                  ],
+                ),
+                endDrawer: Drawer(
+                  child: SafeArea(
+                    child: ListingsFilterScreen(
+                      accountId: widget.accountID,
+                      subAccountId: widget.subAccountID,
+                      sovId: "widget.sovId",
+                      searchQuery: locationQuery,
+                      showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
+                      initialProcessId: widget.initialProcessId,
+                      initialSubProcessId: widget.initialSubProcessId,
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      }),
+              );
+            },
+          );
+        }),
+      ),
     );
   }
 
@@ -801,20 +808,22 @@ class _MyLocationListState extends State<MyLocationList>
                                     ),
                                     TextButton(
                                       onPressed: () {
+                                        print(_selectedScreen);
                                         if (_selectedScreen ==
                                             Screens.locationList) {
+                                          print('Selected ids: ${locationListProvider.selectedLocations.map((sov) => sov.id).toList()}');
                                           // On export button click
                                           List<String> selectedSovIds = Provider
                                                   .of<MyLocationListProvider>(
                                                       context,
                                                       listen: false)
-                                              .myLocationList
-                                              .where((location) =>
-                                                  location.isSelected ?? false)
+                                              .selectedLocations
                                               .map((sov) => sov.id!)
                                               .toList();
+                                          print('Selected ids: $selectedSovIds');
 
                                           if (selectedSovIds.isNotEmpty) {
+                                            Navigator.pop(context);
                                             showDialog(
                                               context: context,
                                               builder: (BuildContext context) {
@@ -1412,8 +1421,6 @@ class _MyLocationListState extends State<MyLocationList>
     // Define the secondary stream with proper caching
     Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
     print('docids: ${provider.docIds}');
-    print('accountId: ${ widget.accountID}');
-    print('subAccountId: ${widget.subAccountID}');
       processStream = FirebaseFirestore.instance
           .collection('processes')
           .where('location_data.account_id',
@@ -1421,9 +1428,7 @@ class _MyLocationListState extends State<MyLocationList>
           .where('location_data.sub_account_id',
           isEqualTo: widget.subAccountID)
           .where('process_type', isEqualTo: 'hazard')
-          .where('status',isEqualTo:  'processing')
           .orderBy('created_at', descending: true)
-
           .limit(1)
           .snapshots()
           .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
@@ -1500,7 +1505,6 @@ class _MyLocationListState extends State<MyLocationList>
         var data = snapshot.data!;
         var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
         var processStatus = data['processData']?['status'] ?? 'completed';
-        print('process id: ${data['processData']?['process_id']}');
 
         print('Heatmap Status: $heatmapStatus');
 
@@ -1684,7 +1688,6 @@ class _MyLocationListState extends State<MyLocationList>
               child: Row(
                 children: [
                   // Horizontally scrollable row for all chips
-
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -1992,7 +1995,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .myLocationList[index]
                                                 .overallScore ??
                                             0,
-                                        dataCompletenessScore: 0,
+                                        dataCompletenessScore: 2,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -2147,7 +2150,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 riskScore: locationListProvider
                                         .myLocationList[index].overallScore ??
                                     0,
-                                dataCompletenessScore: 0,
+                                dataCompletenessScore: 2,
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -2565,7 +2568,7 @@ class _MyLocationListState extends State<MyLocationList>
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
           locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 0,
+      dataCompletenessScore: 2,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -2900,19 +2903,10 @@ class _MyLocationListState extends State<MyLocationList>
                         // Fields displayed only if checkbox is checked
                         TextField(
                           controller: _sovNameController,
-                          // enabled: locations > 0,
+                          enabled: locations > 0,
                           /*
                             readOnly: _uploadedFileName != null,*/
                           style: TextStyle(color: Colors.white),
-                          // decoration: InputDecoration(
-                          //   labelText: "Name of the SoV3",
-                          //   labelStyle: TextStyle(color: Colors.white),
-                          //   enabledBorder: OutlineInputBorder(
-                          //       borderSide: BorderSide(color: Colors.grey)),
-                          //   focusedBorder: OutlineInputBorder(
-                          //       borderSide: BorderSide(color: Colors.blue)),
-                          //   hintStyle: TextStyle(color: Colors.white54),
-                          // ),
                           decoration: InputDecoration(
                             labelText: "Name of the SoV",
                             labelStyle: TextStyle(color: Colors.white),

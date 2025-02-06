@@ -484,7 +484,7 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> exportData(BuildContext context, String accountId, String subAccountId, Map<String, dynamic> exportData, String sovId) async {
+  Future<void> exportData(BuildContext context, String accountId, String subAccountId, List<Map<String, dynamic>> exportData, String sovId) async {
     try {
       _isExportLoading = true;
       notifyListeners();

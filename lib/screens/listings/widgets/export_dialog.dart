@@ -123,34 +123,15 @@ class _ExportDialogState extends State<ExportDialog> {
             CustomButton(
               onPressed: () async {
                 if(widget.locationId.isNotEmpty) {
-                  final exportData = //{
-                  // "data":
-                  {
-                    /*"format": _format.toLowerCase(),
-                    "fileType":
-                    _exportType == ExportType.Profile ? "profile" : "table",
-                    "includeImage": _includeImagesAsUrl,
-                    "downloadImagesInZip": _downloadImagesInZip,
-                    "sov_id": widget.sovId,
-                    "location_id": widget.locationId,*/
-                    "location_id": widget.locationId,
-                    // }
-                  };
+                  List<Map<String, dynamic>> exportData =
+                  widget.locationId.map((e) => {"location_id": e}).toList();
                   await provider.exportData(
                       context, widget.accountId, widget.subAccountId,
                       exportData, widget.sovId);
                 } else {
-                  final exportData = //{
-                  // "data":
-                  {
-                    /*"format": _format.toLowerCase(),
-                    "fileType":
-                    _exportType == ExportType.Profile ? "profile" : "table",
-                    "includeImage": _includeImagesAsUrl,
-                    "downloadImagesInZip": _downloadImagesInZip,*/
-                    "location_id": widget.locationId,
-                    // }
-                  };
+                  // we have to pass in like:[{location_id: "1PJUQPcNET5O4zngoN2L"}]
+                  List<Map<String, dynamic>> exportData =
+                    widget.locationId.map((e) => {"location_id": e}).toList();
                   await provider.exportData(
                       context, widget.accountId, widget.subAccountId,
                       exportData, widget.sovId);
