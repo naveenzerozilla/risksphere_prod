@@ -15,15 +15,16 @@ class LocationTable extends StatefulWidget {
 class _LocationTableState extends State<LocationTable> {
   late List<String> hazardColumns;
   Map<String, bool> columnVisibility = {};
-  bool showRiskScore = true; // Toggle to control display mode
+  bool showRiskScore = true;
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize hazard columns and set visibility to true initially
     if (widget.locations.isNotEmpty) {
       hazardColumns = widget.locations.first.hazard?.keys.toList() ?? [];
+
+      print("Hazard Columns Found: $hazardColumns"); // Debugging print statement
+
       for (var hazard in hazardColumns) {
         columnVisibility[hazard] = true;
       }
@@ -32,25 +33,19 @@ class _LocationTableState extends State<LocationTable> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
-    // Calculate the number of visible hazard columns
     final int visibleHazardsCount =
         hazardColumns.where((hazard) => columnVisibility[hazard] ?? true).length;
-
-    // Fixed widths for Location, Overall Score, and Geocoding Score columns
     final double fixedColumnsWidth = MediaQuery.of(context).size.width * 0.9;
-
-    // Total width of hazard columns
     final double hazardColumnsWidth = visibleHazardsCount * 150;
-
-    // Calculate the dynamic minWidth, ensuring a minimum fallback width
     final double dynamicMinWidth = fixedColumnsWidth +
         (hazardColumnsWidth > 0 ? hazardColumnsWidth : 300);
 
     return Column(
       children: [
-        // Toggle Switch for "See Risk Score"
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
@@ -96,6 +91,8 @@ class _LocationTableState extends State<LocationTable> {
                 horizontalMargin: 12,
                 bottomMargin: 20,
                 dividerThickness: 1,
+                dataRowHeight: !showRiskScore? 160:null,// Enables dynamic height
+
                 border: TableBorder.all(
                   color: Theme.of(context).colorScheme.surface,
                   width: 1,
@@ -108,14 +105,12 @@ class _LocationTableState extends State<LocationTable> {
                     label: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Location',
-                            style: CustomTypography(context).InputLabel),
+                        Text('Location', style: CustomTypography(context).InputLabel),
                         PopupMenuButton<String>(
                           icon: Icon(Icons.more_vert),
                           onSelected: (String hazard) {
                             setState(() {
-                              columnVisibility[hazard] =
-                              !(columnVisibility[hazard] ?? true);
+                              columnVisibility[hazard] = !(columnVisibility[hazard] ?? true);
                             });
                           },
                           itemBuilder: (BuildContext context) {
@@ -158,22 +153,22 @@ class _LocationTableState extends State<LocationTable> {
                     size: ColumnSize.L,
                   ),
                   DataColumn2(
-                      fixedWidth: MediaQuery.of(context).size.width * 0.3,
-                      size: ColumnSize.L,
-                      label: Text('Overall Score',
-                          style: CustomTypography(context).InputLabel)),
-                  DataColumn2(
-                      fixedWidth: MediaQuery.of(context).size.width * 0.3,
-                      size: ColumnSize.L,
-                      label: Text('Geocoding Score',
-                          style: CustomTypography(context).InputLabel)),
-                  ...hazardColumns
-                      .where((hazard) => columnVisibility[hazard] ?? true)
-                      .map((hazard) => DataColumn2(
+                    fixedWidth: MediaQuery.of(context).size.width * 0.3,
                     size: ColumnSize.L,
-                    label: Text(hazard,
-                        style: CustomTypography(context).InputLabel),
-                  )),
+                    label: Text('Overall Score', style: CustomTypography(context).InputLabel),
+                  ),
+                  DataColumn2(
+                    fixedWidth: MediaQuery.of(context).size.width * 0.3,
+                    size: ColumnSize.L,
+                    label: Text('Geocoding Score', style: CustomTypography(context).InputLabel),
+                  ),
+                  ...hazardColumns.map((hazard) {
+                    print("Rendering Column: $hazard"); // Debugging print
+                    return DataColumn2(
+                      size: ColumnSize.L,
+                      label: Text(hazard, style: CustomTypography(context).InputLabel),
+                    );
+                  }).toList(),
                 ],
                 rows: widget.locations.map((location) {
                   return DataRow(
@@ -183,71 +178,33 @@ class _LocationTableState extends State<LocationTable> {
                           location.finalAddress?.address ?? '',
                           style: CustomTypography(context).Body2,
                           overflow: TextOverflow.ellipsis,
-                          maxLines: 3,
+                          maxLines: showRiskScore?3:7,
                         ),
                       ),
                       DataCell(
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color: _getColorForRating(
-                              context, location.overallScore),
-                          alignment: Alignment.center,
-                          child: Text(
-                            (location.overallScore == null ||
-                                location.overallScore == 0)
-                                ? 'N/A'
-                                : location.overallScore.toString() ?? '',
-                            style: CustomTypography(context).Body2.copyWith(
-                              color: _getTextColorForRating(
-                                  context, location.overallScore),
-                            ),
-                          ),
-                        ),
+                        _renderRiskScore(location.overallScore), // ✅ Overall Score
                       ),
                       DataCell(
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color: _getColorForRating(
-                              context, location.finalAddress?.score),
-                          alignment: Alignment.center,
-                          child: Text(
-                            (location.finalAddress?.score == null ||
-                                location.finalAddress?.score == 0)
-                                ? 'N/A'
-                                : location.finalAddress?.score?.toString() ??
-                                '',
-                            style: CustomTypography(context).Body2.copyWith(
-                              color: _getTextColorForRating(
-                                  context, location.finalAddress?.score),
-                            ),
-                          ),
-                        ),
+                        _renderRiskScore(location.finalAddress?.score), // ✅ Geocoding Score
                       ),
-                      ...hazardColumns
-                          .where((hazard) => columnVisibility[hazard] ?? true)
-                          .map((hazard) => DataCell(
+                      ...hazardColumns.map((hazard) => DataCell(
                         Container(
                           width: double.infinity,
                           height: double.infinity,
                           alignment: Alignment.center,
-                          child: showRiskScore
-                              ? _renderRiskScore(widget.locations.first.hazard?[hazard])
-                              : _renderFormattedHazardData(widget.locations.first.hazard?[hazard]),
+                          child: widget.locations.first.hazard?.containsKey(hazard) ?? false
+                              ? (showRiskScore
+                              ? _renderRiskScore(widget.locations.first.hazard?[hazard]?.rating)
+                              : _renderFormattedHazardData(widget.locations.first.hazard?[hazard], widget.locations.first.hazard?[hazard]?.rating)) // ✅ Fixed
+                              : Text("N/A", style: CustomTypography(context).Body2.copyWith(color: Colors.grey)),
                         ),
-                      )),
-
-
-
-
-
-
+                      )).toList(),
 
                     ],
                   );
                 }).toList(),
               ),
+
             ),
           ),
         ),
@@ -255,8 +212,8 @@ class _LocationTableState extends State<LocationTable> {
     );
   }
 
-  Widget _renderRiskScore(HazardDetails? hazardDetails) {
-    if (hazardDetails == null || hazardDetails.rating == null) {
+  Widget _renderRiskScore(int? score) {
+    if (score == null || score == 0) {
       return Text(
         "N/A",
         style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
@@ -267,102 +224,18 @@ class _LocationTableState extends State<LocationTable> {
       width: double.infinity,
       height: double.infinity,
       alignment: Alignment.center,
-      color: _getColorForRating(context, hazardDetails.rating),
+      color: _getColorForRating(context, score),
       child: Text(
-        hazardDetails.rating.toString(),
+        score.toString(),
         style: CustomTypography(context)
             .Body2
-            .copyWith(color: _getTextColorForRating(context, hazardDetails.rating)),
+            .copyWith(color: _getTextColorForRating(context, score)),
       ),
     );
   }
-
-
-
-  Widget _renderFormattedHazardData(HazardDetails? hazardDetails) {
-    if (hazardDetails == null) {
-      return Text(
-        "N/A",
-        style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
-      );
-    }
-
-    final List<Widget> vendorDataWidgets = [];
-
-    // Primary vendor data
-    if (hazardDetails.vendorName != null) {
-      vendorDataWidgets.add(
-        _buildVendorDataWidget(
-          key: hazardDetails.value?.toString() ?? "N/A",
-          value: hazardDetails.vendorName!,
-          rating: hazardDetails.rating,
-        ),
-      );
-    }
-
-    // Other vendor data
-    if (hazardDetails.others != null) {
-      hazardDetails.others!.forEach((vendorName, vendorDetails) {
-        vendorDataWidgets.add(
-          _buildVendorDataWidget(
-            key: vendorDetails.value?.toString() ?? "N/A",
-            value: vendorName,
-            rating: vendorDetails.rating,
-          ),
-        );
-      });
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: vendorDataWidgets,
-    );
-  }
-
-  Widget _buildVendorDataWidget({
-    required String key,
-    required String value,
-    int? rating,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "$key",
-            style: CustomTypography(context).Body2,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value,
-                style: CustomTypography(context)
-                    .Caption
-                    .copyWith(color: Colors.grey),
-              ),
-              if (rating != null)
-                Text(
-                  "Rating: $rating",
-                  style: CustomTypography(context)
-                      .Caption
-                      .copyWith(color: Colors.grey),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-
-
-
 
   Color _getColorForRating(BuildContext context, int? rating) {
     if (rating == null) return Colors.grey;
-    if (rating == 0) return Colors.grey;
     if (rating == 5) return Colors.green;
     if (rating == 4) return Colors.lightGreen;
     if (rating == 3) return Colors.yellow;
@@ -377,4 +250,171 @@ class _LocationTableState extends State<LocationTable> {
     }
     return (rating >= 4) ? Colors.white : Colors.black;
   }
+
+  Widget _renderFormattedHazardData(HazardDetails? hazardDetails, int? score) {
+
+    if (score == null || score == 0) {
+      return Text(
+        "N/A",
+        style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
+      );
+    }
+
+
+    if (hazardDetails == null || hazardDetails.others == null) {
+      return Text(
+        "N/A",
+        style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
+      );
+    }
+
+    List<Widget> vendorDataWidgets = [];
+
+    // **Coastal Flood**
+    if (hazardDetails.others!.containsKey("Kineticast")) {
+      var mainValue = hazardDetails.others!["Kineticast"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "St. Surge (ft)",
+        value: _formatNumber(mainValue),
+        vendorName: "KinetiCast",
+        score: score
+      ));
+    }
+    if (hazardDetails.others!.containsKey("MarshMcLennan")) {
+      var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "Flood Risk Score",
+        value: mainValue.toString(),
+        vendorName: "Marsh...",
+          score: score,
+      ));
+    }
+
+    // **Earthquake**
+    if (hazardDetails.others!.containsKey("GlobalEarthquakeModel")) {
+      var mainValue = hazardDetails.others!["GlobalEarthquakeModel"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "PGA (%g)",
+        value: _formatNumber(mainValue),
+        vendorName: "Global Earthquake Model",
+        score: score,
+      ));
+    }
+
+    // **Hurricane**
+    if (hazardDetails.others!.containsKey("Kineticast")) {
+      var mainValue = hazardDetails.others!["Kineticast"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "Wind Speed (mph)",
+        value: _formatNumber(mainValue),
+        vendorName: "KinetiCast",
+        score: score,
+      ));
+    }
+
+    // **Wildfire**
+    if (hazardDetails.others!.containsKey("Modis")) {
+      var mainValue = hazardDetails.others!["Modis"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "T(K)/FRP",
+        value: _formatNumber(mainValue),
+        vendorName: "MODIS",
+        score: score,
+      ));
+    }
+
+    // **Riverine Flood**
+    if (hazardDetails.others!.containsKey("JRCOD")) {
+      var mainValue = hazardDetails.others!["JRCOD"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "Flood Depth (ft)",
+        value: _formatNumber(mainValue, decimalPlaces: 3),
+        vendorName: "JRCOD",
+        score: score,
+      ));
+    }
+    if (hazardDetails.others!.containsKey("MarshMcLennan")) {
+      var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "Flood Risk Score",
+        value: _formatNumber(mainValue, decimalPlaces: 3),
+        vendorName: "MarshMcLennan",
+        score: score,
+      ));
+    }
+
+    // **USGS Risk Index**
+    if (hazardDetails.others!.containsKey("USGS")) {
+      var mainValue = hazardDetails.others!["USGS"]!.value.toString();
+      String formattedValue = _formatUSGSValue(mainValue);
+      vendorDataWidgets.add(_buildVendorDataWidget(
+        key: "Risk Index",
+        value: formattedValue,
+        vendorName: "USGS",
+        score: score,
+      ));
+    }
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: _getColorForRating(context, score),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: vendorDataWidgets,
+      ),
+    );
+  }
+
+  String _formatNumber(dynamic value, {int decimalPlaces = 6}) {
+    if (value == null) return "N/A";
+    if (value is num) {
+      return value.toStringAsFixed(decimalPlaces);
+    }
+    return value.toString();
+  }
+
+  String _formatUSGSValue(String value) {
+    if (value == "Not Applicable" || value == "No Rating") {
+      return "N/A";
+    }
+    var parts = value.split(" ");
+    if (parts.length >= 2) {
+      return "${parts[0][0]}.${parts[1]}"; // Format as "X.Y"
+    }
+    return value;
+  }
+
+
+  Widget _buildVendorDataWidget({
+    required String key,
+    required String value,
+    required String vendorName,
+    required int score,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "$key: $value",
+            style: CustomTypography(context).Caption.copyWith(color: _getTextColorForRating(context, score)),
+            textAlign: TextAlign.start,
+          ),
+          Text(
+            vendorName,
+            style: CustomTypography(context)
+                .Caption
+                .copyWith(color: _getTextColorForRating(context, score)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }
