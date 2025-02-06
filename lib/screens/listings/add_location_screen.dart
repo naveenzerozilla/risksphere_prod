@@ -202,31 +202,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                   return Column(
                     children: [
                       SizedBox(height: CustomSpacing.four),
-                      Container(
 
-                        margin: EdgeInsets.only(left: 8, right: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
-                            bottomRight: Radius.circular(8),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Container(
-                            height: 140,
-                            width: double.infinity,
-                            child: GoogleMap(
-                              mapType: MapType.normal,
-                              initialCameraPosition: _defaultLocation,
-                              onMapCreated: (GoogleMapController controller) {
-                                _mapController.complete(controller);
-                              },
-                              markers: Set<Marker>.of(markers.values),
-                            ),
-                          ),
-                        ),
-                      ),
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
@@ -239,7 +215,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: CustomSpacing.four),
+
                               // Form
                               Expanded(
                                 child: SingleChildScrollView(
@@ -248,6 +224,32 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
+                                        Container(
+
+                                          margin: EdgeInsets.only(left: 8, right: 8),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: Container(
+                                              height: 200,
+                                              width: double.infinity,
+                                              child: GoogleMap(
+                                                mapType: MapType.normal,
+                                                initialCameraPosition: _defaultLocation,
+                                                onMapCreated: (GoogleMapController controller) {
+                                                  _mapController.complete(controller);
+                                                },
+                                                markers: Set<Marker>.of(markers.values),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(height: CustomSpacing.four),
                                         Padding(
                                           padding: const EdgeInsets.only(left: 8.0),
                                           child: Text(

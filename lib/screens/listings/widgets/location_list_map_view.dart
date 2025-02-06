@@ -499,7 +499,7 @@ import 'message_card.dart';
 
       // If heatmap is off, use the existing menu with mainHazards and vendors
       if (!_isHeatmapOn || _isLoading) {
-        if (!(_selectedTabIndex == 2 || _selectedTabIndex == 1) || mainHazards.isEmpty) {
+        if (!(_selectedTabIndex ==2  || _selectedTabIndex == 1) || mainHazards.isEmpty) {
           return SizedBox();
         }
 
@@ -895,17 +895,17 @@ import 'message_card.dart';
                               text: 'Geocoding',
                             ),
                             Tab(text: 'Risk Score'),
-                            Tab(text: 'Occupancy'),
-                            Tab(text: 'Construction'),
+                            // Tab(text: 'Occupancy'),
+                            // Tab(text: 'Construction'),
                           ],
                         ),
                       ),
                     ),
                     // Right arrow button
-                    IconButton(
-                      icon: Icon(Icons.arrow_right, color: Colors.grey),
-                      onPressed: _scrollRight,
-                    ),
+                    // IconButton(
+                    //   icon: Icon(Icons.arrow_right, color: Colors.grey),
+                    //   onPressed: _scrollRight,
+                    // ),
                   ],
                 ),
               ),
@@ -922,35 +922,35 @@ import 'message_card.dart';
                     children: [
                       GoogleMap(
                         initialCameraPosition: CameraPosition(
-                            target: LatLng(38.7946, 106.5348), zoom: 0),
+                          target: LatLng(38.7946, 106.5348),
+                          zoom: 0,
+                        ),
                         markers: _markers,
-                       /* minMaxZoomPreference: _isHeatmapOn
-                            ? MinMaxZoomPreference(0, 5)
-                            : MinMaxZoomPreference.unbounded,*/
                         onMapCreated: (GoogleMapController controller) {
                           mapController = controller;
                           clusterManager.setMapId(controller.mapId); // Set map ID for ClusterManager
                           mapController.setMapStyle(_mapStyle);
                         },
-                        tileOverlays: _selectedHazard != null &&
-                                _tileProviders.containsKey(_selectedHazard)
-                        && _mainHazardTileProvider != null
-                        && selectedHazardId != null
-                        && selectedVendor != null
+                        tileOverlays: _selectedTabIndex == 0
+                            ? {} // No tile overlay when selectedTabIndex is 0
+                            : (_selectedHazard != null &&
+                            _tileProviders.containsKey(_selectedHazard) &&
+                            _mainHazardTileProvider != null &&
+                            selectedHazardId != null &&
+                            selectedVendor != null)
                             ? {
                           TileOverlay(
                             tileOverlayId: TileOverlayId(selectedHazardId!),
                             tileProvider: _mainHazardTileProvider!,
                           ),
-                                TileOverlay(
-                                    tileOverlayId: TileOverlayId(_selectedHazard!),
-                                    tileProvider: _tileProviders[_selectedHazard!]!),
-
-                              }
-                            :
-                        _mainHazardTileProvider != null
-                        && selectedHazardId != null
-                        && selectedVendor != null
+                          TileOverlay(
+                            tileOverlayId: TileOverlayId(_selectedHazard!),
+                            tileProvider: _tileProviders[_selectedHazard!]!,
+                          ),
+                        }
+                            : (_mainHazardTileProvider != null &&
+                            selectedHazardId != null &&
+                            selectedVendor != null)
                             ? {
                           TileOverlay(
                             tileOverlayId: TileOverlayId(selectedHazardId!),
@@ -961,6 +961,50 @@ import 'message_card.dart';
                         onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
                         onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
                       ),
+
+                      // GoogleMap(
+                      //   initialCameraPosition: CameraPosition(
+                      //       target: LatLng(38.7946, 106.5348), zoom: 0),
+                      //   markers: _markers,
+                      //  /* minMaxZoomPreference: _isHeatmapOn
+                      //       ? MinMaxZoomPreference(0, 5)
+                      //       : MinMaxZoomPreference.unbounded,*/
+                      //   onMapCreated: (GoogleMapController controller) {
+                      //     mapController = controller;
+                      //     clusterManager.setMapId(controller.mapId); // Set map ID for ClusterManager
+                      //     mapController.setMapStyle(_mapStyle);
+                      //   },
+                      //   tileOverlays:
+                      //
+                      //   _selectedHazard != null &&
+                      //           _tileProviders.containsKey(_selectedHazard)
+                      //   && _mainHazardTileProvider != null
+                      //   && selectedHazardId != null
+                      //   && selectedVendor != null
+                      //       ? {
+                      //     TileOverlay(
+                      //       tileOverlayId: TileOverlayId(selectedHazardId!),
+                      //       tileProvider: _mainHazardTileProvider!,
+                      //     ),
+                      //           TileOverlay(
+                      //               tileOverlayId: TileOverlayId(_selectedHazard!),
+                      //               tileProvider: _tileProviders[_selectedHazard!]!),
+                      //
+                      //         }
+                      //       :
+                      //   _mainHazardTileProvider != null
+                      //   && selectedHazardId != null
+                      //   && selectedVendor != null
+                      //       ? {
+                      //     TileOverlay(
+                      //       tileOverlayId: TileOverlayId(selectedHazardId!),
+                      //       tileProvider: _mainHazardTileProvider!,
+                      //     ),
+                      //   }
+                      //       : {},
+                      //   onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
+                      //   onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
+                      // ),
                       /*// Positioned widget for the hazard filter at the bottom-left
                       _selectedTabIndex == 1 && _tileProviders.isNotEmpty && _isHeatmapOn?Positioned(
                         bottom: 16,

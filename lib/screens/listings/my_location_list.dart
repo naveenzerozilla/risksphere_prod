@@ -425,7 +425,7 @@ class _MyLocationListState extends State<MyLocationList>
                       backgroundColor: AppColors.primaryMain,
                       foregroundColor:
                           themeProvider.getTheme.colorScheme.onPrimary,
-                      label: isUploadInProgress ? 'Continue' : 'Upload SOV',
+                      label: isUploadInProgress ? 'Continue' : 'Import Locations',
                       labelStyle: typography.Body1,
                       onTap: () async {
                         if (isMaintenance) {
@@ -1412,6 +1412,8 @@ class _MyLocationListState extends State<MyLocationList>
     // Define the secondary stream with proper caching
     Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
     print('docids: ${provider.docIds}');
+    print('accountId: ${ widget.accountID}');
+    print('subAccountId: ${widget.subAccountID}');
       processStream = FirebaseFirestore.instance
           .collection('processes')
           .where('location_data.account_id',
@@ -1419,7 +1421,9 @@ class _MyLocationListState extends State<MyLocationList>
           .where('location_data.sub_account_id',
           isEqualTo: widget.subAccountID)
           .where('process_type', isEqualTo: 'hazard')
+          .where('status',isEqualTo:  'processing')
           .orderBy('created_at', descending: true)
+
           .limit(1)
           .snapshots()
           .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
@@ -1496,6 +1500,7 @@ class _MyLocationListState extends State<MyLocationList>
         var data = snapshot.data!;
         var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
         var processStatus = data['processData']?['status'] ?? 'completed';
+        print('process id: ${data['processData']?['process_id']}');
 
         print('Heatmap Status: $heatmapStatus');
 
@@ -1679,6 +1684,7 @@ class _MyLocationListState extends State<MyLocationList>
               child: Row(
                 children: [
                   // Horizontally scrollable row for all chips
+
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -1986,7 +1992,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .myLocationList[index]
                                                 .overallScore ??
                                             0,
-                                        dataCompletenessScore: 2,
+                                        dataCompletenessScore: 0,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -2141,7 +2147,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 riskScore: locationListProvider
                                         .myLocationList[index].overallScore ??
                                     0,
-                                dataCompletenessScore: 2,
+                                dataCompletenessScore: 0,
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -2559,7 +2565,7 @@ class _MyLocationListState extends State<MyLocationList>
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
           locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 2,
+      dataCompletenessScore: 0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -2894,10 +2900,19 @@ class _MyLocationListState extends State<MyLocationList>
                         // Fields displayed only if checkbox is checked
                         TextField(
                           controller: _sovNameController,
-                          enabled: locations > 0,
+                          // enabled: locations > 0,
                           /*
                             readOnly: _uploadedFileName != null,*/
                           style: TextStyle(color: Colors.white),
+                          // decoration: InputDecoration(
+                          //   labelText: "Name of the SoV3",
+                          //   labelStyle: TextStyle(color: Colors.white),
+                          //   enabledBorder: OutlineInputBorder(
+                          //       borderSide: BorderSide(color: Colors.grey)),
+                          //   focusedBorder: OutlineInputBorder(
+                          //       borderSide: BorderSide(color: Colors.blue)),
+                          //   hintStyle: TextStyle(color: Colors.white54),
+                          // ),
                           decoration: InputDecoration(
                             labelText: "Name of the SoV",
                             labelStyle: TextStyle(color: Colors.white),

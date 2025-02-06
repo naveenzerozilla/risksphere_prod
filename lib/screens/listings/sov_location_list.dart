@@ -1380,7 +1380,7 @@ class _SovLocationListState extends State<SovLocationList>
                                               .myLocationList[index]
                                               .overallScore ??
                                           0,
-                                      dataCompletenessScore: 2,
+                                      dataCompletenessScore: 0,
                                       isAutoCertified: true,
                                       tags: (locationListProvider
                                               .myLocationList[index]?.tags ??
@@ -1539,7 +1539,7 @@ class _SovLocationListState extends State<SovLocationList>
                               riskScore: locationListProvider
                                       .myLocationList[index].overallScore ??
                                   0,
-                              dataCompletenessScore: 2,
+                              dataCompletenessScore: 0,
                               isAutoCertified: true,
                               tags: (locationListProvider
                                       .myLocationList[index]?.tags ??
@@ -1936,7 +1936,7 @@ class _SovLocationListState extends State<SovLocationList>
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
           locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 2,
+      dataCompletenessScore: 0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {

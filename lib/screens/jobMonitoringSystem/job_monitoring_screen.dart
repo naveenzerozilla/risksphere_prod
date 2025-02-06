@@ -881,7 +881,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         // Asset Upload Task
         if (assetUploadData != null)
           _buildTaskCard(
-            geeTaskID: 'GEE-TaskID: ' + assetUploadData['task_id'],
+            geeTaskID: 'GEE-TaskID: ' + (assetUploadData['task_id'] ?? ""),
             taskName: "Asset Upload",
             description: "",
             successCount: assetUploadData['processed'] ?? 0,

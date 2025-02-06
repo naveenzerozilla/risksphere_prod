@@ -129,8 +129,6 @@ class JobMonitoringProvider extends ChangeNotifier {
     // }
       return _fireStore
           .collection('processes')
-        .where('location_data.account_id',  isEqualTo: accountId)
-        .where('location_data.sub_account_id',  isEqualTo: subAccountId)
 
           .where('process_type', isEqualTo: 'hazard')
           .orderBy('created_at', descending: true)
