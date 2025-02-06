@@ -49,51 +49,59 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     var typography = CustomTypography(context);
 
     return SafeArea(
-      child: Scaffold(
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showDropdown: true,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        backgroundColor: Theme.of(context).colorScheme.background,
-        drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.3,
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
+      child: PopScope(
+        onPopInvokedWithResult: (canPop, result) {
+          //print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+          Provider.of<DrawerSelectionProvider>(context, listen: false)
+              .setSelectedItem("dashboard");
+        },
+        child: Scaffold(
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showDropdown: true,
+            canNavigateToNewsFeed: false,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
+              setState(() {
+                _isExpanded = isExpanded;
+              });
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          backgroundColor: Theme.of(context).colorScheme.background,
+          drawer: CustomDrawer(),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            Column(
-              children: [
-                _buildTabBar(typography),
-                _buildSearchAndFilter(typography),
-                Expanded(child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildNewsFeedList(context, typography),
-                    _buildEventFeedList(context, typography),
-                    _getComingSoonUI(),
-                    _getComingSoonUI(),
-                  ],
-                )),
-              ],
-            ),
-          ],
+              Column(
+                children: [
+                  _buildTabBar(typography),
+                  _buildSearchAndFilter(typography),
+                  Expanded(child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildNewsFeedList(context, typography),
+                      _buildEventFeedList(context, typography),
+                      _getComingSoonUI(),
+                      _getComingSoonUI(),
+                    ],
+                  )),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

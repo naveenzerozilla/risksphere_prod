@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../screens/listings/hazard_proto.dart';
+import '../../screens/listings/news_feed_screen.dart';
 import '../primitives/custom_typography.dart';
 import '../primitives/utilities/custom_spacing.dart';
 import 'profile_dropdown.dart';
@@ -32,6 +33,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double margin;
   final bool? stopNavigateToProfile;
   final bool? canNavigateToConnections;
+  final bool? canNavigateToNewsFeed;
 
   const CustomAppBar({
     Key? key,
@@ -43,6 +45,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.margin = 16.0,
     this.stopNavigateToProfile = false,
     this.canNavigateToConnections = true,
+    this.canNavigateToNewsFeed = true,
   }) : super(key: key);
 
   @override
@@ -114,10 +117,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 );*/
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()),
-                );
+                if(canNavigateToNewsFeed??true) {
+                  Provider.of<DrawerSelectionProvider>(context, listen: false)
+                      .setSelectedItem("news");
+                  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => NewsFeedScreen()));
+                }
               },
               child: Stack(
                 clipBehavior: Clip.none,
