@@ -20,7 +20,7 @@ class HazardsSection extends StatelessWidget {
     var typography = CustomTypography(context);
 
     return Container(
-      height: 200, // Fixed height for the section
+      height: 200, // Adjusted height for better visibility
       child: Scrollbar(
         thumbVisibility: true,
         child: SingleChildScrollView(
@@ -43,8 +43,7 @@ class HazardsSection extends StatelessWidget {
                   children: [
                     Text(
                       hazardName,
-                      style:
-                      typography.Body2.copyWith(fontWeight: FontWeight.w500),
+                      style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
                     ),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -68,8 +67,7 @@ class HazardsSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12.0),
                     decoration: BoxDecoration(
-                      color:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -95,16 +93,6 @@ class HazardsSection extends StatelessWidget {
   Widget _buildVendorDetails(HazardDetails hazard, CustomTypography typography) {
     final List<Widget> vendorWidgets = [];
 
-    // Add primary vendor details
-    if (hazard.vendorName != null) {
-      vendorWidgets.add(_buildVendorRow(
-        "Reported by",
-        hazard.vendorName!,
-        typography,
-      ));
-    }
-
-    // Add other vendor details
     hazard.others?.forEach((vendorName, details) {
       vendorWidgets.add(
         Padding(
@@ -113,7 +101,10 @@ class HazardsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildVendorRow(
-                  "Risk Impact", details.value?.toString() ?? "N/A", typography),
+                vendorName,
+                _getFormattedValue(vendorName, details.value), // ✅ Add unit dynamically
+                typography,
+              ),
             ],
           ),
         ),
@@ -126,14 +117,39 @@ class HazardsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildVendorRow(String key, String value, CustomTypography typography) {
+  /// ✅ Function to Append Units Conditionally
+  String _getFormattedValue(String vendor, dynamic value) {
+    if (value == null) return "N/A";
+
+    // **Conditionally add units based on vendor type**
+    if (vendor.contains("KinetiCast") && value is num) {
+      return "$value mph"; // ✅ Wind Speed
+    }
+    if (vendor.contains("GlobalEarthquakeModel") && value is num) {
+      return "$value %g"; // ✅ PGA for Earthquake
+    }
+    if (vendor.contains("MODIS") && value is num) {
+      return "$value K"; // ✅ Temperature in Kelvin
+    }
+    if (vendor.contains("JRCOD") && value is num) {
+      return "$value ft"; // ✅ Flood Depth in feet
+    }
+    if (vendor.contains("MarshMcLennan") && value is num) {
+      return "$value"; // No unit needed for risk scores
+    }
+
+    return value.toString();
+  }
+
+  Widget _buildVendorRow(String vendor, String value, CustomTypography typography) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "$key:",
+            "$vendor:",
             style: typography.Caption.copyWith(fontWeight: FontWeight.w500),
           ),
           Text(
