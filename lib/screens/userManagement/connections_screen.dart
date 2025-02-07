@@ -1380,7 +1380,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Row(
                       children: [
                         // Icon with text
-                        TextButton.icon(
+                       /* TextButton.icon(
                           onPressed: () {
                             // Handle view employees
                             Navigator.of(context).push(MaterialPageRoute(
@@ -1401,8 +1401,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                           Brightness.dark
                                       ? AppColors.white
                                       : AppColors.black)),
-                        ),
-                        Spacer(),
+                        ),*/
+                        /*Spacer(),*/
                         /*employeeProvider.isEditViewEmployeeLoading
                             ? Center(
                           child: Container(
@@ -1413,13 +1413,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           ),
                         )
                             : */
-                        IconButton(
-                          onPressed: () {
-                            // Handle send message
-                          },
+                        // Chats Hidden
+                        /*IconButton(
+                          onPressed: null,
                           icon: Icon(Icons.mail),
                           color: AppColors.primaryMain,
-                        ),
+                        ),*/
                         /*employeeProvider.isDeleteLoading &&
                             selectedCompanyListIndex == index
                             ? Center(
@@ -1430,11 +1429,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               child: CircularProgressIndicator()),
                         )
                             : */
-                        IconButton(
+                        /*IconButton(
                           icon: Icon(Icons.exit_to_app_outlined),
                           color: AppColors.primaryMain,
                           onPressed: () {},
-                        ),
+                        ),*/
                       ],
                     ),
                   ),
@@ -1645,7 +1644,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Row(
                       children: [
                         // Icon with text
-                        (connectionsProvider.nonCorporateConnections[index]
+                       /* (connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
@@ -1675,12 +1674,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 Brightness.dark
                                             ? AppColors.white
                                             : AppColors.black)),
-                              ),
-                        (connectionsProvider.nonCorporateConnections[index]
+                              ),*/
+                        /*(connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
-                            : Spacer(),
+                            : Spacer(),*/
                         /*employeeProvider.isEditViewEmployeeLoading
                             ? Center(
                           child: Container(
@@ -1691,7 +1690,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           ),
                         )
                             : */
-                        (connectionsProvider.nonCorporateConnections[index]
+                       /* (connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
@@ -1701,7 +1700,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 },
                                 icon: Icon(Icons.mail),
                                 color: AppColors.primaryMain,
-                              ),
+                              ),*/
                         /*employeeProvider.isDeleteLoading &&
                             selectedCompanyListIndex == index
                             ? Center(
@@ -1712,7 +1711,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               child: CircularProgressIndicator()),
                         )
                             : */
-                        (connectionsProvider.nonCorporateConnections[index]
+                        /*(connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
@@ -1720,7 +1719,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 icon: Icon(Icons.exit_to_app_outlined),
                                 color: AppColors.primaryMain,
                                 onPressed: () {},
-                              ),
+                              ),*/
                         (connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)

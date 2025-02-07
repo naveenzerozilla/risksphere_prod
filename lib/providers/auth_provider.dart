@@ -136,7 +136,7 @@ class AuthNotifier extends ChangeNotifier {
   /// Login
 
   Future<void> signInWithEmailAndPassword(
-      String email, String password, BuildContext context) async {
+      String email, String password, BuildContext context1) async {
     try {
       _isSigningIn = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -164,7 +164,7 @@ class AuthNotifier extends ChangeNotifier {
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
         await showDialog(
-          context: context,
+          context: context1,
           barrierDismissible: false,
           builder: (BuildContext context) {
             var typography = CustomTypography(context);
@@ -250,7 +250,7 @@ class AuthNotifier extends ChangeNotifier {
             child: !isRemindLoading
                                   ? Center(child: CircularProgressIndicator())
                                   : Text(
-                                      LanguageService.getTranslated(context,
+                                      LanguageService.getTranslated(context1,
                                           "login_admin_not_verified_remind_button"),
                                       style: typography.Body1,
                                     )),
@@ -300,12 +300,12 @@ class AuthNotifier extends ChangeNotifier {
 
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
-        var typography = CustomTypography(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        var typography = CustomTypography(context1);
+        ScaffoldMessenger.of(context1).showSnackBar(
           SnackBar(
             content: Text(
               LanguageService.getTranslated(
-                  context, "login_email_not_verified_error"),
+                  context1, "login_email_not_verified_error"),
               style: typography.Body1,
             ),
           ),
@@ -329,12 +329,12 @@ class AuthNotifier extends ChangeNotifier {
       });
     } catch (e) {
       _isSigningIn = false;
-      var typography = CustomTypography(context);
-      ScaffoldMessenger.of(context).showSnackBar(
+      var typography = CustomTypography(context1);
+      ScaffoldMessenger.of(context1).showSnackBar(
         SnackBar(
           content: Text(
             LanguageService.getTranslated(
-                context, "login_invaild_email_password_error"),
+                context1, "login_invaild_email_password_error"),
             style: typography.Body1,
           ),
         ),
