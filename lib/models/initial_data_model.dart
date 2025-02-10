@@ -266,12 +266,12 @@ class Categories {
     required this.id,
   });
 
-  late final bool isForIndividual;
-  late final bool isApplicableForTrial;
-  late final String role;
-  late final String name;
-  late final bool isMultipleRoleEnabled;
-  late final String id;
+  late final bool? isForIndividual;
+  late final bool? isApplicableForTrial;
+  late final String? role;
+  late final String? name;
+  late final bool? isMultipleRoleEnabled;
+  late final String? id;
 
   Categories.fromJson(Map<String, dynamic> json) {
     isForIndividual = json['is_for_individual'];

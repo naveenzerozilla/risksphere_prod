@@ -602,7 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         (value) => Padding(
                                       padding: const EdgeInsets.only(right: 8.0),
                                       child: Chip(
-                                        label: Text(value.name),
+                                        label: Text(value.name!),
                                         deleteIcon: Icon(Icons.cancel),
                                         onDeleted: () => _removeChip(value),
                                       ),
@@ -1253,7 +1253,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             (value) => Padding(
                                           padding: const EdgeInsets.only(right: 8.0),
                                           child: Chip(
-                                            label: Text(value.name),
+                                            label: Text(value.name!),
                                             deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
                                             onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
                                           ),

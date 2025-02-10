@@ -927,7 +927,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           (value) => Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: Chip(
-                              label: Text(value.name),
+                              label: Text(value.name!),
                               deleteIcon: Icon(Icons.cancel),
                               onDeleted: () => _removeChip(value),
                             ),
@@ -1094,7 +1094,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           (value) => Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: Chip(
-                              label: Text(value.name),
+                              label: Text(value.name!),
                               deleteIcon: Icon(Icons.cancel),
                               onDeleted: () => _removeChip(value),
                             ),
