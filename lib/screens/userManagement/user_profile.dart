@@ -106,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _setClaims();
     _getData();
   }
-  
+
   _setClaims() async {
     _selectedScreen = Screens.generalInfo;
     /*isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
@@ -1592,7 +1592,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     style: typography.Body1,
                   ),
                 ),
-                !showAssignDeleteManager?SizedBox():Builder(
+                !showAssignDeleteManager?SizedBox():
+
+                Builder(
                   builder: (context) {
                     return Row(
                       mainAxisSize: MainAxisSize.min,

@@ -709,7 +709,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           },
 
                                                           decoration: InputDecoration(
-                                                            labelText: "Name of the SoV",
+                                                            labelText: "Name of the SoV1",
                                                             border: const OutlineInputBorder(),
                                                             suffixIcon: Icon(Icons.search),
                                                           ),

@@ -235,7 +235,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     // Fetch data from API
     Provider.of<ConnectionsProvider>(context, listen: false).nextPageToken =
         null;
-    Provider.of<ConnectionsProvider>(context, listen: false).nextPageExists = true;
+    Provider.of<ConnectionsProvider>(context, listen: false).nextPageExists =
+        true;
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllConnections(context, widget.userId);
     Provider.of<ConnectionsProvider>(context, listen: false)
@@ -358,8 +359,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                 return TabBar(
                                   isScrollable: true,
                                   controller: _tabController,
-                                  labelStyle: typography
-                                      .BottomNavigationActiveLabel,
+                                  labelStyle:
+                                      typography.BottomNavigationActiveLabel,
                                   tabs: [
                                     Tab(
                                       child: InkWell(
@@ -375,9 +376,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             Tab(
                                               child: DropdownButton(
                                                 underline: SizedBox(),
-                                                value: LanguageService.getTranslated(
-                                                    context,
-                                                    "connections_user_connection_connections_tab"),
+                                                value: LanguageService
+                                                    .getTranslated(context,
+                                                        "connections_user_connection_connections_tab"),
                                                 items: [
                                                   DropdownMenuItem(
                                                     child: Row(
@@ -423,15 +424,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 ],
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    if (value == 'Corporate') {
+                                                    if (value ==
+                                                        'Non Corporate') {
                                                       _selectedScreen = Screens
                                                           .corporateConnectionList;
                                                     } else if (value ==
-                                                        'Non Corporate') {
+                                                        'Corporate') {
                                                       _selectedScreen = Screens
                                                           .nonCorporateConnectionList;
                                                     }
-                                                    _tabController?.animateTo(0);
+                                                    _tabController
+                                                        ?.animateTo(0);
                                                   });
                                                 },
                                               ),
@@ -725,8 +728,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               children: [
                                 // name, phone, email, company, role dropdown, status,
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 4.0),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4.0),
                                   child: Form(
                                       child: Column(children: [
                                     // Name
@@ -738,7 +741,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             'user_profile_user_management_name_filed_label'),
                                         labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                       ),
                                     ),
@@ -754,7 +758,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             "user_profile_user_management_email_field_label"),
                                         labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                       ),
                                     ),
@@ -772,8 +777,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                         // Only allows digits
                                       ],
                                       decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context, "register_mobile_number"),
+                                        labelText:
+                                            LanguageService.getTranslated(
+                                                context,
+                                                "register_mobile_number"),
                                         hintText: LanguageService.getTranslated(
                                             context,
                                             "register_enter_mobile_number"),
@@ -798,7 +805,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             "usermangement_corp_trow_comp_name"),
                                         labelStyle: typography.Body1,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                       ),
                                     ),
@@ -826,7 +834,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 child: Text(value.name ?? ''),
                                               );
                                             }).toList(),
-                                            onChanged: (roleModel.Roles? value) {
+                                            onChanged:
+                                                (roleModel.Roles? value) {
                                               // Handle role change
                                               setState(() {
                                                 selectedRoleForFilter = value;
@@ -842,7 +851,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                             context,
                                             "categorymanagement_trow_status"),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                       ),
                                       items: ['Active', 'Inactive']
@@ -904,7 +914,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                               selectedRoleForFilter = null;
                                             }
                                             if (selectedStatus.isNotEmpty) {
-                                              addFilter(selectedStatus, 'status');
+                                              addFilter(
+                                                  selectedStatus, 'status');
                                               selectedStatus = '';
                                             }
                                             // call api and close the drawer
@@ -942,7 +953,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 horizontal: 22, vertical: 8),
                                           ),
                                           child: Text(
-                                            LanguageService.getTranslated(context,
+                                            LanguageService.getTranslated(
+                                                context,
                                                 "user_profile_user_management_btn_cancel"),
                                             style: typography.ButtonLarge,
                                           ),
@@ -991,8 +1003,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           height: CustomSpacing.two,
         ),
         _selectedScreen == Screens.corporateConnectionList
-            ? _getCorporateConnectionsUI()
-            : _getNonCorporateConnectionsUI(),
+            ? _getNonCorporateConnectionsUI()
+            : _getCorporateConnectionsUI()
+        // : _getNonCorporateConnectionsUI(),
       ],
     );
   }
@@ -1032,7 +1045,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       itemCount:
                           connectionsProvider.corporateConnections.length,
                       itemBuilder: (context, index) {
-                        if(index == connectionsProvider.corporateConnections.length - 1) {
+                        if (index ==
+                            connectionsProvider.corporateConnections.length -
+                                1) {
                           return Column(
                             children: [
                               _corporateConnectionsCardUI(
@@ -1144,8 +1159,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Amit Didwania',
-                                style: typography.Body1),
+                            Text('Amit Didwania', style: typography.Body1),
                             SizedBox(height: CustomSpacing.two),
                             Text('Risk Manager', style: typography.Body2),
                             Text('Green', style: typography.Body2),
@@ -1309,7 +1323,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       SizedBox(
                         width: CustomSpacing.two,
                       ),
-
                     ],
                   ),
                   Row(
@@ -1326,8 +1339,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               height: CustomSpacing.two,
                             ),
                             Text(
-                              connectionsProvider
-                                      .corporateConnections[index].companyName ??
+                              connectionsProvider.corporateConnections[index]
+                                      .companyName ??
                                   "",
                               style: typography.Body2.copyWith(
                                   color: Theme.of(context).brightness ==
@@ -1347,22 +1360,22 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         ),
                       ),
                       // show like 4 (Star icon)
-                      Row(
-                        children: [
-                          Text(
-                            connectionsProvider
-                                .corporateConnections[index].rating
-                                ?.toString() ??
-                                "",
-                            style: typography.Caption,
-                          ),
-                          Icon(
-                            Icons.star,
-                            color: Colors.yellow,
-                            size: 28,
-                          ),
-                        ],
-                      ),
+                      // Row(
+                      //   children: [
+                      //     Text(
+                      //       connectionsProvider
+                      //           .corporateConnections[index].rating
+                      //           ?.toString() ??
+                      //           "",
+                      //       style: typography.Caption,
+                      //     ),
+                      //     Icon(
+                      //       Icons.star,
+                      //       color: Colors.yellow,
+                      //       size: 28,
+                      //     ),
+                      //   ],
+                      // ),
                       SizedBox(
                         width: CustomSpacing.two,
                       ),
@@ -1380,7 +1393,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Row(
                       children: [
                         // Icon with text
-                       /* TextButton.icon(
+                        /* TextButton.icon(
                           onPressed: () {
                             // Handle view employees
                             Navigator.of(context).push(MaterialPageRoute(
@@ -1644,7 +1657,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     child: Row(
                       children: [
                         // Icon with text
-                       /* (connectionsProvider.nonCorporateConnections[index]
+                        /* (connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
@@ -1690,7 +1703,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           ),
                         )
                             : */
-                       /* (connectionsProvider.nonCorporateConnections[index]
+                        /* (connectionsProvider.nonCorporateConnections[index]
                                     .requestPending ??
                                 false)
                             ? SizedBox()
@@ -1881,7 +1894,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                         .toUpperCase() ??
                                                     "") +
                                                 (connectionsProvider
-                                                        .requestUsers[index].name
+                                                        .requestUsers[index]
+                                                        .name
                                                         ?.substring(1) ??
                                                     ""),
                                             style: typography.Body2.copyWith(
@@ -1911,8 +1925,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           SizedBox(height: CustomSpacing.two),
                           connectionsProvider.requestUsers[index].role != null
                               ? Text(
-                                  connectionsProvider.requestUsers[index].role??"",
-                                     /* .map((e) =>
+                                  connectionsProvider
+                                          .requestUsers[index].role ??
+                                      "",
+                                  /* .map((e) =>
                                           e[0].toUpperCase() + e.substring(1))
                                       .join(', '),*/
                                   style: typography.Caption)
@@ -1958,12 +1974,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       Expanded(
                           child: Center(
                               child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator()),
-                              )))
+                        padding: const EdgeInsets.all(8.0),
+                        child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator()),
+                      )))
                     ],
                   )
                 : Container(
@@ -1983,8 +1999,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                     connectionsProvider
                                             .requestUsers[index].id ??
                                         "",
-                                    "reject_request").then((value) {
-                                      _getData();
+                                    "reject_request")
+                                .then((value) {
+                              _getData();
                             });
                           },
                           style: ElevatedButton.styleFrom(
@@ -2379,8 +2396,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text('Personalized Message (Optional)',
-                  style: typography.Body2),
+              Text('Personalized Message (Optional)', style: typography.Body2),
             ],
           ),
           TextFormField(
@@ -2400,6 +2416,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
+                    _messageController.clear();
                     // Handle submit button
                     Navigator.of(dialogContext).pop();
                   },

@@ -89,7 +89,8 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                 children: [
                   _buildTabBar(typography),
                   _buildSearchAndFilter(typography),
-                  Expanded(child: TabBarView(
+                  Expanded(
+                      child: TabBarView(
                     controller: _tabController,
                     children: [
                       _buildNewsFeedList(context, typography),
@@ -132,8 +133,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                 labelColor: Colors.lightBlueAccent,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.lightBlueAccent,
-                tabAlignment:
-              TabAlignment.start,
+                tabAlignment: TabAlignment.start,
                 tabs: [
                   Consumer<NewsFeedProvider>(
                     builder: (context, newsFeedProvider, child) {
@@ -149,12 +149,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                                 child: Chip(
                                   labelPadding: EdgeInsets.all(0),
                                   materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                                      MaterialTapTargetSize.shrinkWrap,
                                   label: Text(
                                     newsFeedProvider.activityHits.toString(),
-                                    style: typography
-                                        .BottomNavigationActiveLabel
-                                        .copyWith(height: -0.6),
+                                    style:
+                                        typography.BottomNavigationActiveLabel
+                                            .copyWith(height: -0.6),
                                   ),
                                 ),
                               ),
@@ -177,12 +177,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                                 child: Chip(
                                   labelPadding: EdgeInsets.all(0),
                                   materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                                      MaterialTapTargetSize.shrinkWrap,
                                   label: Text(
                                     newsFeedProvider.eventHits.toString(),
-                                    style: typography
-                                        .BottomNavigationActiveLabel
-                                        .copyWith(height: -0.6),
+                                    style:
+                                        typography.BottomNavigationActiveLabel
+                                            .copyWith(height: -0.6),
                                   ),
                                 ),
                               ),
@@ -238,7 +238,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                     hintText: 'Search keyword',
                     filled: true,
                     fillColor:
-                    Theme.of(context).colorScheme.surfaceContainerHigh,
+                        Theme.of(context).colorScheme.surfaceContainerHigh,
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -304,7 +304,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                     child: Consumer<NewsFeedProvider>(
                       builder: (context, provider, child) {
                         String dateText = provider.startDate != null &&
-                            provider.endDate != null
+                                provider.endDate != null
                             ? "${DateFormat('MM/dd/yyyy').format(provider.startDate!)} - ${DateFormat('MM/dd/yyyy').format(provider.endDate!)}"
                             : "Select Date";
                         return Text(
@@ -329,13 +329,15 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       initialDateRange: Provider.of<NewsFeedProvider>(context, listen: false)
-          .startDate !=
-          null &&
-          Provider.of<NewsFeedProvider>(context, listen: false).endDate != null
+                      .startDate !=
+                  null &&
+              Provider.of<NewsFeedProvider>(context, listen: false).endDate !=
+                  null
           ? DateTimeRange(
-          start: Provider.of<NewsFeedProvider>(context, listen: false)
-              .startDate!,
-          end: Provider.of<NewsFeedProvider>(context, listen: false).endDate!)
+              start: Provider.of<NewsFeedProvider>(context, listen: false)
+                  .startDate!,
+              end: Provider.of<NewsFeedProvider>(context, listen: false)
+                  .endDate!)
           : null,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
@@ -347,52 +349,53 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     }
   }
 
-
   Widget _buildNewsFeedList(BuildContext context, CustomTypography typography) {
     return Consumer<NewsFeedProvider>(
       builder: (context, provider, child) {
         return RefreshIndicator(
           onRefresh: () async {
-            await provider.fetchNewsFeed();  // Force refresh regardless of content
+            await provider
+                .fetchNewsFeed(); // Force refresh regardless of content
           },
-          child:
-          provider.isActivityLoading?
-          Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryMain),
-            ),
-          ):
-          provider.newsFeed.isEmpty && !provider.isActivityLoading
-              ? ListView(
-            physics: const AlwaysScrollableScrollPhysics(), // Ensures pull-to-refresh even when list is empty
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 200),
-                  child: Text(
-                    'No News Feed Available',
-                    style: typography.Body1,
+          child: provider.isActivityLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primaryMain),
                   ),
-                ),
-              ),
-            ],
-          )
-              : ListView.builder(
-            itemCount: provider.newsFeed.length,
-            itemBuilder: (context, index) {
-              var item = provider.newsFeed[index];
-              return _buildNewsCard(item, typography);
-            },
-          ),
+                )
+              : provider.newsFeed.isEmpty && !provider.isActivityLoading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      // Ensures pull-to-refresh even when list is empty
+                      children: [
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 200),
+                            child: Text(
+                              'No News Feed Available',
+                              style: typography.Body1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      itemCount: provider.newsFeed.length,
+                      itemBuilder: (context, index) {
+                        var item = provider.newsFeed[index];
+                        return
+                          _buildNewsCard(item, typography);
+                      },
+                    ),
         );
       },
     );
   }
 
-
-
-  Widget _buildNewsCard(Map<String, dynamic> item, CustomTypography typography) {
-    final notification = item['message']?['notification']??{};
+  Widget _buildNewsCard(
+      Map<String, dynamic> item, CustomTypography typography) {
+    final notification = item['notification_body'] ?? {};
     final title = notification['title'];
     final body = notification['body'];
     // Handle updated_at as either a map or a string
@@ -404,10 +407,13 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
         timestamp = updatedAt['_seconds'] * 1000;
       } else if (updatedAt is String) {
         try {
-          timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'").parseUTC(updatedAt).millisecondsSinceEpoch;
+          timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'")
+              .parseUTC(updatedAt)
+              .millisecondsSinceEpoch;
         } catch (e) {
           print('Error parsing date: $e');
-          timestamp = DateTime.now().millisecondsSinceEpoch; // Fallback to current time
+          timestamp =
+              DateTime.now().millisecondsSinceEpoch; // Fallback to current time
         }
       } else {
         timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -430,7 +436,8 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: SvgPicture.asset(
                   'assets/images/earthquake.svg',
                   width: 40,
@@ -442,11 +449,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Text(
-                  DateFormat('MM/dd/yyyy HH:mm')
-                      .format(DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
-                  style: typography.Caption!.copyWith(color: Colors.white54),
+                  DateFormat('MM/dd/yyyy HH:mm').format(
+                      DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
+                  style: typography.Caption.copyWith(color: Colors.white54),
                 ),
               ),
             ],
@@ -454,24 +462,26 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
           ListTile(
             titleAlignment: ListTileTitleAlignment.top,
             title: Text(
-              title??"",
+              title ?? "",
               style: typography.Body1,
             ),
             subtitle: Column(
               children: [
                 SizedBox(height: 4),
-                _buildExpandableDescription(body??"", typography),
+                _buildExpandableDescription(body ?? "", typography),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SizedBox(
               width: double.infinity,
               child: CustomButton(
                 onPressed: () {
                   print("View Event for $title");
-                  String processId = item['process_id'] ?? '';  // Ensure process_id is available
+                  String processId = item['process_id'] ??
+                      ''; // Ensure process_id is available
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -482,7 +492,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   );
                 },
                 child: Text(
-                  'View Event',
+                  'View Summary',
                   style: typography.ButtonLarge.copyWith(
                     color: Colors.black,
                   ),
@@ -498,7 +508,8 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
   }
 
   /// Builds the expandable description with a clickable "More" link
-  Widget _buildExpandableDescription(String description, CustomTypography typography) {
+  Widget _buildExpandableDescription(
+      String description, CustomTypography typography) {
     return StatefulBuilder(
       builder: (context, setState) {
         bool isExpanded = false;
@@ -520,7 +531,9 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                     children: [
                       TextSpan(
                         text: description.length > 50
-                            ? (isExpanded ? description : '${description.substring(0, 50)}...')
+                            ? (isExpanded
+                                ? description
+                                : '${description.substring(0, 50)}...')
                             : description,
                         style: typography.Body2,
                       ),
@@ -552,48 +565,49 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     );
   }
 
-
-  Widget _buildEventFeedList(BuildContext context, CustomTypography typography) {
+  Widget _buildEventFeedList(
+      BuildContext context, CustomTypography typography) {
     return Consumer<NewsFeedProvider>(
       builder: (context, provider, child) {
         return RefreshIndicator(
           onRefresh: () async {
-            await provider.fetchEvent();  // Force refresh regardless of content
+            await provider.fetchEvent(); // Force refresh regardless of content
           },
           child: provider.isEventLoading
               ? Center(
-            child: CircularProgressIndicator(),
-          )
-              :
-          provider.eventFeed.isEmpty && !provider.isEventLoading
-              ? ListView(
-            physics: const AlwaysScrollableScrollPhysics(), // Ensures pull-to-refresh even when list is empty
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 200),
-                  child: Text(
-                    'No Events Available',
-                    style: typography.Body1,
-                  ),
-                ),
-              ),
-            ],
-          )
-              : ListView.builder(
-            itemCount: provider.eventFeed.length,
-            itemBuilder: (context, index) {
-              var item = provider.eventFeed[index];
-              return _buildEventCard(item, typography);
-            },
-          ),
+                  child: CircularProgressIndicator(),
+                )
+              : provider.eventFeed.isEmpty && !provider.isEventLoading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      // Ensures pull-to-refresh even when list is empty
+                      children: [
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 200),
+                            child: Text(
+                              'No Events Available',
+                              style: typography.Body1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      itemCount: provider.eventFeed.length,
+                      itemBuilder: (context, index) {
+                        var item = provider.eventFeed[index];
+                        return _buildEventCard(item, typography);
+                      },
+                    ),
         );
       },
     );
   }
 
-  Widget _buildEventCard(Map<String, dynamic> item, CustomTypography typography) {
-    final notification = item['notification_body']??{};
+  Widget _buildEventCard(
+      Map<String, dynamic> item, CustomTypography typography) {
+    final notification = item['notification_body'] ?? {};
     final title = notification['title'];
     final body = notification['body'];
     // Handle updated_at as either a map or a string
@@ -605,10 +619,13 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
         timestamp = updatedAt['_seconds'] * 1000;
       } else if (updatedAt is String) {
         try {
-          timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'").parseUTC(updatedAt).millisecondsSinceEpoch;
+          timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'")
+              .parseUTC(updatedAt)
+              .millisecondsSinceEpoch;
         } catch (e) {
           print('Error parsing date: $e');
-          timestamp = DateTime.now().millisecondsSinceEpoch; // Fallback to current time
+          timestamp =
+              DateTime.now().millisecondsSinceEpoch; // Fallback to current time
         }
       } else {
         timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -631,7 +648,8 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: SvgPicture.asset(
                   'assets/images/earthquake.svg',
                   width: 40,
@@ -643,10 +661,11 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Text(
-                  DateFormat('MM/dd/yyyy HH:mm')
-                      .format(DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
+                  DateFormat('MM/dd/yyyy HH:mm').format(
+                      DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
                   style: typography.Caption!.copyWith(color: Colors.white54),
                 ),
               ),
@@ -655,29 +674,31 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
           ListTile(
             titleAlignment: ListTileTitleAlignment.top,
             title: Text(
-              title??"",
+              title ?? "",
               style: typography.Body1,
             ),
             subtitle: Column(
               children: [
                 SizedBox(height: 4),
-                _buildExpandableDescription(body??"", typography),
+                _buildExpandableDescription(body ?? "", typography),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SizedBox(
               width: double.infinity,
               child: CustomButton(
                 onPressed: () {
                   print("View Event for $title");
-                  String eventId = item['event_id'] ?? '';  // Ensure process_id is available
+                  String eventId =
+                      item['event_id'] ?? ''; // Ensure process_id is available
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => NotificationMapScreen(
-                          notificationData: {
+                      builder: (context) =>
+                          NotificationMapScreen(notificationData: {
                         'title': title,
                         'body': body,
                         'timestamp': timestamp,
@@ -687,7 +708,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   );
                 },
                 child: Text(
-                  'View Event',
+                  'View Summary',
                   style: typography.ButtonLarge.copyWith(
                     color: Colors.black,
                   ),
@@ -701,8 +722,6 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
       ),
     );
   }
-
-
 
   void _scrollLeft() {
     _scrollController.animateTo(

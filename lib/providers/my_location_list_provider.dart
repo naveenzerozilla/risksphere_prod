@@ -1414,7 +1414,7 @@ class MyLocationListProvider extends ChangeNotifier {
                                 });
                               },
                               decoration: InputDecoration(
-                                labelText: "Name of the SoV",
+                                labelText: "Name of the SoV2",
                                 border: const OutlineInputBorder(),
                                 suffixIcon: Icon(Icons.search),
                               ),

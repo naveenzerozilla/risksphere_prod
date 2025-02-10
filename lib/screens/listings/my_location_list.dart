@@ -384,7 +384,8 @@ class _MyLocationListState extends State<MyLocationList>
                     animatedIcon: AnimatedIcons.menu_close,
                     animatedIconTheme: IconThemeData(size: 22.0),
                     backgroundColor: AppColors.primaryMain,
-                    foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                    foregroundColor:
+                        themeProvider.getTheme.colorScheme.onPrimary,
                     children: [
                       if ((selectedMasterTab) == 0)
                         SpeedDialChild(
@@ -431,7 +432,7 @@ class _MyLocationListState extends State<MyLocationList>
                         backgroundColor: AppColors.primaryMain,
                         foregroundColor:
                             themeProvider.getTheme.colorScheme.onPrimary,
-                        label: isUploadInProgress ? 'Continue' : 'Upload SOV',
+                        label: isUploadInProgress ? 'Continue' : 'Import Locations',
                         labelStyle: typography.Body1,
                         onTap: () async {
                           if (isMaintenance) {
@@ -445,11 +446,12 @@ class _MyLocationListState extends State<MyLocationList>
                             String tempProcessId = await SharedPreferenceService
                                     .getSovUploadTempId() ??
                                 "";
-                            String state =
-                                await SharedPreferenceService.getSovUploadState() ??
-                                    "";
+                            String state = await SharedPreferenceService
+                                    .getSovUploadState() ??
+                                "";
                             // Call API to get get necessary data and navigate to the respective screen
-                            Provider.of<UploadSovProvider>(context, listen: false)
+                            Provider.of<UploadSovProvider>(context,
+                                    listen: false)
                                 .fetchSovUploadData(
                                     context,
                                     widget.accountID,
@@ -484,19 +486,21 @@ class _MyLocationListState extends State<MyLocationList>
                                         subAccountId: widget.subAccountID,
                                         sovId: "",
                                         locationId: selectedMainTab == 0
-                                            ? Provider.of<MyLocationListProvider>(
+                                            ? Provider.of<
+                                                        MyLocationListProvider>(
                                                     context,
                                                     listen: false)
                                                 .myLocationList
-                                                .map(
-                                                    (location) => location.id ?? "")
+                                                .map((location) =>
+                                                    location.id ?? "")
                                                 .toList()
-                                            : Provider.of<MyLocationListProvider>(
+                                            : Provider.of<
+                                                        MyLocationListProvider>(
                                                     context,
                                                     listen: false)
                                                 .certifiedLocationList
-                                                .map(
-                                                    (location) => location.id ?? "")
+                                                .map((location) =>
+                                                    location.id ?? "")
                                                 .toList(),
                                       );
                                     },
@@ -521,8 +525,8 @@ class _MyLocationListState extends State<MyLocationList>
                             children: [
                               SizedBox(height: CustomSpacing.two),
                               Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
                                 child: Row(
                                   children: [
                                     Padding(
@@ -541,10 +545,12 @@ class _MyLocationListState extends State<MyLocationList>
                                     ),
                                     Expanded(
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
                                         children: [
-                                          Consumer<JobMonitoringProvider>(builder:
-                                              (context, jobMonitoringProvider,
+                                          Consumer<JobMonitoringProvider>(
+                                              builder: (context,
+                                                  jobMonitoringProvider,
                                                   child) {
                                             return Container(
                                               child: _getLiveUI(
@@ -553,9 +559,7 @@ class _MyLocationListState extends State<MyLocationList>
                                           }),
                                         ],
                                       ),
-                                    )
-
-                                    ,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -567,8 +571,8 @@ class _MyLocationListState extends State<MyLocationList>
                                   color: Theme.of(context)
                                       .colorScheme
                                       .surfaceContainerHigh,
-                                  borderRadius:
-                                      BorderRadius.circular(16), // Rounded edges
+                                  borderRadius: BorderRadius.circular(
+                                      16), // Rounded edges
                                 ),
                                 margin: EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 0),
@@ -579,7 +583,8 @@ class _MyLocationListState extends State<MyLocationList>
                                       // Container for the TabBar with arrows
                                       Container(
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                           color: Theme.of(context)
                                               .colorScheme
                                               .surfaceContainerHigh,
@@ -597,7 +602,8 @@ class _MyLocationListState extends State<MyLocationList>
                                             Expanded(
                                               child: SingleChildScrollView(
                                                 controller: _scrollController,
-                                                scrollDirection: Axis.horizontal,
+                                                scrollDirection:
+                                                    Axis.horizontal,
                                                 child: TabBar(
                                                   controller:
                                                       _masterTabController,
@@ -620,13 +626,17 @@ class _MyLocationListState extends State<MyLocationList>
                                                       text: 'SOVs',
                                                     ),
                                                     Tab(text: 'Shared'),
-                                                    Tab(text: 'Access Requests'),
-                                                    Tab(text: 'Data'),
+                                                    Tab(
+                                                        text:
+                                                            'Access Requests'),
+                                                    // Tab(text: 'Data'),
                                                     if (userProfileProvider
                                                             .trialInfo['status']
                                                             ?.isEmpty ??
                                                         true)
-                                                      Tab(text: 'Configuration'),
+                                                      Tab(
+                                                          text:
+                                                              'Configuration'),
                                                   ],
                                                 ),
                                               ),
@@ -651,7 +661,8 @@ class _MyLocationListState extends State<MyLocationList>
                                   controller: _masterTabController,
                                   children: [
                                     Consumer<MyLocationListProvider>(builder:
-                                        (context, myLocationListProvider, child) {
+                                        (context, myLocationListProvider,
+                                            child) {
                                       return _getLocationListBodyUI(
                                           myLocationListProvider, "");
                                     }),
@@ -662,10 +673,10 @@ class _MyLocationListState extends State<MyLocationList>
                                     ),
                                     _getComingSoonUI(),
                                     _getComingSoonUI(),
-                                    DataTab(
-                                      accountId: widget.accountID,
-                                      subaccountId: widget.subAccountID,
-                                    ),
+                                    // DataTab(
+                                    //   accountId: widget.accountID,
+                                    //   subaccountId: widget.subAccountID,
+                                    // ),
                                     if (userProfileProvider
                                             .trialInfo['status']?.isEmpty ??
                                         true)
@@ -811,7 +822,8 @@ class _MyLocationListState extends State<MyLocationList>
                                         print(_selectedScreen);
                                         if (_selectedScreen ==
                                             Screens.locationList) {
-                                          print('Selected ids: ${locationListProvider.selectedLocations.map((sov) => sov.id).toList()}');
+                                          print(
+                                              'Selected ids: ${locationListProvider.selectedLocations.map((sov) => sov.id).toList()}');
                                           // On export button click
                                           List<String> selectedSovIds = Provider
                                                   .of<MyLocationListProvider>(
@@ -820,7 +832,8 @@ class _MyLocationListState extends State<MyLocationList>
                                               .selectedLocations
                                               .map((sov) => sov.id!)
                                               .toList();
-                                          print('Selected ids: $selectedSovIds');
+                                          print(
+                                              'Selected ids: $selectedSovIds');
 
                                           if (selectedSovIds.isNotEmpty) {
                                             Navigator.pop(context);
@@ -1421,22 +1434,15 @@ class _MyLocationListState extends State<MyLocationList>
     // Define the secondary stream with proper caching
     Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
     print('docids: ${provider.docIds}');
-      processStream = FirebaseFirestore.instance
-          .collection('processes')
-          .where('location_data.account_id',
-          isEqualTo: widget.accountID)
-          .where('location_data.sub_account_id',
-          isEqualTo: widget.subAccountID)
-          .where('process_type', isEqualTo: 'hazard')
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .snapshots()
-          .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
-
-
-
-
-
+    processStream = FirebaseFirestore.instance
+        .collection('processes')
+        .where('location_data.account_id', isEqualTo: widget.accountID)
+        .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
+        .where('process_type', isEqualTo: 'hazard')
+        .orderBy('created_at', descending: true)
+        .limit(1)
+        .snapshots()
+        .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
 
     // if (provider.isSuperAdmin) {
     //   processStream = FirebaseFirestore.instance
@@ -1532,8 +1538,8 @@ class _MyLocationListState extends State<MyLocationList>
                     Navigator.of(context)
                         .push(MaterialPageRoute(
                           builder: (_) => ProcessMonitoringScreen(
-                            accountId:widget.accountID,
-                            subAccountId:widget.subAccountID,
+                            accountId: widget.accountID,
+                            subAccountId: widget.subAccountID,
                           ),
                         ))
                         .then((value) => _getData());
@@ -1875,10 +1881,10 @@ class _MyLocationListState extends State<MyLocationList>
                   : locationListProvider.myLocationList.isEmpty
                       ? Center(
                           child: Container(
-                            padding: EdgeInsets.only(right:20,left:20),
+                            padding: EdgeInsets.only(right: 20, left: 20),
                             child: Text(
                               "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
-                            textAlign: TextAlign.justify,
+                              textAlign: TextAlign.justify,
                               style: typography.Body1,
                             ),
                           ),
@@ -2422,7 +2428,7 @@ class _MyLocationListState extends State<MyLocationList>
                   : locationListProvider.certifiedLocationList.isEmpty
                       ? Center(
                           child: Container(
-                            padding: EdgeInsets.only(right: 20,left: 20),
+                            padding: EdgeInsets.only(right: 20, left: 20),
                             child: Text(
                                 "It looks like you haven't added any locations yet. Let's get started! You can add locations by importing an XLS file or by clicking on \"Create New.\"",
                                 textAlign: TextAlign.justify,
@@ -2731,7 +2737,6 @@ class _MyLocationListState extends State<MyLocationList>
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       SizedBox(height: 40),
-
                       _uploadedFileName == null
                           ? GestureDetector(
                               onTap: locations < 0
@@ -2902,13 +2907,14 @@ class _MyLocationListState extends State<MyLocationList>
                       if (addToSOVCheck) ...[
                         // Fields displayed only if checkbox is checked
                         TextField(
+                          readOnly: true,
                           controller: _sovNameController,
-                          enabled: locations > 0,
+                          // enabled: locations > 0,
                           /*
                             readOnly: _uploadedFileName != null,*/
                           style: TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: "Name of the SoV",
+                            labelText: "Name of the SoV3",
                             labelStyle: TextStyle(color: Colors.white),
                             enabledBorder: OutlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey)),
@@ -3056,8 +3062,7 @@ class _MyLocationListState extends State<MyLocationList>
                                           Expanded(
                                               child: CustomButton(
                                                   type: ButtonType.elevated,
-                                                  onPressed:
-                                                  (locations < 0)
+                                                  onPressed: (locations < 0)
                                                       ? null
                                                       : () async {
                                                           // Upload the file

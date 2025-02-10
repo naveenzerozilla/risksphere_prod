@@ -35,7 +35,7 @@ class AppConstant {
   static String get UPDATE_USER_DETAILS => '$baseURL/user_management';
   static String get GET_AVATARS => '$baseURL/get_avatar';
   static String get GET_DASHBOARD => '$baseURL/dashboard_data';
-  static String get GET_CONNECTIONS => '$baseURL/user_management?connections=true';
+  static String get GET_CONNECTIONS => '$baseURL/user_management/current?connections=true';
   static String get GET_REQUESTS => '$baseURL/user_management?requests=true';
   static String get ACCEPT_REJECT_REQUEST => '$baseURL/user_management';
   static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management_new/company_user_list/current';

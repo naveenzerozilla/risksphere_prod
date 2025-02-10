@@ -137,7 +137,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
   }
-
+  Future<void> _handleRefresh() async {
+      _getData();
+  }
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
@@ -160,82 +162,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           drawer: CustomDrawer(),
-          body: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/mesh.png',
-                  fit: BoxFit.cover,
+          body: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            child: Stack(
+              children: [
+                // Background image
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
 
-              _homeScreenBody(typography),
+                _homeScreenBody(typography),
 
-              // Overlay for trial expiration
+                // Overlay for trial expiration
 
-              Consumer<UserProfileProvider>(
-                builder: (context, userProfile, child) {
-                  final trialStatus = userProfile.trialInfo['status'] ?? '';
+                Consumer<UserProfileProvider>(
+                  builder: (context, userProfile, child) {
+                    final trialStatus = userProfile.trialInfo['status'] ?? '';
 
-                  if (trialStatus.contains('Expired')) {
-                    return Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surface
-                            .withOpacity(0.95),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(height: CustomSpacing.four),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: MessageCard(
-                              messageTextSpans: [
-                                TextSpan(
-                                  text:
-                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
-                                  style: typography.Body1,
-                                ),
-                                // tappable
-                                TextSpan(
-                                  text: ' Upgrade Now!',
-                                  style: typography.Body1.copyWith(
-                                    color: AppColors.primaryMain,
+                    if (trialStatus.contains('Expired')) {
+                      return Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surface
+                              .withOpacity(0.95),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(height: CustomSpacing.four),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: MessageCard(
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text:
+                                        'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                    style: typography.Body1,
                                   ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      // Handle subscription logic
-                                      //Coming soon Snackbar
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Coming soon!',
-                                              style: typography.Body1.copyWith(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .surface,
-                                              )),
-                                        ),
-                                      );
-                                    },
-                                ),
-                              ],
-                              isError: true,
+                                  // tappable
+                                  TextSpan(
+                                    text: ' Upgrade Now!',
+                                    style: typography.Body1.copyWith(
+                                      color: AppColors.primaryMain,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        // Handle subscription logic
+                                        //Coming soon Snackbar
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text('Coming soon!',
+                                                style: typography.Body1.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface,
+                                                )),
+                                          ),
+                                        );
+                                      },
+                                  ),
+                                ],
+                                isError: true,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SizedBox.shrink();
-                },
-              ),
-            ],
+                          ],
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
           ),
         );
       }),
@@ -347,7 +352,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     !showVerificationRequests
                         ? SizedBox()
                         : _overviewCardHorizontal(
-                            title: LanguageService.getTranslated(context,
+                            title:
+                            LanguageService.getTranslated(context,
                                 'usermanagement_dash_verification_req'),
                             amount: ((dashboardProvider.dashboardModel
                                                 ?.verificationCount ??
