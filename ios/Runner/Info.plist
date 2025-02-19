@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Green</string>
+	<string>RiskSphere</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,23 +33,30 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>This app requires access to your photo library to save screenshots.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app requires access to add photos to your library.</string>
+
+
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to take photos.</string>
+
+
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to record videos.</string>
+
 	<key>NSDocumentDirectoryUsageDescription</key>
 	<string>We need access to your documents to pick files.</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.781106067514-vg3tqt2m694h0qd3enl4toff2eug19cp</string>
-			</array>
-		</dict>
-	</array>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to pick files.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>We need access to your documents folder to pick and upload files.</string>
+
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We need your location to provide personalized content and improve your experience.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need your location to enhance app features and provide relevant content.</string>
+
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

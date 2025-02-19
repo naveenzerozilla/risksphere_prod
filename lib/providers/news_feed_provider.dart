@@ -1,9 +1,9 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:green/design_system/components/custom_toast.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/utils/api_constants.dart';
+import 'package:RiskSphare/design_system/components/custom_toast.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
 
 class NewsFeedProvider extends ChangeNotifier {
   bool _isActivityLoading = false;

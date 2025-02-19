@@ -1,8 +1,6 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
+    id 'com.google.gms.google-services' // Firebase
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -23,22 +21,17 @@ if (keystoreConfigFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '1').toInteger()
+def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0')
 
 android {
     namespace "com.example.green"
-    compileSdkVersion 34
+    compileSdk 35  // ✅ Updated from 34 to 35
+
     ndkVersion flutter.ndkVersion
 
     compileOptions {
+        coreLibraryDesugaringEnabled true  // ✅ Enable Java 8+ features
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -52,51 +45,45 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.example.green"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 23
-        targetSdkVersion 34
-        versionCode flutterVersionCode.toInteger()
+        targetSdkVersion 35  // ✅ Updated from 34 to 35
+        versionCode flutterVersionCode
         versionName flutterVersionName
         multiDexEnabled true
     }
 
     signingConfigs {
         debug {
-            //storeFile file(System.getenv("HOME") + "/.android/debug.keystore")
-            // Windows
             storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
             storePassword "android"
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
         qa {
-            storeFile file('C:/Users/ansha/StudioProjects/green/qa.keystore') // Ensure this is the correct path
+            storeFile file('/Users/naveen/Downloads/qa.keystore')
+
+            if (storeFile != null && storeFile.exists()) {
+                println "✅ Keystore file exists: ${storeFile.absolutePath}"
+            } else {
+                println "❌ Keystore file does NOT exist or is not accessible: ${storeFile?.absolutePath}"
+            }
+
             storePassword keystoreConfig.getProperty('QA_KEYSTORE_PASSWORD')
             keyAlias keystoreConfig.getProperty('QA_KEY_ALIAS')
             keyPassword keystoreConfig.getProperty('QA_KEY_PASSWORD')
-
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
-            // debug or qa
+            signingConfig signingConfigs.qa
         }
-
         qa {
-            //initWith debug // Inherit debug build type settings
-            signingConfig signingConfigs.debug
-            //matchingFallbacks = ['debug'] // Use debug resources if no QA resources exist
+            signingConfig signingConfigs.qa
         }
-
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.qa
         }
     }
 }
@@ -105,4 +92,7 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    // ✅ Required for Java 8+ support (Fixes flutter_local_notifications issue)
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+}

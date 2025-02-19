@@ -10,20 +10,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/components/roles_dropdown.dart';
-import 'package:green/models/account_list_model.dart';
-import 'package:green/models/transfer_autocomplete_model.dart';
-import 'package:green/models/upload_sov_model.dart';
-import 'package:green/providers/account_list_provider.dart';
-import 'package:green/providers/connections_provider.dart';
-import 'package:green/providers/upload_sov_provider.dart';
-import 'package:green/screens/listings/location_list.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/listings/sub_account_list.dart';
-import 'package:green/screens/listings/widgets/auto_complete_options.dart';
-import 'package:green/screens/listings/widgets/configurations_tab.dart';
-import 'package:green/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/design_system/components/roles_dropdown.dart';
+import 'package:RiskSphare/models/account_list_model.dart';
+import 'package:RiskSphare/models/transfer_autocomplete_model.dart';
+import 'package:RiskSphare/models/upload_sov_model.dart';
+import 'package:RiskSphare/providers/account_list_provider.dart';
+import 'package:RiskSphare/providers/connections_provider.dart';
+import 'package:RiskSphare/providers/upload_sov_provider.dart';
+import 'package:RiskSphare/screens/listings/location_list.dart';
+import 'package:RiskSphare/screens/listings/location_profile.dart';
+import 'package:RiskSphare/screens/listings/sub_account_list.dart';
+import 'package:RiskSphare/screens/listings/widgets/auto_complete_options.dart';
+import 'package:RiskSphare/screens/listings/widgets/configurations_tab.dart';
+import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -41,7 +41,7 @@ import '../../models/initial_data_model.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:green/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
 
 import '../../providers/user_profile_provider.dart';
 import '../../service/api_service.dart';
@@ -69,7 +69,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   TextEditingController mobileController = TextEditingController();
   TextEditingController _messageController = TextEditingController();
   TextEditingController _sovNameController = TextEditingController();
-
+  bool isLoading = false;
 
   final TextEditingController _filePathController = TextEditingController();
 
@@ -170,7 +170,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   @override
   void initState() {
     var userProfileProvider =
-    Provider.of<UserProfileProvider>(context, listen: false);
+        Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
     int tabCount = trialStatus.isEmpty ? 3 : 2;
@@ -251,30 +251,32 @@ class _AccountListScreenState extends State<AccountListScreen>
                           ],
                         );
                       })
-                    : _tabController?.index != 0? SizedBox():Container(
-              margin: EdgeInsets.only(bottom: 42.0),
-              child: FloatingActionButton(
-                          backgroundColor: AppColors.primaryMain,
-                          onPressed: () {
-                            // Add account dialog with autocomplete from api and create account
-                            _showAddAccountDialog(context);
-                          },
-                          child: Icon(
-                            Icons.add,
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
-                        ),
-                    )
+                    : _tabController?.index != 0
+                        ? SizedBox()
+                        : Container(
+                            margin: EdgeInsets.only(bottom: 42.0),
+                            child: FloatingActionButton(
+                              backgroundColor: AppColors.primaryMain,
+                              onPressed: () {
+                                // Add account dialog with autocomplete from api and create account
+                                _showAddAccountDialog(context);
+                              },
+                              child: Icon(
+                                Icons.add,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          )
                 : SizedBox(),
             body: Consumer<UserProfileProvider>(
                 builder: (context, userProfileProvider, child) {
-                return PopScope(
-                  canPop: /*_selectedScreen == Screens.connectionList ||
+              return PopScope(
+                canPop: /*_selectedScreen == Screens.connectionList ||
                           _selectedScreen == Screens.corporateConnectionList,*/
-                      true,
-                  onPopInvoked: (canPop) {
-                    print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                    /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                    true,
+                onPopInvoked: (canPop) {
+                  print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                  /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
                           setState(() {
                             _selectedScreen = Screens.corporateConnectionList;
                           });
@@ -284,29 +286,29 @@ class _AccountListScreenState extends State<AccountListScreen>
                             _selectedScreen = Screens.corporateConnectionList;
                           });
                         }*/
-                  },
-                  child: Stack(
-                    children: [
-                      // Background image
-                      Positioned.fill(
-                        child: Opacity(
-                          opacity: 0.3,
-                          child: Image.asset(
-                            'assets/images/mesh.png',
-                            fit: BoxFit.cover,
-                          ),
+                },
+                child: Stack(
+                  children: [
+                    // Background image
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.3,
+                        child: Image.asset(
+                          'assets/images/mesh.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      Column(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin:
-                                  EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  /*     Row(
+                    ),
+                    Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /*     Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
                                           Row(
@@ -318,133 +320,163 @@ class _AccountListScreenState extends State<AccountListScreen>
                                           ),
                                         ],
                                       ),*/
-                                  SizedBox(height: CustomSpacing.two),
-                                  Container(
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surfaceContainerHigh,
-                                      borderRadius:
-                                          BorderRadius.circular(16), // Rounded edges
-                                    ),
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal: 0, vertical: 0),
-                                    child: DefaultTabController(
-                                      length: _tabController?.length??3,
-                                      child: Column(
-                                        children: <Widget>[
-                                          // Container for the TabBar with arrows
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(16),
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHigh,
-                                            ),
-                                            height: 50,
-                                            child: Row(
-                                              children: <Widget>[
-                                                // Left arrow button
-                                                IconButton(
-                                                  icon: Icon(Icons.arrow_left,
-                                                      color: Colors.grey),
-                                                  onPressed: _scrollLeft,
-                                                ),
-                                                // Scrollable TabBar
-                                                Consumer<AccountListProvider>(
-                                                  builder: (context, accountListProvider, _) {
-                                                    return Expanded(
-                                                      child: SingleChildScrollView(
-                                                        controller: _scrollController,
-                                                        scrollDirection: Axis.horizontal,
-                                                        child: TabBar(
-                                                          controller: _tabController,
-                                                          tabAlignment:
-                                                              TabAlignment.start,
-                                                          labelStyle:
-                                                              typography.Subtitle2,
-                                                          isScrollable: true,
-                                                          indicatorColor:
-                                                              Colors.lightBlueAccent,
-                                                          labelColor:
-                                                              Colors.lightBlueAccent,
-                                                          unselectedLabelColor:
-                                                              Colors.grey,
-                                                          tabs: [
-                                                            Tab(
-                                                              child:  Row(
-                                                                children: [
-                                                                  Text('My Accounts', style: typography.Subtitle2),
-                                                                  accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(width: CustomSpacing.two,),
-                                                                  accountListProvider.isLoading||accountListProvider.accountHits == 0?SizedBox():SizedBox(
-                                                                    height: 25,
-                                                                    child: Chip(
-                                                                      labelPadding: EdgeInsets.all(0),
-                                                                      materialTapTargetSize:
-                                                                      MaterialTapTargetSize.shrinkWrap,
-                                                                      label: Text(
-                                                                        accountListProvider.accountHits
-                                                                            .toString(),
-                                                                        style:
-                                                                        typography.BottomNavigationActiveLabel
-                                                                            .copyWith(height: -0.6),
+                                SizedBox(height: CustomSpacing.two),
+                                Container(
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHigh,
+                                    borderRadius: BorderRadius.circular(
+                                        16), // Rounded edges
+                                  ),
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 0, vertical: 0),
+                                  child: DefaultTabController(
+                                    length: _tabController?.length ?? 3,
+                                    child: Column(
+                                      children: <Widget>[
+                                        // Container for the TabBar with arrows
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHigh,
+                                          ),
+                                          height: 50,
+                                          child: Row(
+                                            children: <Widget>[
+                                              // Left arrow button
+                                              IconButton(
+                                                icon: Icon(Icons.arrow_left,
+                                                    color: Colors.grey),
+                                                onPressed: _scrollLeft,
+                                              ),
+                                              // Scrollable TabBar
+                                              Consumer<AccountListProvider>(
+                                                  builder: (context,
+                                                      accountListProvider, _) {
+                                                return Expanded(
+                                                  child: SingleChildScrollView(
+                                                    controller:
+                                                        _scrollController,
+                                                    scrollDirection:
+                                                        Axis.horizontal,
+                                                    child: TabBar(
+                                                      controller:
+                                                          _tabController,
+                                                      tabAlignment:
+                                                          TabAlignment.start,
+                                                      labelStyle:
+                                                          typography.Subtitle2,
+                                                      isScrollable: true,
+                                                      indicatorColor: Colors
+                                                          .lightBlueAccent,
+                                                      labelColor: Colors
+                                                          .lightBlueAccent,
+                                                      unselectedLabelColor:
+                                                          Colors.grey,
+                                                      tabs: [
+                                                        Tab(
+                                                          child: Row(
+                                                            children: [
+                                                              Text(
+                                                                  'My Accounts',
+                                                                  style: typography
+                                                                      .Subtitle2),
+                                                              accountListProvider
+                                                                          .isLoading ||
+                                                                      accountListProvider
+                                                                              .accountHits ==
+                                                                          0
+                                                                  ? SizedBox()
+                                                                  : SizedBox(
+                                                                      width: CustomSpacing
+                                                                          .two,
+                                                                    ),
+                                                              accountListProvider
+                                                                          .isLoading ||
+                                                                      accountListProvider
+                                                                              .accountHits ==
+                                                                          0
+                                                                  ? SizedBox()
+                                                                  : SizedBox(
+                                                                      height:
+                                                                          25,
+                                                                      child:
+                                                                          Chip(
+                                                                        labelPadding:
+                                                                            EdgeInsets.all(0),
+                                                                        materialTapTargetSize:
+                                                                            MaterialTapTargetSize.shrinkWrap,
+                                                                        label:
+                                                                            Text(
+                                                                          accountListProvider
+                                                                              .accountHits
+                                                                              .toString(),
+                                                                          style:
+                                                                              typography.BottomNavigationActiveLabel.copyWith(height: -0.6),
+                                                                        ),
                                                                       ),
                                                                     ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Tab(text: 'Shared'),
-                                                            if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
-                                                            Tab(text: 'Configuration'),
-                                                            //Tab(text: 'Access Requests'),
-                                                          ],
+                                                            ],
+                                                          ),
                                                         ),
-                                                      ),
-                                                    );
-                                                  }
-                                                ),
-                                                // Right arrow button
-                                                IconButton(
-                                                  icon: Icon(Icons.arrow_right,
-                                                      color: Colors.grey),
-                                                  onPressed: _scrollRight,
-                                                ),
-                                              ],
-                                            ),
+                                                        Tab(text: 'Shared'),
+                                                        if (userProfileProvider
+                                                                .trialInfo[
+                                                                    'status']
+                                                                ?.isEmpty ??
+                                                            true)
+                                                          Tab(
+                                                              text:
+                                                                  'Configuration'),
+                                                        //Tab(text: 'Access Requests'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                              // Right arrow button
+                                              IconButton(
+                                                icon: Icon(Icons.arrow_right,
+                                                    color: Colors.grey),
+                                                onPressed: _scrollRight,
+                                              ),
+                                            ],
                                           ),
-
-
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // TabBarView for the tab content
-                                  Expanded(
-                                    child
-                                        : TabBarView(
-                                      controller: _tabController,
-                                      children: [
-                                        _getAccountUI(),
-                                        _getComingSoonUI(),
-                                        if (userProfileProvider.trialInfo['status']?.isEmpty ?? true)
-                                        ConfigurationTab(),
-                                        //_getComingSoonUI(),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                // TabBarView for the tab content
+                                Expanded(
+                                  child: TabBarView(
+                                    controller: _tabController,
+                                    children: [
+                                      _getAccountUI(),
+                                      _getComingSoonUI(),
+                                      if (userProfileProvider
+                                              .trialInfo['status']?.isEmpty ??
+                                          true)
+                                        ConfigurationTab(),
+                                      //_getComingSoonUI(),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }
-            ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
           ),
         );
       }),
@@ -566,14 +598,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                       "")
                                                   .isNotEmpty
                                               ? accountListProvider
-                                                      .accountList[index]
-                                                      .accountName!
-                                                      .substring(0, 1)
-                                                      .toUpperCase() +
-                                                  accountListProvider
-                                                      .accountList[index]
-                                                      .accountName!
-                                                      .substring(1)
+                                                  .accountList[index]
+                                                  .accountName!
                                               : "",
                                           style: typography.Body2.copyWith(
                                             color:
@@ -847,7 +873,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                               ),
                             ),
                             //!accountListProvider.showOverallScore
-                      true
+                            true
                                 ? SizedBox()
                                 : Padding(
                                     padding:
@@ -1023,16 +1049,102 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 },
                                 tooltip: 'Duplicate',
                               ),
-                              /*IconButton(
-                                icon: Icon(
-                                  Icons.settings,
-                                  color: AppColors.primaryMain,
-                                ),
-                                onPressed: () {
-                                  _showSettingsModal(context);
+                              Consumer<AccountListProvider>(
+                                builder: (context, accountListProvider, _) {
+                                  return IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    color: AppColors.primaryMain,
+                                    onPressed: () {
+                                      // Show Delete Account dialog
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text(
+                                              'Delete Account',
+                                              style: typography.H5_Regular,
+                                            ),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Are you sure you want to delete the account?',
+                                                  style: typography.Body1,
+                                                ),
+                                                SizedBox(
+                                                  height: CustomSpacing.two,
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    // Cancel Button
+                                                    Expanded(
+                                                      child: CustomButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: Text(
+                                                          LanguageService.getTranslated(
+                                                              context, "account_list_app_duplicate_cancel"),
+                                                          style: typography.ButtonLarge,
+                                                        ),
+                                                        type: ButtonType.text,
+                                                      ),
+                                                    ),
+
+                                                    // Show Loader if Deleting, Otherwise Show Delete Button
+                                                    Expanded(
+                                                      child: accountListProvider.isLoading
+                                                          ? SizedBox(
+                                                        width: 25,
+                                                        height: 25,
+                                                        child: CircularProgressIndicator(),
+                                                      )
+                                                          : CustomButton(
+                                                        onPressed: () async {
+                                                          setState(() {
+                                                            accountListProvider.isAddAccountLoading = true; // Start loader
+                                                          });
+
+                                                          bool isSuccess = false;
+                                                          try {
+                                                            isSuccess = await accountListProvider.deleteAccount(
+                                                              context,
+                                                              accountListProvider.accountList[index].accountId!,
+                                                            );
+                                                          } catch (e) {
+                                                            print("Error deleting account: $e");
+                                                          }
+
+                                                          if (isSuccess) {
+                                                            Navigator.pop(context);
+                                                            accountListProvider.fetchAccountList(
+                                                                context, _accountQuery, 1, 20);
+                                                          }
+
+                                                          setState(() {
+                                                            accountListProvider.isAddAccountLoading = false; // Stop loader
+                                                          });
+                                                        },
+                                                        child: Text(
+                                                          "Delete",
+                                                          style: typography.ButtonLarge,
+                                                        ),
+                                                        type: ButtonType.elevated,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                    tooltip: 'Delete',
+                                  );
                                 },
-                                tooltip: 'Settings',
-                              ),*/
+                              )
+
                             ],
                           ),
                         ),
@@ -1147,16 +1259,15 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               NetworkImage(user.imageUrl),
                                         )
                                       : CircleAvatar(
-                                          child: Text(user.name[0]
-                                              .toUpperCase()),
+                                          child:
+                                              Text(user.name[0].toUpperCase()),
                                         ),
                                   title: Text(user.name),
                                   subtitle: Text(user.email),
                                   onTap: () {
                                     setState(() {
                                       _selectedUser = user;
-                                      _userSearchController.text =
-                                          user.name;
+                                      _userSearchController.text = user.name;
                                     });
                                   },
                                 );
@@ -1164,8 +1275,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             )
                           : Padding(
                               padding: EdgeInsets.all(16),
-                              child: Text(
-                                  'Selected User: ${_selectedUser!.name}'),
+                              child:
+                                  Text('Selected User: ${_selectedUser!.name}'),
                             ),
                     ),
                     ButtonBar(
@@ -1213,9 +1324,11 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
-  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(String query) async {
+  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
+      String query) async {
     try {
-      ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+      ApiService apiService =
+          ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
       String url = '?search=$query';
       var response = await apiService.get(url);
 
@@ -1463,7 +1576,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                       SizedBox(height: 20),
                       GestureDetector(
                         onTap: () async {
-                          FilePickerResult? result = await FilePicker.platform.pickFiles(
+                          FilePickerResult? result =
+                              await FilePicker.platform.pickFiles(
                             type: FileType.custom,
                             allowedExtensions: ['xls', 'xlsx'],
                           );
@@ -1478,70 +1592,81 @@ class _AccountListScreenState extends State<AccountListScreen>
                         },
                         child: _uploadedFileName == null
                             ? Container(
-                          height: 150,
-                          width: MediaQuery.of(context).size.width / 1.2,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.cloud_upload_outlined, color: Colors.white),
-                                SizedBox(height: 10),
-                                Text(
-                                  LanguageService.getTranslated(context, "account_list_app_account_upload_drag_and_drop"),
-                                  style: typography.Body1,
+                                height: 150,
+                                width: MediaQuery.of(context).size.width / 1.2,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                SizedBox(height: 5),
-                                Row(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.cloud_upload_outlined,
+                                          color: Colors.white),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        LanguageService.getTranslated(context,
+                                            "account_list_app_account_upload_drag_and_drop"),
+                                        style: typography.Body1,
+                                      ),
+                                      SizedBox(height: 5),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.info_outline,
+                                              color: Colors.white54),
+                                          SizedBox(width: 3),
+                                          Text('Max file size is 200 MB',
+                                              style: typography.Body1),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                height: 150,
+                                width: MediaQuery.of(context).size.width / 1.2,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.info_outline, color: Colors.white54),
-                                    SizedBox(width: 3),
-                                    Text('Max file size is 200 MB', style: typography.Body1),
+                                    Icon(Icons.description, size: 25),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      _sovNameController.text,
+                                      style: typography.Body1,
+                                    ),
+                                    SizedBox(height: 10),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _uploadedFileName = null;
+                                          _sovNameController.clear();
+                                        });
+                                      },
+                                      child: Text(
+                                        LanguageService.getTranslated(context,
+                                            "account_list_app_cancel_text"),
+                                        style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error,
+                                            fontSize: 14),
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        )
-                            : Container(
-                          height: 150,
-                          width: MediaQuery.of(context).size.width / 1.2,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(Icons.description, size: 25),
-                              SizedBox(height: 10),
-                              Text(
-                                _sovNameController.text,
-                                style: typography.Body1,
                               ),
-                              SizedBox(height: 10),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _uploadedFileName = null;
-                                    _sovNameController.clear();
-                                  });
-                                },
-                                child: Text(
-                                  LanguageService.getTranslated(context, "account_list_app_cancel_text"),
-                                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 14),
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                            ],
-                          ),
-                        ),
                       ),
                       SizedBox(height: 15),
                       Row(
@@ -1566,8 +1691,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                           decoration: InputDecoration(
                             labelText: "Enter Tags (separated by comma)",
                             labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
                             hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
@@ -1581,8 +1708,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                           decoration: InputDecoration(
                             labelText: "Name of the SoV",
                             labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
                             hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
@@ -1592,8 +1721,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                           decoration: InputDecoration(
                             labelText: "Enter Tags (separated by comma)",
                             labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
                             hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
@@ -1603,8 +1734,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                           decoration: InputDecoration(
                             labelText: "Enter Account Name",
                             labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
                             hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
@@ -1614,8 +1747,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                           decoration: InputDecoration(
                             labelText: "Enter Sub-account Name",
                             labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.blue)),
                             hintStyle: TextStyle(color: Colors.white54),
                           ),
                         ),
@@ -1638,7 +1773,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             onPressed: () async {
                               // Upload action
                             },
-                            child: Text("Upload", style: typography.ButtonLarge),
+                            child:
+                                Text("Upload", style: typography.ButtonLarge),
                           ),
                         ],
                       ),
@@ -1694,20 +1830,22 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     _autocompleteText);
                               },
                               decoration: InputDecoration(
-                                suffixIcon: _textEditingController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(Icons.clear),
-                                        onPressed: () {
-                                          setState(() {
-                                            _textEditingController.clear();
-                                            _accountAlreadyExists = false;
-                                            _selectedAccount = null;
-                                            // Clear the autocomplete list when user clears the text
-                                            accountListProvider.clearAutoCompleteList();
-                                          });
-                                        },
-                                      )
-                                    : null,
+                                suffixIcon:
+                                    _textEditingController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: Icon(Icons.clear),
+                                            onPressed: () {
+                                              setState(() {
+                                                _textEditingController.clear();
+                                                _accountAlreadyExists = false;
+                                                _selectedAccount = null;
+                                                // Clear the autocomplete list when user clears the text
+                                                accountListProvider
+                                                    .clearAutoCompleteList();
+                                              });
+                                            },
+                                          )
+                                        : null,
                                 labelText: LanguageService.getTranslated(
                                     context,
                                     "account_list_app_add_account_title"),
@@ -1872,27 +2010,21 @@ class _AccountListScreenState extends State<AccountListScreen>
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Text(
-                        LanguageService.getTranslated(
-                            context, 'coming_soon_title'),
-                        style: typography.H4),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  Text(
-                      LanguageService.getTranslated(
-                          context, 'coming_soon_subtitle'),
-                      style: typography.Body1),
-                ],
-              ),
+          Center(
+            child: Column(
+              children: [
+                Text('A smarter way to track shared files-Coming Soon! ',
+                    textAlign: TextAlign.center, style: typography.H5_Regular),
+                SizedBox(height: 10),
+                Text(
+                    LanguageService.getTranslated(
+                        context, 'coming_soon_subtitle'),
+                    textAlign: TextAlign.center,
+                    style: typography.Body1),
+              ],
             ),
           ),
         ],
@@ -2013,70 +2145,72 @@ class _AccountListScreenState extends State<AccountListScreen>
                         ),
                       )
                     : RefreshIndicator(
-
-                      onRefresh: () async {
-                        accountListProvider.fetchAccountList(
-                            context, _accountQuery, 1, 10);
-                      },
-                      child: ListView.builder(
-                          itemCount: accountListProvider.accountList.length,
-                          itemBuilder: (context, index) {
-                            print("Query1: $_accountQuery");
-                            if (index ==
-                                accountListProvider.accountList.length - 1) {
-                              // Check if it's the last item
-                              if (accountListProvider.isNextPageLoading) {
-                                // Display loading indicator
-                                return Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              } else if (accountListProvider.page >=
-                                      accountListProvider.totalPages &&
-                                  accountListProvider.accountList.isNotEmpty) {
-                                // Display end of list message
-                                print(
-                                    "account list: ${accountListProvider.accountList}");
-                                return Column(
-                                  children: [
-                                    _buildAccountCard(index, accountListProvider),
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Center(
-                                        child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "account_list_app_end_of_list_text"),
-                                          style: typography.Body1,
+                        onRefresh: () async {
+                          accountListProvider.fetchAccountList(
+                              context, _accountQuery, 1, 10);
+                        },
+                        child: ListView.builder(
+                            itemCount: accountListProvider.accountList.length,
+                            itemBuilder: (context, index) {
+                              print("Query1: $_accountQuery");
+                              if (index ==
+                                  accountListProvider.accountList.length - 1) {
+                                // Check if it's the last item
+                                if (accountListProvider.isNextPageLoading) {
+                                  // Display loading indicator
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                } else if (accountListProvider.page >=
+                                        accountListProvider.totalPages &&
+                                    accountListProvider
+                                        .accountList.isNotEmpty) {
+                                  // Display end of list message
+                                  print(
+                                      "account list: ${accountListProvider.accountList}");
+                                  return Column(
+                                    children: [
+                                      _buildAccountCard(
+                                          index, accountListProvider),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Center(
+                                          child: Text(
+                                            LanguageService.getTranslated(
+                                                context,
+                                                "account_list_app_end_of_list_text"),
+                                            style: typography.Body1,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                );
+                                    ],
+                                  );
+                                } else {
+                                  // Trigger fetching the next page
+                                  accountListProvider.page =
+                                      accountListProvider.page + 1;
+                                  print(
+                                      "Fetching page ${accountListProvider.page}");
+                                  print(
+                                      "Query: $_accountQuery, Page: ${accountListProvider.page}");
+                                  accountListProvider.fetchAccountList(
+                                    context,
+                                    _accountQuery,
+                                    // Pass the search query if any
+                                    accountListProvider.page,
+                                    10, // Page size
+                                  );
+                                  return SizedBox();
+                                }
                               } else {
-                                // Trigger fetching the next page
-                                accountListProvider.page =
-                                    accountListProvider.page + 1;
-                                print(
-                                    "Fetching page ${accountListProvider.page}");
-                                print(
-                                    "Query: $_accountQuery, Page: ${accountListProvider.page}");
-                                accountListProvider.fetchAccountList(
-                                  context,
-                                  _accountQuery,
-                                  // Pass the search query if any
-                                  accountListProvider.page,
-                                  10, // Page size
-                                );
-                                return SizedBox();
+                                return _buildAccountCard(
+                                    index, accountListProvider);
                               }
-                            } else {
-                              return _buildAccountCard(
-                                  index, accountListProvider);
-                            }
-                          }),
-                    );
+                            }),
+                      );
           }),
         ),
       ],

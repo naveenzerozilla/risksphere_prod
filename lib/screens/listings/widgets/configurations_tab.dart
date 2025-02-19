@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -45,10 +46,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           setState(() {
             vendorList = provider.vendors['result'] ?? [];
             selectedServices = services.entries
-                .where((e) => (e.value as Map<String, dynamic>)['enabled'] == true)
+                .where(
+                    (e) => (e.value as Map<String, dynamic>)['enabled'] == true)
                 .map<String>((e) => capitalize(e.key))
                 .toList();
-
 
             print("Selected Services: $selectedServices");
 
@@ -59,12 +60,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             print("Selected Stars: $selectedStars");
           });
         });
-
       }
     });
-
   }
-
 
   String capitalize(String s) {
     return s.isNotEmpty ? s[0].toUpperCase() + s.substring(1).toLowerCase() : s;
@@ -91,7 +89,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           if (selectedServices.isEmpty && services.isNotEmpty) {
             setState(() {
               selectedServices = services.entries
-                  .where((e) => (e.value as Map<String, dynamic>)['enabled'] == true)
+                  .where((e) =>
+                      (e.value as Map<String, dynamic>)['enabled'] == true)
                   .map<String>((e) => capitalize(e.key))
                   .toList();
             });
@@ -100,27 +99,27 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
         WidgetsBinding.instance!.addPostFrameCallback((_) {
           if (selectedStars.isEmpty && ratings.isNotEmpty) {
-
             setState(() {
               selectedStars = ratings.entries
-                  .where((e) => e.value['enabled'] == true || ['3', '4', '5'].contains(e.key))
+                  .where((e) =>
+                      e.value['enabled'] == true ||
+                      ['3', '4', '5'].contains(e.key))
                   .map<int>((e) {
-                try {
-                  return int.parse(e.key);
-                } catch (e) {
-                  print('Error parsing key to int: ${e.toString()}');
-                  return -1; // Use a default/fallback value if parsing fails
-                }
-              })
-                  .where((star) => star != -1)  // Filter out invalid (-1) results
+                    try {
+                      return int.parse(e.key);
+                    } catch (e) {
+                      print('Error parsing key to int: ${e.toString()}');
+                      return -1; // Use a default/fallback value if parsing fails
+                    }
+                  })
+                  .where(
+                      (star) => star != -1) // Filter out invalid (-1) results
                   .toList();
 
               print("Selected Stars: $selectedStars");
             });
           }
         });
-
-
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -194,7 +193,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                   // Find the vendor by vendor_id
                   final vendor = vendorList.firstWhere(
-                        (vendor) => vendor['vendor_id'] == vendorId,
+                    (vendor) => vendor['vendor_id'] == vendorId,
                     orElse: () {
                       debugPrint('Vendor not found for ID: $vendorId');
                       return null;
@@ -204,11 +203,13 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   if (vendor == null) return SizedBox.shrink();
 
                   // Find the hazard in the vendor's hazard_commercials by hazard_name
-                  final hazardCommercials = vendor['hazard_commercials'] as List?;
+                  final hazardCommercials =
+                      vendor['hazard_commercials'] as List?;
                   final hazard = hazardCommercials?.firstWhere(
-                        (commercial) => commercial['hazard_name'] == hazardName,
+                    (commercial) => commercial['hazard_name'] == hazardName,
                     orElse: () {
-                      debugPrint('Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+                      debugPrint(
+                          'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
                       return null;
                     },
                   );
@@ -218,8 +219,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   // Extract subscription and hazard details
                   final subscription = subscriptions[key];
                   final vendorName = vendor['vendor_name_label'] ?? '';
-                  final vendorImage = vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
-                  final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+                  final vendorImage = vendor['display_image_url'] ??
+                      'assets/images/default_vendor.png';
+                  final hazardLabel =
+                      hazard['hazard_name_label'] ?? 'Unknown Hazard';
                   final description = subscription['description'] ?? '';
 
                   return Column(
@@ -231,7 +234,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         '$hazardLabel ($vendorName)',
                         description.isNotEmpty ? description : vendorName,
                         '$vendorName',
-                        subscription['is_subscribed'] == true || subscription['is_subscribed'] == 'true',
+                        subscription['is_subscribed'] == true ||
+                            subscription['is_subscribed'] == 'true',
                         mainId,
                         level,
                         typography,
@@ -250,47 +254,48 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
   String _getVendorName(String vendorId) {
     var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
+      (vendor) => vendor['vendor_id'] == vendorId,
       orElse: () {
         debugPrint('Vendor not found for ID: $vendorId');
         return {'vendor_name_label': ''};
       },
     );
 
-    debugPrint('Vendor found for ID: $vendorId - ${vendor['vendor_name_label']}');
+    debugPrint(
+        'Vendor found for ID: $vendorId - ${vendor['vendor_name_label']}');
     return vendor['vendor_name_label'] ?? '';
   }
 
   String _getVendorDisplayName(String vendorId) {
     var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
+      (vendor) => vendor['vendor_id'] == vendorId,
       orElse: () {
         debugPrint('Display Name not found for Vendor ID: $vendorId');
         return {'display_name': ''};
       },
     );
 
-    debugPrint('Display name found for ID: $vendorId - ${vendor['display_name']}');
+    debugPrint(
+        'Display name found for ID: $vendorId - ${vendor['display_name']}');
     return vendor['display_name'] ?? '';
   }
 
   String _getVendorImage(String vendorId) {
     var vendor = vendorList.firstWhere(
-          (vendor) => vendor['vendor_id'] == vendorId,
+      (vendor) => vendor['vendor_id'] == vendorId,
       orElse: () {
         debugPrint('Image not found for Vendor ID: $vendorId');
         return {'display_image_url': 'assets/images/default_vendor.png'};
       },
     );
 
-    debugPrint('Image found for Vendor ID: $vendorId - ${vendor['display_image_url']}');
+    debugPrint(
+        'Image found for Vendor ID: $vendorId - ${vendor['display_image_url']}');
     return vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
   }
 
-
-
-  Widget _buildServiceCheckbox(
-      String title, String description, bool isEnabled, CustomTypography typography, String mainId, String level) {
+  Widget _buildServiceCheckbox(String title, String description, bool isEnabled,
+      CustomTypography typography, String mainId, String level) {
     bool isGeocoding = title.toLowerCase() == 'geocoding';
     bool isSelected = selectedServices.contains(title) || isGeocoding;
 
@@ -308,14 +313,15 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         children: [
           Checkbox(
             value: isSelected,
-            onChanged: isGeocoding
+            onChanged: isGeocoding || title == "Additional_parameters"
                 ? null // Disable checkbox for Geocoding
                 : (bool? value) {
-              print('Toggling up $title to $value');
+                    print('Toggling up $title to $value');
 
-              // Show dialog to save changes
-              _showSaveDialog(title, description, typography, value!, mainId, level);
-            },
+                    // Show dialog to save changes
+                    _showSaveDialog(
+                        title, description, typography, value!, mainId, level);
+                  },
             activeColor: AppColors.primaryMain,
           ),
           SizedBox(width: 16),
@@ -326,7 +332,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 Text(
                   title.replaceAll('_', ' '),
                   style: typography.Body1.copyWith(
-                    fontWeight: isGeocoding ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isGeocoding ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -347,24 +354,25 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     setState(() {
       if (value) {
         if (!selectedServices.contains(title)) {
-          selectedServices.add(title);  // Only add if not already in the list
+          selectedServices.add(title); // Only add if not already in the list
         }
       } else {
-        selectedServices.remove(title);  // Remove if toggled off
+        selectedServices.remove(title); // Remove if toggled off
       }
       print('Selected Services: $selectedServices');
     });
   }
 
-
-  void _showSaveDialog(String title, String description, CustomTypography typography, bool value, String mainId, String level) {
+  void _showSaveDialog(String title, String description,
+      CustomTypography typography, bool value, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+        final provider =
+            Provider.of<ConfigurationProvider>(context, listen: false);
         bool isLoading = false;
 
         return StatefulBuilder(
@@ -374,9 +382,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               content: isLoading
                   ? Center(child: CircularProgressIndicator())
                   : Text(
-                'Do you want to save this configuration for $title?',
-                style: typography.Body1,
-              ),
+                      'Do you want to save this configuration for $title?',
+                      style: typography.Body1,
+                    ),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -390,11 +398,12 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   onPressed: () async {
                     setState(() => isLoading = true);
 
-                    var key = generateServiceKey(title.toLowerCase().replaceAll(' ', '_'));
+                    var key = generateServiceKey(
+                        title.toLowerCase().replaceAll(' ', '_'));
                     await provider.updateConfiguration(
                       context,
                       mainId,
-                      key,  // Ensure key is used here correctly
+                      key, // Ensure key is used here correctly
                       level,
                       value,
                       accountId: widget.accountId,
@@ -402,7 +411,20 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     );
 
                     setState(() => isLoading = false);
-                    if (!provider.isLoading) Navigator.pop(context);
+
+                    if (!provider.isLoading) {
+                      Navigator.pop(context); // Close the dialog
+                      setState(() {}); // Reload the page by calling setState
+                      final provider = Provider.of<ConfigurationProvider>(
+                          context,
+                          listen: false);
+
+                      provider.getConfiguration(
+                        accountId: widget.accountId,
+                        subAccountId: widget.subaccountId,
+                      );
+                      provider.getVendors();
+                    }
                   },
                   child: Text('Save',
                       style: typography.Body1.copyWith(
@@ -416,16 +438,16 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     );
   }
 
-
-  void _showSaveDialogForStar(
-      int star, String description, CustomTypography typography, bool value, String mainId, String level) {
+  void _showSaveDialogForStar(int star, String description,
+      CustomTypography typography, bool value, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+        final provider =
+            Provider.of<ConfigurationProvider>(context, listen: false);
         bool isLoading = false;
 
         return StatefulBuilder(
@@ -435,9 +457,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               content: isLoading
                   ? Center(child: CircularProgressIndicator())
                   : Text(
-                'Do you want to save this configuration for $star-star rating?',
-                style: typography.Body1,
-              ),
+                      'Do you want to save this configuration for $star-star rating?',
+                      style: typography.Body1,
+                    ),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -476,22 +498,23 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     );
   }
 
-
-  void _updateSubscription(String vendorId, bool isSubscribed, String mainId, String level) {
+  void _updateSubscription(
+      String vendorId, bool isSubscribed, String mainId, String level) {
     var typography = CustomTypography(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+        final provider =
+            Provider.of<ConfigurationProvider>(context, listen: false);
         bool isLoading = false;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: Text('Update Subscription'),
-              content:Text(
+              content: Text(
                 isSubscribed
                     ? 'Do you want to unsubscribe from this vendor?'
                     : 'Do you want to subscribe to this vendor?',
@@ -499,52 +522,58 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               ),
               actions: [
                 TextButton(
-                  onPressed: provider.isLoading?null:() {
-                    if (!provider.isLoading) Navigator.pop(context);
-                  },
+                  onPressed: provider.isLoading
+                      ? null
+                      : () {
+                          if (!provider.isLoading) Navigator.pop(context);
+                        },
                   child: Text(
                     'Cancel',
-                    style: typography.Body1.copyWith(color: AppColors.primaryMain),
+                    style:
+                        typography.Body1.copyWith(color: AppColors.primaryMain),
                   ),
                 ),
                 TextButton(
-                  onPressed: provider.isLoading?null:() async {
-                    setState(() {
-                      isLoading = true;
-                    });
+                  onPressed: provider.isLoading
+                      ? null
+                      : () async {
+                          setState(() {
+                            isLoading = true;
+                          });
 
-                    String key = 'subscribe.$vendorId.is_subscribed';
+                          String key = 'subscribe.$vendorId.is_subscribed';
 
-                    await provider.updateConfiguration(
-                      context,
-                      mainId,
-                      key,
-                      level,
-                      !isSubscribed,
-                      accountId: widget.accountId,
-                      subAccountId: widget.subaccountId,
-                    );
+                          await provider.updateConfiguration(
+                            context,
+                            mainId,
+                            key,
+                            level,
+                            !isSubscribed,
+                            accountId: widget.accountId,
+                            subAccountId: widget.subaccountId,
+                          );
 
-                    setState(() {
-                      isLoading = false;
-                    });
+                          setState(() {
+                            isLoading = false;
+                          });
 
-                    if (!provider.isLoading) Navigator.pop(context);
-                  },
-                  child:  provider.isLoading
+                          if (!provider.isLoading) Navigator.pop(context);
+                        },
+                  child: provider.isLoading
                       ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                          height: 38,
-                          width: 38,
-                          child: CircularProgressIndicator()),
-                        ],
-                      )
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                                height: 38,
+                                width: 38,
+                                child: CircularProgressIndicator()),
+                          ],
+                        )
                       : Text(
-                    'Save',
-                    style: typography.Body1.copyWith(color: AppColors.primaryMain),
-                  ),
+                          'Save',
+                          style: typography.Body1.copyWith(
+                              color: AppColors.primaryMain),
+                        ),
                 ),
               ],
             );
@@ -554,10 +583,13 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     );
   }
 
-
-
   Widget _buildStarCheckbox(
-      String title, String description, CustomTypography typography, bool isDisabled, String mainId, String level) {
+      String title,
+      String description,
+      CustomTypography typography,
+      bool isDisabled,
+      String mainId,
+      String level) {
     bool isStarDisabled = ['3', '4', '5'].contains(title);
     bool isChecked = selectedStars.contains(int.parse(title));
 
@@ -578,15 +610,22 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             onChanged: isStarDisabled
                 ? null
                 : (bool? value) {
-              _showSaveDialogForStar(
-                int.parse(title),
-                description,
-                typography,
-                value!,
-                mainId,
-                level,
-              );
-            },
+                    final provider = Provider.of<ConfigurationProvider>(context,
+                        listen: false);
+                    _showSaveDialogForStar(
+                      int.parse(title),
+                      description,
+                      typography,
+                      value!,
+                      mainId,
+                      level,
+                    );
+                    provider.getConfiguration(
+                      accountId: widget.accountId,
+                      subAccountId: widget.subaccountId,
+                    );
+                    provider.getVendors();
+                  },
             activeColor: AppColors.primaryMain,
           ),
           SizedBox(width: 16),
@@ -597,7 +636,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 Text(
                   '$title Star',
                   style: typography.Body1.copyWith(
-                    fontWeight: isStarDisabled ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isStarDisabled ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -613,20 +653,17 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     );
   }
 
-
-
-
   Widget _buildSubscriptionCard(
-      String id,
-      String iconPath,
-      String title,
-      String description,
-      String name,
-      bool isSubscribed,
-      String mainId,
-      String level,
-      CustomTypography typography,
-      ) {
+    String id,
+    String iconPath,
+    String title,
+    String description,
+    String name,
+    bool isSubscribed,
+    String mainId,
+    String level,
+    CustomTypography typography,
+  ) {
     return Card(
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
       elevation: 2,
@@ -638,7 +675,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SvgPicture.asset(
+            Image.network(
               iconPath,
               width: 40,
               height: 40,
@@ -660,11 +697,17 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             ElevatedButton(
               onPressed: () {
                 _updateSubscription(id, isSubscribed, mainId, level);
+                final provider =
+                    Provider.of<ConfigurationProvider>(context, listen: false);
+                provider.getConfiguration(
+                  accountId: widget.accountId,
+                  subAccountId: widget.subaccountId,
+                );
+                provider.getVendors();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSubscribed
-                    ? Colors.amber
-                    : AppColors.primaryMain,
+                backgroundColor:
+                    isSubscribed ? Colors.amber : AppColors.primaryMain,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -676,12 +719,12 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 ),
               ),
             ),
-            name.isEmpty?
-            SizedBox.shrink():
-            Text(
-              'Data Provider: $name',
-              style: typography.Caption,
-            ),
+            name.isEmpty
+                ? SizedBox.shrink()
+                : Text(
+                    'Data Provider: $name',
+                    style: typography.Caption,
+                  ),
           ],
         ),
       ),
@@ -699,10 +742,4 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   String generateSubscriptionKey(String vendorId) {
     return 'subscribe.$vendorId.is_subscribed';
   }
-
-
-
-
-
-
 }

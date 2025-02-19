@@ -5,8 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/providers/connections_provider.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/providers/connections_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -21,7 +21,7 @@ import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:green/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
 
 import '../../service/language_service.dart';
 
@@ -187,19 +187,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     _tabController?.addListener(() {
       if (_tabController?.index == 0) {
         setState(() {
-          _selectedScreen = Screens.connectionList;
+          _selectedScreen = Screens.networkList;
         });
       } else if (_tabController?.index == 1) {
         setState(() {
-          _selectedScreen = Screens.requestList;
+          _selectedScreen = Screens.connectionList;
         });
       } else if (_tabController?.index == 2) {
         setState(() {
-          _selectedScreen = Screens.chatList;
+          _selectedScreen = Screens.requestList;
         });
       } else if (_tabController?.index == 3) {
         setState(() {
-          _selectedScreen = Screens.networkList;
+          _selectedScreen = Screens.chatList;
         });
       } else if (_tabController?.index == 4) {
         setState(() {
@@ -212,13 +212,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     if (widget.selectedTabIndex != 0) {
       _tabController?.animateTo(widget.selectedTabIndex);
       if (widget.selectedTabIndex == 0) {
-        _selectedScreen = Screens.connectionList;
-      } else if (widget.selectedTabIndex == 1) {
-        _selectedScreen = Screens.requestList;
-      } else if (widget.selectedTabIndex == 2) {
-        _selectedScreen = Screens.chatList;
-      } else if (widget.selectedTabIndex == 3) {
         _selectedScreen = Screens.networkList;
+      } else if (widget.selectedTabIndex == 1) {
+        _selectedScreen = Screens.connectionList;
+      } else if (widget.selectedTabIndex == 2) {
+        _selectedScreen = Screens.requestList;
+      } else if (widget.selectedTabIndex == 3) {
+        _selectedScreen = Screens.chatList;
       } else if (widget.selectedTabIndex == 4) {
         _selectedScreen = Screens.blockedList;
       }
@@ -317,7 +317,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                 });
               } else if (_selectedScreen == Screens.requestList) {
                 setState(() {
-                  _tabController?.animateTo(0);
+                  _tabController?.animateTo(1);
                   _selectedScreen = Screens.corporateConnectionList;
                 });
               }
@@ -362,10 +362,27 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                   labelStyle:
                                       typography.BottomNavigationActiveLabel,
                                   tabs: [
+                                    InkWell(
+                                      onTap: () {
+                                        _tabController?.animateTo(0);
+                                        _selectedScreen = Screens.networkList;
+                                      },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Tab(
+                                            text: LanguageService.getTranslated(
+                                                context,
+                                                "connections_user_connection_networking_tab"),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     Tab(
                                       child: InkWell(
                                         onTap: () {
-                                          _tabController?.animateTo(0);
+                                          _tabController?.animateTo(1);
                                           _selectedScreen =
                                               Screens.connectionList;
                                         },
@@ -434,35 +451,41 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                           .nonCorporateConnectionList;
                                                     }
                                                     _tabController
-                                                        ?.animateTo(0);
+                                                        ?.animateTo(1);
                                                   });
                                                 },
                                               ),
                                             ),
-                                            SizedBox(
-                                              height: 25,
-                                              width: 35,
-                                              child: Chip(
-                                                labelPadding: EdgeInsets.all(0),
-                                                materialTapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                label: Text(
-                                                  connectionsProvider
-                                                      .totalConnections,
-                                                  style: typography
-                                                          .BottomNavigationActiveLabel
-                                                      .copyWith(height: -0.6),
-                                                ),
-                                              ),
-                                            ),
+                                            connectionsProvider.totalConnections
+                                                        .toString() ==
+                                                    "0"
+                                                ? Container()
+                                                : SizedBox(
+                                                    height: 25,
+                                                    width: 35,
+                                                    child: Chip(
+                                                      labelPadding:
+                                                          EdgeInsets.all(0),
+                                                      materialTapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                      label: Text(
+                                                        connectionsProvider
+                                                            .totalConnections,
+                                                        style: typography
+                                                                .BottomNavigationActiveLabel
+                                                            .copyWith(
+                                                                height: -0.6),
+                                                      ),
+                                                    ),
+                                                  ),
                                           ],
                                         ),
                                       ),
                                     ),
                                     InkWell(
                                       onTap: () {
-                                        _tabController?.animateTo(1);
+                                        _tabController?.animateTo(2);
                                         _selectedScreen = Screens.requestList;
                                       },
                                       child: Row(
@@ -474,30 +497,35 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 context,
                                                 "connections_user_connection_requests__tab"),
                                           ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            width: 35,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              label: Text(
-                                                connectionsProvider
-                                                    .requestReceivedCount,
-                                                style: typography
-                                                        .BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
+                                          if (connectionsProvider
+                                                  .requestReceivedCount
+                                                  .toString() !=
+                                              "0") ...[
+                                            SizedBox(width: CustomSpacing.two),
+                                            SizedBox(
+                                              height: 25,
+                                              width: 35,
+                                              child: Chip(
+                                                labelPadding: EdgeInsets.all(0),
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                label: Text(
+                                                  connectionsProvider
+                                                      .requestReceivedCount,
+                                                  style: typography
+                                                          .BottomNavigationActiveLabel
+                                                      .copyWith(height: -0.6),
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ],
                                       ),
                                     ),
                                     InkWell(
                                       onTap: () {
-                                        _tabController?.animateTo(2);
+                                        _tabController?.animateTo(3);
                                         _selectedScreen = Screens.chatList;
                                       },
                                       child: Row(
@@ -509,40 +537,24 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 context,
                                                 "connections_user_connection_chats__tab"),
                                           ),
-                                          SizedBox(width: CustomSpacing.two),
-                                          SizedBox(
-                                            height: 25,
-                                            width: 35,
-                                            child: Chip(
-                                              labelPadding: EdgeInsets.all(0),
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              label: Text(
-                                                '0',
-                                                style: typography
-                                                        .BottomNavigationActiveLabel
-                                                    .copyWith(height: -0.6),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    InkWell(
-                                      onTap: () {
-                                        _tabController?.animateTo(3);
-                                        _selectedScreen = Screens.networkList;
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Tab(
-                                            text: LanguageService.getTranslated(
-                                                context,
-                                                "connections_user_connection_networking_tab"),
-                                          ),
+
+                                          // SizedBox(width: CustomSpacing.two),
+                                          // SizedBox(
+                                          //   height: 25,
+                                          //   width: 35,
+                                          //   child: Chip(
+                                          //     labelPadding: EdgeInsets.all(0),
+                                          //     materialTapTargetSize:
+                                          //         MaterialTapTargetSize
+                                          //             .shrinkWrap,
+                                          //     label: Text(
+                                          //       '0',
+                                          //       style: typography
+                                          //               .BottomNavigationActiveLabel
+                                          //           .copyWith(height: -0.6),
+                                          //     ),
+                                          //   ),
+                                          // ),
                                         ],
                                       ),
                                     ),
@@ -571,10 +583,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               child: TabBarView(
                                 controller: _tabController,
                                 children: [
+                                  _getNetworkingUI(),
                                   _getConnectionsUI(),
                                   _getRequestsUI(),
                                   _getChatsUI(),
-                                  _getNetworkingUI(),
                                   _getBlockedUI(),
                                 ],
                               ),
@@ -797,78 +809,78 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                     ),
                                     SizedBox(height: CustomSpacing.two),
                                     // Company
-                                    TextFormField(
-                                      controller: _filterCompanyController,
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            "usermangement_corp_trow_comp_name"),
-                                        labelStyle: typography.Body1,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: CustomSpacing.two),
-                                    // Role Dropdown
-                                    (_selectedScreen == Screens.corporateList)
-                                        ? SizedBox()
-                                        : DropdownButtonFormField<
-                                            roleModel.Roles>(
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "register_corporate_role_field_label"),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            items: filterRoleList
-                                                .map((roleModel.Roles value) {
-                                              return DropdownMenuItem<
-                                                  roleModel.Roles>(
-                                                value: value,
-                                                child: Text(value.name ?? ''),
-                                              );
-                                            }).toList(),
-                                            onChanged:
-                                                (roleModel.Roles? value) {
-                                              // Handle role change
-                                              setState(() {
-                                                selectedRoleForFilter = value;
-                                              });
-                                            },
-                                          ),
-
-                                    SizedBox(height: CustomSpacing.two),
-                                    // Status
-                                    DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: LanguageService.getTranslated(
-                                            context,
-                                            "categorymanagement_trow_status"),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      items: ['Active', 'Inactive']
-                                          .map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (String? value) {
-                                        // Handle status change
-                                        setState(() {
-                                          selectedStatus = value!;
-                                        });
-                                      },
-                                    ),
+                                    // TextFormField(
+                                    //   controller: _filterCompanyController,
+                                    //   decoration: InputDecoration(
+                                    //     labelText: LanguageService.getTranslated(
+                                    //         context,
+                                    //         "usermangement_corp_trow_comp_name"),
+                                    //     labelStyle: typography.Body1,
+                                    //     border: OutlineInputBorder(
+                                    //       borderRadius:
+                                    //           BorderRadius.circular(8),
+                                    //     ),
+                                    //   ),
+                                    // ),
+                                    // SizedBox(height: CustomSpacing.two),
+                                    // // Role Dropdown
+                                    // (_selectedScreen == Screens.corporateList)
+                                    //     ? SizedBox()
+                                    //     : DropdownButtonFormField<
+                                    //         roleModel.Roles>(
+                                    //         decoration: InputDecoration(
+                                    //           labelText:
+                                    //               LanguageService.getTranslated(
+                                    //                   context,
+                                    //                   "register_corporate_role_field_label"),
+                                    //           border: OutlineInputBorder(
+                                    //             borderRadius:
+                                    //                 BorderRadius.circular(8),
+                                    //           ),
+                                    //         ),
+                                    //         items: filterRoleList
+                                    //             .map((roleModel.Roles value) {
+                                    //           return DropdownMenuItem<
+                                    //               roleModel.Roles>(
+                                    //             value: value,
+                                    //             child: Text(value.name ?? ''),
+                                    //           );
+                                    //         }).toList(),
+                                    //         onChanged:
+                                    //             (roleModel.Roles? value) {
+                                    //           // Handle role change
+                                    //           setState(() {
+                                    //             selectedRoleForFilter = value;
+                                    //           });
+                                    //         },
+                                    //       ),
+                                    //
+                                    // SizedBox(height: CustomSpacing.two),
+                                    // // Status
+                                    // DropdownButtonFormField<String>(
+                                    //   decoration: InputDecoration(
+                                    //     labelText: LanguageService.getTranslated(
+                                    //         context,
+                                    //         "categorymanagement_trow_status"),
+                                    //     border: OutlineInputBorder(
+                                    //       borderRadius:
+                                    //           BorderRadius.circular(8),
+                                    //     ),
+                                    //   ),
+                                    //   items: ['Active', 'Inactive']
+                                    //       .map((String value) {
+                                    //     return DropdownMenuItem<String>(
+                                    //       value: value,
+                                    //       child: Text(value),
+                                    //     );
+                                    //   }).toList(),
+                                    //   onChanged: (String? value) {
+                                    //     // Handle status change
+                                    //     setState(() {
+                                    //       selectedStatus = value!;
+                                    //     });
+                                    //   },
+                                    // ),
                                     SizedBox(height: CustomSpacing.two),
                                     // Cancel and Submit Buttons
                                     Column(
@@ -1041,26 +1053,32 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         ),
                       ],
                     )
-                  : ListView.builder(
-                      itemCount:
-                          connectionsProvider.corporateConnections.length,
-                      itemBuilder: (context, index) {
-                        if (index ==
-                            connectionsProvider.corporateConnections.length -
-                                1) {
-                          return Column(
-                            children: [
-                              _corporateConnectionsCardUI(
-                                  connectionsProvider, index),
-                              SizedBox(
-                                height: CustomSpacing.twentyEight,
-                              ),
-                            ],
-                          );
-                        }
-                        return _corporateConnectionsCardUI(
-                            connectionsProvider, index);
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        await connectionsProvider.getAllConnections(
+                            context, widget.userId);
                       },
+                      child: ListView.builder(
+                        itemCount:
+                            connectionsProvider.corporateConnections.length,
+                        itemBuilder: (context, index) {
+                          if (index ==
+                              connectionsProvider.corporateConnections.length -
+                                  1) {
+                            return Column(
+                              children: [
+                                _corporateConnectionsCardUI(
+                                    connectionsProvider, index),
+                                SizedBox(
+                                  height: CustomSpacing.twentyEight,
+                                ),
+                              ],
+                            );
+                          }
+                          return _corporateConnectionsCardUI(
+                              connectionsProvider, index);
+                        },
+                      ),
                     );
         },
       ),
@@ -1100,13 +1118,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         ),
                       ],
                     )
-                  : ListView.builder(
-                      itemCount:
-                          connectionsProvider.nonCorporateConnections.length,
-                      itemBuilder: (context, index) {
-                        return _nonCorporateConnectionsCardUI(
-                            connectionsProvider, index);
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        await connectionsProvider.getAllConnections(
+                            context, widget.userId);
                       },
+                      child: ListView.builder(
+                        itemCount:
+                            connectionsProvider.nonCorporateConnections.length,
+                        itemBuilder: (context, index) {
+                          return _nonCorporateConnectionsCardUI(
+                              connectionsProvider, index);
+                        },
+                      ),
                     );
         },
       ),
@@ -2382,16 +2406,16 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           Text(connectionsProvider.networkingUsers[index].companyName ?? "",
               style: typography.Body2),
           SizedBox(height: CustomSpacing.two),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              RatingBar(
-                  rating:
-                      connectionsProvider.networkingUsers[index].rating ?? 0,
-                  maxRating: 5),
-            ],
-          ),
-          SizedBox(height: CustomSpacing.four),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     RatingBar(
+          //         rating:
+          //             connectionsProvider.networkingUsers[index].rating ?? 0,
+          //         maxRating: 5),
+          //   ],
+          // ),
+          // SizedBox(height: CustomSpacing.four),
           // Personalized Message make it bigger in size
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -2454,9 +2478,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                   _messageController.text)
                               .then((value) {
                             if (value) {
+                              _getData();
                               Navigator.of(dialogContext).pop();
+                              _messageController.clear();
                             }
                           });
+
                         },
                         type: ButtonType.filled,
                         child: Text(

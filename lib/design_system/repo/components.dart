@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:green/providers/auth_provider.dart';
+import 'package:RiskSphare/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../screens/onboarding/login_screen.dart';
 import 'constants.dart';

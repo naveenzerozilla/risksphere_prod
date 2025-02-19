@@ -31,7 +31,7 @@ class CorporateType {
   List<Roles>? roles;
   bool? canBeListed;
   int? trialPeriodDays;
-  bool? adminSelfRegistration;
+  var adminSelfRegistration;
   String? type;
   String? usedBy;
   bool? enableCorporateVerification;

@@ -141,4 +141,9 @@ class AppConstant {
   static String get UPDATE_HAZARD => '$baseURL/locations/updatehazard';
 
 
+
+// DELETE API CALL
+  static String get DELETE_ACCOUNT => '$baseURL/locations/delete_account/?';
+  static String get DELETE_SUB_ACCOUNT => '$baseURL/locations/delete_subaccount';
+
 }

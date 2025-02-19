@@ -10,24 +10,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:green/models/my_location_list_model.dart';
-import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/providers/user_profile_provider.dart';
-import 'package:green/screens/listings/add_location_screen.dart';
-import 'package:green/screens/listings/sov_location_list.dart';
-import 'package:green/screens/listings/widgets/configurations_tab.dart';
-import 'package:green/screens/listings/widgets/data_tab.dart';
-import 'package:green/screens/listings/widgets/export_dialog.dart';
-import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
-import 'package:green/screens/listings/widgets/location_card.dart';
-import 'package:green/screens/listings/widgets/location_list_map_view.dart';
-import 'package:green/screens/listings/widgets/maintenance_widget.dart';
-import 'package:green/screens/listings/widgets/mapping_screen.dart';
-import 'package:green/screens/listings/widgets/message_card.dart';
-import 'package:green/screens/listings/widgets/overall_score_table.dart';
-import 'package:green/screens/processMonitoringScreen/process_monitoring_system.dart';
-import 'package:green/service/shared_preference_service.dart';
+import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphare/providers/location_list_provider.dart';
+import 'package:RiskSphare/providers/my_location_list_provider.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphare/screens/listings/add_location_screen.dart';
+import 'package:RiskSphare/screens/listings/sov_location_list.dart';
+import 'package:RiskSphare/screens/listings/widgets/configurations_tab.dart';
+import 'package:RiskSphare/screens/listings/widgets/data_tab.dart';
+import 'package:RiskSphare/screens/listings/widgets/export_dialog.dart';
+import 'package:RiskSphare/screens/listings/widgets/listings_filter_screen.dart';
+import 'package:RiskSphare/screens/listings/widgets/location_card.dart';
+import 'package:RiskSphare/screens/listings/widgets/location_list_map_view.dart';
+import 'package:RiskSphare/screens/listings/widgets/maintenance_widget.dart';
+import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphare/screens/listings/widgets/message_card.dart';
+import 'package:RiskSphare/screens/listings/widgets/overall_score_table.dart';
+import 'package:RiskSphare/screens/processMonitoringScreen/process_monitoring_system.dart';
+import 'package:RiskSphare/service/shared_preference_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -47,15 +47,15 @@ import '../../models/transfer_autocomplete_model.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/sov_list_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:green/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
 
 class MyLocationList extends StatefulWidget {
-  final String accountID;
-  final String subAccountID;
+  final String? accountID;
+  final String? subAccountID;
   final String accountName;
   final String subAccountName;
   final String? initialProcessId;
@@ -63,8 +63,8 @@ class MyLocationList extends StatefulWidget {
 
   const MyLocationList({
     super.key,
-    this.accountID = '',
-    this.subAccountID = '',
+    this.accountID,
+    this.subAccountID,
     this.accountName = '',
     this.subAccountName = '',
     this.initialProcessId,
@@ -81,6 +81,8 @@ class _MyLocationListState extends State<MyLocationList>
   bool _showNotificationDot = true;
   TabController? _masterTabController;
   TabController? _tabController;
+
+  String isMaintenance = "";
   Screens _selectedScreen = Screens.locationList;
   TextEditingController _locationSearchController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
@@ -110,14 +112,13 @@ class _MyLocationListState extends State<MyLocationList>
 
   String? _uploadedFileName;
   TextEditingController _sovNameController = TextEditingController();
+  TextEditingController _locationNameController = TextEditingController();
   late File files;
 
   TabController? _mainTabController;
   int selectedMainTab = 0;
   int selectedTab = 0;
   int selectedMasterTab = 0;
-
-  bool isMaintenance = false;
 
   /// Sov Things
   TextEditingController _textEditingController = TextEditingController();
@@ -144,6 +145,7 @@ class _MyLocationListState extends State<MyLocationList>
   @override
   void initState() {
     super.initState();
+    _getSovUploadStatus();
     // Initially clear all filters
     Provider.of<MyLocationListProvider>(context, listen: false)
         .clearAllFilters();
@@ -222,7 +224,7 @@ class _MyLocationListState extends State<MyLocationList>
 
     _getMaintainancePeriod();
 
-    _getSovUploadStatus();
+
   }
 
   @override
@@ -262,20 +264,10 @@ class _MyLocationListState extends State<MyLocationList>
     super.dispose();
   }
 
-  _getSovUploadStatus() async {
-    String tempProcessId =
-        await SharedPreferenceService.getSovUploadTempId() ?? "";
-    String accountId = await SharedPreferenceService.getSovAccountId() ?? "";
-    String subAccountId =
-        await SharedPreferenceService.getSovSubAccountId() ?? "";
-    isUploadInProgress = tempProcessId.isNotEmpty &&
-        widget.accountID == accountId &&
-        widget.subAccountID == subAccountId;
-  }
+
 
   _getMaintainancePeriod() async {
-    isMaintenance =
-        await SharedPreferenceService.getScheduleInProgress() ?? false;
+    isMaintenance = (await SharedPreferenceService.getScheduleInProgress())!;
   }
 
   _getData() async {
@@ -309,10 +301,10 @@ class _MyLocationListState extends State<MyLocationList>
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
     Provider.of<SOVListProvider>(context, listen: false).page = 1;
     Provider.of<SOVListProvider>(context, listen: false).fetchSovList(
-        context, widget.accountID, widget.subAccountID, "", 1, 10);
+        context, widget.accountID!, widget.subAccountID!, "", 1, 10);
     Provider.of<SOVListProvider>(context, listen: false)
         .fetchAutoCompleteSovListLocations(
-            context, widget.accountID, widget.subAccountID);
+            context, widget.accountID!, widget.subAccountID!);
     Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchAllLocationList(
       context,
@@ -342,6 +334,30 @@ class _MyLocationListState extends State<MyLocationList>
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+  _getSovUploadStatus() async {
+    String? tempProcessId = await SharedPreferenceService.getSovUploadTempId();
+    String? accountId = await SharedPreferenceService.getSovAccountId();
+    String? subAccountId = await SharedPreferenceService.getSovSubAccountId() ?? "";
+
+    print("tempProcessId: $tempProcessId");
+    print("current sov accountId: $accountId");
+    print("widget.accountID: ${widget.accountID}");
+    print("sov subAccountId: $subAccountId");
+    print("widget.subAccountID: ${widget.subAccountID}");
+
+    if (tempProcessId == null || accountId == null) {
+      print("Error: Missing values from Shared Preferences.");
+      return;
+    }
+
+    setState(() {
+      isUploadInProgress = tempProcessId.isNotEmpty &&
+          widget.accountID == accountId &&
+          widget.subAccountID == subAccountId;
+    });
+
+    print("Upload in Progress: $isUploadInProgress");
   }
 
   @override
@@ -399,8 +415,8 @@ class _MyLocationListState extends State<MyLocationList>
                             Navigator.of(context)
                                 .push(MaterialPageRoute(
                               builder: (_) => AddLocationScreen(
-                                accountId: widget.accountID,
-                                subAccountId: widget.subAccountID,
+                                accountId: widget.accountID!,
+                                subAccountId: widget.subAccountID!,
                                 sovId: "",
                                 accountName: widget.accountName,
                                 subAccountName: widget.subAccountName,
@@ -408,6 +424,7 @@ class _MyLocationListState extends State<MyLocationList>
                             ))
                                 .then((value) {
                               if (value != null) {
+                                _getData();
                                 if (value) {
                                   Provider.of<MyLocationListProvider>(context,
                                           listen: false)
@@ -432,10 +449,12 @@ class _MyLocationListState extends State<MyLocationList>
                         backgroundColor: AppColors.primaryMain,
                         foregroundColor:
                             themeProvider.getTheme.colorScheme.onPrimary,
-                        label: isUploadInProgress ? 'Continue' : 'Import Locations',
+                        label: isUploadInProgress
+                            ? 'Continue'
+                            : 'Import Locations',
                         labelStyle: typography.Body1,
                         onTap: () async {
-                          if (isMaintenance) {
+                          if (isMaintenance.toString() == 'in_progress') {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -454,14 +473,14 @@ class _MyLocationListState extends State<MyLocationList>
                                     listen: false)
                                 .fetchSovUploadData(
                                     context,
-                                    widget.accountID,
+                                    widget.accountID!,
                                     widget.accountName,
-                                    widget.subAccountID,
+                                    widget.subAccountID!,
                                     tempProcessId,
                                     state);
                           } else {
                             _showUploadBottomSheet(
-                                widget.accountID, widget.subAccountID, "");
+                                widget.accountID!, widget.subAccountID!, "");
                           }
                         },
                       ),
@@ -482,8 +501,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     context: context,
                                     builder: (BuildContext context) {
                                       return ExportDialog(
-                                        accountId: widget.accountID,
-                                        subAccountId: widget.subAccountID,
+                                        accountId: widget.accountID!,
+                                        subAccountId: widget.subAccountID!,
                                         sovId: "",
                                         locationId: selectedMainTab == 0
                                             ? Provider.of<
@@ -512,6 +531,8 @@ class _MyLocationListState extends State<MyLocationList>
                 ),
                 body: Stack(
                   children: [
+
+
                     /*  Positioned.fill(
                         child: Image.asset(
                           'assets/images/mesh.png',
@@ -543,6 +564,9 @@ class _MyLocationListState extends State<MyLocationList>
                                         ],
                                       ),
                                     ),
+                                    // Container(
+                                    //   child: MaintenanceUI(isMaintenance: isMaintenance),
+                                    // ),
                                     Expanded(
                                       child: Row(
                                         mainAxisAlignment:
@@ -626,9 +650,9 @@ class _MyLocationListState extends State<MyLocationList>
                                                       text: 'SOVs',
                                                     ),
                                                     Tab(text: 'Shared'),
-                                                    Tab(
-                                                        text:
-                                                            'Access Requests'),
+                                                    // Tab(
+                                                    //     text:
+                                                    //         'Access Requests'),
                                                     // Tab(text: 'Data'),
                                                     if (userProfileProvider
                                                             .trialInfo['status']
@@ -671,7 +695,7 @@ class _MyLocationListState extends State<MyLocationList>
                                           horizontal: 16, vertical: 8),
                                       child: sovBody(typography),
                                     ),
-                                    _getComingSoonUI(),
+                                    // _getComingSoonUI(),
                                     _getComingSoonUI(),
                                     // DataTab(
                                     //   accountId: widget.accountID,
@@ -697,9 +721,9 @@ class _MyLocationListState extends State<MyLocationList>
                 endDrawer: Drawer(
                   child: SafeArea(
                     child: ListingsFilterScreen(
-                      accountId: widget.accountID,
-                      subAccountId: widget.subAccountID,
-                      sovId: "widget.sovId",
+                      accountId: widget.accountID!,
+                      subAccountId: widget.subAccountID!,
+                      sovId: widget.accountID!,
                       searchQuery: locationQuery,
                       showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
                       initialProcessId: widget.initialProcessId,
@@ -841,9 +865,9 @@ class _MyLocationListState extends State<MyLocationList>
                                               context: context,
                                               builder: (BuildContext context) {
                                                 return ExportDialog(
-                                                  accountId: widget.accountID,
+                                                  accountId: widget.accountID!,
                                                   subAccountId:
-                                                      widget.subAccountID,
+                                                      widget.subAccountID!,
                                                   locationId: selectedSovIds,
                                                 );
                                               },
@@ -878,9 +902,9 @@ class _MyLocationListState extends State<MyLocationList>
                                               context: context,
                                               builder: (BuildContext context) {
                                                 return ExportDialog(
-                                                  accountId: widget.accountID,
+                                                  accountId: widget.accountID!,
                                                   subAccountId:
-                                                      widget.subAccountID,
+                                                      widget.subAccountID!,
                                                   locationId:
                                                       selectedLoactionIds,
                                                 );
@@ -913,7 +937,7 @@ class _MyLocationListState extends State<MyLocationList>
                         onPressed: () {
                           // Implement bulk add to SOV
                           locationListProvider.addTagsToSelectedLocations(
-                              context, widget.accountID, widget.subAccountID);
+                              context, widget.accountID!, widget.subAccountID!);
                         },
                         icon: Icon(Symbols.note_stack_add),
                         tooltip: 'Add Tag'),
@@ -924,8 +948,8 @@ class _MyLocationListState extends State<MyLocationList>
                               // Implement bulk add to SOV
                               locationListProvider.addSelectedToSOV(
                                   context,
-                                  widget.accountID,
-                                  widget.subAccountID,
+                                  widget.accountID!,
+                                  widget.subAccountID!,
                                   widget.accountName,
                                   widget.subAccountName,
                                   _masterTabController);
@@ -951,8 +975,8 @@ class _MyLocationListState extends State<MyLocationList>
                                 onPressed: () {
                                   locationListProvider.deleteSelectedLocations(
                                     context,
-                                    widget.accountID,
-                                    widget.subAccountID,
+                                    widget.accountID!,
+                                    widget.subAccountID!,
                                   );
                                   Navigator.pop(context);
                                 },
@@ -1165,9 +1189,6 @@ class _MyLocationListState extends State<MyLocationList>
           }),
         ),
         SizedBox(height: CustomSpacing.two),
-        Container(
-          child: MaintenanceUI(isMaintenance: isMaintenance),
-        ),
         showSelectAll
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1411,8 +1432,8 @@ class _MyLocationListState extends State<MyLocationList>
               ),
               // Map View
               LocationListMapView(
-                accountId: widget.accountID,
-                subAccountId: widget.subAccountID,
+                accountId: widget.accountID!,
+                subAccountId: widget.subAccountID!,
               ),
               // Overall Score
               Consumer<MyLocationListProvider>(
@@ -1535,13 +1556,20 @@ class _MyLocationListState extends State<MyLocationList>
               if (processStatus.toString().toLowerCase() == 'processing')
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute(
-                          builder: (_) => ProcessMonitoringScreen(
-                            accountId: widget.accountID,
-                            subAccountId: widget.subAccountID,
-                          ),
-                        ))
+                    Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ProcessMonitoringScreen(
+                                      accountId: widget.accountID,
+                                      subAccountId: widget.subAccountID,
+                                    )))
+                        // Navigator.push(MaterialPageRoute(
+                        //         builder: (_) => ProcessMonitoringScreen(
+                        //           accountId: widget.accountID,
+                        //           subAccountId: widget.subAccountID,
+                        //         ),
+                        //       ))
+
                         .then((value) => _getData());
                   },
                   child: Padding(
@@ -2001,7 +2029,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .myLocationList[index]
                                                 .overallScore ??
                                             0,
-                                        dataCompletenessScore: 2,
+                                        dataCompletenessScore: 0,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -2020,8 +2048,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                       listen: false)
                                                   .deleteLocations(
                                                       context,
-                                                      widget.accountID,
-                                                      widget.subAccountID,
+                                                      widget.accountID!,
+                                                      widget.subAccountID!,
                                                       "",
                                                       [locationId]);
 
@@ -2050,8 +2078,8 @@ class _MyLocationListState extends State<MyLocationList>
                                           // Implement bulk add to SOV
                                           locationListProvider.addSelectedToSOV(
                                               context,
-                                              widget.accountID,
-                                              widget.subAccountID,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
                                               widget.accountName,
                                               widget.subAccountName,
                                               _masterTabController,
@@ -2063,8 +2091,8 @@ class _MyLocationListState extends State<MyLocationList>
                                           locationListProvider
                                               .addTagsToSelectedLocations(
                                                   context,
-                                                  widget.accountID,
-                                                  widget.subAccountID,
+                                                  widget.accountID!,
+                                                  widget.subAccountID!,
                                                   locationId);
                                         },
                                         getData: _getData,
@@ -2156,7 +2184,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 riskScore: locationListProvider
                                         .myLocationList[index].overallScore ??
                                     0,
-                                dataCompletenessScore: 2,
+                                dataCompletenessScore: 0,
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -2173,8 +2201,8 @@ class _MyLocationListState extends State<MyLocationList>
                                               listen: false)
                                           .deleteLocations(
                                               context,
-                                              widget.accountID,
-                                              widget.subAccountID,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
                                               "",
                                               [locationId]);
 
@@ -2203,8 +2231,8 @@ class _MyLocationListState extends State<MyLocationList>
                                   // Implement bulk add to SOV
                                   locationListProvider.addSelectedToSOV(
                                       context,
-                                      widget.accountID,
-                                      widget.subAccountID,
+                                      widget.accountID!,
+                                      widget.subAccountID!,
                                       widget.accountName,
                                       widget.subAccountName,
                                       _masterTabController,
@@ -2216,8 +2244,8 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider
                                       .addTagsToSelectedLocations(
                                           context,
-                                          widget.accountID,
-                                          widget.subAccountID,
+                                          widget.accountID!,
+                                          widget.subAccountID!,
                                           locationId);
                                 },
                                 getData: _getData,
@@ -2574,7 +2602,7 @@ class _MyLocationListState extends State<MyLocationList>
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
           locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 2,
+      dataCompletenessScore: 0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -2585,7 +2613,7 @@ class _MyLocationListState extends State<MyLocationList>
             print("Deleting location $locationId");
             // Delete the location
             await Provider.of<MyLocationListProvider>(context, listen: false)
-                .deleteLocations(context, widget.accountID, widget.subAccountID,
+                .deleteLocations(context, widget.accountID!, widget.subAccountID!,
                     "", [locationId]);
 
             // Refresh the list after deletion
@@ -2611,8 +2639,8 @@ class _MyLocationListState extends State<MyLocationList>
         // Implement bulk add to SOV
         locationListProvider.addSelectedToSOV(
             context,
-            widget.accountID,
-            widget.subAccountID,
+            widget.accountID!,
+            widget.subAccountID!,
             widget.accountName,
             widget.subAccountName,
             _masterTabController,
@@ -2622,7 +2650,7 @@ class _MyLocationListState extends State<MyLocationList>
         // Show add tag dialog
         // Implement bulk add tag
         locationListProvider.addTagsToSelectedLocations(
-            context, widget.accountID, widget.subAccountID, locationId);
+            context, widget.accountID!, widget.subAccountID!, locationId);
       },
       getData: _getData,
     );
@@ -2759,8 +2787,10 @@ class _MyLocationListState extends State<MyLocationList>
                                               fileNameWithExtension
                                                   .split('.')
                                                   .first;
-                                          _sovNameController.text =
+                                          _locationNameController.text =
                                               _uploadedFileName!;
+                                          // _sovNameController.text =
+                                          //     _uploadedFileName!;
                                         });
                                       }
                                     },
@@ -2819,7 +2849,7 @@ class _MyLocationListState extends State<MyLocationList>
                                           Icon(Icons.description, size: 25),
                                           SizedBox(height: 10),
                                           Text(
-                                            _sovNameController.text,
+                                            _locationNameController.text,
                                             style: typography.Body1,
                                           ),
                                           SizedBox(height: 10),
@@ -2907,14 +2937,13 @@ class _MyLocationListState extends State<MyLocationList>
                       if (addToSOVCheck) ...[
                         // Fields displayed only if checkbox is checked
                         TextField(
-                          readOnly: true,
+                          // readOnly: true,
                           controller: _sovNameController,
                           // enabled: locations > 0,
-                          /*
-                            readOnly: _uploadedFileName != null,*/
+                          //   readOnly: _uploadedFileName != null,
                           style: TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: "Name of the SoV3",
+                            labelText: "Name of the SoV",
                             labelStyle: TextStyle(color: Colors.white),
                             enabledBorder: OutlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey)),
@@ -3100,6 +3129,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                                       .text,
                                                                   _sovNameController
                                                                       .text);
+                                                          _sovNameController
+                                                              .clear();
                                                           Navigator.pop(
                                                               context);
 
@@ -3203,11 +3234,11 @@ class _MyLocationListState extends State<MyLocationList>
                                                                           tempId:
                                                                               success,
                                                                           accountId:
-                                                                              widget.accountID,
+                                                                              widget.accountID!,
                                                                           accountName:
                                                                               widget.accountName ?? "",
                                                                           subAccountId:
-                                                                              widget.subAccountID,
+                                                                              widget.subAccountID!,
                                                                         )));
                                                           }
                                                         },
@@ -3252,8 +3283,8 @@ class _MyLocationListState extends State<MyLocationList>
       _sovQuery = query;
       var provider = Provider.of<SOVListProvider>(context, listen: false);
       provider.page = 0;
-      await provider.fetchSovList(context, widget.accountID,
-          widget.subAccountID, _sovQuery, provider.page, 10);
+      await provider.fetchSovList(context, widget.accountID!,
+          widget.subAccountID!, _sovQuery, provider.page, 10);
     });
   }
 
@@ -3346,8 +3377,8 @@ class _MyLocationListState extends State<MyLocationList>
                               sovListProvider.page = sovListProvider.page + 1;
                               sovListProvider.fetchSovList(
                                 context,
-                                widget.accountID,
-                                widget.subAccountID,
+                                widget.accountID!,
+                                widget.subAccountID!,
                                 _sovQuery,
                                 sovListProvider.page,
                                 10, // Page size
@@ -3393,8 +3424,8 @@ class _MyLocationListState extends State<MyLocationList>
                 }*/
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return SovLocationList(
-                    accountID: widget.accountID,
-                    subAccountID: widget.subAccountID,
+                    accountID: widget.accountID!,
+                    subAccountID: widget.subAccountID!,
                     accountName: widget.accountName,
                     subAccountName: widget.subAccountName,
                     sovID: sOVListProvider.sovList[index].id ?? "",
@@ -3469,18 +3500,20 @@ class _MyLocationListState extends State<MyLocationList>
                                     children: [
                                       Flexible(
                                         child: Text(
-                                          (sOVListProvider.sovList[index]
-                                                          .name ??
-                                                      "")
-                                                  .isNotEmpty
-                                              ? sOVListProvider
-                                                      .sovList[index].name!
-                                                      .substring(0, 1)
-                                                      .toUpperCase() +
-                                                  sOVListProvider
-                                                      .sovList[index].name!
-                                                      .substring(1)
-                                              : "",
+                                          sOVListProvider.sovList[index].name
+                                              .toString(),
+                                          // (sOVListProvider.sovList[index]
+                                          //                 .name ??
+                                          //             "")
+                                          //         .isNotEmpty
+                                          //     ? sOVListProvider
+                                          //             .sovList[index].name!
+                                          //             .substring(0, 1)
+                                          //             .toUpperCase() +
+                                          //         sOVListProvider
+                                          //             .sovList[index].name!
+                                          //             .substring(1)
+                                          //     : "",
                                           //sOVListProvider.sovList[index].id??"",
                                           style: typography.Body2.copyWith(
                                             color:
@@ -3639,8 +3672,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                                             // Update account details
                                                                             await sovListProvider.renameSov(
                                                                                 context,
-                                                                                widget.accountID,
-                                                                                widget.subAccountID,
+                                                                                widget.accountID!,
+                                                                                widget.subAccountID!,
                                                                                 sovListProvider.sovList[index].id ?? "",
                                                                                 _sovEditNameController.text);
                                                                             Navigator.pop(context);
@@ -3837,9 +3870,9 @@ class _MyLocationListState extends State<MyLocationList>
                                                             await sOVListProvider.duplicateSov(
                                                                 context,
                                                                 widget
-                                                                    .accountID,
+                                                                    .accountID!,
                                                                 widget
-                                                                    .subAccountID,
+                                                                    .subAccountID!,
                                                                 sOVListProvider
                                                                         .sovList[
                                                                             index]
@@ -4031,7 +4064,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     await provider
                                         .transferSOV(
                                             context,
-                                            widget.accountID,
+                                            widget.accountID!,
                                             widget.subAccountID,
                                             sov.id,
                                             _selectedUser!.id)

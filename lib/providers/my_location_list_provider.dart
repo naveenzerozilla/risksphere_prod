@@ -1,17 +1,17 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/models/account_list_model.dart';
-import 'package:green/models/location_list_model.dart';
-import 'package:green/models/location_profile_model.dart';
-import 'package:green/models/my_location_list_model.dart';
-import 'package:green/models/sov_list_model.dart';
-import 'package:green/providers/sov_list_provider.dart';
-import 'package:green/screens/listings/widgets/auto_complete_options_sovs.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/utils/api_constants.dart';
-import 'package:green/utils/common_headers.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/models/account_list_model.dart';
+import 'package:RiskSphare/models/location_list_model.dart';
+import 'package:RiskSphare/models/location_profile_model.dart';
+import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphare/models/sov_list_model.dart';
+import 'package:RiskSphare/providers/sov_list_provider.dart';
+import 'package:RiskSphare/screens/listings/widgets/auto_complete_options_sovs.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphare/utils/common_headers.dart';
 import 'package:provider/provider.dart';
 import '../constants/enums.dart';
 import '../design_system/components/custom_button.dart';
@@ -23,10 +23,10 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/models/location_list_model.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/utils/api_constants.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/models/location_list_model.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
 
 import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/language_service.dart';
@@ -719,6 +719,7 @@ class MyLocationListProvider extends ChangeNotifier {
       var response = await apiService.delete({});
       log(response.toString());
       CustomToast.success(context, response['message']);
+      Navigator.pop(context);
     } on BackendException catch (e, stackTrace) {
       log("Error deleting tag from location: ${e.message}");
       log(stackTrace.toString());
@@ -732,6 +733,10 @@ class MyLocationListProvider extends ChangeNotifier {
       isDeleteTagLoading = false;
     }
   }
+
+
+
+
 
   Future<List<MyLocation>> performGlobalSearch(BuildContext context, String query) async {
     if (query.isEmpty) {

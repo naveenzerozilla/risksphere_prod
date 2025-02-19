@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:green/firebase_options.dart';
-import 'package:green/providers/configuration_provider.dart';
-import 'package:green/providers/drawer_selection_provider.dart';
-import 'package:green/providers/job_monitoring_provier.dart';
-import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/providers/news_feed_provider.dart';
-import 'package:green/screens/event/notification_map_screen.dart';
-import 'package:green/utils/api_constants.dart';
+import 'package:RiskSphare/firebase_options.dart';
+import 'package:RiskSphare/providers/configuration_provider.dart';
+import 'package:RiskSphare/providers/drawer_selection_provider.dart';
+import 'package:RiskSphare/providers/job_monitoring_provier.dart';
+import 'package:RiskSphare/providers/my_location_list_provider.dart';
+import 'package:RiskSphare/providers/news_feed_provider.dart';
+import 'package:RiskSphare/screens/event/notification_map_screen.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -18,25 +18,25 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:green/providers/account_list_provider.dart';
-import 'package:green/providers/auth_provider.dart';
-import 'package:green/providers/company_provider.dart';
-import 'package:green/providers/connections_provider.dart';
-import 'package:green/providers/corporate_user_provider.dart';
-import 'package:green/providers/dashboard_provider.dart';
-import 'package:green/providers/email_provider.dart';
-import 'package:green/providers/employee_provider.dart';
-import 'package:green/providers/feature_provider.dart';
-import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/location_profile_provider.dart';
-import 'package:green/providers/non_corporate_user_Provider.dart';
-import 'package:green/providers/role_provider.dart';
-import 'package:green/providers/sov_list_provider.dart';
-import 'package:green/providers/sub_account_list_provider.dart';
-import 'package:green/providers/upload_sov_provider.dart';
-import 'package:green/providers/user_profile_provider.dart';
-import 'package:green/providers/verification_provider.dart';
-import 'package:green/service/shared_preference_service.dart';
+import 'package:RiskSphare/providers/account_list_provider.dart';
+import 'package:RiskSphare/providers/auth_provider.dart';
+import 'package:RiskSphare/providers/company_provider.dart';
+import 'package:RiskSphare/providers/connections_provider.dart';
+import 'package:RiskSphare/providers/corporate_user_provider.dart';
+import 'package:RiskSphare/providers/dashboard_provider.dart';
+import 'package:RiskSphare/providers/email_provider.dart';
+import 'package:RiskSphare/providers/employee_provider.dart';
+import 'package:RiskSphare/providers/feature_provider.dart';
+import 'package:RiskSphare/providers/location_list_provider.dart';
+import 'package:RiskSphare/providers/location_profile_provider.dart';
+import 'package:RiskSphare/providers/non_corporate_user_Provider.dart';
+import 'package:RiskSphare/providers/role_provider.dart';
+import 'package:RiskSphare/providers/sov_list_provider.dart';
+import 'package:RiskSphare/providers/sub_account_list_provider.dart';
+import 'package:RiskSphare/providers/upload_sov_provider.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphare/providers/verification_provider.dart';
+import 'package:RiskSphare/service/shared_preference_service.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
@@ -385,7 +385,7 @@ void main() async {
   setupFirebaseMessaging();
 
   String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
-  await initFCM(userId);
+  // await initFCM(userId);
   // Check if the app was opened by a notification
   checkForInitialMessage();
 

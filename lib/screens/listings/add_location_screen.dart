@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/location_profile_provider.dart';
-import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/providers/user_profile_provider.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/listings/widgets/auto_complete_options_sovs.dart';
-import 'package:green/screens/listings/widgets/map_full_screen.dart';
-import 'package:green/screens/listings/widgets/message_card.dart';
+import 'package:RiskSphare/providers/location_list_provider.dart';
+import 'package:RiskSphare/providers/location_profile_provider.dart';
+import 'package:RiskSphare/providers/my_location_list_provider.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphare/screens/listings/location_profile.dart';
+import 'package:RiskSphare/screens/listings/widgets/auto_complete_options_sovs.dart';
+import 'package:RiskSphare/screens/listings/widgets/map_full_screen.dart';
+import 'package:RiskSphare/screens/listings/widgets/message_card.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -709,7 +709,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           },
 
                                                           decoration: InputDecoration(
-                                                            labelText: "Name of the SoV1",
+                                                            labelText: "Name of the SoV",
                                                             border: const OutlineInputBorder(),
                                                             suffixIcon: Icon(Icons.search),
                                                           ),
@@ -814,7 +814,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "sov_id": widget.sovId,
         "by_search": false,
         "location_name": _locationNameController.text,
-        "location_type": _selectedLocationType,
+        "location_type": [_selectedLocationType],
         "description": _locationDescriptionController.text,
         "address": _locationAddressController.text,
         "city": _locationCityController.text,
@@ -829,7 +829,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "user_id": FirebaseAuth.instance.currentUser!.uid,
         "add_to_sov": addToSOVCheck.toString(),
         "tags": "",
-        "name": "",
+        "name": sovController.text.toString(),
         "account_name": widget.accountName,
         "sub_account_name": widget.subAccountName,
         if (widget.locationId.isNotEmpty) "location_id": widget.locationId,
@@ -900,7 +900,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
           height: 25,
           width: 25,
           child: CircularProgressIndicator(
-            color: AppColors.primaryMain,
+            color: AppColors.black,
           ),
         ),
       );

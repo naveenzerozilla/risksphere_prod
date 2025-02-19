@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:green/screens/listings/my_location_list.dart';
+import 'package:RiskSphare/screens/listings/my_location_list.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
 import '../../../design_system/components/custom_button.dart';
@@ -304,9 +304,10 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                      Navigator.pop(context);
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>MyLocationList(accountID: widget.accountId, subAccountID: widget.subAccountId, accountName: widget.accountName, subAccountName: "",)), (route) => false);
+                      // Navigator.pop(context);
+                      // Navigator.pop(context);
+                      // Navigator.pop(context);
             //           Navigator.push(context, MaterialPageRoute(builder: (context) {
             //             return /* LocationProfile(
             //   account: accountListProvider.accountList[index],

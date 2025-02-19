@@ -10,13 +10,13 @@ import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:green/design_system/components/country_picker_flag_name.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/main.dart';
-import 'package:green/models/initial_data_model.dart';
-import 'package:green/providers/auth_provider.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/onboarding/splash_screen.dart';
+import 'package:RiskSphare/design_system/components/country_picker_flag_name.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/main.dart';
+import 'package:RiskSphare/models/initial_data_model.dart';
+import 'package:RiskSphare/providers/auth_provider.dart';
+import 'package:RiskSphare/screens/home/dashboard_screen.dart';
+import 'package:RiskSphare/screens/onboarding/splash_screen.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
@@ -99,6 +99,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   bool _showPasswordIndividual = false;
   bool _showPasswordConfirmationIndividual = false;
+  bool _showPasswordConfirmationCorporate = false;
+
   bool _showPasswordCorporate = false;
 
   @override
@@ -421,13 +423,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                           !_enableCompanyTypeDropdown
                                               ? selectedCompanyRole
                                               : Roles(
-                                                  // isForIndividual: true,
-                                                  // isApplicableForTrial: false,
+                                                  isForIndividual: true,
+                                                  isApplicableForTrial: false,
                                                   role: "admin",
-                                                  name: "Admin"
-                                                  // isMultipleRoleEnabled: false,
-                                                  // id: ""
-                                          ),
+                                                  name: "Admin",
+                                                  isMultipleRoleEnabled: false,
+                                                  id: "admin",
+                                                ),
                                           context,
                                           selectedCompany,
                                           isApplicableForTrial,
@@ -801,34 +803,71 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         SizedBox(height: CustomSpacing.two),
         // Confirm Password
+        // Confirm Password
         TextFormField(
           decoration: InputDecoration(
-            /*  suffixIcon: IconButton(
+            suffixIcon: IconButton(
               icon: _showPasswordConfirmationIndividual
                   ? Icon(Icons.visibility)
                   : Icon(Icons.visibility_off),
               onPressed: () {
                 setState(() {
-                  _showPasswordConfirmationIndividual = !_showPasswordConfirmationIndividual;
+                  _showPasswordConfirmationIndividual =
+                  !_showPasswordConfirmationIndividual;
                 });
               },
-            ),*/
+            ),
             labelText: LanguageService.getTranslated(
                 context, "register_corporate_confirm_password_field_label"),
-            hintText: LanguageService.getTranslated(context,
-                "register_corporate_confirm_password_field_placeholder"),
+            hintText: LanguageService.getTranslated(
+                context, "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
-          obscureText: !_showPasswordIndividual,
+          obscureText: !_showPasswordConfirmationIndividual,
           validator: (value) {
-            if (value == null || value.isEmpty || value.length < 8) {
+            if (value == null || value.isEmpty) {
+              return 'Confirm Password is required';
+            }
+            if (value.length < 8) {
               return 'Password must be at least 8 characters';
             }
-            // You can add more specific password validation here if needed
+            if (value != passwordController.text) {
+              return 'Passwords do not match';
+            }
             return null;
           },
           controller: confirmPasswordController,
         ),
+
+        // TextFormField(
+        //   decoration: InputDecoration(
+        //     suffixIcon: IconButton(
+        //       icon: _showPasswordConfirmationIndividual
+        //           ? Icon(Icons.visibility)
+        //           : Icon(Icons.visibility_off),
+        //       onPressed: () {
+        //         setState(() {
+        //           _showPasswordConfirmationIndividual =
+        //               !_showPasswordConfirmationIndividual;
+        //         });
+        //       },
+        //     ),
+        //     labelText: LanguageService.getTranslated(
+        //         context, "register_corporate_confirm_password_field_label"),
+        //     hintText: LanguageService.getTranslated(context,
+        //         "register_corporate_confirm_password_field_placeholder"),
+        //     border: const OutlineInputBorder(),
+        //   ),
+        //   obscureText: !_showPasswordConfirmationIndividual,
+        //   validator: (value) {
+        //     if (value == null || value.isEmpty || value.length < 8) {
+        //       return 'Password must be at least 8 characters';
+        //     }
+        //     // You can add more specific password validation here if needed
+        //     return null;
+        //   },
+        //   controller: confirmPasswordController,
+        // ),
         SizedBox(height: CustomSpacing.two),
         Row(
           children: [
@@ -1411,16 +1450,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       ?.name); // Notify form field state
                                 });
                               },
-                              items: (_customRoles
-                                          ? selectedCompany?.roles
-                                          : selectedCompanyType?.roles)
-                                      ?.map((Roles companyTypeRoles) {
-                                    return DropdownMenuItem<Roles>(
-                                      value: companyTypeRoles,
-                                      child: Text(companyTypeRoles.name),
-                                    );
-                                  }).toList() ??
-                                  [],
+                              items:
+                                  // (_customRoles
+                                  //             ? selectedCompany?.roles
+                                  //             :
+                                  selectedCompanyType?.roles
+                                          .map((Roles companyTypeRoles) {
+                                        return DropdownMenuItem<Roles>(
+                                          value: companyTypeRoles,
+                                          child: Text(companyTypeRoles.name),
+                                        );
+                                      }).toList() ??
+                                      [],
                               decoration: InputDecoration(
                                 labelText: 'Role(s)',
                                 labelStyle: typography.Subtitle1,
@@ -1566,20 +1607,63 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           decoration: InputDecoration(
             labelText: LanguageService.getTranslated(
                 context, "register_corporate_password_field_placeholder"),
-            hintText: LanguageService.getTranslated(context,
-                "register_corporate_confirm_password_field_placeholder"),
+            hintText: LanguageService.getTranslated(
+                context, "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: _showPasswordConfirmationCorporate
+                  ? Icon(Icons.visibility)
+                  : Icon(Icons.visibility_off),
+              onPressed: () {
+                setState(() {
+                  _showPasswordConfirmationCorporate =
+                  !_showPasswordConfirmationCorporate;
+                });
+              },
+            ),
           ),
-          obscureText: !_showPasswordCorporate,
+          obscureText: !_showPasswordConfirmationCorporate,
           validator: (value) {
             if (value == null || value.isEmpty || value.length < 8) {
               return 'Password must be at least 8 characters';
             }
-            // You can add more specific password validation here if needed
+            if (value != adminPasswordController.text) {
+              return 'Passwords do not match';
+            }
             return null;
           },
           controller: adminConfirmPasswordController,
         ),
+
+        // TextFormField(
+        //   decoration: InputDecoration(
+        //     labelText: LanguageService.getTranslated(
+        //         context, "register_corporate_password_field_placeholder"),
+        //     hintText: LanguageService.getTranslated(context,
+        //         "register_corporate_confirm_password_field_placeholder"),
+        //     border: const OutlineInputBorder(),
+        //     suffixIcon: IconButton(
+        //       icon: _showPasswordConfirmationCorporate
+        //           ? Icon(Icons.visibility)
+        //           : Icon(Icons.visibility_off),
+        //       onPressed: () {
+        //         setState(() {
+        //           _showPasswordConfirmationCorporate =
+        //               !_showPasswordConfirmationCorporate;
+        //         });
+        //       },
+        //     ),
+        //   ),
+        //   obscureText: !_showPasswordConfirmationCorporate,
+        //   validator: (value) {
+        //     if (value == null || value.isEmpty || value.length < 8) {
+        //       return 'Password must be at least 8 characters';
+        //     }
+        //     // You can add more specific password validation here if needed
+        //     return null;
+        //   },
+        //   controller: adminConfirmPasswordController,
+        // ),
       ],
     );
   }

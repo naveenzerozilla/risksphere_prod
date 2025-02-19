@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/models/my_location_list_model.dart';
-import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/providers/user_profile_provider.dart';
-import 'package:green/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphare/providers/my_location_list_provider.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/app_colors.dart';
@@ -35,6 +35,7 @@ class MyLocationCard extends StatefulWidget {
   final String? subAccountName;
   final String? locationQuery;
   final String? campusId;
+
   // callback to get gata after coming back from profile page (nullable)
   final void Function()? getData;
 
@@ -64,7 +65,6 @@ class MyLocationCard extends StatefulWidget {
     this.subAccountName,
     this.locationQuery,
     this.getData,
-
   });
 
   @override
@@ -74,46 +74,51 @@ class MyLocationCard extends StatefulWidget {
 class _MyLocationCardState extends State<MyLocationCard> {
   List<Color> scoreColors = [
     Colors.grey[300]!, // Default color for unfilled bars
-    Colors.red[900]!,  // Dark Red for 1
-    Colors.red[300]!,  // Light Red for 2
+    Colors.red[900]!, // Dark Red for 1
+    Colors.red[300]!, // Light Red for 2
     Colors.yellow[300]!, // Light Yellow for 3
-    Colors.green[300]!,  // Light Green for 4
-    Colors.green[600]!,  // Green for 5
+    Colors.green[300]!, // Light Green for 4
+    Colors.green[600]!, // Green for 5
   ];
 
   ScrollController _scrollController = ScrollController();
 
   bool selectionMode = false;
 
-
   @override
   Widget build(BuildContext context) {
     //print("Campus ID: ${widget.campusId}");
-    selectionMode = Provider.of<MyLocationListProvider>(context).selectedLocations.isNotEmpty;
+    selectionMode = Provider.of<MyLocationListProvider>(context)
+        .selectedLocations
+        .isNotEmpty;
     MyLocation? myLocation;
     if (widget.isCertified) {
-      myLocation = Provider.of<MyLocationListProvider>(
-          context, listen: false).getCertifiedLocationById(widget.locationId);
+      myLocation = Provider.of<MyLocationListProvider>(context, listen: false)
+          .getCertifiedLocationById(widget.locationId);
     } else {
-      myLocation = Provider.of<MyLocationListProvider>(
-          context, listen: false).getLocationById(widget.locationId);
+      myLocation = Provider.of<MyLocationListProvider>(context, listen: false)
+          .getLocationById(widget.locationId);
     }
     // Check if the location is selected
     final isSelected = Provider.of<MyLocationListProvider>(context)
         .selectedLocations
         .contains(myLocation);
-    final image = widget.imageUrl;
+    // final image = widget.imageUrl;
     return GestureDetector(
       onTap: () {
         // In selection mode, toggle the selection if its last selection getting unselected we remove the selection mode
         if (selectionMode) {
           setState(() {
             if (isSelected) {
-              Provider.of<MyLocationListProvider>(context, listen: false).removeFromSelection(myLocation);
+              Provider.of<MyLocationListProvider>(context, listen: false)
+                  .removeFromSelection(myLocation);
             } else {
-              Provider.of<MyLocationListProvider>(context, listen: false).addToSelection(myLocation);
+              Provider.of<MyLocationListProvider>(context, listen: false)
+                  .addToSelection(myLocation);
             }
-            if (Provider.of<MyLocationListProvider>(context, listen: false).selectedLocations.isEmpty) {
+            if (Provider.of<MyLocationListProvider>(context, listen: false)
+                .selectedLocations
+                .isEmpty) {
               selectionMode = false;
             }
           });
@@ -121,21 +126,24 @@ class _MyLocationCardState extends State<MyLocationCard> {
           // Handle the tap event
           print('Tapped on location: ${widget.locationId}');
           print('Going to page ${widget.index}');
-          var locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+          var locationListProvider =
+              Provider.of<MyLocationListProvider>(context, listen: false);
           // Open location details screen
-          Navigator.of(context).push(MaterialPageRoute(
+          Navigator.of(context)
+              .push(MaterialPageRoute(
             builder: (_) => LocationProfile(
-              accountId: widget.accountId??"",
-              accountName: widget.accountName??"",
-              subAccountId: widget.subAccountId??"",
-              subAccountName: widget.subAccountName??"",
-              sovId: widget.sovId??"",
-              sovName: widget.sovName??"",
-              searchQuery: widget.locationQuery??"",
-              page: (widget.index+1).toString(),
+              accountId: widget.accountId ?? "",
+              accountName: widget.accountName ?? "",
+              subAccountId: widget.subAccountId ?? "",
+              subAccountName: widget.subAccountName ?? "",
+              sovId: widget.sovId ?? "",
+              sovName: widget.sovName ?? "",
+              searchQuery: widget.locationQuery ?? "",
+              page: (widget.index + 1).toString(),
               totalPages: locationListProvider.locationHits.toString(),
             ),
-          )).then((_) {
+          ))
+              .then((_) {
             // Call getData after pop
             widget.getData?.call();
           });
@@ -149,18 +157,22 @@ class _MyLocationCardState extends State<MyLocationCard> {
         // Handle the long press event
         MyLocation? myLocation;
         if (widget.isCertified) {
-          myLocation = Provider.of<MyLocationListProvider>(
-              context, listen: false).getCertifiedLocationById(widget.locationId);
+          myLocation =
+              Provider.of<MyLocationListProvider>(context, listen: false)
+                  .getCertifiedLocationById(widget.locationId);
         } else {
-          myLocation = Provider.of<MyLocationListProvider>(
-              context, listen: false).getLocationById(widget.locationId);
+          myLocation =
+              Provider.of<MyLocationListProvider>(context, listen: false)
+                  .getLocationById(widget.locationId);
         }
         setState(() {
           selectionMode = !selectionMode;
           if (selectionMode) {
-            Provider.of<MyLocationListProvider>(context, listen: false).addToSelection(myLocation);
+            Provider.of<MyLocationListProvider>(context, listen: false)
+                .addToSelection(myLocation);
           } else {
-            Provider.of<MyLocationListProvider>(context, listen: false).removeFromSelection(myLocation);
+            Provider.of<MyLocationListProvider>(context, listen: false)
+                .removeFromSelection(myLocation);
           }
         });
       },
@@ -174,6 +186,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
+              // Text( widget.imageUrl),
               // Modify the call to _buildTopRow to handle campusId and tags
               _buildTopRow(
                 context,
@@ -181,9 +194,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     ? [widget.campusId!, ...widget.tags]
                     : widget.tags,
                 isSelected,
-                image,
+                widget.imageUrl,
               ),
-
 
               SizedBox(height: 16),
               _buildScrollableScores(context),
@@ -201,32 +213,65 @@ class _MyLocationCardState extends State<MyLocationCard> {
     super.dispose();
   }
 
-  Widget _buildTopRow(BuildContext context, List<String> chipLabels, bool isSelected, String image) {
+  Widget _buildTopRow(BuildContext context, List<String> chipLabels,
+      bool isSelected, String image) {
     return Row(
       children: [
         // Building Image
         isSelected
             ? CircleAvatar(
-          radius: 25,
-          backgroundColor: AppColors.primaryMain.withOpacity(0.5),
-          child: Icon(Icons.check, color: Colors.white),
-        )
+                radius: 25,
+                backgroundColor: AppColors.primaryMain.withOpacity(0.5),
+                child: Icon(Icons.check, color: Colors.white),
+              )
             : ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: image.isNotEmpty
-              ? Image.network(
-            image,
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-          )
-              : Image.asset(
-            'assets/images/building_image.png',
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-          ),
-        ),
+                borderRadius: BorderRadius.circular(99),
+                child: (widget.geocodingScore == 5)
+                    ? Image.network(
+                        "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=37.4223041,-122.0849205&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+
+                )
+                    : image.isNotEmpty
+                        ? Image.network(
+                            image,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            'assets/images/building_image.png',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+              ),
+
+        // isSelected
+        //     ? CircleAvatar(
+        //   radius: 25,
+        //   backgroundColor: AppColors.primaryMain.withOpacity(0.5),
+        //   child: Icon(Icons.check, color: Colors.white),
+        // )
+        //     : ClipRRect(
+        //   borderRadius: BorderRadius.circular(99),
+        //   child: image.isNotEmpty
+        //       ? Image.network(
+        //     image,
+        //     width: 50,
+        //     height: 50,
+        //     fit: BoxFit.cover,
+        //   )
+        //       : Image.asset(
+        //     'assets/images/building_image.png',
+        //     width: 50,
+        //     height: 50,
+        //     fit: BoxFit.cover,
+        //   ),
+        // ),
+
         SizedBox(width: 8),
 
         // Expanded chip list or single chip
@@ -235,7 +280,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (chipLabels.length == 1)
-              // Center single chip to take full width
+                // Center single chip to take full width
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -243,7 +288,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   ],
                 ),
               if (chipLabels.length > 1)
-              // Scrollable chip list with scrollbar for multiple chips
+                // Scrollable chip list with scrollbar for multiple chips
                 Scrollbar(
                   controller: _scrollController,
                   thumbVisibility: true,
@@ -257,14 +302,16 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         children: chipLabels
                             .map(
                               (label) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: _buildChip(
-                              context,
-                              label,
-                              isCampus: label == chipLabels[0], // Assuming the first chip is campus
-                            ),
-                          ),
-                        )
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: _buildChip(
+                                  context,
+                                  label,
+                                  isCampus: label ==
+                                      chipLabels[
+                                          0], // Assuming the first chip is campus
+                                ),
+                              ),
+                            )
                             .toList(),
                       ),
                     ),
@@ -319,7 +366,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
     );
   }
 
-  Widget _buildChip(BuildContext context, String label, {bool isCampus = false}) {
+  Widget _buildChip(BuildContext context, String label,
+      {bool isCampus = false}) {
     return Chip(
       labelStyle: CustomTypography(context).InputLabel,
       label: Text(label),
@@ -330,18 +378,17 @@ class _MyLocationCardState extends State<MyLocationCard> {
       onDeleted: isCampus
           ? null
           : () {
-        Provider.of<MyLocationListProvider>(context, listen: false).showDeleteTagDialog(
-          context,
-          widget.accountId ?? "",
-          widget.subAccountId ?? "",
-          widget.locationId,
-          label,
-        );
-      },
+              Provider.of<MyLocationListProvider>(context, listen: false)
+                  .showDeleteTagDialog(
+                context,
+                widget.accountId ?? "",
+                widget.subAccountId ?? "",
+                widget.locationId,
+                label,
+              );
+            },
     );
   }
-
-
 
   Widget _buildScrollableScores(BuildContext context) {
     return SingleChildScrollView(
@@ -350,7 +397,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
         children: [
           _buildScoreCard(context, 'Geocoding', widget.geocodingScore),
           _buildScoreCard(context, 'Risk Score', widget.riskScore),
-          _buildScoreCard(context, 'Data Completeness', widget.dataCompletenessScore),
+          _buildScoreCard(
+              context, 'Data Completeness', widget.dataCompletenessScore),
         ],
       ),
     );
@@ -360,11 +408,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
     bool isCertified = score == 5; // Logic to check if it shows a certificate.
     List<Color> scoreColors = [
       Colors.grey[300]!, // Default color for unfilled bars
-      Colors.red[900]!,  // Dark Red for 1
-      Colors.red[300]!,  // Light Red for 2
+      Colors.red[900]!, // Dark Red for 1
+      Colors.red[300]!, // Light Red for 2
       Colors.yellow[300]!, // Light Yellow for 3
-      Colors.green[300]!,  // Light Green for 4
-      Colors.green[600]!,  // Green for 5
+      Colors.green[300]!, // Light Green for 4
+      Colors.green[600]!, // Green for 5
     ];
 
     var typography = CustomTypography(context);
@@ -400,64 +448,77 @@ class _MyLocationCardState extends State<MyLocationCard> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 title == 'Risk Score'
-                    ? SvgPicture.asset('assets/images/hazard_icon.svg', width: 24, height: 24)
+                    ? SvgPicture.asset('assets/images/hazard_icon.svg',
+                        width: 24, height: 24)
                     : title == 'Data Completeness'
-                    ? SvgPicture.asset('assets/images/data_completeness_icon.svg', width: 24, height: 24)
-                    : title == 'Geocoding'
-                    ? SvgPicture.asset('assets/images/geocoding_icon.svg', width: 24, height: 24)
-                : const SizedBox(),
+                        ? SvgPicture.asset(
+                            'assets/images/data_completeness_icon.svg',
+                            width: 24,
+                            height: 24)
+                        : title == 'Geocoding'
+                            ? SvgPicture.asset(
+                                'assets/images/geocoding_icon.svg',
+                                width: 24,
+                                height: 24)
+                            : const SizedBox(),
                 SizedBox(width: 4),
-                VerticalBarIndicator(score: score), // This will display 4 light green bars and 1 grey bar
+                VerticalBarIndicator(score: score),
+                // This will display 4 light green bars and 1 grey bar
                 SizedBox(width: 1),
                 isCertified
-                    ? SvgPicture.asset('assets/images/certified_five.svg', width: 24, height: 24)
+                    ? SvgPicture.asset('assets/images/certified_five.svg',
+                        width: 24, height: 24)
                     : Container(
-                  margin: EdgeInsets.only(left: 4),
-                      child: CircleAvatar(
-                                      radius: 10,
-                                      backgroundColor: scoreColors[score].withOpacity(0.6),
-                                      child: Center(child: Text(score.toString(), style: typography.Body1.copyWith(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),)),
-                                    ),
-                    ),
+                        margin: EdgeInsets.only(left: 4),
+                        child: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: scoreColors[score].withOpacity(0.6),
+                          child: Center(
+                              child: Text(
+                            score.toString(),
+                            style: typography.Body1.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          )),
+                        ),
+                      ),
               ],
             ),
           ),
           // Display SVG based on the score
 
           SizedBox(height: 4),
-
         ],
       ),
     );
   }
 }
 
-
 class CustomPopupMenuButton extends StatelessWidget {
-
   final String? locationId;
   final void Function(String locationId)? onDelete;
   final void Function(String locationId)? onAddToSOV;
   final void Function(String locationId)? onAddTag;
 
-  const CustomPopupMenuButton({this.onAddToSOV, this.locationId = '', this.onDelete, this.onAddTag});
+  const CustomPopupMenuButton(
+      {this.onAddToSOV, this.locationId = '', this.onDelete, this.onAddTag});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<UserProfileProvider>(
-      builder: (context, userProfileProvider, child ) {
-        final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-        return GestureDetector(
-          onTapDown: (details) {
-            _showCustomMenu(context, details.globalPosition, trialStatus);
-          },
-          child: Icon(
-            Icons.more_vert,
-            size: 26,
-          ),
-        );
-      }
-    );
+        builder: (context, userProfileProvider, child) {
+      final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+      return GestureDetector(
+        onTapDown: (details) {
+          _showCustomMenu(context, details.globalPosition, trialStatus);
+        },
+        child: Icon(
+          Icons.more_vert,
+          size: 26,
+        ),
+      );
+    });
   }
 
   void _showCustomMenu(BuildContext context, Offset offset, trialStatus) async {
@@ -470,32 +531,35 @@ class CustomPopupMenuButton extends StatelessWidget {
         offset.dx + 40, // Adjust for width offset if necessary
         offset.dy + 40, // Adjust for height offset if necessary
       ),
-      items: onAddToSOV == null?[
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Text('Delete Location', style: typography.Body1),
-        ),
-        PopupMenuItem<String>(
-          value: 'add_tag',
-          child: Text('Add Tag', style: typography.Body1),
-        ),
-      ]:[
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Text('Delete Location', style: typography.Body1),
-        ),
-        if(trialStatus.isEmpty)
-        PopupMenuItem<String>(
-          value: 'add_sov',
-          child: Text('Add to SOV', style: typography.Body1),
-        ),
-        PopupMenuItem<String>(
-          value: 'add_tag',
-          child: Text('Add Tag', style: typography.Body1),
-        ),
-      ],
+      items: onAddToSOV == null
+          ? [
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Text('Delete Location', style: typography.Body1),
+              ),
+              PopupMenuItem<String>(
+                value: 'add_tag',
+                child: Text('Add Tag', style: typography.Body1),
+              ),
+            ]
+          : [
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Text('Delete Location', style: typography.Body1),
+              ),
+              if (trialStatus.isEmpty)
+                PopupMenuItem<String>(
+                  value: 'add_sov',
+                  child: Text('Add to SOV', style: typography.Body1),
+                ),
+              PopupMenuItem<String>(
+                value: 'add_tag',
+                child: Text('Add Tag', style: typography.Body1),
+              ),
+            ],
       elevation: 8.0,
-      color: Theme.of(context).cardColor, // Customize the background color
+      color: Theme.of(context).cardColor,
+      // Customize the background color
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
       ),
@@ -503,13 +567,13 @@ class CustomPopupMenuButton extends StatelessWidget {
     // Handle the selection
     if (result != null) {
       if (result == 'delete') {
-        onDelete?.call(locationId??"");
+        onDelete?.call(locationId ?? "");
       } else if (result == 'add_sov') {
         print('Add to SOV');
-        onAddToSOV?.call(locationId??"");
+        onAddToSOV?.call(locationId ?? "");
       } else if (result == 'add_tag') {
         print('Add Tag');
-        onAddTag?.call(locationId??"");
+        onAddTag?.call(locationId ?? "");
       }
     }
   }

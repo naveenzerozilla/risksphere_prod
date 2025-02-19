@@ -9,21 +9,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:green/design_system/components/corporate_type_roles_bottom_sheet.dart';
-import 'package:green/design_system/components/custom_chip.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:green/models/company_model.dart';
-import 'package:green/models/company_type_model.dart';
-import 'package:green/models/corporate_verification_list_model.dart';
-import 'package:green/models/role_model.dart' as roleModel;
-import 'package:green/providers/company_provider.dart';
-import 'package:green/providers/employee_provider.dart';
-import 'package:green/providers/non_corporate_user_Provider.dart';
-import 'package:green/providers/user_profile_provider.dart';
-import 'package:green/providers/verification_provider.dart';
-import 'package:green/screens/userManagement/connections_screen.dart';
-import 'package:green/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
-import 'package:green/screens/userManagement/service/verification_tab_service.dart';
+import 'package:RiskSphare/design_system/components/corporate_type_roles_bottom_sheet.dart';
+import 'package:RiskSphare/design_system/components/custom_chip.dart';
+import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphare/models/company_model.dart';
+import 'package:RiskSphare/models/company_type_model.dart';
+import 'package:RiskSphare/models/corporate_verification_list_model.dart';
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/providers/company_provider.dart';
+import 'package:RiskSphare/providers/employee_provider.dart';
+import 'package:RiskSphare/providers/non_corporate_user_Provider.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphare/providers/verification_provider.dart';
+import 'package:RiskSphare/screens/userManagement/connections_screen.dart';
+import 'package:RiskSphare/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
+import 'package:RiskSphare/screens/userManagement/service/verification_tab_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:phone_input/phone_input_package.dart';
@@ -1634,6 +1634,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       ),
                                       // Email
                                       TextFormField(
+                                        readOnly: true,
                                         controller: _filterEmailController,
                                         decoration: InputDecoration(
                                           labelText: LanguageService.getTranslated(
@@ -3382,6 +3383,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             SizedBox(height: CustomSpacing.four),
                             // Email
                             TextFormField(
+                              readOnly: true,
                               controller: _adminEmailController,
                               decoration: InputDecoration(
                                 labelText: LanguageService.getTranslated(
@@ -3812,7 +3814,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: CustomSpacing.two,
                                               ),
                                               Text(
-                                                "Upload Image",
+                                                "Upload Image1",
                                                 style:
                                                     typography.Body1.copyWith(
                                                         color: Colors.white),
@@ -4349,6 +4351,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                       },
                                     ),
                                     SizedBox(height: CustomSpacing.four),
+
                                     // Phone
                                     Row(
                                       children: [
@@ -5340,6 +5343,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     // Email
                     TextFormField(
+                      readOnly: false,
                       controller: _employeeEmailController,
                       decoration: InputDecoration(
                         labelText: LanguageService.getTranslated(
@@ -5363,6 +5367,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     SizedBox(
                       height: CustomSpacing.four,
                     ),
+
                     // Phone
                     Row(
                       children: [
@@ -5959,6 +5964,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ),
                           // Email
                           TextFormField(
+                            readOnly: true,
                             controller: _employeeEmailController,
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(
@@ -5983,6 +5989,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             height: CustomSpacing.four,
                           ),
                           // Phone
+
                           Row(
                             children: [
                               Expanded(
@@ -6024,19 +6031,35 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   flagShape: BoxShape.circle,
                                   flagSize: 35,
                                   onChanged: (PhoneNumber? p) {
-                                    if (p == null) return;
-                                    setState(() {
-                                      _selectedCountryCode = p.countryCode;
-                                    });
-                                    print('changed ${p.countryCode}');
+                                    if (p != null &&
+                                        p.countryCode != _selectedCountryCode) {
+                                      setState(() {
+                                        _selectedCountryCode = p.countryCode;
+                                      });
+                                    }
                                   },
                                   onSaved: (PhoneNumber? p) {
-                                    if (p == null) return;
-                                    setState(() {
-                                      _selectedCountryCode = p.countryCode;
-                                    });
-                                    print('changed ${p.countryCode}');
+                                    if (p != null &&
+                                        p.countryCode != _selectedCountryCode) {
+                                      setState(() {
+                                        _selectedCountryCode = p.countryCode;
+                                      });
+                                    }
                                   },
+                                  // onChanged: (PhoneNumber? p) {
+                                  //   if (p == null) return;
+                                  //   setState(() {
+                                  //     _selectedCountryCode = p.countryCode;
+                                  //   });
+                                  //   print('changed ${p.countryCode}');
+                                  // },
+                                  // onSaved: (PhoneNumber? p) {
+                                  //   if (p == null) return;
+                                  //   setState(() {
+                                  //     _selectedCountryCode = p.countryCode;
+                                  //   });
+                                  //   print('changed ${p.countryCode}');
+                                  // },
                                 ),
                               ),
                             ],
@@ -8662,6 +8685,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     // Email
                     TextFormField(
+                      readOnly: true,
                       keyboardType: TextInputType.emailAddress,
                       controller: _employeeEmailController,
                       decoration: InputDecoration(

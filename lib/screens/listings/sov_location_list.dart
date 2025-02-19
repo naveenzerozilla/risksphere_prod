@@ -6,15 +6,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/models/my_location_list_model.dart';
-import 'package:green/providers/location_list_provider.dart';
-import 'package:green/providers/my_location_list_provider.dart';
-import 'package:green/screens/listings/widgets/export_dialog.dart';
-import 'package:green/screens/listings/widgets/listings_filter_screen.dart';
-import 'package:green/screens/listings/widgets/location_card.dart';
-import 'package:green/screens/listings/widgets/location_list_map_view.dart';
-import 'package:green/screens/listings/widgets/mapping_screen.dart';
-import 'package:green/screens/listings/widgets/overall_score_table.dart';
+import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphare/providers/location_list_provider.dart';
+import 'package:RiskSphare/providers/my_location_list_provider.dart';
+import 'package:RiskSphare/screens/listings/widgets/export_dialog.dart';
+import 'package:RiskSphare/screens/listings/widgets/listings_filter_screen.dart';
+import 'package:RiskSphare/screens/listings/widgets/location_card.dart';
+import 'package:RiskSphare/screens/listings/widgets/location_list_map_view.dart';
+import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphare/screens/listings/widgets/overall_score_table.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +28,7 @@ import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../providers/theme_provider.dart';
-import 'package:green/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
@@ -204,10 +204,10 @@ class _SovLocationListState extends State<SovLocationList>
     _getData();
   }
 
-  _getMaintainancePeriod() async {
-    isMaintenance =
-        await SharedPreferenceService.getScheduleInProgress() ?? false;
-  }
+  // _getMaintainancePeriod() async {
+  //   isMaintenance =
+  //       await SharedPreferenceService.getScheduleInProgress() ?? false;
+  // }
 
   _getData() async {
     // Fetch data from API
@@ -238,7 +238,7 @@ class _SovLocationListState extends State<SovLocationList>
         )
         .then((value) => setState(() {}));
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
-    _getMaintainancePeriod();
+    // _getMaintainancePeriod();
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -664,9 +664,9 @@ class _SovLocationListState extends State<SovLocationList>
                         }),
                       ),
                       SizedBox(height: CustomSpacing.two),
-                      Container(
-                        child: MaintenanceUI(isMaintenance: isMaintenance),
-                      ),
+                      // Container(
+                      //   child: MaintenanceUI(isMaintenance: isMaintenance),
+                      // ),
                       Container(
                         child: _getLiveUI(),
                       ),

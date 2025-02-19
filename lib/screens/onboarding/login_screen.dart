@@ -8,10 +8,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/primitives/app_colors.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/service/language_service.dart';
+import 'package:RiskSphare/design_system/primitives/app_colors.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/screens/home/dashboard_screen.dart';
+import 'package:RiskSphare/service/language_service.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/components/custom_checkbox.dart';

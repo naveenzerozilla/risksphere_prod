@@ -190,32 +190,32 @@ class CompanyType {
 
 class Roles {
   Roles({
-    // required this.isForIndividual,
-    // required this.isApplicableForTrial,
+    required this.isForIndividual,
+    required this.isApplicableForTrial,
     required this.role,
     required this.name,
-    // required this.isMultipleRoleEnabled,
-    // required this.id,
+    required this.isMultipleRoleEnabled,
+    required this.id,
   });
 
-  // late final bool isForIndividual;
-  // late final bool isApplicableForTrial;
+  late final bool isForIndividual;
+  late final bool isApplicableForTrial;
   late final String role;
   late final String name;
-  // late final bool isMultipleRoleEnabled;
-  // late final String id;
+  late final bool isMultipleRoleEnabled;
+  late final String id;
 
   Roles.fromJson(Map<String, dynamic> json) {
-    // isForIndividual = json['is_for_individual'] ?? false;
-    // isApplicableForTrial = json['is_applicable_for_trial'] ?? false;
+    isForIndividual = json['is_for_individual'] ?? false;
+    isApplicableForTrial = json['is_applicable_for_trial'] ?? false;
     role = json['role'] ?? '';
     name = json['name'] ?? '';
-    // isMultipleRoleEnabled = json['is_multiple_role_enabled'] ?? false;
-    // if (json['id'] != null) {
-    //   id = json['id'] ?? '';
-    // } else {
-    //   id = "";
-    // }
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'] ?? false;
+    if (json['id'] != null) {
+      id = json['id'] ?? '';
+    } else {
+      id = "";
+    }
   }
 
   Map<String, dynamic> toJson() {

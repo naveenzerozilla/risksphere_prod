@@ -1,4 +1,4 @@
-name: green
+name: RiskSphare
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -85,6 +85,7 @@ dependencies:
   menu_bar: ^0.5.3
   dropdown_button2: ^2.3.9
   url_launcher: ^6.3.1
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

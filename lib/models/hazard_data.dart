@@ -1,4 +1,4 @@
-import 'package:green/models/vendor_data.dart';
+import 'package:RiskSphare/models/vendor_data.dart';
 
 class HazardData {
   final String id;

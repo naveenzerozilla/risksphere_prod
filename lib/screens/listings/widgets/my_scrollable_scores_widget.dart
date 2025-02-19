@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:green/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
 
@@ -29,8 +29,8 @@ class MyScrollableScoresWidget extends StatelessWidget {
               children: [
                 _buildScoreCard(context, 'Geocoding Score', geocodingScore),
                 _buildScoreCard(context, 'Risk Score', riskScore),
-                _buildScoreCard(context, 'Occupancy', riskScore),
-                _buildScoreCard(context, 'Construction', riskScore),
+                // _buildScoreCard(context, 'Occupancy', riskScore),
+                // _buildScoreCard(context, 'Construction', riskScore),
               ],
             ),
           ),

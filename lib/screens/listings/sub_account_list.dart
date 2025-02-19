@@ -8,19 +8,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/components/roles_dropdown.dart';
-import 'package:green/models/account_list_model.dart';
-import 'package:green/models/sub_account_list_model.dart';
-import 'package:green/providers/account_list_provider.dart';
-import 'package:green/providers/connections_provider.dart';
-import 'package:green/providers/sub_account_list_provider.dart';
-import 'package:green/screens/listings/location_list.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/listings/sov_list.dart';
-import 'package:green/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
-import 'package:green/screens/listings/widgets/configurations_tab.dart';
-import 'package:green/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/design_system/components/roles_dropdown.dart';
+import 'package:RiskSphare/models/account_list_model.dart';
+import 'package:RiskSphare/models/sub_account_list_model.dart';
+import 'package:RiskSphare/providers/account_list_provider.dart';
+import 'package:RiskSphare/providers/connections_provider.dart';
+import 'package:RiskSphare/providers/sub_account_list_provider.dart';
+import 'package:RiskSphare/screens/listings/location_list.dart';
+import 'package:RiskSphare/screens/listings/location_profile.dart';
+import 'package:RiskSphare/screens/listings/sov_list.dart';
+import 'package:RiskSphare/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
+import 'package:RiskSphare/screens/listings/widgets/configurations_tab.dart';
+import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -38,7 +38,7 @@ import '../../models/initial_data_model.dart';
 import '../../models/transfer_autocomplete_model.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:green/models/role_model.dart' as roleModel;
+import 'package:RiskSphare/models/role_model.dart' as roleModel;
 
 import '../../providers/upload_sov_provider.dart';
 import '../../providers/user_profile_provider.dart';
@@ -79,6 +79,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool showCheckbox = false;
+  bool isLoading = false;
 
   Timer? deBouncer;
 
@@ -468,12 +469,16 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               });
             });
           }
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return /* LocationProfile(
-              account: accountListProvider.accountList[index],
-            );*/
-              MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
-          }));
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>MyLocationList(accountID: subAccountListProvider
+              .subAccountList[index].accountId.toString(), subAccountID: subAccountListProvider
+              .subAccountList[index].subAccountId.toString(),
+            accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",)));
+          // Navigator.push(context, MaterialPageRoute(builder: (context) {
+          //   return /* LocationProfile(
+          //     account: accountListProvider.accountList[index],
+          //   );*/
+          //     MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
+          // }));
           /*LocationList(
             userId: subAccountListProvider.subAccountList[index].sub ?? "",
             companyName:
@@ -542,12 +547,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                               ? subAccountListProvider
                                                       .subAccountList[index]
                                                       .name!
-                                                      .substring(0, 1)
-                                                      .toUpperCase() +
-                                                  subAccountListProvider
-                                                      .subAccountList[index]
-                                                      .name!
-                                                      .substring(1)
                                               : "",
                                           style:
                                               typography.Body2.copyWith(
@@ -899,6 +898,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                               type: ButtonType.elevated,
                                             ),
                                           ),
+
+
                                         ],
                                       ),
                                     ],
@@ -909,6 +910,142 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           },
                           tooltip: LanguageService.getTranslated(
                               context, "sub_account_list_app_duplicate_tooltip_text"),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          color: AppColors.primaryMain,
+                          onPressed: () {
+                            // Show Delete Account dialog
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text(
+                                    'Delete Account',
+                                    style: typography.H5_Regular,
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Are you sure you want to delete the account?',
+                                        style: typography.Body1,
+                                      ),
+                                      SizedBox(
+                                        height: CustomSpacing.two,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: CustomButton(
+                                              onPressed: () {
+                                                // Cancel
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "account_list_app_duplicate_cancel"),
+                                                style: typography
+                                                    .ButtonLarge,
+                                              ),
+                                              type: ButtonType.text,
+                                            ),
+                                          ),
+                                          subAccountListProvider
+                                              .isDuplicateLoading
+                                              ? const Expanded(
+                                            child: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .center,
+                                              children: [
+                                                SizedBox(
+                                                    width: 25,
+                                                    height: 25,
+                                                    child:
+                                                    CircularProgressIndicator()),
+                                              ],
+                                            ),
+                                          )
+                                              :
+                                          Expanded(
+                                            child: CustomButton(
+                                              onPressed: () async {
+                                                setState(() {
+                                                  isLoading = true; // Start loader
+                                                });
+
+                                                bool isSuccess = false;
+                                                try {
+                                                  isSuccess = await subAccountListProvider.deleteAccount(
+                                                    context,
+                                                    subAccountListProvider.subAccountList[index].accountId!,
+                                                  );
+                                                } catch (e) {
+                                                  print("Error deleting account: $e"); // Handle error properly
+                                                }
+
+                                                if (isSuccess) {
+
+                                                  await subAccountListProvider.fetchSubAccountList(
+                                                    context,
+                                                    widget.accountId,
+                                                    _subAccountQuery,
+                                                    1, // Reset to the first page
+                                                    10, // Page size
+                                                    // isRefresh: true, // Optional flag for refresh
+                                                  );
+                                                  Navigator.pop(context);
+                                                }
+
+                                                setState(() {
+                                                  isLoading = false; // Stop loader after API call completes
+                                                });
+                                              },
+                                              child: isLoading
+                                                  ? Center(child: CircularProgressIndicator()) // Show loader
+                                                  : Text(
+                                                "Delete",
+                                                style: typography.ButtonLarge,
+                                              ),
+                                              type: ButtonType.elevated,
+                                            ),
+                                          ),
+
+
+                                          // Expanded(
+                                          //   child: CustomButton(
+                                          //     onPressed: () async {
+                                          //       bool isSuccess = await accountListProvider.deleteAccount(
+                                          //         context,
+                                          //         accountListProvider.accountList[index].accountId!,
+                                          //       );
+                                          //
+                                          //       if (isSuccess) {
+                                          //         Navigator.pop(context);
+                                          //         accountListProvider.fetchAccountList(
+                                          //             context, _accountQuery, 1, 20);
+                                          //       }
+                                          //     },
+                                          //     child: Text(
+                                          //       LanguageService.getTranslated(
+                                          //           context, "account_list_app_duplicate_duplicate"),
+                                          //       style: typography.ButtonLarge,
+                                          //     ),
+                                          //     type: ButtonType.elevated,
+                                          //   ),
+                                          // ),
+
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          tooltip: 'Delete',
                         ),
                         /*IconButton(
                           icon: Icon(
@@ -1677,90 +1814,103 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         Expanded(
           child: Consumer<SubAccountListProvider>(
               builder: (context, subAccountListProvider, _) {
-                return subAccountListProvider.isLoading
-                    ? Column(
-                  children: [
-                    SizedBox(
-                      height: 100,
-                    ),
-                    Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  ],
-                )
-                    : subAccountListProvider.subAccountList.isEmpty
-                    ? Center(
-                  child: Text(
-                    "Looks like you don't have a sub-account yet. No worries! Just create a new one and start adding your locations.",
-                    style: typography.Body1,
-                  ),
-                )
-                    :
-                ListView.builder(
-                  itemCount: subAccountListProvider
-                      .subAccountList.length,
-                  itemBuilder: (context, index) {
-                    print("Query1: $_subAccountQuery");
-                    if (index ==
-                        subAccountListProvider
-                            .subAccountList.length -
-                            1) {
-                      // Check if it's the last item
-                      if (subAccountListProvider
-                          .isNextPageLoading) {
-                        // Display loading indicator
-                        return Padding(
-                          padding:
-                          const EdgeInsets.all(8.0),
-                          child: Center(
-                            child:
-                            CircularProgressIndicator(),
-                          ),
-                        );
-                      } else if (subAccountListProvider.page >=
-                          subAccountListProvider.totalPages&&subAccountListProvider.subAccountList.isNotEmpty) {
-                        // Display end of list message
-                        print("sub account list: ${subAccountListProvider.subAccountList}");
-                        return Column(
-                          children: [
-                            _buildSubAccountCard(
-                                index, subAccountListProvider),
-                            Padding(
-                              padding:
-                              const EdgeInsets.all(8.0),
-                              child: Center(
-                                child: Text(LanguageService.getTranslated(
-                                    context,
-                                    "sub_account_list_app_end_of_list_text"),
-                                  style: typography.Body1,
-                                ),
-                              ), ),
-                          ],
-                        );
-                      } else {
-                        // Trigger fetching the next page
-                        subAccountListProvider.page =
-                            subAccountListProvider.page + 1;
-                        print(
-                            "Fetching page ${subAccountListProvider.page}");
-                        print(
-                            "Query: $_subAccountQuery, Page: ${subAccountListProvider.page}");
-                        subAccountListProvider
-                            .fetchSubAccountList(
-                          context,
-                          widget.accountId,
-                          _subAccountQuery,
-                          // Pass the search query if any
-                          subAccountListProvider.page,
-                          10, // Page size
-                        );
-                        return SizedBox();
-                      }
-                    }
-
-                    return _buildSubAccountCard(
-                        index, subAccountListProvider);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    // Call the function to refresh data
+                    await subAccountListProvider.fetchSubAccountList(
+                      context,
+                      widget.accountId,
+                      _subAccountQuery,
+                      1, // Reset to the first page
+                      10, // Page size
+                      // isRefresh: true, // Optional flag for refresh
+                    );
                   },
+                  child: subAccountListProvider.isLoading
+                      ? Column(
+                    children: [
+                      SizedBox(
+                        height: 100,
+                      ),
+                      Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ],
+                  )
+                      : subAccountListProvider.subAccountList.isEmpty
+                      ? Center(
+                    child: Text(
+                      "Looks like you don't have a sub-account yet. No worries! Just create a new one and start adding your locations.",
+                      style: typography.Body1,
+                    ),
+                  )
+                      :
+                  ListView.builder(
+                    itemCount: subAccountListProvider
+                        .subAccountList.length,
+                    itemBuilder: (context, index) {
+                      print("Query1: $_subAccountQuery");
+                      if (index ==
+                          subAccountListProvider
+                              .subAccountList.length -
+                              1) {
+                        // Check if it's the last item
+                        if (subAccountListProvider
+                            .isNextPageLoading) {
+                          // Display loading indicator
+                          return Padding(
+                            padding:
+                            const EdgeInsets.all(8.0),
+                            child: Center(
+                              child:
+                              CircularProgressIndicator(),
+                            ),
+                          );
+                        } else if (subAccountListProvider.page >=
+                            subAccountListProvider.totalPages&&subAccountListProvider.subAccountList.isNotEmpty) {
+                          // Display end of list message
+                          print("sub account list: ${subAccountListProvider.subAccountList}");
+                          return Column(
+                            children: [
+                              _buildSubAccountCard(
+                                  index, subAccountListProvider),
+                              Padding(
+                                padding:
+                                const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: Text(LanguageService.getTranslated(
+                                      context,
+                                      "sub_account_list_app_end_of_list_text"),
+                                    style: typography.Body1,
+                                  ),
+                                ), ),
+                            ],
+                          );
+                        } else {
+                          // Trigger fetching the next page
+                          subAccountListProvider.page =
+                              subAccountListProvider.page + 1;
+                          print(
+                              "Fetching page ${subAccountListProvider.page}");
+                          print(
+                              "Query: $_subAccountQuery, Page: ${subAccountListProvider.page}");
+                          subAccountListProvider
+                              .fetchSubAccountList(
+                            context,
+                            widget.accountId,
+                            _subAccountQuery,
+                            // Pass the search query if any
+                            subAccountListProvider.page,
+                            10, // Page size
+                          );
+                          return SizedBox();
+                        }
+                      }
+
+                      return _buildSubAccountCard(
+                          index, subAccountListProvider);
+                    },
+                  ),
                 );
               }),
         ),

@@ -12,9 +12,11 @@
 
 
     <application
-        android:label="green"
+        android:label="RiskSphere"
         android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/launcher_icon">
+
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w"/>
         <activity
@@ -43,6 +45,19 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+
+            <!-- Deep Link & App Link Configuration -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="web.squadramedia.site"
+                    android:pathPrefix="/learner"/>
+            </intent-filter>
+
         </activity>
         <service
             android:name="com.google.firebase.messaging.FirebaseMessagingService"

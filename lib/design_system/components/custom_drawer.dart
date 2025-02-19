@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:green/screens/event/notification_map_screen.dart';
-import 'package:green/screens/listings/hazard_proto.dart';
+import 'package:RiskSphare/screens/event/notification_map_screen.dart';
+import 'package:RiskSphare/screens/listings/hazard_proto.dart';
 import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/theme_switcher.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/listings/account_list.dart';
-import 'package:green/screens/userManagement/user_management.dart';
+import 'package:RiskSphare/design_system/components/theme_switcher.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/screens/home/dashboard_screen.dart';
+import 'package:RiskSphare/screens/listings/account_list.dart';
+import 'package:RiskSphare/screens/userManagement/user_management.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
@@ -282,8 +282,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                         style: typography.Body1.copyWith(color: iconColor)),
                                   ),
                                   TextButton(
-                                    onPressed: () {
-                                      authNotifier.signOut();
+                                    onPressed: ()async {
+                                     await authNotifier.signOut();
+
                                       Provider.of<DrawerSelectionProvider>(context, listen: false)
                                           .setSelectedItem("dashboard");
                                       Navigator.pushAndRemoveUntil(

@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:green/constants/enums.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/main.dart';
-import 'package:green/screens/onboarding/login_screen.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/service/language_service.dart';
+import 'package:RiskSphare/constants/enums.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/main.dart';
+import 'package:RiskSphare/screens/onboarding/login_screen.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/service/language_service.dart';
 
 import '../design_system/primitives/custom_typography.dart';
 import '../design_system/primitives/utilities/custom_spacing.dart';
@@ -141,7 +141,7 @@ class AuthNotifier extends ChangeNotifier {
       _isSigningIn = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
-      }) ;
+      });
 
       final UserCredential userCredential =
           await _auth.signInWithEmailAndPassword(
@@ -150,16 +150,16 @@ class AuthNotifier extends ChangeNotifier {
       );
       _user = userCredential.user;
 
-
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims ?? {};
       log("Claims231: $claims");
 
       String isAdminVerified = await getAllClaims();
-      print("is admin verified"+isAdminVerified.length.toString() );
+      print("is admin verified" + isAdminVerified.length.toString());
+      print(isAdminVerified.toLowerCase());
 
-
-      if (isAdminVerified.toLowerCase() == "false" || isAdminVerified.length.toString() == "0") {
+      if (isAdminVerified.toLowerCase() == "false" ||
+          isAdminVerified.length.toString() == "0") {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
@@ -187,74 +187,123 @@ class AuthNotifier extends ChangeNotifier {
                       children: [
                         Expanded(
                           child: CustomButton(
-                              type: ButtonType.elevated,
-              // Add this to the state of your widget
+                            type: ButtonType.elevated,
+                            onPressed: () async {
+                              // Start loading
+                              isRemindLoading = true;
+                              notifyListeners(); // Notify UI to update
 
-                onPressed: () async {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false, // Prevent dismissing the dialog
-                    builder: (BuildContext context) {
-                      return Center(
-                        child: CircularProgressIndicator(), // Show loading spinner
-                      );
-                    },
-                  );
+                              bool result = await remindUser();
 
-                  // Wait for 2 seconds before proceeding
-                  await Future.delayed(Duration(seconds: 1));
+                              // Stop loading
+                              isRemindLoading = false;
+                              notifyListeners(); // Notify UI to update
 
-                  // Close the dialog after 2 seconds
-                  Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => LoginScreen()),
-                          (route) => false);
-              //     WidgetsBinding.instance.addPostFrameCallback((_) {
-              //       notifyListeners();
-              //       isRemindLoading =true;
-              //     });
-              //
-              // print("Remind user: ${_user?.email}");
-              //
-              // bool result = await remindUser();
-              //
-              //     WidgetsBinding.instance.addPostFrameCallback((_) {
-              //       notifyListeners();
-              //       isRemindLoading =false;
-              //     });
-              //
-              //
-              //     if (result) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      LanguageService.getTranslated(context, "login_admin_not_verified_remind_success"),
-                      style: typography.Body1,
-                    ),
-                  ),
-                );
-              // }
+                              if (result) {
 
-              // final _googleSignIn = GoogleSignIn();
-              // var isSignedIn = await _googleSignIn.isSignedIn();
-              //
-              // if (isSignedIn) await _googleSignIn.disconnect();
-              // await _auth.signOut();
-              //
-              // WidgetsBinding.instance.addPostFrameCallback((_) {
-              //   notifyListeners();
-              // });
-            },
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      LanguageService.getTranslated(
+                                          context, "login_admin_not_verified_remind_success"),
+                                      style: typography.H6.copyWith(color: Colors.black),
+                                    ),
+                                  ),
+                                );
 
-            child: !isRemindLoading
-                                  ? Center(child: CircularProgressIndicator())
-                                  : Text(
-                                      LanguageService.getTranslated(context1,
-                                          "login_admin_not_verified_remind_button"),
-                                      style: typography.Body1,
-                                    )),
+                              }
+
+                              final _googleSignIn = GoogleSignIn();
+                              var isSignedIn = await _googleSignIn.isSignedIn();
+
+                              if (isSignedIn) await _googleSignIn.disconnect();
+                              await _auth.signOut();
+                              Navigator.pop(context);
+                            },
+                            child: isRemindLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : Text(
+                              LanguageService.getTranslated(
+                                  context, "login_admin_not_verified_remind_button"),
+                              style: typography.Body1,
+                            ),
+                          ),
                         ),
+
+                        //           Expanded(
+              //             child: CustomButton(
+              //                 type: ButtonType.elevated,
+              // // Add this to the state of your widget
+              //
+              //   onPressed: () async {
+              //     showDialog(
+              //       context: context,
+              //       barrierDismissible: false, // Prevent dismissing the dialog
+              //       builder: (BuildContext context) {
+              //         return Center(
+              //           child: CircularProgressIndicator(), // Show loading spinner
+              //         );
+              //       },
+              //     );
+              //
+              //                   // Wait for 2 seconds before proceeding
+              //                   await Future.delayed(Duration(seconds: 1));
+              //
+              //                   // Close the dialog after 2 seconds
+              //                   // Navigator.pushAndRemoveUntil(
+              //                   //     context,
+              //                   //     MaterialPageRoute(
+              //                   //         builder: (context) => LoginScreen()),
+              //                   //     (route) => false);
+              //                       WidgetsBinding.instance.addPostFrameCallback((_) {
+              //                         notifyListeners();
+              //                         isRemindLoading =true;
+              //                       });
+              //
+              //                   print("Remind user: ${_user?.email}");
+              //
+              //                   bool result = await remindUser();
+              //
+              //                       WidgetsBinding.instance.addPostFrameCallback((_) {
+              //                         notifyListeners();
+              //                         isRemindLoading =false;
+              //                       });
+              //
+              //
+              //                       if (result) {
+              //                   ScaffoldMessenger.of(context).showSnackBar(
+              //                     SnackBar(
+              //                       content: Text(
+              //                         LanguageService.getTranslated(context,
+              //                             "login_admin_not_verified_remind_success"),
+              //                         // style: typography.Body1,
+              //                         style: typography.H6
+              //                             .copyWith(color: Colors.black),
+              //                       ),
+              //                     ),
+              //                   );
+              //                   }
+              //
+              //                   final _googleSignIn = GoogleSignIn();
+              //                   var isSignedIn = await _googleSignIn.isSignedIn();
+              //
+              //                   if (isSignedIn) await _googleSignIn.disconnect();
+              //                   await _auth.signOut();
+              //
+              //                   WidgetsBinding.instance.addPostFrameCallback((_) {
+              //                     notifyListeners();
+              //                   });
+              //                 },
+              //                 child:
+              //                     !isRemindLoading
+              //                                           ? Center(child: CircularProgressIndicator())
+              //                                           :
+              //                     Text(
+              //                   LanguageService.getTranslated(context1,
+              //                       "login_admin_not_verified_remind_button"),
+              //                   style: typography.Body1,
+              //                 )),
+              //           ),
                       ],
                     ),
                     SizedBox(height: CustomSpacing.four),
@@ -283,7 +332,8 @@ class AuthNotifier extends ChangeNotifier {
                               child: Text(
                                 LanguageService.getTranslated(context,
                                     "login_admin_not_verified_cancel_button"),
-                                style: typography.Body1,
+                                style:
+                                    typography.H6.copyWith(color: Colors.white),
                               )),
                         ),
                       ],
@@ -1279,6 +1329,7 @@ class AuthNotifier extends ChangeNotifier {
 
     return '$localPart@$domainPart';
   }
+
   Future<String> getAllClaims() async {
     try {
       if (isAssignClaimsLoading) return "";
@@ -1290,7 +1341,7 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final HttpsCallable callable =
-      FirebaseFunctions.instance.httpsCallable('assignClaims');
+          FirebaseFunctions.instance.httpsCallable('assignClaims');
 
       String? token = await _auth.currentUser!.getIdToken(true);
       log("Old Token: $token");
@@ -1313,8 +1364,28 @@ class AuthNotifier extends ChangeNotifier {
         throw Exception("Response data is not a Map: ${response.data}");
       }
 
-
       print("is_user_exists: ${response.data["is_user_exists"]}");
+      print("is_user_exists: ${response.data['schedule_inprogress']}");
+      print("is_user_exists: ${response.data['last_account']}");
+      print("is_user_exists: ${response.data['last_sub_account']}");
+          SharedPreferenceService.setScheduleInProgress(
+              response.data['schedule_inprogress'].toString());
+          // SharedPreferenceService.setScheduleInProgress(
+          //     response.data['schedule_inprogress']);
+          // SharedPreferenceService.setSovUploadTempId(
+          //     response.data['last_process_temp_id'] ?? "");
+          // SharedPreferenceService.setSovUploadProcessId(
+          //     response.data['last_process_id'] ?? "");
+          // SharedPreferenceService.setSovUploadState(
+          //     response.data['last_process_state'] ?? "");
+          SharedPreferenceService.setSovAccountId(
+              response.data['last_account'] ?? "");
+          SharedPreferenceService.setSovSubAccountId(
+              response.data['last_sub_account'] ?? "");
+          // SharedPreferenceService.setSovAccountName(
+          //     response.data['last_account_name'] ?? "");
+          // SharedPreferenceService.setSovSubAccountName(
+          //     response.data['last_sub_account_name'] ?? "");
       return response.data["is_user_exists"].toString();
     } catch (e, stack) {
       print(stack);
@@ -1324,7 +1395,6 @@ class AuthNotifier extends ChangeNotifier {
       isAssignClaimsLoading = false;
     }
   }
-
 
   // Future<String> getAllClaims() async {
   //   try {
@@ -1340,19 +1410,25 @@ class AuthNotifier extends ChangeNotifier {
   //     });
   //     print("is_user_exists: ${response.data["is_user_exists"]}");
   //     print("update claims response:");
+  //    print(response.data['schedule_inprogress']);
+  //
   //     print("update claims response: ${response.data}");
   //     SharedPreferenceService.setScheduleInProgress(
-  //         response.data['schedule_inprogress'] ?? false);
+  //         response.data['schedule_inprogress']);
   //     SharedPreferenceService.setSovUploadTempId(
   //         response.data['last_process_temp_id'] ?? "");
   //     SharedPreferenceService.setSovUploadProcessId(
   //         response.data['last_process_id'] ?? "");
   //     SharedPreferenceService.setSovUploadState(
   //         response.data['last_process_state'] ?? "");
+  //
   //     SharedPreferenceService.setSovAccountId(
   //         response.data['last_account'] ?? "");
+  //     print(response.data['last_account']);
   //     SharedPreferenceService.setSovSubAccountId(
   //         response.data['last_sub_account'] ?? "");
+  //     print(response.data['last_sub_account']);
+  //
   //     SharedPreferenceService.setSovAccountName(
   //         response.data['last_account_name'] ?? "");
   //     SharedPreferenceService.setSovSubAccountName(
@@ -1428,7 +1504,7 @@ class AuthNotifier extends ChangeNotifier {
       String? idToken = await user.getIdToken();
 
       // Define the Cloud Function URL
-      final url = '${AppConstant.baseURL}/sendEmail_to_client';
+      final url = '${AppConstant.baseURL}/sendEmail_to_client?type=remind';
 
       // Set the headers including the Authorization header with the token
       final headers = {

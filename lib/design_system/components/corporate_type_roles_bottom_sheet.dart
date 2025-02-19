@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:green/models/company_type_model.dart';
+import 'package:RiskSphare/models/company_type_model.dart';
 
 import '../../service/language_service.dart';
 import '../primitives/custom_typography.dart';

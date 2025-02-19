@@ -4,11 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/repo/constants.dart';
-import 'package:green/providers/auth_provider.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/onboarding/create_account_screen.dart';
-import 'package:green/screens/onboarding/login_screen.dart';
+import 'package:RiskSphare/design_system/repo/constants.dart';
+import 'package:RiskSphare/providers/auth_provider.dart';
+import 'package:RiskSphare/screens/home/dashboard_screen.dart';
+import 'package:RiskSphare/screens/onboarding/create_account_screen.dart';
+import 'package:RiskSphare/screens/onboarding/login_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../design_system/repo/home.dart';
@@ -36,14 +36,14 @@ class _SplashScreenState extends State<SplashScreen>
     _getInitData();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 1),
+      duration: Duration(seconds: 0),
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     _controller.forward();
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     var authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     // Call function to move to the next screen after 2 seconds of animation completion
-    Future.delayed(Duration(seconds: 2) + Duration(seconds: 4), () {
+    Future.delayed(Duration(seconds: 0) + Duration(seconds: 0), () {
       bool isUserLoggedIn = authNotifier.user!=null;
       print("User: ${authNotifier.user}");
       if(FirebaseAuth.instance.currentUser==null) {

@@ -1,4 +1,4 @@
-import 'package:green/providers/auth_provider.dart';
+import 'package:RiskSphare/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
@@ -301,19 +301,42 @@ class SharedPreferenceService {
       return null;
     }
   }
-
-  static Future<void> setScheduleInProgress(bool value) async {
+  // static Future<void> setScheduleInProgress(bool value) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('schedule_in_progress', value.toString()); // Convert bool to String
+  // }
+  //
+  // static Future<String?> getScheduleInProgress() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   return prefs.getString('schedule_in_progress'); // Now returns a String
+  // }
+  static Future<void> setScheduleInProgress(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(SCHEDULE_INPROGRESS, value);
-    print('Set Schedule In Progress to $value');
+    await prefs.setString(SCHEDULE_INPROGRESS, value);
+    print('Schedule in progress $value');
   }
 
-  static Future<bool?> getScheduleInProgress() async {
+  static Future<String?> getScheduleInProgress() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool? value = prefs.getBool(SCHEDULE_INPROGRESS);
-    print('Retrieved Schedule In Progress with value $value');
+    String? value = prefs.getString(SCHEDULE_INPROGRESS);
+    print('Schedule in progress $value');
     return value;
   }
+
+
+
+  // static Future<void> setScheduleInProgress(bool value) async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   await prefs.setBool(SCHEDULE_INPROGRESS, value);
+  //   print('Set Schedule In Progress to $value');
+  // }
+  //
+  // static Future<bool?> getScheduleInProgress() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   bool? value = prefs.getBool(SCHEDULE_INPROGRESS);
+  //   print('Retrieved Schedule In Progress with value $value');
+  //   return value;
+  // }
 
   static Future<void> setSovUploadTempId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

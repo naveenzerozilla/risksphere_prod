@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/repo/color_pallets_screen.dart';
+import 'package:RiskSphare/design_system/repo/color_pallets_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';

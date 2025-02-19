@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/enums.dart';

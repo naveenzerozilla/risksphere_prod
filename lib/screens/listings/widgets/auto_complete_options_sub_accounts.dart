@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:green/models/sub_account_list_model.dart';
+import 'package:RiskSphare/models/sub_account_list_model.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../models/account_list_model.dart';
 

@@ -4,11 +4,11 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/models/account_list_model.dart';
-import 'package:green/models/sov_list_model.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/utils/api_constants.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/models/account_list_model.dart';
+import 'package:RiskSphare/models/sov_list_model.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -591,6 +591,7 @@ class SOVListProvider extends ChangeNotifier {
       _isExportLoading = false;
       notifyListeners();
       print('Export data process completed.');
+      Navigator.pop(context);
     }
   }
 

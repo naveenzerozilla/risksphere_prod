@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
 
 class MaintenanceUI extends StatefulWidget {
-  final bool isMaintenance;
+  final String? isMaintenance;
 
   const MaintenanceUI({super.key, required this.isMaintenance});
 
@@ -14,7 +14,8 @@ class MaintenanceUIState extends State<MaintenanceUI>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _animation;
-  final String text = "Maintenance in Progress ";
+  final String ongoing = "Ongoing maintenance. Expected to finish by 18 Feb 2025 01:20. Please check back later. ";
+  final String upcoming = "Upcoming maintenance. Expected to finish by 18 Feb 2025 01:20. Please check back later. ";
 
   @override
   void initState() {
@@ -45,9 +46,9 @@ class MaintenanceUIState extends State<MaintenanceUI>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isMaintenance) {
-      return const SizedBox();
-    }
+    // if (!widget.isMaintenance.toString().contains("in_progress")) {
+    //   return const SizedBox();
+    // }
 
     return Column(
       children: [
@@ -66,10 +67,10 @@ class MaintenanceUIState extends State<MaintenanceUI>
                 ...List.generate(
                   1, // Repeat the text 3 times to ensure continuous flow
                       (_) => Row(
-                    children: text.characters.map((char) => Text(
+                    children: ongoing.characters.map((char) => Text(
                       char,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         color: Colors.redAccent,
                       ),
                     )).toList(),

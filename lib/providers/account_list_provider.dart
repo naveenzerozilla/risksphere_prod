@@ -3,11 +3,13 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/models/account_list_model.dart';
-import 'package:green/service/api_service.dart';
-import 'package:green/service/language_service.dart';
-import 'package:green/utils/api_constants.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/models/account_list_model.dart';
+import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphare/service/language_service.dart';
+import 'package:RiskSphare/utils/api_constants.dart';
+
+import '../design_system/components/custom_toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
 
@@ -455,6 +457,60 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
+  // Delete Tags from location
+
+  Future<bool> deleteAccount(BuildContext context, String accountId) async {
+    try {
+      isAddAccountLoading = true;
+      notifyListeners(); // Notify UI to update the button state
+
+      ApiService apiService =
+      ApiService("${AppConstant.DELETE_ACCOUNT}account_id=$accountId");
+      var response = await apiService.delete({});
+
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+
+      return true; // Return true only if successful
+    } on BackendException catch (e, stackTrace) {
+      log("Error deleting account: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+      return false;
+    } catch (e, stackTrace) {
+      log("Unexpected error: $e");
+      log(stackTrace.toString());
+      CustomToast.error(context, "An unexpected error occurred");
+      return false;
+    } finally {
+      isAddAccountLoading = false;
+      notifyListeners(); // Notify UI to remove the loader
+    }
+  }
+
+  // Future<bool> deleteAccount(BuildContext context, String accountId,
+  //    ) async {
+  //   try {
+  //     isAddAccountLoading = true;
+  //     ApiService apiService =
+  //     ApiService("${AppConstant.DELETE_ACCOUNT}account_id=$accountId");
+  //     var response = await apiService.delete({});
+  //     log(response.toString());
+  //     CustomToast.success(context, response['message']);
+  //   } on BackendException catch (e, stackTrace) {
+  //     log("Error deleting tag from location: ${e.message}");
+  //     log(stackTrace.toString());
+  //     CustomToast.error(context, e.message);
+  //   } catch (e, stackTrace) {
+  //     log("Error deleting tag from location: $e");
+  //     log(e.toString());
+  //     log(stackTrace.toString());
+  //     CustomToast.error(context, e.toString());
+  //   } finally {
+  //     isAddAccountLoading = false;
+  //     return true;
+  //   }
+  // }
 
   // Request access with message
   Future<void> requestAccess(BuildContext context, String accountId, String message) async {

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:green/models/maintainance_model.dart';
-import 'package:green/service/api_service.dart';
+import 'package:RiskSphare/models/maintainance_model.dart';
+import 'package:RiskSphare/service/api_service.dart';
 import '../utils/api_constants.dart';
 
 class JobMonitoringProvider extends ChangeNotifier {

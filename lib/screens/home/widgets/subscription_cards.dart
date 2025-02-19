@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/primitives/app_colors.dart';
-import 'package:green/providers/user_profile_provider.dart';
+import 'package:RiskSphare/design_system/primitives/app_colors.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
@@ -49,24 +49,18 @@ class SubscriptionCard extends StatelessWidget {
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Circular Icon Container
-                Card(
-                  elevation: 100,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Container(
-                    padding: EdgeInsets.all(CustomSpacing.two),
-                    child: SvgPicture.asset(
-                      iconPath,
-                      width: 24,
-                      height: 24,
-                      colorFilter: ColorFilter.mode(
-                        Theme.of(context).colorScheme.onBackground,
-                        BlendMode.srcIn,
-                      ),
-                    ),
+                Container(
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.all(CustomSpacing.two),
+                  child: Image.network(
+                    iconPath,
+                    alignment: Alignment.center,
+                    fit: BoxFit.contain,
+                    height: 50,
+                    width: 50,
                   ),
                 ),
                 SizedBox(width: CustomSpacing.two),
@@ -75,9 +69,63 @@ class SubscriptionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: typography.Body1,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.5,
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.Body1,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text(title),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          title ==
+                                                  "Hurricane (Kinetic Analysis Corporation)"
+                                              ? "Get real-time hurricane alerts and automated tracking.\n"
+                                              : "The Earthquake Event Monitoring Subscription keeps you updated with timely alerts on seismic activity.\n",
+                                        ),
+                                        SizedBox(height: 10),
+                                        _buildBulletPoint(
+                                            "Activation: Monitoring begins 24 hours after subscribing."),
+                                        _buildBulletPoint(title ==
+                                                "Hurricane (Kinetic Analysis Corporation)"
+                                            ? "Automatic Tracking: New locations added start monitoring within 24 hours."
+                                            : "Automatic Location Tracking: New locations monitoring starts after 24 hours."),
+                                        _buildBulletPoint(
+                                            "Event Alerts: Alerts every 6 hours on potential impacts."),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("OK"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            child: Icon(Icons.info, size: 20),
+                          ),
+                        ],
                       ),
                       SizedBox(height: CustomSpacing.two),
                       Text(
@@ -124,7 +172,11 @@ class SubscriptionCard extends StatelessWidget {
                                 backgroundColor: Colors.amber,
                               ),
                               child: Text(
-                                trialStatus.isEmpty?"  Unsubscribe  ": trialStatus.toLowerCase() == 'expired'?"  Upgrade Now  ":"  Trial Activated  ",
+                                trialStatus.isEmpty
+                                    ? "  Unsubscribe  "
+                                    : trialStatus.toLowerCase() == 'expired'
+                                        ? "  Upgrade Now  "
+                                        : "  Trial Activated  ",
                                 style: typography.Body1.copyWith(
                                   color: Theme.of(context).colorScheme.surface,
                                 ),
@@ -146,7 +198,11 @@ class SubscriptionCard extends StatelessWidget {
                               ),
                               child: Text(
                                 //"Subscribe Now",
-                                trialStatus.isEmpty?"  Subscribe Now  ": trialStatus.toLowerCase() == 'expired'?"  Upgrade Now  ":"  Try now!  ",
+                                trialStatus.isEmpty
+                                    ? "  Subscribe Now  "
+                                    : trialStatus.toLowerCase() == 'expired'
+                                        ? "  Upgrade Now  "
+                                        : "  Try now!  ",
                                 style: typography.Body1.copyWith(
                                   color: Theme.of(context).colorScheme.surface,
                                 ),
@@ -203,6 +259,19 @@ class SubscriptionCard extends StatelessWidget {
               );
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("• ", style: TextStyle(fontSize: 16)),
+          Expanded(child: Text(text)),
         ],
       ),
     );

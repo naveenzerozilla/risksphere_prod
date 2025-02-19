@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/screens/event/notification_map_screen.dart';
+import 'package:RiskSphare/screens/event/notification_map_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/enums.dart';
@@ -95,7 +95,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                     children: [
                       _buildNewsFeedList(context, typography),
                       _buildEventFeedList(context, typography),
-                      _getComingSoonUI(),
+                      _getNewFeedComingSoonUI(),
                       _getComingSoonUI(),
                     ],
                   )),
@@ -384,8 +384,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       itemCount: provider.newsFeed.length,
                       itemBuilder: (context, index) {
                         var item = provider.newsFeed[index];
-                        return
-                          _buildNewsCard(item, typography);
+                        return _buildNewsCard(item, typography);
                       },
                     ),
         );
@@ -736,6 +735,39 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
       _scrollController.offset + 100,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
+    );
+  }
+
+  _getNewFeedComingSoonUI() {
+    var typography = CustomTypography(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          // mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Text("Stay Informed—News Feed Coming Soon! ",
+                      textAlign: TextAlign.center,
+                      // LanguageService.getTranslated(
+                      //     context, 'coming_soon_title'),
+                      style: typography.H4),
+                 SizedBox(height: 8),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      textAlign: TextAlign.center,
+                      style: typography.Body1),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

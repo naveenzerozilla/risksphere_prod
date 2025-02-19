@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/models/my_location_list_model.dart';
-import 'package:green/screens/listings/location_profile.dart';
-import 'package:green/screens/listings/widgets/my_scrollable_scores_widget.dart';
+import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphare/screens/listings/location_profile.dart';
+import 'package:RiskSphare/screens/listings/widgets/my_scrollable_scores_widget.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
 import 'hazard_section_widget.dart';
@@ -69,6 +69,7 @@ class LocationDetailsPopup extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+
                 SizedBox(height: 8),
                 if ((campus ?? "").isNotEmpty)
                   Text(
@@ -122,10 +123,10 @@ class LocationDetailsPopup extends StatelessWidget {
   Widget _buildInformationSection(CustomTypography typography) {
     final information = {
       'Location Geocoded at': geocodedAt.join(', '),
-      'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
-      'Construction': '--',
-      'Floor Area': '--',
-      'Year of construction': '--',
+      // 'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
+      // 'Construction': '--',
+      // 'Floor Area': '--',
+      // 'Year of construction': '--',
     };
 
     return Container(

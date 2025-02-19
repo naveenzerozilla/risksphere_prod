@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:RiskSphare/models/networking_model.dart';
 import 'package:country_list_picker/country_list_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/components/expandable_card_container.dart';
-import 'package:green/models/networking_model.dart';
-import 'package:green/service/language_service.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/design_system/components/expandable_card_container.dart';
+import 'package:RiskSphare/models/networking_model.dart';
+import 'package:RiskSphare/service/language_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
@@ -2350,34 +2351,30 @@ class _ProfileScreenState extends State<ProfileScreen>
     var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Text(
-                        LanguageService.getTranslated(
-                            context, 'coming_soon_title'),
-                        style: typography.H4),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  Text(
-                      LanguageService.getTranslated(
-                          context, 'coming_soon_subtitle'),
-                      style: typography.Body1),
-                ],
-              ),
+      child: Center( // Directly center the entire column
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              LanguageService.getTranslated(context, 'coming_soon_title'),
+              style: typography.H4,
+              textAlign: TextAlign.center, // Ensure the text is centered
             ),
-          ),
-        ],
+            SizedBox(
+              height: CustomSpacing.two,
+            ),
+            Text(
+              LanguageService.getTranslated(context, 'coming_soon_subtitle'),
+              style: typography.Body1,
+              textAlign: TextAlign.center, // Ensure the text is centered
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   void _addChip(Categories value) {
     setState(() {

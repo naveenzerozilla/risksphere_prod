@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:green/models/hazard_data.dart';
+import 'package:RiskSphare/models/hazard_data.dart';
 
 class CustomTileProviderMainHazards implements TileProvider {
   final List<HazardData> tileUrls;

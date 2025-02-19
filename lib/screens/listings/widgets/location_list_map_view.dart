@@ -4,15 +4,15 @@
   import 'package:flutter/material.dart';
   import 'package:flutter_svg/svg.dart';
   import 'package:google_maps_flutter/google_maps_flutter.dart';
-  import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/providers/user_profile_provider.dart';
+  import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/providers/user_profile_provider.dart';
   import 'package:provider/provider.dart';
   import '../../../constants/enums.dart';
   import '../../../design_system/components/custom_button.dart';
   import '../../../design_system/primitives/app_colors.dart';
   import '../../../models/hazard_data.dart';
 import '../../../models/my_location_list_model.dart';
-  import 'package:green/providers/my_location_list_provider.dart';
+  import 'package:RiskSphare/providers/my_location_list_provider.dart';
 
   import '../../../providers/custom_tile_providers.dart';
   import '../../../providers/custom_tile_providers_main_hazards.dart';

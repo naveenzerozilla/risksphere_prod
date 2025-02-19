@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
 import '../../../models/my_location_list_model.dart';
 
 class LocationTable extends StatefulWidget {
@@ -23,7 +23,8 @@ class _LocationTableState extends State<LocationTable> {
     if (widget.locations.isNotEmpty) {
       hazardColumns = widget.locations.first.hazard?.keys.toList() ?? [];
 
-      print("Hazard Columns Found: $hazardColumns"); // Debugging print statement
+      print(
+          "Hazard Columns Found: $hazardColumns"); // Debugging print statement
 
       for (var hazard in hazardColumns) {
         columnVisibility[hazard] = true;
@@ -33,16 +34,15 @@ class _LocationTableState extends State<LocationTable> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final int visibleHazardsCount =
-        hazardColumns.where((hazard) => columnVisibility[hazard] ?? true).length;
+    final int visibleHazardsCount = hazardColumns
+        .where((hazard) => columnVisibility[hazard] ?? true)
+        .length;
     final double fixedColumnsWidth = MediaQuery.of(context).size.width * 0.9;
     final double hazardColumnsWidth = visibleHazardsCount * 150;
-    final double dynamicMinWidth = fixedColumnsWidth +
-        (hazardColumnsWidth > 0 ? hazardColumnsWidth : 300);
+    final double dynamicMinWidth =
+        fixedColumnsWidth + (hazardColumnsWidth > 0 ? hazardColumnsWidth : 300);
 
     return Column(
       children: [
@@ -91,7 +91,8 @@ class _LocationTableState extends State<LocationTable> {
                 horizontalMargin: 12,
                 bottomMargin: 20,
                 dividerThickness: 1,
-                dataRowHeight: !showRiskScore? 160:null,// Enables dynamic height
+                dataRowHeight: !showRiskScore ? 160 : null,
+                // Enables dynamic height
 
                 border: TableBorder.all(
                   color: Theme.of(context).colorScheme.surface,
@@ -105,12 +106,14 @@ class _LocationTableState extends State<LocationTable> {
                     label: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Location', style: CustomTypography(context).InputLabel),
+                        Text('Location',
+                            style: CustomTypography(context).InputLabel),
                         PopupMenuButton<String>(
                           icon: Icon(Icons.more_vert),
                           onSelected: (String hazard) {
                             setState(() {
-                              columnVisibility[hazard] = !(columnVisibility[hazard] ?? true);
+                              columnVisibility[hazard] =
+                                  !(columnVisibility[hazard] ?? true);
                             });
                           },
                           itemBuilder: (BuildContext context) {
@@ -152,23 +155,40 @@ class _LocationTableState extends State<LocationTable> {
                     ),
                     size: ColumnSize.L,
                   ),
+
                   DataColumn2(
                     fixedWidth: MediaQuery.of(context).size.width * 0.3,
                     size: ColumnSize.L,
-                    label: Text('Overall Score', style: CustomTypography(context).InputLabel),
+                    label: Text('Geocoding Score',
+                        style: CustomTypography(context).InputLabel),
                   ),
                   DataColumn2(
                     fixedWidth: MediaQuery.of(context).size.width * 0.3,
                     size: ColumnSize.L,
-                    label: Text('Geocoding Score', style: CustomTypography(context).InputLabel),
+                    label: Text('Hazard score',
+                        style: CustomTypography(context).InputLabel),
                   ),
-                  ...hazardColumns.map((hazard) {
+
+                  ...hazardColumns
+                      .where((hazard) =>
+                          hazard != 'Overall') // Filter out "Overall"
+                      .map((hazard) {
                     print("Rendering Column: $hazard"); // Debugging print
                     return DataColumn2(
                       size: ColumnSize.L,
-                      label: Text(hazard, style: CustomTypography(context).InputLabel),
+                      label: Text(hazard,
+                          style: CustomTypography(context).InputLabel),
                     );
                   }).toList(),
+
+                  // ...hazardColumns.map((hazard) {
+                  //   print("Rendering Column: $hazard"); // Debugging print
+                  //   return DataColumn2(
+                  //     size: ColumnSize.L,
+                  //     label: Text(hazard,
+                  //         style: CustomTypography(context).InputLabel),
+                  //   );
+                  // }).toList(),
                 ],
                 rows: widget.locations.map((location) {
                   return DataRow(
@@ -178,33 +198,73 @@ class _LocationTableState extends State<LocationTable> {
                           location.finalAddress?.address ?? '',
                           style: CustomTypography(context).Body2,
                           overflow: TextOverflow.ellipsis,
-                          maxLines: showRiskScore?3:7,
+                          maxLines: showRiskScore ? 3 : 7,
                         ),
                       ),
                       DataCell(
-                        _renderRiskScore(location.overallScore), // ✅ Overall Score
+                        _renderRiskScore(
+                            location.finalAddress?.score), // ✅ Geocoding Score
                       ),
                       DataCell(
-                        _renderRiskScore(location.finalAddress?.score), // ✅ Geocoding Score
+                        _renderRiskScore(
+                            location.overallScore), // ✅ Overall Score
                       ),
-                      ...hazardColumns.map((hazard) => DataCell(
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          alignment: Alignment.center,
-                          child: widget.locations.first.hazard?.containsKey(hazard) ?? false
-                              ? (showRiskScore
-                              ? _renderRiskScore(widget.locations.first.hazard?[hazard]?.rating)
-                              : _renderFormattedHazardData(widget.locations.first.hazard?[hazard], widget.locations.first.hazard?[hazard]?.rating)) // ✅ Fixed
-                              : Text("N/A", style: CustomTypography(context).Body2.copyWith(color: Colors.grey)),
-                        ),
-                      )).toList(),
 
+                      ...hazardColumns
+                          .where((hazard) =>
+                              hazard != 'Overall') // Filter out "Overall"
+                          .map((hazard) => DataCell(
+                                Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  alignment: Alignment.center,
+                                  child: location.hazard?.containsKey(hazard) ??
+                                          false
+                                      ? (showRiskScore
+                                          ? _renderRiskScore(
+                                              location.hazard?[hazard]?.rating)
+                                          : _renderFormattedHazardData(
+                                              location.hazard?[hazard],
+                                              location.hazard?[hazard]?.rating))
+                                      : Text("-",
+                                          style: CustomTypography(context)
+                                              .Body2
+                                              .copyWith(color: Colors.grey)),
+                                ),
+                              ))
+                          .toList(),
+
+                      // ...hazardColumns
+                      //     .map((hazard) => DataCell(
+                      //           Container(
+                      //             width: double.infinity,
+                      //             height: double.infinity,
+                      //             alignment: Alignment.center,
+                      //             child: widget.locations.first.hazard
+                      //                         ?.containsKey(hazard) ??
+                      //                     false
+                      //                 ? (showRiskScore
+                      //                     ? _renderRiskScore(widget.locations
+                      //                         .first.hazard?[hazard]?.rating)
+                      //                     : _renderFormattedHazardData(
+                      //                         widget.locations.first
+                      //                             .hazard?[hazard],
+                      //                         widget
+                      //                             .locations
+                      //                             .first
+                      //                             .hazard?[hazard]
+                      //                             ?.rating)) // ✅ Fixed
+                      //                 : Text("N/A",
+                      //                     style: CustomTypography(context)
+                      //                         .Body2
+                      //                         .copyWith(color: Colors.grey)),
+                      //           ),
+                      //         ))
+                      //     .toList(),
                     ],
                   );
                 }).toList(),
               ),
-
             ),
           ),
         ),
@@ -214,9 +274,11 @@ class _LocationTableState extends State<LocationTable> {
 
   Widget _renderRiskScore(int? score) {
     if (score == null || score == 0) {
-      return Text(
-        "N/A",
-        style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
+      return Center(
+        child: Text(
+          "-",
+          style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
+        ),
       );
     }
 
@@ -252,18 +314,16 @@ class _LocationTableState extends State<LocationTable> {
   }
 
   Widget _renderFormattedHazardData(HazardDetails? hazardDetails, int? score) {
-
     if (score == null || score == 0) {
       return Text(
-        "N/A",
+        "-",
         style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
       );
     }
 
-
     if (hazardDetails == null || hazardDetails.others == null) {
       return Text(
-        "N/A",
+        "-",
         style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
       );
     }
@@ -271,22 +331,21 @@ class _LocationTableState extends State<LocationTable> {
     List<Widget> vendorDataWidgets = [];
 
     // **Coastal Flood**
-    if (hazardDetails.others!.containsKey("Kineticast")) {
-      var mainValue = hazardDetails.others!["Kineticast"]!.value;
-      vendorDataWidgets.add(_buildVendorDataWidget(
-        key: "St. Surge (ft)",
-        value: _formatNumber(mainValue),
-        vendorName: "KinetiCast",
-        score: score
-      ));
-    }
+    // if (hazardDetails.others!.containsKey("Kineticast")) {
+    //   var mainValue = hazardDetails.others!["Kineticast"]!.value;
+    //   vendorDataWidgets.add(_buildVendorDataWidget(
+    //       key: "Flood depth (ft)",
+    //       value: _formatNumber(mainValue),
+    //       vendorName: "KinetiCast",
+    //       score: score));
+    // }
     if (hazardDetails.others!.containsKey("MarshMcLennan")) {
       var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Risk Score",
         value: mainValue.toString(),
-        vendorName: "Marsh...",
-          score: score,
+        vendorName: "MarshMcLennan",
+        score: score,
       ));
     }
 
@@ -306,7 +365,7 @@ class _LocationTableState extends State<LocationTable> {
       var mainValue = hazardDetails.others!["Kineticast"]!.value;
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Wind Speed (mph)",
-        value: _formatNumber(mainValue),
+        value: _formatNumber1(mainValue),
         vendorName: "KinetiCast",
         score: score,
       ));
@@ -316,7 +375,7 @@ class _LocationTableState extends State<LocationTable> {
     if (hazardDetails.others!.containsKey("Modis")) {
       var mainValue = hazardDetails.others!["Modis"]!.value;
       vendorDataWidgets.add(_buildVendorDataWidget(
-        key: "T(K)/FRP",
+        key: "Temp(K) / FRP",
         value: _formatNumber(mainValue),
         vendorName: "MODIS",
         score: score,
@@ -328,20 +387,20 @@ class _LocationTableState extends State<LocationTable> {
       var mainValue = hazardDetails.others!["JRCOD"]!.value;
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Depth (ft)",
-        value: _formatNumber(mainValue, decimalPlaces: 3),
+        value: _formatNumber(mainValue, decimalPlaces: 1),
         vendorName: "JRCOD",
         score: score,
       ));
     }
-    if (hazardDetails.others!.containsKey("MarshMcLennan")) {
-      var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
-      vendorDataWidgets.add(_buildVendorDataWidget(
-        key: "Flood Risk Score",
-        value: _formatNumber(mainValue, decimalPlaces: 3),
-        vendorName: "MarshMcLennan",
-        score: score,
-      ));
-    }
+    // if (hazardDetails.others!.containsKey("MarshMcLennan")) {
+    //   var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
+    //   vendorDataWidgets.add(_buildVendorDataWidget(
+    //     key: "Flood Risk Score2",
+    //     value: _formatNumber(mainValue, decimalPlaces: 1),
+    //     vendorName: "MarshMcLennan",
+    //     score: score,
+    //   ));
+    // }
 
     // **USGS Risk Index**
     if (hazardDetails.others!.containsKey("USGS")) {
@@ -367,8 +426,16 @@ class _LocationTableState extends State<LocationTable> {
     );
   }
 
-  String _formatNumber(dynamic value, {int decimalPlaces = 6}) {
-    if (value == null) return "N/A";
+  String _formatNumber(dynamic value, {int decimalPlaces = 3}) {
+    if (value == null) return "-";
+    if (value is num) {
+      return value.toStringAsFixed(decimalPlaces);
+    }
+    return value.toString();
+  }
+
+  String _formatNumber1(dynamic value, {int decimalPlaces = 1}) {
+    if (value == null) return "-";
     if (value is num) {
       return value.toStringAsFixed(decimalPlaces);
     }
@@ -377,7 +444,7 @@ class _LocationTableState extends State<LocationTable> {
 
   String _formatUSGSValue(String value) {
     if (value == "Not Applicable" || value == "No Rating") {
-      return "N/A";
+      return "-";
     }
     var parts = value.split(" ");
     if (parts.length >= 2) {
@@ -385,7 +452,6 @@ class _LocationTableState extends State<LocationTable> {
     }
     return value;
   }
-
 
   Widget _buildVendorDataWidget({
     required String key,
@@ -400,8 +466,10 @@ class _LocationTableState extends State<LocationTable> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "$key: $value",
-            style: CustomTypography(context).Caption.copyWith(color: _getTextColorForRating(context, score)),
+            "$key: ${value == 'nan/nan' ? '-' : value}",
+            style: CustomTypography(context).Caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: _getTextColorForRating(context, score)),
             textAlign: TextAlign.start,
           ),
           Text(
@@ -415,6 +483,4 @@ class _LocationTableState extends State<LocationTable> {
       ),
     );
   }
-
-
 }

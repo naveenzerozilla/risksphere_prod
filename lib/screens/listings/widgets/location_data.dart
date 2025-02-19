@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:green/constants/enums.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/primitives/app_colors.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:green/screens/listings/account_list.dart';
-import 'package:green/screens/listings/widgets/duplicates_tab.dart';
+import 'package:RiskSphare/constants/enums.dart';
+import 'package:RiskSphare/design_system/components/custom_button.dart';
+import 'package:RiskSphare/design_system/primitives/app_colors.dart';
+import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphare/screens/listings/account_list.dart';
+import 'package:RiskSphare/screens/listings/widgets/duplicates_tab.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../service/language_service.dart';
 import 'conflicts_tab.dart';
@@ -41,7 +41,6 @@ class LocationDataScreen extends StatefulWidget {
 
 class LocationDataScreenState extends State<LocationDataScreen>
     with SingleTickerProviderStateMixin {
-
   String _searchQuery = '';
   bool _selectAll = false;
   bool _isLoading = false;
@@ -67,7 +66,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
         _getData();
       }
     });
-  // Initial data fetch
+    // Initial data fetch
   }
 
   @override
@@ -328,32 +327,270 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                     onPressed: _scrollLeft,
                                   ),*/
                               // Scrollable TabBar
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: TabBar(
-                                    controller: _masterTabController,
-                                    tabAlignment: TabAlignment.start,
-                                    labelStyle: typography.Subtitle2,
-                                    isScrollable: true,
-                                    indicatorColor: AppColors.primaryMain,
-                                    labelColor: AppColors.primaryMain,
-                                    unselectedLabelColor: Colors.grey,
-                                    tabs: [
-                                      Tab(
-                                        text: 'Geocoding List',
+                              Consumer<UploadSovProvider>(
+                                builder: (context, provider, child) {
+                                  return Expanded(
+                                    child: SingleChildScrollView(
+                                      controller: _scrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      child: TabBar(
+                                        controller: _masterTabController,
+                                        tabAlignment: TabAlignment.start,
+                                        labelStyle: typography.Subtitle2,
+                                        isScrollable: true,
+                                        indicatorColor: AppColors.primaryMain,
+                                        labelColor: AppColors.primaryMain,
+                                        unselectedLabelColor: Colors.grey,
+                                        tabs: [
+                                          Tab(
+                                            child: RichText(
+                                              text: TextSpan(
+                                                text: 'Geocoding List ',
+                                                style: typography.Subtitle2
+                                                    .copyWith(
+                                                        color: AppColors
+                                                            .primaryMain),
+                                                children: [
+                                                  WidgetSpan(
+                                                    alignment:
+                                                        PlaceholderAlignment
+                                                            .middle,
+                                                    // Aligns the widget properly in RichText
+                                                    child: provider
+                                                                .geocodingList
+                                                                .length >
+                                                            0
+                                                        ? BlinkingText(
+                                                            conflictCount:
+                                                                provider
+                                                                    .geocodingList
+                                                                    .length,
+                                                            style: typography
+                                                                    .Subtitle2
+                                                                .copyWith(
+                                                              color: Colors
+                                                                  .white, // Default text color
+                                                            ),
+                                                            blinkColor:
+                                                                Colors.white,
+                                                            // Blinking text color
+                                                            defaultColor: Colors
+                                                                .red, // Default background color
+                                                          )
+                                                        : Container(
+                                                            // padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors
+                                                                  .white38,
+                                                              // Blinking background color
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10), // Rounded corners
+                                                            ),
+                                                            child: Text(
+                                                              provider
+                                                                  .geocodingList
+                                                                  .length
+                                                                  .toString(),
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                          ), // Hides widget when count is 0
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Tab(
+                                            child: RichText(
+                                              text: TextSpan(
+                                                text: 'Duplicates ',
+                                                style: typography.Subtitle2
+                                                    .copyWith(
+                                                        color: AppColors
+                                                            .primaryMain),
+                                                children: [
+                                                  WidgetSpan(
+                                                    alignment:
+                                                        PlaceholderAlignment
+                                                            .middle,
+                                                    // Aligns the widget properly in RichText
+                                                    child: provider
+                                                                .duplicateLocations
+                                                                .length >
+                                                            0
+                                                        ? BlinkingText(
+                                                            conflictCount: provider
+                                                                .duplicateLocations
+                                                                .length,
+                                                            style: typography
+                                                                    .Subtitle2
+                                                                .copyWith(
+                                                              color: Colors
+                                                                  .white, // Default text color
+                                                            ),
+                                                            blinkColor:
+                                                                Colors.white,
+                                                            // Blinking text color
+                                                            defaultColor: Colors
+                                                                .red, // Default background color
+                                                          )
+                                                        : Container(
+                                                            alignment: Alignment
+                                                                .center,
+                                                            padding: EdgeInsets
+                                                                .fromLTRB(
+                                                                    3, 0, 4, 0),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors
+                                                                  .white38,
+                                                              // Blinking background color
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10), // Rounded corners
+                                                            ),
+                                                            child: Text(
+                                                              provider
+                                                                  .duplicateLocations
+                                                                  .length
+                                                                  .toString(),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                          ), // Hides widget when count is 0
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Tab(
+                                            child: RichText(
+                                              text: TextSpan(
+                                                text: 'Conflicts ',
+                                                style: typography.Subtitle2
+                                                    .copyWith(
+                                                        color: AppColors
+                                                            .primaryMain),
+                                                children: [
+                                                  TextSpan(
+                                                    children: [
+                                                      WidgetSpan(
+                                                        alignment:
+                                                            PlaceholderAlignment
+                                                                .middle,
+                                                        // Aligns the widget properly in RichText
+                                                        child: provider
+                                                                    .conflictLocations
+                                                                    .length >
+                                                                0
+                                                            ? BlinkingText(
+                                                                conflictCount:
+                                                                    provider
+                                                                        .conflictLocations
+                                                                        .length,
+                                                                style: typography
+                                                                        .Subtitle2
+                                                                    .copyWith(
+                                                                  color: Colors
+                                                                      .white, // Default text color
+                                                                ),
+                                                                blinkColor: Colors
+                                                                    .orangeAccent,
+                                                                // Blinking text color
+                                                                defaultColor: Colors
+                                                                    .red, // Default background color
+                                                              )
+                                                            : Container(
+                                                                padding: EdgeInsets
+                                                                    .symmetric(
+                                                                        horizontal:
+                                                                            6,
+                                                                        vertical:
+                                                                            0),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color: Colors
+                                                                      .white38,
+                                                                  // Blinking background color
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              10), // Rounded corners
+                                                                ),
+                                                                child: Text(
+                                                                  provider
+                                                                      .conflictLocations
+                                                                      .length
+                                                                      .toString(),
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                          .white),
+                                                                ),
+                                                              ),
+                                                      ),
+                                                    ],
+                                                  ),
+
+                                                  // TextSpan(
+                                                  //   text:
+                                                  //       '${provider.conflictLocations.length}',
+                                                  //   style: typography.Subtitle2.copyWith(
+                                                  //       color: provider
+                                                  //                   .conflictLocations
+                                                  //                   .length >
+                                                  //               0
+                                                  //           ? Colors.red
+                                                  //           : AppColors
+                                                  //               .primaryMain), // Change length color
+                                                  // ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Tab(
-                                        text: 'Duplicates',
-                                      ),
-                                      Tab(
-                                        text: 'Conflicts',
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
+
+                              //old code
+                              // Expanded(
+                              //   child: SingleChildScrollView(
+                              //     controller: _scrollController,
+                              //     scrollDirection: Axis.horizontal,
+                              //     child: TabBar(
+                              //       controller: _masterTabController,
+                              //       tabAlignment: TabAlignment.start,
+                              //       labelStyle: typography.Subtitle2,
+                              //       isScrollable: true,
+                              //       indicatorColor: AppColors.primaryMain,
+                              //       labelColor: AppColors.primaryMain,
+                              //       unselectedLabelColor: Colors.grey,
+                              //       tabs: [
+                              //         Tab(
+                              //           text: 'Geocoding List (0)',
+                              //
+                              //         ),
+                              //         Tab(
+                              //           text: 'Duplicates(0)',
+                              //         ),
+                              //         Tab(
+                              //           text: 'Conflicts(0)',
+                              //         ),
+                              //       ],
+                              //     ),
+                              //   ),
+                              // ),
                               // Right arrow button
                               /* IconButton(
                                     icon: Icon(Icons.arrow_right,
@@ -758,6 +995,79 @@ class LocationDataScreenState extends State<LocationDataScreen>
           ],
         );
       }),
+    );
+  }
+}
+
+class BlinkingText extends StatefulWidget {
+  final int conflictCount;
+  final TextStyle style;
+  final Color blinkColor;
+  final Color defaultColor;
+
+  const BlinkingText({
+    Key? key,
+    required this.conflictCount,
+    required this.style,
+    required this.blinkColor,
+    required this.defaultColor,
+  }) : super(key: key);
+
+  @override
+  _BlinkingTextState createState() => _BlinkingTextState();
+}
+
+class _BlinkingTextState extends State<BlinkingText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Color?> _colorAnimation;
+  late Animation<Color?> _bgAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1), // Adjust speed of blinking
+    )..repeat(reverse: true); // Reverses between colors
+
+    _colorAnimation = ColorTween(
+      begin: widget.blinkColor,
+      end: widget.defaultColor,
+    ).animate(_controller);
+
+    _bgAnimation = ColorTween(
+      begin: widget.defaultColor,
+      end: widget.blinkColor,
+    ).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _bgAnimation.value, // Blinking background color
+            borderRadius: BorderRadius.circular(10), // Rounded corners
+          ),
+          child: Text(
+            '${widget.conflictCount}',
+            style: widget.style.copyWith(
+              color: _colorAnimation.value, // Blinking text color
+            ),
+          ),
+        );
+      },
     );
   }
 }
