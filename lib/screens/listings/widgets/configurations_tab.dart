@@ -29,6 +29,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   @override
   void initState() {
     super.initState();
+    loadConfiguration();
+  }
+
+  loadConfiguration() {
     final provider = Provider.of<ConfigurationProvider>(context, listen: false);
 
     Future.wait([
@@ -41,8 +45,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       var config = provider.configurations['result'] ?? {};
       var services = config['services'] ?? {};
       var ratings = config['geocoding_rating_enabled'] ?? {};
+
       if (mounted) {
-        WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           setState(() {
             vendorList = provider.vendors['result'] ?? [];
             selectedServices = services.entries
@@ -380,7 +385,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             return AlertDialog(
               title: Text('Save Configuration'),
               content: isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Container(
+                      height: 40,
+                      width: 50,
+                      child: Center(child: CircularProgressIndicator()))
                   : Text(
                       'Do you want to save this configuration for $title?',
                       style: typography.Body1,
@@ -424,6 +432,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         subAccountId: widget.subaccountId,
                       );
                       provider.getVendors();
+                      loadConfiguration();
                     }
                   },
                   child: Text('Save',
@@ -454,12 +463,15 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text('Save Configuration'),
-              content: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : Text(
-                      'Do you want to save this configuration for $star-star rating?',
-                      style: typography.Body1,
-                    ),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: 50),
+                child: isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : Text(
+                        'Do you want to save this configuration for $star-star rating?',
+                        style: typography.Body1,
+                      ),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -558,6 +570,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                           });
 
                           if (!provider.isLoading) Navigator.pop(context);
+                          loadConfiguration();
                         },
                   child: provider.isLoading
                       ? Row(
@@ -609,9 +622,11 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             value: isChecked,
             onChanged: isStarDisabled
                 ? null
-                : (bool? value) {
+                : (bool? value) async {
                     final provider = Provider.of<ConfigurationProvider>(context,
                         listen: false);
+
+                    // Show confirmation dialog
                     _showSaveDialogForStar(
                       int.parse(title),
                       description,
@@ -620,14 +635,46 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       mainId,
                       level,
                     );
-                    provider.getConfiguration(
+
+                    // Wait for API calls to complete before reloading configuration
+                    await provider.getConfiguration(
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
                     );
-                    provider.getVendors();
+                    await provider.getVendors();
+
+                    // Now reload configuration
+                    if (mounted) {
+                      loadConfiguration();
+                    }
                   },
             activeColor: AppColors.primaryMain,
           ),
+
+          // Checkbox(
+          //   value: isChecked,
+          //   onChanged: isStarDisabled
+          //       ? null
+          //       : (bool? value) async {
+          //           final provider = Provider.of<ConfigurationProvider>(context,
+          //               listen: false);
+          //           _showSaveDialogForStar(
+          //             int.parse(title),
+          //             description,
+          //             typography,
+          //             value!,
+          //             mainId,
+          //             level,
+          //           );
+          //           provider.getConfiguration(
+          //             accountId: widget.accountId,
+          //             subAccountId: widget.subaccountId,
+          //           );
+          //           provider.getVendors();
+          //           loadConfiguration();
+          //         },
+          //   activeColor: AppColors.primaryMain,
+          // ),
           SizedBox(width: 16),
           Expanded(
             child: Column(

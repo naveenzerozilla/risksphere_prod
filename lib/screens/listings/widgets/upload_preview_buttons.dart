@@ -114,7 +114,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                                                     context,
                                                     listen: false)
                                                 .cancelSovUploadProcess(
-                                                    context, widget.processId);
+                                                    context, widget.tempId);
 
                                             if (result) {
                                               Navigator.pop(

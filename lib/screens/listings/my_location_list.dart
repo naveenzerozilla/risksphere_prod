@@ -2011,8 +2011,7 @@ class _MyLocationListState extends State<MyLocationList>
                                             '',
                                         address: locationListProvider
                                                 .myLocationList[index]
-                                                .finalAddress
-                                                ?.address ??
+                                                .geocodedAddress ??
                                             '',
                                         percentage: double.parse(
                                             locationListProvider
@@ -2168,8 +2167,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     '',
                                 address: locationListProvider
                                         .myLocationList[index]
-                                        .finalAddress
-                                        ?.address ??
+                                        .geocodedAddress ??
                                     '',
                                 percentage: double.parse(locationListProvider
                                         .myLocationList[index]
@@ -2593,7 +2591,7 @@ class _MyLocationListState extends State<MyLocationList>
               .certifiedLocationList[index].finalAddress?.ownerName ??
           '',
       address: locationListProvider
-              .certifiedLocationList[index].finalAddress?.address ??
+              .certifiedLocationList[index].geocodedAddress ??
           '',
       percentage: double.parse(locationListProvider
               .certifiedLocationList[index].finalAddress?.percent ??

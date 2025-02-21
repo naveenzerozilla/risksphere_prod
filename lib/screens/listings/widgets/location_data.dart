@@ -356,28 +356,9 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                         PlaceholderAlignment
                                                             .middle,
                                                     // Aligns the widget properly in RichText
-                                                    child: provider
-                                                                .geocodingList
-                                                                .length >
-                                                            0
-                                                        ? BlinkingText(
-                                                            conflictCount:
-                                                                provider
-                                                                    .geocodingList
-                                                                    .length,
-                                                            style: typography
-                                                                    .Subtitle2
-                                                                .copyWith(
-                                                              color: Colors
-                                                                  .white, // Default text color
-                                                            ),
-                                                            blinkColor:
-                                                                Colors.white,
-                                                            // Blinking text color
-                                                            defaultColor: Colors
-                                                                .red, // Default background color
-                                                          )
-                                                        : Container(
+                                                    child:  Container(
+                                                      width: 20,
+                                                            alignment: Alignment.center,
                                                             // padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                                                             decoration:
                                                                 BoxDecoration(
@@ -618,7 +599,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           StreamBuilder<DocumentSnapshot>(
                               stream: FirebaseFirestore.instance
                                   .collection('processes_status')
-                                  .doc(widget.processId ?? "")
+                                  .doc(widget.processId)
                                   .snapshots(),
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState ==

@@ -524,8 +524,9 @@ class UploadSovProvider extends ChangeNotifier {
       isLoading = true;
 
       ApiService apiService =
-          ApiService(AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/$processId');
+          ApiService(AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/${processId.toString()}');
       String url = '';
+      print(AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/${processId.toString()}');
 
       var response = await apiService.delete({'data': {}});
       log(response.toString());
