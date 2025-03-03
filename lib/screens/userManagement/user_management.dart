@@ -491,6 +491,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         clearFilters();
         _tabVerificationController?.animateTo(widget.subIndex ?? 0);
       });
+    }else if(widget.initialIndex == 0 &&
+        widget.initialScreen == Screens.corporateAdd) {
+      print('Initial Screen: ${widget.initialScreen}');
+      setState(() {
+        _selectedScreen = Screens.corporateAdd;
+        clearFilters();
+        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+      });
+    }else{
+      print('Initial Screen: ${widget.initialScreen}');
+      setState(() {
+        _selectedScreen = Screens.verificationList;
+        clearFilters();
+        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+      });
     }
 
     setState(() {
@@ -9152,7 +9167,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         itemCount: verificationProvider
                                             .userRequests.length,
                                         itemBuilder: (context, index) {
-                                          return _verificationUserRequestsListItem(
+                                          return
+
+                                            _verificationUserRequestsListItem(
                                               index, verificationProvider);
                                         },
                                       );
@@ -9657,22 +9674,22 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           )
                         : CustomButton(
                             type: ButtonType.text,
-                            onPressed: () {
+                            onPressed: () async{
                               // Handle reject
-                              selectedUserVerificationRejectListIndex = index;
-                              verificationProvider
-                                  .changeUserVerificationStatus(
-                                      context,
-                                      verificationProvider
-                                              .userRequests[index].id ??
-                                          "",
-                                      false)
-                                  .then((value) {
-                                if (value) {
-                                  verificationProvider
-                                      .getAllUserRequests(context);
-                                }
+                              setState(() {
+                                selectedUserVerificationRejectListIndex = index;
                               });
+                              // Perform reject API call
+                              bool isRejected = await verificationProvider.changeUserVerificationStatus(
+                                  context,
+                                  verificationProvider.userRequests[index].id ?? "",
+                                  false);
+
+                              if (isRejected) {
+                                // Fetch updated list and refresh UI
+                                await verificationProvider.getAllUserRequests(context);
+                                setState(() {}); // Trigger UI rebuild
+                              }
                             },
                             child: Text('Reject',
                                 style: typography.BottomNavigationActiveLabel

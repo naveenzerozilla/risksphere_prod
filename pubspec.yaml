@@ -86,20 +86,23 @@ dependencies:
   dropdown_button2: ^2.3.9
   url_launcher: ^6.3.1
   cached_network_image: ^3.4.1
+  flutter_launcher_icons: ^0.14.3
+  get: ^4.7.2
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.14.3
 
 dependency_overrides:
   win32: ^5.5.4
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   remove_alpha_ios: true
   image_path: "assets/images/app_icon.png"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   adaptive_icon_background: "#000000" # adaptive icon background color
 

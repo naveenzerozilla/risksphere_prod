@@ -1,6 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
@@ -128,129 +126,137 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: CustomSpacing.four),
-                Text(
-                  'Select the services you need',
-                  style: typography.Body1.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: CustomSpacing.four),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await loadConfiguration(); // Ensure it's an async function
+            },
+            child: Builder(builder: (context) {
+              return SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: CustomSpacing.four),
+                    Text(
+                      'Select the services you need',
+                      style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    SizedBox(height: CustomSpacing.four),
 
-                // Dynamic Service Checkboxes
-                for (var key in services.keys)
-                  _buildServiceCheckbox(
-                    capitalize(key),
-                    services[key]['description'],
-                    services[key]['enabled'],
-                    typography,
-                    mainId,
-                    level,
-                  ),
-
-                SizedBox(height: CustomSpacing.six),
-                Text(
-                  'Set the geocode ratings for which the hazard risk score should be calculated',
-                  style: typography.Body1.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: CustomSpacing.four),
-
-                // Dynamic Star Checkboxes
-                for (var key in ratings.keys)
-                  _buildStarCheckbox(
-                    key,
-                    ratings[key]['description'],
-                    typography,
-                    !ratings[key]['enabled'],
-                    mainId,
-                    level,
-                  ),
-
-                SizedBox(height: CustomSpacing.four),
-                Text(
-                  'Get hazard event notifications by subscribing to live catastrophic event monitoring',
-                  style: typography.Body1.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: CustomSpacing.two),
-
-                // Dynamic Subscription Cards
-                // Dynamic Subscription Cards
-                ...subscriptions.keys.map((key) {
-                  final parts = key.split('_');
-                  if (parts.length != 2) {
-                    debugPrint('Invalid subscription key format: $key');
-                    return SizedBox.shrink();
-                  }
-
-                  final vendorId = parts[0];
-                  final hazardName = parts[1];
-
-                  // Find the vendor by vendor_id
-                  final vendor = vendorList.firstWhere(
-                    (vendor) => vendor['vendor_id'] == vendorId,
-                    orElse: () {
-                      debugPrint('Vendor not found for ID: $vendorId');
-                      return null;
-                    },
-                  );
-
-                  if (vendor == null) return SizedBox.shrink();
-
-                  // Find the hazard in the vendor's hazard_commercials by hazard_name
-                  final hazardCommercials =
-                      vendor['hazard_commercials'] as List?;
-                  final hazard = hazardCommercials?.firstWhere(
-                    (commercial) => commercial['hazard_name'] == hazardName,
-                    orElse: () {
-                      debugPrint(
-                          'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
-                      return null;
-                    },
-                  );
-
-                  if (hazard == null) return SizedBox.shrink();
-
-                  // Extract subscription and hazard details
-                  final subscription = subscriptions[key];
-                  final vendorName = vendor['vendor_name_label'] ?? '';
-                  final vendorImage = vendor['display_image_url'] ??
-                      'assets/images/default_vendor.png';
-                  final hazardLabel =
-                      hazard['hazard_name_label'] ?? 'Unknown Hazard';
-                  final description = subscription['description'] ?? '';
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildSubscriptionCard(
-                        key,
-                        vendorImage,
-                        '$hazardLabel ($vendorName)',
-                        description.isNotEmpty ? description : vendorName,
-                        '$vendorName',
-                        subscription['is_subscribed'] == true ||
-                            subscription['is_subscribed'] == 'true',
+                    // Dynamic Service Checkboxes
+                    for (var key in services.keys)
+                      _buildServiceCheckbox(
+                        capitalize(key),
+                        services[key]['description'],
+                        services[key]['enabled'],
+                        typography,
                         mainId,
                         level,
-                        typography,
                       ),
-                      SizedBox(height: CustomSpacing.one),
-                    ],
-                  );
-                }).toList(),
-              ],
-            ),
+
+                    SizedBox(height: CustomSpacing.six),
+                    Text(
+                      'Set the geocode ratings for which the hazard risk score should be calculated',
+                      style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    SizedBox(height: CustomSpacing.four),
+
+                    // Dynamic Star Checkboxes
+                    for (var key in ratings.keys)
+                      _buildStarCheckbox(
+                        key,
+                        ratings[key]['description'],
+                        typography,
+                        !ratings[key]['enabled'],
+                        mainId,
+                        level,
+                      ),
+
+                    SizedBox(height: CustomSpacing.four),
+                    Text(
+                      'Get hazard event notifications by subscribing to live catastrophic event monitoring',
+                      style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    SizedBox(height: CustomSpacing.two),
+
+                    // Dynamic Subscription Cards
+                    // Dynamic Subscription Cards
+                    ...subscriptions.keys.map((key) {
+                      final parts = key.split('_');
+                      if (parts.length != 2) {
+                        debugPrint('Invalid subscription key format: $key');
+                        return SizedBox.shrink();
+                      }
+
+                      final vendorId = parts[0];
+                      final hazardName = parts[1];
+
+                      // Find the vendor by vendor_id
+                      final vendor = vendorList.firstWhere(
+                        (vendor) => vendor['vendor_id'] == vendorId,
+                        orElse: () {
+                          debugPrint('Vendor not found for ID: $vendorId');
+                          return null;
+                        },
+                      );
+
+                      if (vendor == null) return SizedBox.shrink();
+
+                      // Find the hazard in the vendor's hazard_commercials by hazard_name
+                      final hazardCommercials =
+                          vendor['hazard_commercials'] as List?;
+                      final hazard = hazardCommercials?.firstWhere(
+                        (commercial) => commercial['hazard_name'] == hazardName,
+                        orElse: () {
+                          debugPrint(
+                              'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+                          return null;
+                        },
+                      );
+
+                      if (hazard == null) return SizedBox.shrink();
+
+                      // Extract subscription and hazard details
+                      final subscription = subscriptions[key];
+                      final vendorName = vendor['vendor_name_label'] ?? '';
+                      final vendorImage = vendor['display_image_url'] ??
+                          'assets/images/default_vendor.png';
+                      final hazardLabel =
+                          hazard['hazard_name_label'] ?? 'Unknown Hazard';
+                      final description = subscription['description'] ?? '';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildSubscriptionCard(
+                            key,
+                            vendorImage,
+                            '$hazardLabel ($vendorName)',
+                            description.isNotEmpty ? description : vendorName,
+                            '$vendorName',
+                            subscription['is_subscribed'] == true ||
+                                subscription['is_subscribed'] == 'true',
+                            mainId,
+                            level,
+                            typography,
+                          ),
+                          SizedBox(height: CustomSpacing.one),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }),
           ),
         );
       },
@@ -302,13 +308,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   Widget _buildServiceCheckbox(String title, String description, bool isEnabled,
       CustomTypography typography, String mainId, String level) {
     bool isGeocoding = title.toLowerCase() == 'geocoding';
-    bool isSelected = selectedServices.contains(title) || isGeocoding;
+    bool additionParam = title.toLowerCase() == 'additional_parameters';
+    bool isSelected = selectedServices.contains(title);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: isEnabled || isGeocoding
+        color: isEnabled || isGeocoding || additionParam
             ? Theme.of(context).colorScheme.surfaceContainerHigh
             : Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(8),
@@ -317,11 +324,13 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Checkbox(
-            value: isSelected,
-            onChanged: isGeocoding || title == "Additional_parameters"
-                ? null // Disable checkbox for Geocoding
+            value: additionParam
+                ? false // Always false for additional_parameters
+                : selectedServices.contains(title),
+            onChanged: (isGeocoding || additionParam)
+                ? null // Disable checkbox for Geocoding & Additional Parameters
                 : (bool? value) {
-                    print('Toggling up $title to $value');
+                    print('Toggling $title to $value');
 
                     // Show dialog to save changes
                     _showSaveDialog(
@@ -329,6 +338,19 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   },
             activeColor: AppColors.primaryMain,
           ),
+//           Checkbox(
+//             value: title.toString() =="additional_parameters"?false: selectedServices.contains(title),
+//             onChanged: isGeocoding || title == "Additional_parameters"
+//                 ? null // Disable checkbox for Geocoding
+//                 : (bool? value) {
+//                     print('Toggling up $title to $value');
+//
+//                     // Show dialog to save changes
+//                     _showSaveDialog(
+//                         title, description, typography, value!, mainId, level);
+//                   },
+//             activeColor: AppColors.primaryMain,
+//           ),
           SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -371,73 +393,119 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   void _showSaveDialog(String title, String description,
       CustomTypography typography, bool value, String mainId, String level) {
     var typography = CustomTypography(context);
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        final provider =
-            Provider.of<ConfigurationProvider>(context, listen: false);
-        bool isLoading = false;
+        final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+        bool isLoadingYes = false;
+        bool isLoadingNo = false;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Save Configuration'),
-              content: isLoading
-                  ? Container(
-                      height: 40,
-                      width: 50,
-                      child: Center(child: CircularProgressIndicator()))
-                  : Text(
-                      'Do you want to save this configuration for $title?',
-                      style: typography.Body1,
+              title: Row(
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width / 2,
+                    child: Text(
+                      'Do you want to apply this change globally?',
+                      maxLines: 2,
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
+              ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    if (!isLoading) Navigator.pop(context);
-                  },
-                  child: Text('Cancel',
-                      style: typography.Body1.copyWith(
-                          color: AppColors.primaryMain)),
-                ),
+                // "No" Button
                 TextButton(
                   onPressed: () async {
-                    setState(() => isLoading = true);
+                    setState(() => isLoadingNo = true);
+
+                    await Future.delayed(Duration(seconds: 2)); // Simulate API call delay
+
+                    setState(() => isLoadingNo = false);
+                    Navigator.pop(context); // Close the dialog
+                  },
+                  style: TextButton.styleFrom(
+                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isLoadingNo
+                      ? SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryMain,
+                      strokeWidth: 3,
+                    ),
+                  )
+                      : Text(
+                    'No',
+                    style: typography.Body1.copyWith(
+                        color: AppColors.primaryMain),
+                  ),
+                ),
+
+                // "Yes" Button
+                TextButton(
+                  onPressed: () async {
+                    setState(() => isLoadingYes = true);
 
                     var key = generateServiceKey(
                         title.toLowerCase().replaceAll(' ', '_'));
                     await provider.updateConfiguration(
                       context,
                       mainId,
-                      key, // Ensure key is used here correctly
+                      key,
                       level,
                       value,
+                      "true",
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
                     );
 
-                    setState(() => isLoading = false);
+                    setState(() => isLoadingYes = false);
 
                     if (!provider.isLoading) {
-                      Navigator.pop(context); // Close the dialog
-                      setState(() {}); // Reload the page by calling setState
+                      Navigator.pop(context);
                       final provider = Provider.of<ConfigurationProvider>(
-                          context,
-                          listen: false);
-
+                          context, listen: false);
                       provider.getConfiguration(
                         accountId: widget.accountId,
                         subAccountId: widget.subaccountId,
                       );
-                      provider.getVendors();
                       loadConfiguration();
                     }
                   },
-                  child: Text('Save',
-                      style: typography.Body1.copyWith(
-                          color: AppColors.primaryMain)),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    side: BorderSide(color: AppColors.primaryMain, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  ),
+                  child: isLoadingYes
+                      ? SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
+                  )
+                      : Text(
+                    'Yes',
+                    style: typography.Body1.copyWith(color: Colors.black),
+                  ),
                 ),
               ],
             );
@@ -445,45 +513,199 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         );
       },
     );
+
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: false,
+    //   builder: (context) {
+    //     final provider =
+    //         Provider.of<ConfigurationProvider>(context, listen: false);
+    //     bool isLoading = false;
+    //     bool isLoading1 = false;
+    //
+    //     return StatefulBuilder(
+    //       builder: (context, setState) {
+    //         return AlertDialog(
+    //           title: Row(
+    //             children: [
+    //               Container(
+    //                 width: MediaQuery.of(context).size.width / 2,
+    //                 child: Text(
+    //                   'Do you want to apply this change globally?',
+    //                   maxLines: 2,
+    //                 ),
+    //               ),
+    //               IconButton(
+    //                 onPressed: () {
+    //                   Navigator.pop(context);
+    //                 },
+    //                 icon: Icon(Icons.close),
+    //               ),
+    //             ],
+    //           ),
+    //           actions: [
+    //             TextButton(
+    //               onPressed: () async {
+    //                 setState(() => isLoading = true);
+    //
+    //                 var key = generateServiceKey(
+    //                     title.toLowerCase().replaceAll(' ', '_'));
+    //                 await provider.updateConfiguration(
+    //                   context,
+    //                   mainId,
+    //                   key,
+    //                   level,
+    //                   value,
+    //                   "true",
+    //                   accountId: widget.accountId,
+    //                   subAccountId: widget.subaccountId,
+    //                 );
+    //
+    //                 setState(() => isLoading = false);
+    //
+    //                 if (!provider.isLoading) {
+    //                   Navigator.pop(context);
+    //                   setState(() {}); // Reload the page
+    //                   final provider = Provider.of<ConfigurationProvider>(
+    //                       context,
+    //                       listen: false);
+    //                   provider.getConfiguration(
+    //                     accountId: widget.accountId,
+    //                     subAccountId: widget.subaccountId,
+    //                   );
+    //                   // provider.getVendors();
+    //                   loadConfiguration();
+    //                 }
+    //               },
+    //               style: TextButton.styleFrom(
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius: BorderRadius.circular(8),
+    //                 ),
+    //               ),
+    //               child: isLoading1
+    //                   ? SizedBox(
+    //                       height: 24,
+    //                       width: 24,
+    //                       child: CircularProgressIndicator(
+    //                         color: AppColors.primaryMain,
+    //                         strokeWidth: 3,
+    //                       ),
+    //                     )
+    //                   : Text(
+    //                       'No1',
+    //                       style: typography.Body1.copyWith(
+    //                           color: AppColors.primaryMain),
+    //                     ),
+    //             ),
+    //             TextButton(
+    //               onPressed: () async {
+    //                 setState(() => isLoading = true);
+    //
+    //                 var key = generateServiceKey(
+    //                     title.toLowerCase().replaceAll(' ', '_'));
+    //                 await provider.updateConfiguration(
+    //                   context,
+    //                   mainId,
+    //                   key,
+    //                   level,
+    //                   value,
+    //                   "true",
+    //                   accountId: widget.accountId,
+    //                   subAccountId: widget.subaccountId,
+    //                 );
+    //
+    //                 setState(() => isLoading = false);
+    //
+    //                 if (!provider.isLoading) {
+    //                   Navigator.pop(context);
+    //                   setState(() {}); // Reload the page
+    //                   final provider = Provider.of<ConfigurationProvider>(
+    //                       context,
+    //                       listen: false);
+    //                   provider.getConfiguration(
+    //                     accountId: widget.accountId,
+    //                     subAccountId: widget.subaccountId,
+    //                   );
+    //                   // provider.getVendors();
+    //                   loadConfiguration();
+    //                 }
+    //               },
+    //               style: TextButton.styleFrom(
+    //                 backgroundColor: AppColors.primaryMain,
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 2),
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius: BorderRadius.circular(8),
+    //                 ),
+    //                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+    //               ),
+    //               child: isLoading
+    //                   ? SizedBox(
+    //                       height: 24,
+    //                       width: 24,
+    //                       child: CircularProgressIndicator(
+    //                         color: Colors.white,
+    //                         strokeWidth: 3,
+    //                       ),
+    //                     )
+    //                   : Text(
+    //                       'Yes',
+    //                       style: typography.Body1.copyWith(color: Colors.black),
+    //                     ),
+    //             ),
+    //           ],
+    //         );
+    //       },
+    //     );
+    //   },
+    // );
   }
+  Future<bool> _showSaveDialogForStar(
+      int star,
+      String description,
+      CustomTypography typography,
+      bool value,
+      String mainId,
+      String level,
+      ) async {
+    final provider = Provider.of<ConfigurationProvider>(context, listen: false);
 
-  void _showSaveDialogForStar(int star, String description,
-      CustomTypography typography, bool value, String mainId, String level) {
-    var typography = CustomTypography(context);
+    bool isLoadingNo = false; // Keep loaders outside StatefulBuilder
+    bool isLoadingYes = false;
 
-    showDialog(
+    return await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // Prevent dismissing while loading
       builder: (context) {
-        final provider =
-            Provider.of<ConfigurationProvider>(context, listen: false);
-        bool isLoading = false;
-
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Save Configuration'),
-              content: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 50),
-                child: isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : Text(
-                        'Do you want to save this configuration for $star-star rating?',
-                        style: typography.Body1,
-                      ),
+              title: Row(
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width / 2,
+                    child: Text(
+                      'Do you want to apply this change globally?',
+                      maxLines: 2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      if (!isLoadingYes && !isLoadingNo) {
+                        Navigator.pop(context, false);
+                      }
+                    },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
               ),
               actions: [
+                // "No" Button
                 TextButton(
-                  onPressed: () {
-                    if (!isLoading) Navigator.pop(context);
-                  },
-                  child: Text('Cancel',
-                      style: typography.Body1.copyWith(
-                          color: AppColors.primaryMain)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    setState(() => isLoading = true);
+                  onPressed: isLoadingNo
+                      ? null
+                      : () async {
+                    setState(() => isLoadingNo = true);
 
                     await provider.updateConfiguration(
                       context,
@@ -491,29 +713,349 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       generateRatingKey(star.toString()),
                       level,
                       value,
+                      "false",
                       accountId: widget.accountId,
                       subAccountId: widget.subaccountId,
                     );
 
-                    setState(() => isLoading = false);
-                    if (!provider.isLoading) Navigator.pop(context);
+                    setState(() => isLoadingNo = false);
+                    if (!provider.isLoading) {
+                      Navigator.pop(context, false);
+                    }
                   },
-                  child: Text('Save',
-                      style: typography.Body1.copyWith(
-                          color: AppColors.primaryMain)),
+                  style: TextButton.styleFrom(
+                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isLoadingNo
+                      ? SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryMain,
+                      strokeWidth: 3,
+                    ),
+                  )
+                      : Text(
+                    'No',
+                    style: typography.Body1.copyWith(
+                        color: AppColors.primaryMain),
+                  ),
+                ),
+
+                SizedBox(width: 10),
+
+                // "Yes" Button
+                TextButton(
+                  onPressed: isLoadingYes
+                      ? null
+                      : () async {
+                    setState(() => isLoadingYes = true);
+
+                    await provider.updateConfiguration(
+                      context,
+                      mainId,
+                      generateRatingKey(star.toString()),
+                      level,
+                      value,
+                      "true",
+                      accountId: widget.accountId,
+                      subAccountId: widget.subaccountId,
+                    );
+
+                    setState(() => isLoadingYes = false);
+                    if (!provider.isLoading) {
+                      Navigator.pop(context, true);
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isLoadingYes
+                      ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Text(
+                    'Save',
+                    style: typography.Body1.copyWith(color: Colors.white),
+                  ),
                 ),
               ],
             );
           },
         );
       },
-    );
+    ) ??
+        false; // Default to false if dialog is dismissed
   }
+
+  // Future<bool> _showSaveDialogForStar(
+  //   int star,
+  //   String description,
+  //   CustomTypography typography,
+  //   bool value,
+  //   String mainId,
+  //   String level,
+  // ) async {
+  //   final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+  //
+  //   return await showDialog<bool>(
+  //         context: context,
+  //         // barrierDismissible: false,
+  //         builder: (context) {
+  //           return
+  //             StatefulBuilder(
+  //               builder: (context, setState) {
+  //                 bool isLoadingNo = false; // Separate loading states
+  //                 bool isLoadingYes = false;
+  //
+  //                 return AlertDialog(
+  //                   title: Row(
+  //                     children: [
+  //                       SizedBox(
+  //                         width: MediaQuery.of(context).size.width / 2,
+  //                         child: Text(
+  //                           'Do you want to apply this change globally?',
+  //                           maxLines: 2,
+  //                         ),
+  //                       ),
+  //                       IconButton(
+  //                         onPressed: () {
+  //                           Navigator.pop(context);
+  //                         },
+  //                         icon: Icon(Icons.close),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   actions: [
+  //                     // "No" Button
+  //                     TextButton(
+  //                       onPressed: isLoadingNo
+  //                           ? null
+  //                           : () async {
+  //                         setState(() => isLoadingNo = true);
+  //
+  //                         await provider.updateConfiguration(
+  //                           context,
+  //                           mainId,
+  //                           generateRatingKey(star.toString()),
+  //                           level,
+  //                           value,
+  //                           "false",
+  //                           accountId: widget.accountId,
+  //                           subAccountId: widget.subaccountId,
+  //                         );
+  //
+  //                         setState(() => isLoadingNo = false);
+  //                         if (!provider.isLoading) Navigator.pop(context, false);
+  //                       },
+  //                       style: TextButton.styleFrom(
+  //                         side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(8),
+  //                         ),
+  //                       ),
+  //                       child: isLoadingNo
+  //                           ? SizedBox(
+  //                         height: 24,
+  //                         width: 24,
+  //                         child: CircularProgressIndicator(
+  //                           color: AppColors.primaryMain,
+  //                           strokeWidth: 3,
+  //                         ),
+  //                       )
+  //                           : Text(
+  //                         'No',
+  //                         style: typography.Body1.copyWith(
+  //                             color: AppColors.primaryMain),
+  //                       ),
+  //                     ),
+  //
+  //                     SizedBox(width: 10),
+  //
+  //                     // "Yes" Button
+  //                     TextButton(
+  //                       onPressed: isLoadingYes
+  //                           ? null
+  //                           : () async {
+  //                         setState(() => isLoadingYes = true);
+  //
+  //                         await provider.updateConfiguration(
+  //                           context,
+  //                           mainId,
+  //                           generateRatingKey(star.toString()),
+  //                           level,
+  //                           value,
+  //                           "true",
+  //                           accountId: widget.accountId,
+  //                           subAccountId: widget.subaccountId,
+  //                         );
+  //
+  //                         setState(() => isLoadingYes = false);
+  //                         if (!provider.isLoading) Navigator.pop(context, true);
+  //                       },
+  //                       style: TextButton.styleFrom(
+  //                         backgroundColor: AppColors.primaryMain,
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(8),
+  //                         ),
+  //                       ),
+  //                       child: isLoadingYes
+  //                           ? SizedBox(
+  //                         width: 20,
+  //                         height: 20,
+  //                         child: CircularProgressIndicator(
+  //                           strokeWidth: 2,
+  //                           color: Colors.white,
+  //                         ),
+  //                       )
+  //                           : Text(
+  //                         'Save',
+  //                         style: typography.Body1.copyWith(color: Colors.white),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 );
+  //               },
+  //             );
+  //
+  //           //   StatefulBuilder(
+  //           //   builder: (context, setState) {
+  //           //     bool isLoading = false; // Loader for "Yes" button
+  //           //     bool isLoading1 = false;
+  //           //
+  //           //     return AlertDialog(
+  //           //       title: Row(
+  //           //         children: [
+  //           //           Container(
+  //           //             width: MediaQuery.of(context).size.width / 2,
+  //           //             child: Text(
+  //           //               'Do you want to apply this change globally?',
+  //           //               maxLines: 2,
+  //           //             ),
+  //           //           ),
+  //           //           IconButton(
+  //           //             onPressed: () {
+  //           //               Navigator.pop(context);
+  //           //             },
+  //           //             icon: Icon(Icons.close),
+  //           //           ),
+  //           //         ],
+  //           //       ),
+  //           //       actions: [
+  //           //         TextButton(
+  //           //           onPressed: isLoading1
+  //           //               ? null
+  //           //               : () async {
+  //           //                   setState(() {
+  //           //                     isLoading1 = true;
+  //           //                   });
+  //           //
+  //           //                   // String key = 'subscribe.$vendorId.is_subscribed';
+  //           //
+  //           //                   await provider.updateConfiguration(
+  //           //                     context,
+  //           //                     mainId,
+  //           //                     generateRatingKey(star.toString()),
+  //           //                     level,
+  //           //                     value,
+  //           //                     "false",
+  //           //                     accountId: widget.accountId,
+  //           //                     subAccountId: widget.subaccountId,
+  //           //                   );
+  //           //
+  //           //                   setState(() {
+  //           //                     isLoading1 = false;
+  //           //                   });
+  //           //
+  //           //                   if (!provider.isLoading) Navigator.pop(context);
+  //           //                 },
+  //           //           style: TextButton.styleFrom(
+  //           //             side: BorderSide(
+  //           //                 color: AppColors.primaryMain, width: 1.5),
+  //           //             shape: RoundedRectangleBorder(
+  //           //               borderRadius: BorderRadius.circular(8),
+  //           //             ),
+  //           //           ),
+  //           //           child: isLoading1
+  //           //               ? SizedBox(
+  //           //                   height: 24,
+  //           //                   width: 24,
+  //           //                   child: CircularProgressIndicator(
+  //           //                     color: AppColors.primaryMain,
+  //           //                     strokeWidth: 3,
+  //           //                   ),
+  //           //                 )
+  //           //               : Text(
+  //           //                   'No1',
+  //           //                   style: typography.Body1.copyWith(
+  //           //                       color: AppColors.primaryMain),
+  //           //                 ),
+  //           //         ),
+  //           //         SizedBox(width: 10),
+  //           //         TextButton(
+  //           //           onPressed: isLoading
+  //           //               ? null
+  //           //               : () async {
+  //           //                   setState(() => isLoading = true);
+  //           //
+  //           //                   await provider.updateConfiguration(
+  //           //                     context,
+  //           //                     mainId,
+  //           //                     generateRatingKey(star.toString()),
+  //           //                     level,
+  //           //                     value,
+  //           //                     "true",
+  //           //                     accountId: widget.accountId,
+  //           //                     subAccountId: widget.subaccountId,
+  //           //                   );
+  //           //
+  //           //                   setState(() => isLoading = false);
+  //           //
+  //           //                   if (!provider.isLoading)
+  //           //                     Navigator.pop(context, true);
+  //           //                 },
+  //           //           child: SizedBox(
+  //           //             width: 80, // Consistent button width
+  //           //             height: 24,
+  //           //             child: Center(
+  //           //               child: isLoading
+  //           //                   ? SizedBox(
+  //           //                       width: 20,
+  //           //                       height: 20,
+  //           //                       child:
+  //           //                           CircularProgressIndicator(strokeWidth: 2),
+  //           //                     )
+  //           //                   : Text(
+  //           //                       'Save',
+  //           //                       style: typography.Body1.copyWith(
+  //           //                           color: AppColors.primaryMain),
+  //           //                     ),
+  //           //             ),
+  //           //           ),
+  //           //         ),
+  //           //       ],
+  //           //     );
+  //           //   },
+  //           // );
+  //         },
+  //       ) ??
+  //       false; // Default to false if dialog is dismissed
+  // }
 
   void _updateSubscription(
       String vendorId, bool isSubscribed, String mainId, String level) {
     var typography = CustomTypography(context);
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -521,36 +1063,61 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         final provider =
             Provider.of<ConfigurationProvider>(context, listen: false);
         bool isLoading = false;
+        bool isLoading1 = false;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Update Subscription'),
-              content: Text(
-                isSubscribed
-                    ? 'Do you want to unsubscribe from this vendor?'
-                    : 'Do you want to subscribe to this vendor?',
-                style: typography.Body1,
+              title: Row(
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width / 2,
+                    child: Text(
+                      'Do you want to apply this change globally?',
+                      maxLines: 2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setState(() => isLoading = true);
+
+                            try {
+                              String key = 'subscribe.$vendorId.is_subscribed';
+
+                              await provider.updateConfiguration(
+                                context,
+                                mainId,
+                                key,
+                                level,
+                                !isSubscribed,
+                                "false",
+                                accountId: widget.accountId,
+                                subAccountId: widget.subaccountId,
+                              );
+
+                              await loadConfiguration();
+                            } finally {
+                              setState(() => isLoading = false);
+                            }
+
+                            // Delay pop to ensure UI updates
+                            Future.delayed(Duration(milliseconds: 200), () {
+                              if (mounted) Navigator.pop(context);
+                            });
+                          },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
-                  onPressed: provider.isLoading
-                      ? null
-                      : () {
-                          if (!provider.isLoading) Navigator.pop(context);
-                        },
-                  child: Text(
-                    'Cancel',
-                    style:
-                        typography.Body1.copyWith(color: AppColors.primaryMain),
-                  ),
-                ),
-                TextButton(
-                  onPressed: provider.isLoading
+                  onPressed: isLoading1
                       ? null
                       : () async {
                           setState(() {
-                            isLoading = true;
+                            isLoading1 = true;
                           });
 
                           String key = 'subscribe.$vendorId.is_subscribed';
@@ -561,32 +1128,101 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                             key,
                             level,
                             !isSubscribed,
-                            accountId: widget.accountId,
-                            subAccountId: widget.subaccountId,
+                            "false",
                           );
 
                           setState(() {
-                            isLoading = false;
+                            isLoading1 = false;
                           });
 
-                          if (!provider.isLoading) Navigator.pop(context);
-                          loadConfiguration();
+                          if (!provider.isLoading) {
+                            Navigator.pop(context);
+                          }
+
+                          await loadConfiguration();
                         },
-                  child: provider.isLoading
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                                height: 38,
-                                width: 38,
-                                child: CircularProgressIndicator()),
-                          ],
+                  style: TextButton.styleFrom(
+                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isLoading1
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryMain,
+                            strokeWidth: 3,
+                          ),
                         )
                       : Text(
-                          'Save',
+                          'No',
                           style: typography.Body1.copyWith(
-                              color: AppColors.primaryMain),
+                            color: AppColors.primaryMain,
+                          ),
                         ),
+                ),
+                SizedBox(width: 10),
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          setState(() => isLoading = true);
+
+                          try {
+                            String key = 'subscribe.$vendorId.is_subscribed';
+
+                            await provider.updateConfiguration(
+                              context,
+                              mainId,
+                              key,
+                              level,
+                              !isSubscribed,
+                              "true",
+                              accountId: widget.accountId,
+                              subAccountId: widget.subaccountId,
+                            );
+
+                            await loadConfiguration();
+                          } finally {
+                            setState(() => isLoading = false);
+                          }
+
+                          // Delay pop to ensure UI updates
+                          Future.delayed(Duration(milliseconds: 200), () {
+                            if (mounted) Navigator.pop(context);
+                          });
+                        },
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: AppColors.primaryMain, width: 2),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  child: SizedBox(
+                    width: 80,
+                    height: 24,
+                    child: Center(
+                      child: isLoading
+                          ? SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryMain,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : Text(
+                              'Yes',
+                              style: typography.Body1.copyWith(
+                                color: Colors.black,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -594,7 +1230,256 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         );
       },
     );
+
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: false,
+    //   builder: (context) {
+    //     final provider =
+    //         Provider.of<ConfigurationProvider>(context, listen: false);
+    //     bool isLoading = false;
+    //     bool isLoading1 = false;
+    //
+    //     return StatefulBuilder(
+    //       builder: (context, setState) {
+    //         return AlertDialog(
+    //           title: Row(
+    //             children: [
+    //               Container(
+    //                 width: MediaQuery.of(context).size.width / 2,
+    //                 child: Text(
+    //                   'Do you want to apply this change globally?',
+    //                   maxLines: 2,
+    //                 ),
+    //               ),
+    //               IconButton(
+    //                   onPressed: isLoading
+    //                       ? null
+    //                       : () async {
+    //                           setState(() => isLoading = true);
+    //
+    //                           try {
+    //                             String key =
+    //                                 'subscribe.$vendorId.is_subscribed';
+    //
+    //                             await provider.updateConfiguration(
+    //                               context,
+    //                               mainId,
+    //                               key,
+    //                               level,
+    //                               !isSubscribed,
+    //                               "false",
+    //                               accountId: widget.accountId,
+    //                               subAccountId: widget.subaccountId,
+    //                             );
+    //
+    //                             await loadConfiguration(); // Ensure this completes
+    //                           } finally {
+    //                             setState(() => isLoading = false);
+    //                             Navigator.pop(
+    //                                 context); // Close dialog in finally block
+    //                           }
+    //                         },
+    //                   icon: Icon(Icons.close))
+    //             ],
+    //           ),
+    //           actions: [
+    //             TextButton(
+    //               onPressed: isLoading1
+    //                   ? null
+    //                   : () async {
+    //                       setState(() {
+    //                         isLoading1 = true;
+    //                       });
+    //
+    //                       String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                       await provider.updateConfiguration(
+    //                         context,
+    //                         mainId,
+    //                         key,
+    //                         level,
+    //                         !isSubscribed,
+    //                         "false",
+    //                       );
+    //                       setState(() {
+    //                         isLoading1 = false;
+    //                       });
+    //                       if (!provider.isLoading) Navigator.pop(context);
+    //                       await loadConfiguration();
+    //                     },
+    //               style: TextButton.styleFrom(
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius: BorderRadius.circular(8),
+    //                 ),
+    //               ),
+    //               child: isLoading1
+    //                   ? SizedBox(
+    //                       height: 24,
+    //                       width: 24,
+    //                       child: CircularProgressIndicator(
+    //                         color: AppColors.primaryMain,
+    //                         strokeWidth: 3,
+    //                       ),
+    //                     )
+    //                   : Text(
+    //                       'No',
+    //                       style: typography.Body1.copyWith(
+    //                           color: AppColors.primaryMain),
+    //                     ),
+    //             ),
+    //             SizedBox(width: 10),
+    //             TextButton(
+    //               onPressed: isLoading
+    //                   ? null
+    //                   : () async {
+    //                 setState(() => isLoading = true);
+    //
+    //                 try {
+    //                   String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                   await provider.updateConfiguration(
+    //                     context,
+    //                     mainId,
+    //                     key,
+    //                     level,
+    //                     !isSubscribed,
+    //                     "true",
+    //                     accountId: widget.accountId,
+    //                     subAccountId: widget.subaccountId,
+    //                   );
+    //
+    //                   await loadConfiguration(); // Ensure this completes
+    //                 } finally {
+    //                   setState(() => isLoading = false);
+    //                 }
+    //
+    //                 // Delay popping the dialog to ensure UI updates
+    //                 if (mounted) {
+    //                   Navigator.pop(context);
+    //                 }
+    //               },
+    //               style: TextButton.styleFrom(
+    //                 backgroundColor: AppColors.primaryMain,
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius: BorderRadius.circular(8),
+    //                   side: BorderSide(color: AppColors.primaryMain, width: 2),
+    //                 ),
+    //                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    //               ),
+    //               child: SizedBox(
+    //                 width: 80,
+    //                 height: 24,
+    //                 child: Center(
+    //                   child: isLoading
+    //                       ? SizedBox(
+    //                     height: 24,
+    //                     width: 24,
+    //                     child: CircularProgressIndicator(
+    //                       color: AppColors.primaryMain,
+    //                       strokeWidth: 3,
+    //                     ),
+    //                   )
+    //                       : Text(
+    //                     'Yes',
+    //                     style: typography.Body1.copyWith(
+    //                       color: Colors.black,
+    //                     ),
+    //                   ),
+    //                 ),
+    //               ),
+    //             ),
+    //
+    //
+    //
+    //           ],
+    //         );
+    //       },
+    //     );
+    //   },
+    // );
   }
+
+  // void _updateSubscription(
+  //     String vendorId, bool isSubscribed, String mainId, String level) {
+  //   var typography = CustomTypography(context);
+  //   bool isLoading = false; // Moved outside StatefulBuilder to persist state
+  //
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (context) {
+  //       final provider =
+  //           Provider.of<ConfigurationProvider>(context, listen: false);
+  //
+  //       return StatefulBuilder(
+  //         builder: (context, setState) {
+  //           return AlertDialog(
+  //             title: Text('Update Subscription'),
+  //             content: Text(
+  //               isSubscribed
+  //                   ? 'Do you want to unsubscribe from this vendor?'
+  //                   : 'Do you want to subscribe to this vendor?',
+  //               style: typography.Body1,
+  //             ),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: isLoading ? null : () => Navigator.pop(context),
+  //                 child: Text(
+  //                   'Cancel',
+  //                   style:
+  //                       typography.Body1.copyWith(color: AppColors.primaryMain),
+  //                 ),
+  //               ),
+  //               TextButton(
+  //                 onPressed: isLoading
+  //                     ? null
+  //                     : () async {
+  //                         setState(() => isLoading = true);
+  //
+  //                         String key = 'subscribe.$vendorId.is_subscribed';
+  //
+  //                         await provider.updateConfiguration(
+  //                           context,
+  //                           mainId,
+  //                           key,
+  //                           level,
+  //                           !isSubscribed,
+  //                           accountId: widget.accountId,
+  //                           subAccountId: widget.subaccountId,
+  //                         );
+  //
+  //                         setState(() => isLoading = false);
+  //
+  //                         Navigator.pop(context); // Close dialog
+  //                         loadConfiguration();
+  //                       },
+  //                 child: SizedBox(
+  //                   width: 80, // Ensures consistent button size
+  //                   height: 24,
+  //                   child: Center(
+  //                     child: isLoading
+  //                         ? SizedBox(
+  //                             width: 20,
+  //                             height: 20,
+  //                             child: CircularProgressIndicator(strokeWidth: 2),
+  //                           )
+  //                         : Text(
+  //                             'Save',
+  //                             style: typography.Body1.copyWith(
+  //                                 color: AppColors.primaryMain),
+  //                           ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildStarCheckbox(
       String title,
@@ -623,58 +1508,36 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             onChanged: isStarDisabled
                 ? null
                 : (bool? value) async {
+                    if (value == null) return;
+
                     final provider = Provider.of<ConfigurationProvider>(context,
                         listen: false);
 
-                    // Show confirmation dialog
-                    _showSaveDialogForStar(
+                    // Show confirmation dialog before proceeding
+                    bool shouldSave = await _showSaveDialogForStar(
                       int.parse(title),
                       description,
                       typography,
-                      value!,
+                      value,
                       mainId,
                       level,
                     );
 
-                    // Wait for API calls to complete before reloading configuration
-                    await provider.getConfiguration(
-                      accountId: widget.accountId,
-                      subAccountId: widget.subaccountId,
-                    );
-                    await provider.getVendors();
+                    if (shouldSave) {
+                      // Fetch updated configuration after the dialog
+                      await provider.getConfiguration(
+                        accountId: widget.accountId,
+                        subAccountId: widget.subaccountId,
+                      );
+                      await provider.getVendors();
 
-                    // Now reload configuration
-                    if (mounted) {
-                      loadConfiguration();
+                      if (mounted) {
+                        loadConfiguration();
+                      }
                     }
                   },
             activeColor: AppColors.primaryMain,
           ),
-
-          // Checkbox(
-          //   value: isChecked,
-          //   onChanged: isStarDisabled
-          //       ? null
-          //       : (bool? value) async {
-          //           final provider = Provider.of<ConfigurationProvider>(context,
-          //               listen: false);
-          //           _showSaveDialogForStar(
-          //             int.parse(title),
-          //             description,
-          //             typography,
-          //             value!,
-          //             mainId,
-          //             level,
-          //           );
-          //           provider.getConfiguration(
-          //             accountId: widget.accountId,
-          //             subAccountId: widget.subaccountId,
-          //           );
-          //           provider.getVendors();
-          //           loadConfiguration();
-          //         },
-          //   activeColor: AppColors.primaryMain,
-          // ),
           SizedBox(width: 16),
           Expanded(
             child: Column(

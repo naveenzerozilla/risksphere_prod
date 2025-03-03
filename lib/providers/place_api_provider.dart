@@ -27,7 +27,7 @@ class PlaceApiProvider {
   final apiKey = Platform.isAndroid ? androidKey : iosKey;
 
   Future<List<Suggestion>> fetchSuggestions(String input, String lang) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
+    final request = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode|establishment&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
 
     final response = await client.get(Uri.parse(request));
 

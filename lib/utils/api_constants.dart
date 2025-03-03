@@ -144,6 +144,6 @@ class AppConstant {
 
 // DELETE API CALL
   static String get DELETE_ACCOUNT => '$baseURL/locations/delete_account/?';
-  static String get DELETE_SUB_ACCOUNT => '$baseURL/locations/delete_subaccount';
+  static String get DELETE_SUB_ACCOUNT => '$baseURL/locations/delete_subaccount?';
 
 }

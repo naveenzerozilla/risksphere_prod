@@ -20,7 +20,7 @@ class VerticalBarIndicator extends StatelessWidget {
     // Create a list of bars based on the score
     List<Widget> bars = List.generate(5, (index) {
       return Container(
-        width: 15,  // Width of each bar
+        width: 10,  // Width of each bar
         height: 16,  // Height of each bar
         margin: EdgeInsets.symmetric(horizontal: 1),
         decoration: BoxDecoration(

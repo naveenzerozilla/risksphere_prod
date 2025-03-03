@@ -8,6 +8,7 @@ import '../../../design_system/primitives/custom_typography.dart';
 import 'hazard_section_widget.dart';
 
 class LocationDetailsPopup extends StatelessWidget {
+  final String? imageUrl;
   final String address;
   final String locationId;
   final int geocodingScore;
@@ -26,6 +27,7 @@ class LocationDetailsPopup extends StatelessWidget {
   final bool? hideNavigation;
 
   LocationDetailsPopup({
+    this.imageUrl,
     required this.address,
     required this.locationId,
     required this.geocodingScore,
@@ -63,6 +65,8 @@ class LocationDetailsPopup extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(imageUrl.toString()),
+                Image.network(imageUrl.toString()),
                 Text(
                   address,
                   style: typography.InputLabel,

@@ -590,13 +590,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _subscriptionBody(CustomTypography typography) {
+    int itemCount = 0;
     debugPrint('Subscription Keys: ${subscriptions.keys.toList()}');
 
     return Consumer<ConfigurationProvider>(builder: (context, provider, child) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        // Counter for valid items
+
         children: subscriptions.keys.map((key) {
-          // Split the subscription key into vendor_id and hazard_name
           final parts = key.split('_');
           if (parts.length != 2) {
             debugPrint('Invalid subscription key format: $key');
@@ -606,7 +608,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final vendorId = parts[0];
           final hazardName = parts[1];
 
-          // Find the vendor by vendor_id
           final vendor = vendorList.firstWhere(
             (vendor) => vendor['vendor_id'] == vendorId,
             orElse: () {
@@ -617,7 +618,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (vendor == null) return SizedBox.shrink();
 
-          // Find the hazard in the vendor's hazard_commercials by hazard_name
           final hazardCommercials = vendor['hazard_commercials'] as List?;
           final hazard = hazardCommercials?.firstWhere(
             (commercial) => commercial['hazard_name'] == hazardName,
@@ -630,7 +630,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (hazard == null) return SizedBox.shrink();
 
-          // Extract subscription and hazard details
+          // If we reach this point, the item is valid
+          itemCount++;
+
           final subscription = subscriptions[key];
           final vendorName = vendor['vendor_name_label'] ?? '';
           final vendorImage =
@@ -663,6 +665,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           );
         }).toList(),
+
+        // debugPrint('Total valid items: $itemCount'); // Print the count
+
+        // children: subscriptions.keys.map((key) {
+        //   // Split the subscription key into vendor_id and hazard_name
+        //   final parts = key.split('_');
+        //   if (parts.length != 2) {
+        //     debugPrint('Invalid subscription key format: $key');
+        //     return SizedBox.shrink();
+        //   }
+        //
+        //   final vendorId = parts[0];
+        //   final hazardName = parts[1];
+        //
+        //   // Find the vendor by vendor_id
+        //   final vendor = vendorList.firstWhere(
+        //     (vendor) => vendor['vendor_id'] == vendorId,
+        //     orElse: () {
+        //       debugPrint('Vendor not found for ID: $vendorId');
+        //       return null;
+        //     },
+        //   );
+        //
+        //   if (vendor == null) return SizedBox.shrink();
+        //
+        //   // Find the hazard in the vendor's hazard_commercials by hazard_name
+        //   final hazardCommercials = vendor['hazard_commercials'] as List?;
+        //   final hazard = hazardCommercials?.firstWhere(
+        //     (commercial) => commercial['hazard_name'] == hazardName,
+        //     orElse: () {
+        //       debugPrint(
+        //           'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+        //       return null;
+        //     },
+        //   );
+        //
+        //   if (hazard == null) return SizedBox.shrink();
+        //
+        //   // Extract subscription and hazard details
+        //   final subscription = subscriptions[key];
+        //   final vendorName = vendor['vendor_name_label'] ?? '';
+        //   final vendorImage =
+        //       vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
+        //   final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+        //   final description = subscription['description'] ?? '';
+        //
+        //   var config = provider.configurations['result'] ?? {};
+        //   var mainId = config['id'] ?? '';
+        //   var level = config['level'] ?? '';
+        //
+        //   return Column(
+        //     children: [
+        //       SubscriptionCard(
+        //         title: '$hazardLabel ($vendorName)',
+        //         description: description.isNotEmpty ? description : vendorName,
+        //         iconPath: vendorImage,
+        //         isSubscribed: subscription['is_subscribed'] == true ||
+        //             subscription['is_subscribed'] == 'true',
+        //         onSubscribe: () {
+        //           print('Subscribing to $key');
+        //           print('Main ID: $mainId');
+        //           print('Level: $level');
+        //           print('Subscription: ${subscription['is_subscribed']}');
+        //           _updateSubscription(
+        //               key, subscription['is_subscribed'], mainId, level);
+        //         },
+        //       ),
+        //       SizedBox(height: CustomSpacing.one),
+        //     ],
+        //   );
+        // }).toList(),
       );
     });
   }
@@ -1413,40 +1486,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _updateSubscription(
       String vendorId, bool isSubscribed, String mainId, String level) {
     var typography = CustomTypography(context);
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         final provider =
             Provider.of<ConfigurationProvider>(context, listen: false);
-        bool isLoading = false;
+        bool isLoading = false; // Loader for "Yes" button
+        bool isLoading1 = false; // Loader for "No" button
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Update Subscription'),
-              content: Text(
-                isSubscribed
-                    ? 'Do you want to unsubscribe from this vendor?'
-                    : 'Do you want to subscribe to this vendor?',
-                style: typography.Body1,
+              title: Row(
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width / 2,
+                    child: Text(
+                      'Do you want to apply this change globally?',
+                      maxLines: 2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
-                  onPressed: provider.isLoading
+                  onPressed: isLoading1
                       ? null
-                      : () {
+                      : () async {
+                          setState(() {
+                            isLoading1 = true;
+                          });
+
+                          String key = 'subscribe.$vendorId.is_subscribed';
+
+                          await provider.updateConfiguration(
+                            context,
+                            mainId,
+                            key,
+                            level,
+                            !isSubscribed,
+                            "false",
+                          );
+
+                          setState(() {
+                            isLoading1 = false;
+                          });
+
                           if (!provider.isLoading) Navigator.pop(context);
+                          _getData();
                         },
-                  child: Text(
-                    'Cancel',
-                    style:
-                        typography.Body1.copyWith(color: AppColors.primaryMain),
+                  style: TextButton.styleFrom(
+                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  child: isLoading1
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryMain,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : Text(
+                          'No',
+                          style: typography.Body1.copyWith(
+                              color: AppColors.primaryMain),
+                        ),
                 ),
+                SizedBox(width: 10),
                 TextButton(
-                  onPressed: provider.isLoading
+                  onPressed: isLoading
                       ? null
                       : () async {
                           setState(() {
@@ -1461,6 +1580,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             key,
                             level,
                             !isSubscribed,
+                            "true",
                           );
 
                           setState(() {
@@ -1470,20 +1590,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           if (!provider.isLoading) Navigator.pop(context);
                           _getData();
                         },
-                  child: provider.isLoading
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                                height: 38,
-                                width: 38,
-                                child: CircularProgressIndicator()),
-                          ],
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    side: BorderSide(color: AppColors.primaryMain, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  ),
+                  child: isLoading
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
                         )
                       : Text(
-                          'Save',
-                          style: typography.Body1.copyWith(
-                              color: AppColors.primaryMain),
+                          'Yes',
+                          style: typography.Body1.copyWith(color: Colors.black),
                         ),
                 ),
               ],
@@ -1492,5 +1618,166 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
+
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: false,
+    //   builder: (context) {
+    //     final provider =
+    //         Provider.of<ConfigurationProvider>(context, listen: false);
+    //     bool isLoading = false;
+    //     bool isLoading1 = false;
+    //
+    //     return StatefulBuilder(
+    //       builder: (context, setState) {
+    //         return AlertDialog(
+    //           title: Row(
+    //             children: [
+    //               Container(
+    //                 width: MediaQuery.of(context).size.width / 2,
+    //                 child: Text(
+    //                   'Do you want to apply this change globally?',
+    //                   maxLines: 2,
+    //                 ),
+    //               ),
+    //               IconButton(
+    //                   onPressed: () {
+    //                     Navigator.pop(context);
+    //                   },
+    //                   icon: Icon(Icons.close))
+    //             ],
+    //           ),
+    //           actions: [
+    //             TextButton(
+    //               onPressed: provider.isLoading
+    //                   ? null
+    //                   : () async {
+    //                       setState(() {
+    //                         isLoading1 = true;
+    //                       });
+    //
+    //                       String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                       await provider.updateConfiguration(context, mainId,
+    //                           key, level, !isSubscribed, "false");
+    //
+    //                       setState(() {
+    //                         isLoading1 = false;
+    //                       });
+    //
+    //                       if (!provider.isLoading) Navigator.pop(context);
+    //                       _getData();
+    //                     },
+    //               style: TextButton.styleFrom(
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+    //                 // Border color and width
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius:
+    //                       BorderRadius.circular(8), // Adjust border radius
+    //                 ),
+    //               ),
+    //               child: Text(
+    //                 'No',
+    //                 style:
+    //                     typography.Body1.copyWith(color: AppColors.primaryMain),
+    //               ),
+    //             ),
+    //             SizedBox(width: 10),
+    //             TextButton(
+    //               onPressed: provider.isLoading
+    //                   ? null
+    //                   : () async {
+    //                       setState(() {
+    //                         isLoading = true;
+    //                       });
+    //
+    //                       String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                       await provider.updateConfiguration(context, mainId,
+    //                           key, level, !isSubscribed, "true");
+    //
+    //                       setState(() {
+    //                         isLoading = false;
+    //                       });
+    //
+    //                       if (!provider.isLoading) Navigator.pop(context);
+    //                       _getData();
+    //                     },
+    //               style: TextButton.styleFrom(
+    //                 backgroundColor: AppColors.primaryMain,
+    //                 // Button background color
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 2),
+    //                 // Border color
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius:
+    //                       BorderRadius.circular(8), // Optional: rounded corners
+    //                 ),
+    //                 padding: EdgeInsets.symmetric(
+    //                     vertical: 12, horizontal: 24), // Adjust padding
+    //               ),
+    //               child: provider.isLoading
+    //                   ? SizedBox(
+    //                       height: 24,
+    //                       width: 24,
+    //                       child: CircularProgressIndicator(
+    //                         color:
+    //                             Colors.white, // Adjust loader color if needed
+    //                         strokeWidth: 3,
+    //                       ),
+    //                     )
+    //                   : Text(
+    //                       'Yes',
+    //                       style: typography.Body1.copyWith(
+    //                           color: Colors.black), // Adjust text color
+    //                     ),
+    //             ),
+    //
+    //             // TextButton(
+    //             //   onPressed: provider.isLoading
+    //             //       ? null
+    //             //       : () async {
+    //             //           setState(() {
+    //             //             isLoading = true;
+    //             //           });
+    //             //
+    //             //           String key = 'subscribe.$vendorId.is_subscribed';
+    //             //
+    //             //           await provider.updateConfiguration(
+    //             //             context,
+    //             //             mainId,
+    //             //             key,
+    //             //             level,
+    //             //             !isSubscribed,
+    //             //           );
+    //             //
+    //             //           setState(() {
+    //             //             isLoading = false;
+    //             //           });
+    //             //
+    //             //           if (!provider.isLoading) Navigator.pop(context);
+    //             //           _getData();
+    //             //         },
+    //             //   child: provider.isLoading
+    //             //       ? Row(
+    //             //           mainAxisSize: MainAxisSize.min,
+    //             //           children: [
+    //             //             SizedBox(
+    //             //                 height: 38,
+    //             //                 width: 38,
+    //             //                 child: CircularProgressIndicator()),
+    //             //           ],
+    //             //         )
+    //             //       : Text(
+    //             //           'Yes',
+    //             //           style: typography.Body1.copyWith(
+    //             //               color: AppColors.primaryMain),
+    //             //         ),
+    //             // ),
+    //           ],
+    //         );
+    //       },
+    //     );
+    //   },
+    // );
   }
 }

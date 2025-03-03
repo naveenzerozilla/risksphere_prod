@@ -88,27 +88,38 @@ class SubscriptionCard extends StatelessWidget {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text(title),
+                                    title: Text(
+                                        title.toString() =="Hurricane (Kinetic Analysis Corporation)"?
+                                            "Hurricane Event Monitoring Subscription":"Earthquake Event Monitoring Subscription"
+                                    ),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          title ==
-                                                  "Hurricane (Kinetic Analysis Corporation)"
-                                              ? "Get real-time hurricane alerts and automated tracking.\n"
-                                              : "The Earthquake Event Monitoring Subscription keeps you updated with timely alerts on seismic activity.\n",
+
+                                          title.toString() =="Hurricane (Kinetic Analysis Corporation)"?
+                                          "Get real-time hurricane alerts and automated tracking."
+                                              :"The Earthquake Event Monitoring Subscription keeps you updated with timely alerts on seismic activity."
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                            "Key Information:"
                                         ),
                                         SizedBox(height: 10),
                                         _buildBulletPoint(
                                             "Activation: Monitoring begins 24 hours after subscribing."),
-                                        _buildBulletPoint(title ==
-                                                "Hurricane (Kinetic Analysis Corporation)"
+                                        _buildBulletPoint(
+                                            title.toString() =="Hurricane (Kinetic Analysis Corporation)"
                                             ? "Automatic Tracking: New locations added start monitoring within 24 hours."
                                             : "Automatic Location Tracking: New locations monitoring starts after 24 hours."),
                                         _buildBulletPoint(
                                             "Event Alerts: Alerts every 6 hours on potential impacts."),
+                                        SizedBox(height: 8),
+                                        Text(
+                                              "Subscribe now."
+                                         ),
                                       ],
                                     ),
                                     actions: [

@@ -660,9 +660,33 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Name
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "user_profile_user_management_name_filed_label"),
-            hintText: LanguageService.getTranslated(
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text:  LanguageService.getTranslated(
+    context, "user_profile_user_management_name_filed_label"), // Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
+
+
+            hintText:
+
+            LanguageService.getTranslated(
                 context, "user_profile_user_management_name_placeholder"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
@@ -707,8 +731,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Email
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "register_non_corporate_emailfield_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "register_non_corporate_emailfield_label"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(
+        context, "register_non_corporate_emailfield_label"), // Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "register_non_corporate_emailfield_placeholder"),
             hintStyle: typography.Body1,
@@ -736,8 +782,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 shouldFormat: true,
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(
-                      context, "register_mobile_number"),
+                  // labelText: LanguageService.getTranslated(
+                  //     context, "register_mobile_number"),
+                  label:RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: LanguageService.getTranslated(
+        context, "register_mobile_number"), // Label text, // Black color for "Name"
+                        ),
+                        WidgetSpan(
+                          child: Text(
+                            " *",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                        ),
+
+                      ],
+                    ),
+                  ),
                   hintText: _individualHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
@@ -785,8 +853,31 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 });
               },
             ),
-            labelText: LanguageService.getTranslated(
-                context, "register_non_corporate_passwordfield_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "register_non_corporate_passwordfield_label"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(
+        context, "register_non_corporate_passwordfield_label"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
+
             hintText: LanguageService.getTranslated(
                 context, "register_corporate_password_field_placeholder"),
             border: const OutlineInputBorder(),
@@ -817,8 +908,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 });
               },
             ),
-            labelText: LanguageService.getTranslated(
-                context, "register_corporate_confirm_password_field_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "register_corporate_confirm_password_field_label"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(
+        context, "register_corporate_confirm_password_field_label"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
@@ -919,8 +1032,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Handle input changes
               },
               decoration: InputDecoration(
-                labelText: LanguageService.getTranslated(
-                    context, "register_non_corporate_role_field_label"),
+                // labelText: LanguageService.getTranslated(
+                //     context, "register_non_corporate_role_field_label"),
+                label:RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text:LanguageService.getTranslated(
+        context, "register_non_corporate_role_field_label"),// Label text, // Black color for "Name"
+                      ),
+                      WidgetSpan(
+                        child: Text(
+                          " *",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                      ),
+
+                    ],
+                  ),
+                ),
                 hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -998,8 +1133,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 shouldFormat: true,
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(
-                      context, "register_mobile_number"),
+                  // labelText: LanguageService.getTranslated(
+                  //     context, "register_mobile_number"),
+                  label:RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: LanguageService.getTranslated(
+        context, "register_mobile_number"),// Label text, // Black color for "Name"
+                        ),
+                        WidgetSpan(
+                          child: Text(
+                            " *",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                        ),
+
+                      ],
+                    ),
+                  ),
                   hintText: LanguageService.getTranslated(context,
                       "register_non_corporate_mobilefield_placeholder"),
                   border: const OutlineInputBorder(),
@@ -1314,8 +1471,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         });
                       },
                       decoration: InputDecoration(
-                        labelText: LanguageService.getTranslated(context,
-                            "register_corporate_legalname_field_label"),
+                        // labelText: LanguageService.getTranslated(context,
+                        //     "register_corporate_legalname_field_label"),
+                        label:RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: LanguageService.getTranslated(context,
+                                "register_corporate_legalname_field_label"),// Label text, // Black color for "Name"
+                              ),
+                              WidgetSpan(
+                                child: Text(
+                                  " *",
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                              ),
+
+                            ],
+                          ),
+                        ),
                         hintText: LanguageService.getTranslated(context,
                             "register_corporate_legalname_filed_placeholder"),
                         border: const OutlineInputBorder(),
@@ -1368,8 +1547,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               [],
                           decoration: InputDecoration(
                             enabled: _enableCompanyTypeDropdown,
-                            labelText: LanguageService.getTranslated(context,
-                                "register_corporate_company_type_field_label"),
+                            // labelText: LanguageService.getTranslated(context,
+                            //     "register_corporate_company_type_field_label"),
+                            label:RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: LanguageService.getTranslated(context,
+                                    "register_corporate_company_type_field_label"),// Label text, // Black color for "Name"
+                                  ),
+                                  WidgetSpan(
+                                    child: Text(
+                                      " *",
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                                  ),
+
+                                ],
+                              ),
+                            ),
                             hintText: LanguageService.getTranslated(context,
                                 "register_corporate_company_type_field_placeholder"),
                             border: const OutlineInputBorder(),
@@ -1396,8 +1597,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         TextFormField(
           decoration: InputDecoration(
             enabled: _enableCompanyTypeDropdown,
-            labelText: LanguageService.getTranslated(
-                context, "register_corporate_company_displayname_field_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "register_corporate_company_displayname_field_label"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text:LanguageService.getTranslated(
+                    context, "register_corporate_company_displayname_field_label"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(context,
                 "register_corporate_comapny_displayname_field_placeholder"),
             border: const OutlineInputBorder(),
@@ -1488,8 +1711,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Admin Name
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "usermanagement_name_field_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "usermanagement_name_field_label"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text:LanguageService.getTranslated(
+                    context, "usermanagement_name_field_label"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "usermanagemet_cuser_name_place_holder"),
             border: const OutlineInputBorder(),
@@ -1510,8 +1755,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         TextFormField(
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "connections_user_connection_email_filter"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "connections_user_connection_email_filter"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(
+        context, "connections_user_connection_email_filter"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "user_profile_user_management_email_placeholer"),
             border: const OutlineInputBorder(),
@@ -1536,8 +1803,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 shouldFormat: true,
                 defaultCountry: IsoCode.US,
                 decoration: InputDecoration(
-                  labelText: LanguageService.getTranslated(
-                      context, "register_mobile_number"),
+                  // labelText: LanguageService.getTranslated(
+                  //     context, "register_mobile_number"),
+                  label:RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: LanguageService.getTranslated(
+        context, "register_mobile_number"),// Label text, // Black color for "Name"
+                        ),
+                        WidgetSpan(
+                          child: Text(
+                            " *",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                        ),
+
+                      ],
+                    ),
+                  ),
                   hintText: _corporateAdminHintText,
                   border: const OutlineInputBorder(),
                   counterText: '',
@@ -1575,8 +1864,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "emailsetup_field_password"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "emailsetup_field_password"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text:  LanguageService.getTranslated(
+        context, "emailsetup_field_password"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "register_corporate_password_field_placeholder"),
             border: const OutlineInputBorder(),
@@ -1605,8 +1916,30 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "register_corporate_password_field_placeholder"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "register_corporate_password_field_placeholder"),
+            label:RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(
+                    context, "register_corporate_password_field_placeholder"),// Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                  ),
+
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
                 context, "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),

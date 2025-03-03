@@ -47,6 +47,16 @@ class AccountListProvider extends ChangeNotifier {
     notifyListeners(); // This ensures the UI updates
   }
 
+
+  bool _isDeleteLocationLoading = false;
+  bool get isDeleteLocationLoading => _isDeleteLocationLoading;
+  set isDeleteLocationLoading(bool value) {
+    _isDeleteLocationLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
+
   bool _isOwnerLoading = false;
   bool get isOwnerLoading => _isOwnerLoading;
   set isOwnerLoading(bool value) {
@@ -461,7 +471,7 @@ class AccountListProvider extends ChangeNotifier {
 
   Future<bool> deleteAccount(BuildContext context, String accountId) async {
     try {
-      isAddAccountLoading = true;
+      isDeleteLocationLoading = true;
       notifyListeners(); // Notify UI to update the button state
 
       ApiService apiService =
@@ -483,7 +493,7 @@ class AccountListProvider extends ChangeNotifier {
       CustomToast.error(context, "An unexpected error occurred");
       return false;
     } finally {
-      isAddAccountLoading = false;
+      isDeleteLocationLoading = false;
       notifyListeners(); // Notify UI to remove the loader
     }
   }

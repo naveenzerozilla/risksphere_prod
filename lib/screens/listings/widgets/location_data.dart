@@ -58,6 +58,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
     super.initState();
     _scrollController = ScrollController();
     _masterTabController = TabController(length: 3, vsync: this);
+    _getData();
     _masterTabController?.addListener(() {
       setState(() {
         selectedMasterTab = _masterTabController?.index ?? 0;
@@ -66,6 +67,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
         _getData();
       }
     });
+
     // Initial data fetch
   }
 
@@ -1036,7 +1038,7 @@ class _BlinkingTextState extends State<BlinkingText>
       animation: _controller,
       builder: (context, child) {
         return Container(
-          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 1),
           decoration: BoxDecoration(
             color: _bgAnimation.value, // Blinking background color
             borderRadius: BorderRadius.circular(10), // Rounded corners

@@ -158,12 +158,14 @@ class IndividualUsers {
       this.status, this.isSelected = false});
 
   IndividualUsers.fromJson(Map<String, dynamic> json) {
-    if (json['role'] != null) {
-      role = <Role>[];
-      json['role'].forEach((v) {
-        role!.add(new Role.fromJson(v));
-      });
-    }
+    // if (json['role'] != null) {
+    //   role = <Role>[];
+    //   json['role'].forEach((v) {
+    //     role!.add(new Role.fromJson(v));
+    //   });
+    // }
+
+    role = (json['role'] as List?)?.map((v) => Role.fromJson(v)).toList() ?? [];
     displayName = json['displayName'];
     rating = json['rating'];
     isIndividual = json['isIndividual'];

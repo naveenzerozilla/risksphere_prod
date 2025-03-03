@@ -22,6 +22,7 @@ class VerificationTabsService {
       // Corporate Verification Tab
       Tab(
         child: Text(
+
           LanguageService.getTranslated(
               context, 'usermanagement_corporate_verification_tab'),
           style: typography.BottomNavigationActiveLabel,

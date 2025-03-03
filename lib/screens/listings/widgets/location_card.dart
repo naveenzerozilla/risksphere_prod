@@ -1,3 +1,4 @@
+import 'package:RiskSphare/screens/listings/widgets/location_details_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
@@ -29,12 +30,16 @@ class MyLocationCard extends StatefulWidget {
   final bool isCertified;
   final String? accountId;
   final String? subAccountId;
+  final String? lat;
+  final String? long;
+  final String? overallScore;
   final int index;
   final String? sovId;
   final String? sovName;
   final String? subAccountName;
   final String? locationQuery;
   final String? campusId;
+  final bool? hazardProcess;
 
   // callback to get gata after coming back from profile page (nullable)
   final void Function()? getData;
@@ -59,11 +64,15 @@ class MyLocationCard extends StatefulWidget {
     this.onAddTag,
     this.accountId,
     this.subAccountId,
+    this.lat,
+    this.long,
+    this.overallScore,
     required this.index,
     this.sovId,
     this.sovName,
     this.subAccountName,
     this.locationQuery,
+    this.hazardProcess,
     this.getData,
   });
 
@@ -125,7 +134,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
         } else {
           // Handle the tap event
           print('Tapped on location: ${widget.locationId}');
-          print('Going to page ${widget.index}');
+          print('Going to page ${widget.index + 1}');
           var locationListProvider =
               Provider.of<MyLocationListProvider>(context, listen: false);
           // Open location details screen
@@ -228,12 +237,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 borderRadius: BorderRadius.circular(99),
                 child: (widget.geocodingScore == 5)
                     ? Image.network(
-                        "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=37.4223041,-122.0849205&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-
-                )
+                        "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      )
                     : image.isNotEmpty
                         ? Image.network(
                             image,
@@ -248,32 +256,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             fit: BoxFit.cover,
                           ),
               ),
-
-        // isSelected
-        //     ? CircleAvatar(
-        //   radius: 25,
-        //   backgroundColor: AppColors.primaryMain.withOpacity(0.5),
-        //   child: Icon(Icons.check, color: Colors.white),
-        // )
-        //     : ClipRRect(
-        //   borderRadius: BorderRadius.circular(99),
-        //   child: image.isNotEmpty
-        //       ? Image.network(
-        //     image,
-        //     width: 50,
-        //     height: 50,
-        //     fit: BoxFit.cover,
-        //   )
-        //       : Image.asset(
-        //     'assets/images/building_image.png',
-        //     width: 50,
-        //     height: 50,
-        //     fit: BoxFit.cover,
-        //   ),
-        // ),
-
         SizedBox(width: 8),
-
         // Expanded chip list or single chip
         Expanded(
           child: Column(
@@ -322,8 +305,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
               Text(
                 widget.address,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primaryMain,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -395,16 +379,32 @@ class _MyLocationCardState extends State<MyLocationCard> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildScoreCard(context, 'Geocoding', widget.geocodingScore),
-          _buildScoreCard(context, 'Risk Score', widget.riskScore),
           _buildScoreCard(
-              context, 'Data Completeness', widget.dataCompletenessScore),
+            context,
+            'Geocoding',
+            widget.address,
+            widget.geocodingScore,
+            widget.accountId!,
+            widget.subAccountId!,
+          ),
+          _buildScoreCard(context, 'Risk Score', widget.address, 5,
+              widget.accountId!, widget.subAccountId!),
+          //int.parse(widget.overallScore!)),
+          _buildScoreCard(
+            context,
+            'Data Completeness',
+            widget.address,
+            widget.dataCompletenessScore,
+            widget.accountId!,
+            widget.subAccountId!,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildScoreCard(BuildContext context, String title, int score) {
+  Widget _buildScoreCard(BuildContext context, String title, String address,
+      int score, String accountId, String subAccountId) {
     bool isCertified = score == 5; // Logic to check if it shows a certificate.
     List<Color> scoreColors = [
       Colors.grey[300]!, // Default color for unfilled bars
@@ -417,7 +417,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
     var typography = CustomTypography(context);
     return Container(
-      margin: EdgeInsets.only(right: 8),
+      margin: EdgeInsets.only(right: 5),
       padding: EdgeInsets.all(8),
       width: 100,
       decoration: BoxDecoration(
@@ -433,56 +433,106 @@ class _MyLocationCardState extends State<MyLocationCard> {
       child: Column(
         children: [
           Center(
-            child: Text(
-              title,
-              style: typography.InputLabel,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              // Ensures the Row takes minimal space
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: typography.InputLabel,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.justify,
+                  ),
+                ),
+                // SizedBox(width: 1), // Adds spacing between text and icon
+                if (title == 'Risk Score' || title == 'Geocoding') ...[
+                  InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => GeocodingDialog(title: title),
+                        );
+                      },
+                      child: Icon(Icons.info)),
+                ],
+              ],
             ),
           ),
+
           SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                title == 'Risk Score'
-                    ? SvgPicture.asset('assets/images/hazard_icon.svg',
-                        width: 24, height: 24)
-                    : title == 'Data Completeness'
-                        ? SvgPicture.asset(
-                            'assets/images/data_completeness_icon.svg',
-                            width: 24,
-                            height: 24)
-                        : title == 'Geocoding'
-                            ? SvgPicture.asset(
-                                'assets/images/geocoding_icon.svg',
-                                width: 24,
-                                height: 24)
-                            : const SizedBox(),
-                SizedBox(width: 4),
-                VerticalBarIndicator(score: score),
-                // This will display 4 light green bars and 1 grey bar
-                SizedBox(width: 1),
-                isCertified
-                    ? SvgPicture.asset('assets/images/certified_five.svg',
-                        width: 24, height: 24)
-                    : Container(
-                        margin: EdgeInsets.only(left: 4),
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: scoreColors[score].withOpacity(0.6),
-                          child: Center(
-                              child: Text(
-                            score.toString(),
-                            style: typography.Body1.copyWith(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold),
-                          )),
+                if (widget.hazardProcess == true ||
+                    title == 'Geocoding' ||
+                    title == 'Data Completeness') ...[
+                  title == 'Risk Score'
+                      ? SvgPicture.asset('assets/images/hazard_icon.svg',
+                          width: 24, height: 24)
+                      : title == 'Data Completeness'
+                          ? SvgPicture.asset(
+                              'assets/images/data_completeness_icon.svg',
+                              width: 24,
+                              height: 24)
+                          : title == 'Geocoding'
+                              ? SvgPicture.asset(
+                                  'assets/images/geocoding_icon.svg',
+                                  width: 24,
+                                  height: 24)
+                              : const SizedBox(),
+                  SizedBox(width: 4),
+                  // Text(widget.hazardProcess.toString()),
+
+                  InkWell(
+                    onTap: () {
+                      if (title == 'Geocoding') {
+                        // showLocationDetailsPopup(
+                        //   context,
+                        //   widget.imageUrl,
+                        //   widget.address,
+                        //   widget.locationId,
+                        //   widget.geocodingScore,
+                        //   widget.riskScore,
+                        //   null,
+                        //   "MAc",
+                        //   widget.accountId!,
+                        //   widget.subAccountId!,
+                        //   "widget.sovId!",
+                        //   widget.accountName,
+                        //   widget.subAccountName!,
+                        // );
+                      }
+                    },
+                    child: VerticalBarIndicator(score: score),
+                  ),
+
+                  SizedBox(width: 1),
+                  isCertified
+                      ? SvgPicture.asset('assets/images/certified_five.svg',
+                          width: 24, height: 24)
+                      : Container(
+                          margin: EdgeInsets.only(left: 4),
+                          child: CircleAvatar(
+                            radius: 10,
+                            backgroundColor:
+                                scoreColors[score].withOpacity(0.6),
+                            child: Center(
+                                child: Text(
+                              score.toString(),
+                              style: typography.Body1.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold),
+                            )),
+                          ),
                         ),
-                      ),
+                ] else ...[
+                  Container(child: Text("Processing"))
+                ]
               ],
             ),
           ),
@@ -493,6 +543,48 @@ class _MyLocationCardState extends State<MyLocationCard> {
       ),
     );
   }
+}
+
+// Call this function to show the popup on tap
+void showLocationDetailsPopup(
+    BuildContext context,
+    String imageUrl,
+    String address,
+    String locationId,
+    int geocodingScore,
+    String,
+    void Function()? getData,
+    String? professional,
+    String accountId,
+    String subAccountId,
+    String sovId,
+    String accountName,
+    String subAccountName,
+    [bool hideNavigation = false]) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return LocationDetailsPopup(
+        // location.overallScore ?? 0,
+        imageUrl:imageUrl,
+        address: address ?? 'Unknown Address',
+        locationId: locationId ?? 'Unknown ID',
+        geocodingScore: geocodingScore,
+        riskScore: 0,
+        hazards: {},
+        geocodedAt: [""],
+        occupancy: ["--"],
+        campus: address,
+        accountId: accountId,
+        subAccountId: subAccountId,
+        sovId: sovId,
+        accountName: accountName,
+        subAccountName: subAccountName,
+        sovName: address,
+        // hideNavigation: "hideNavigation",
+      );
+    },
+  );
 }
 
 class CustomPopupMenuButton extends StatelessWidget {
@@ -576,5 +668,169 @@ class CustomPopupMenuButton extends StatelessWidget {
         onAddTag?.call(locationId ?? "");
       }
     }
+  }
+}
+
+class GeocodingDialog extends StatefulWidget {
+  final String? title;
+
+  GeocodingDialog({
+    super.key,
+    this.title,
+  });
+
+  @override
+  State<GeocodingDialog> createState() => _GeocodingDialogState();
+}
+
+class _GeocodingDialogState extends State<GeocodingDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.black,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white12,
+                // Keep background transparent if needed
+                shadowColor: Colors.white12,
+                // Remove button shadow
+                minimumSize: Size(double.infinity, 40),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                // Define button action here
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                // To ensure minimal button width
+                children: [
+                  widget.title == 'Geocoding'
+                      ? SvgPicture.asset('assets/images/geocoding_icon.svg',
+                          width: 24, height: 24)
+                      : SvgPicture.asset('assets/images/hazard_icon.svg',
+                          width: 24, height: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    widget.title == 'Geocoding'
+                        ? "Geocoding Rating"
+                        : "Hazard Rating",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+            _buildRatingItem(
+                5,
+                "Exact Match: Indicates pinpoint precision, accurately identifying a specific building.",
+                ""),
+            Divider(),
+            _buildRatingItem(
+                4,
+                "Geometric Center: Represents the center of a complex of buildings or small area and is less precise than a specific building address.",
+                ""),
+            Divider(),
+            _buildRatingItem(
+                3,
+                "Range Interpolated: Represents an address located along a street. Lacking to pinpoint a single building.",
+                ""),
+            Divider(),
+            _buildRatingItem(
+                2,
+                "Sub Locality: The location is located in a sub locality like a small town or neighborhood and difficult to specify the building.",
+                ""),
+            Divider(),
+            _buildRatingItem(
+                1,
+                "Approximate: The location is located within a large region like a country, state or locality.",
+                ""),
+            SizedBox(height: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryMain,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                minimumSize: Size(double.infinity, 40),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Understood! Take me back.",
+                style: TextStyle(fontSize: 14, color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingItem(int rating, String title, String description) {
+    Color getColor(int rating) {
+      switch (rating) {
+        case 5:
+          return Colors.green;
+        case 4:
+          return Colors.lightGreen;
+        case 3:
+          return Colors.orange;
+        case 2:
+          return Colors.redAccent;
+        case 1:
+          return Colors.red;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    return Container(
+      alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Divider(),
+          rating == 5
+              ? SvgPicture.asset('assets/images/certified_five.svg',
+                  width: 24, height: 24)
+              : CircleAvatar(
+                  radius: 12,
+                  backgroundColor: getColor(rating),
+                  child: Text(
+                    rating.toString(),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                  ),
+                ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

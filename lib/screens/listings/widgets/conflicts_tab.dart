@@ -38,7 +38,8 @@ class ConflictsTabState extends State<ConflictsTab> {
 
   GoogleMapController? _mapController;
   final GlobalKey _mapKey = GlobalKey();
-  String? selectedOption; // To store the selected conflict resolution option
+  String? selectedOption =
+      "none"; // To store the selected conflict resolution option
 
   Future<void> _getData() async {
     response = await Provider.of<UploadSovProvider>(context, listen: false)
@@ -76,7 +77,7 @@ class ConflictsTabState extends State<ConflictsTab> {
     if (currentIndex < provider.conflictLocations.length - 1) {
       setState(() {
         currentIndex++;
-        selectedOption = null; // Reset the selection for the next conflict
+        selectedOption = 'none'; // Reset the selection for the next conflict
       });
       _updateMap();
     }
@@ -86,7 +87,8 @@ class ConflictsTabState extends State<ConflictsTab> {
     if (currentIndex > 0) {
       setState(() {
         currentIndex--;
-        selectedOption = null; // Reset the selection for the previous conflict
+        selectedOption =
+            'none'; // Reset the selection for the previous conflict
       });
       _updateMap();
     }
@@ -347,13 +349,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 16.0),
                                                 child: Text(
-                                                  provider.conflictLocations[
-                                                          currentIndex]
-                                                          ['formatted_address']
-                                                      .replaceAll(
-                                                          RegExp(r',\s*,+'),
-                                                          ',') // Replace consecutive commas with a single comma
-                                                      .trim(),
+                                                  '${currentIndex + 1} - ${provider.conflictLocations[currentIndex]['formatted_address'].replaceAll(RegExp(r',\s*,+'), ',')}',
                                                   style:
                                                       CustomTypography(context)
                                                           .H7
@@ -405,7 +401,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                                 groupValue: selectedOption,
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    selectedOption = value;
+                                                    selectedOption = value!;
                                                   });
                                                 },
                                               ),
@@ -418,10 +414,77 @@ class ConflictsTabState extends State<ConflictsTab> {
                                           groupValue: selectedOption,
                                           onChanged: (value) {
                                             setState(() {
-                                              selectedOption = value;
+                                              selectedOption = value!;
+                                              // Save the selected option in the provider's list
+                                              provider.conflictLocations[
+                                                          currentIndex]
+                                                      ['selected_option'] =
+                                                  selectedOption;
                                             });
                                           },
                                         ),
+
+                                        // RadioListTile<String>(
+                                        //   title: Text("None of these"),
+                                        //   value: "none",
+                                        //   groupValue: selectedOption,
+                                        //   onChanged: (value) {
+                                        //     setState(() {
+                                        //       selectedOption = value!;
+                                        //     });
+                                        //   },
+                                        // ),
+                                        // ListView.builder(
+                                        //   shrinkWrap: true,
+                                        //   physics:
+                                        //       NeverScrollableScrollPhysics(),
+                                        //   itemCount: provider
+                                        //               .conflictLocations[
+                                        //                   currentIndex]
+                                        //                   ['conflicts']
+                                        //               .length >
+                                        //           3
+                                        //       ? 3
+                                        //       : provider
+                                        //           .conflictLocations[
+                                        //               currentIndex]['conflicts']
+                                        //           .length,
+                                        //   itemBuilder: (context, index) {
+                                        //     final conflict =
+                                        //         provider.conflictLocations[
+                                        //                 currentIndex]
+                                        //             ['conflicts'][index];
+                                        //     return GestureDetector(
+                                        //       onTap: () {
+                                        //         _navigateToMarker(
+                                        //           conflict['latitude'] ?? 0.0,
+                                        //           conflict['longitude'] ?? 0.0,
+                                        //         );
+                                        //       },
+                                        //       child: RadioListTile<String>(
+                                        //         title:
+                                        //             Text(conflict['address']),
+                                        //         value: conflict['location_id'],
+                                        //         groupValue: selectedOption,
+                                        //         onChanged: (value) {
+                                        //           setState(() {
+                                        //             selectedOption = value;
+                                        //           });
+                                        //         },
+                                        //       ),
+                                        //     );
+                                        //   },
+                                        // ),
+                                        // RadioListTile<String>(
+                                        //   title: Text("None of these"),
+                                        //   value: "none",
+                                        //   groupValue: selectedOption,
+                                        //   onChanged: (value) {
+                                        //     setState(() {
+                                        //       selectedOption = value;
+                                        //     });
+                                        //   },
+                                        // ),
                                         Row(
                                           children: [
                                             Expanded(

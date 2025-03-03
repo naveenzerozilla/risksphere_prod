@@ -47,13 +47,21 @@ import 'screens/onboarding/splash_screen.dart';
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
-
 void initializeNotifications() {
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final DarwinInitializationSettings initializationSettingsIOS =
+  DarwinInitializationSettings(
+    requestSoundPermission: true,
+    requestBadgePermission: true,
+    requestAlertPermission: true,
+
+  );
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS, // Add this for iOS
   );
 
   flutterLocalNotificationsPlugin.initialize(
@@ -63,9 +71,8 @@ void initializeNotifications() {
       final String? payload = notificationResponse.payload;
       if (payload != null) {
         try {
-          print('Received notification payload top: $payload');
+          print('Received notification payload: $payload');
           final Map<String, dynamic> data = jsonDecode(payload);
-          print('Received notification payload: $data');
           handleNotificationNavigation(data);
         } catch (e) {
           print('Error parsing notification payload: $e');
@@ -74,6 +81,33 @@ void initializeNotifications() {
     },
   );
 }
+
+// void initializeNotifications() {
+//   const AndroidInitializationSettings initializationSettingsAndroid =
+//       AndroidInitializationSettings('@mipmap/ic_launcher');
+//
+//   final InitializationSettings initializationSettings = InitializationSettings(
+//     android: initializationSettingsAndroid,
+//   );
+//
+//   flutterLocalNotificationsPlugin.initialize(
+//     initializationSettings,
+//     onDidReceiveNotificationResponse:
+//         (NotificationResponse notificationResponse) {
+//       final String? payload = notificationResponse.payload;
+//       if (payload != null) {
+//         try {
+//           print('Received notification payload top: $payload');
+//           final Map<String, dynamic> data = jsonDecode(payload);
+//           print('Received notification payload: $data');
+//           handleNotificationNavigation(data);
+//         } catch (e) {
+//           print('Error parsing notification payload: $e');
+//         }
+//       }
+//     },
+//   );
+// }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
@@ -114,11 +148,13 @@ void checkForInitialMessage() async {
 }
 
 // Clean up the Firebase message handlers
-void setupFirebaseMessaging() {
-  // Handle foreground messages
+ setupFirebaseMessaging() {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print('Got a message whilst in the foreground!');
+
     if (message.notification != null) {
+      print('Foreground Notification Title: ${message.notification!.title}');
+      print('Foreground Notification Body: ${message.notification!.body}');
       showNotification(
         message.notification!.title,
         message.notification!.body,
@@ -127,15 +163,14 @@ void setupFirebaseMessaging() {
     }
   });
 
-  // Handle when the app is opened from a notification
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     print('Notification opened app from background state');
     if (message.data.isNotEmpty) {
-      print('Notification data: ${message.data}');
       handleNotificationNavigation(message.data);
     }
   });
 }
+
 
 void handleNotificationNavigation(Map<String, dynamic> data) {
   print('Handling notification navigation: $data');
@@ -207,8 +242,6 @@ Future<void> initFCM(String userId) async {
           SharedPreferenceService.saveNotificationSubscription(true);
           print('Subscribed to topic: general');
         }
-      } else {
-        print('Already subscribed to notifications');
       }
     }
   } else {
@@ -382,10 +415,19 @@ void main() async {
   );
 
   initializeNotifications();
-  setupFirebaseMessaging();
+  await setupFirebaseMessaging();
 
   String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
-  // await initFCM(userId);
+
+  // Ensure APNS token is set before fetching FCM token
+  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+  if (apnsToken != null) {
+    await initFCM(userId);
+  } else {
+    print("APNS token not available yet. Retrying later...");
+  }
+
+
   // Check if the app was opened by a notification
   checkForInitialMessage();
 

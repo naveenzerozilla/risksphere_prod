@@ -34,6 +34,14 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  bool _isDeleteLocationLoading = false;
+  bool get isDeleteLocationLoading => _isDeleteLocationLoading;
+  set isDeleteLocationLoading(bool value) {
+    _isDeleteLocationLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      notifyListeners();
+    });
+  }
 
   bool _isRenameLoading = false;
 
@@ -352,13 +360,13 @@ class SubAccountListProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteAccount(BuildContext context, String accountId) async {
+  Future<bool> deleteAccount(BuildContext context, String accountId,String subaccountId) async {
     try {
-      isAddSubAccountLoading = true;
+      isDeleteLocationLoading = true;
       notifyListeners(); // Notify UI to update the button state
 
       ApiService apiService =
-          ApiService("${AppConstant.DELETE_ACCOUNT}account_id=$accountId");
+          ApiService("${AppConstant.DELETE_SUB_ACCOUNT}account_id=$accountId&sub_account_id=$subaccountId");
       var response = await apiService.delete({});
 
       log(response.toString());
@@ -376,7 +384,7 @@ class SubAccountListProvider extends ChangeNotifier {
       CustomToast.error(context, "An unexpected error occurred");
       return false;
     } finally {
-      isAddSubAccountLoading = false;
+      isDeleteLocationLoading = false;
       notifyListeners(); // Notify UI to remove the loader
     }
   }

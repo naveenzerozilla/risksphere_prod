@@ -18,7 +18,14 @@ class DuplicatesTab extends StatefulWidget {
   final String tempId;
   final String accountName;
 
-  const DuplicatesTab({super.key, required this.processId, required this.accountId, required this.subAccountId, this.masterTabController, required this.tempId, required this.accountName});
+  const DuplicatesTab(
+      {super.key,
+      required this.processId,
+      required this.accountId,
+      required this.subAccountId,
+      this.masterTabController,
+      required this.tempId,
+      required this.accountName});
 
   @override
   DuplicatesTabState createState() => DuplicatesTabState();
@@ -78,7 +85,8 @@ class DuplicatesTabState extends State<DuplicatesTab> {
     if (topDuplicate != null) {
       _mapController?.animateCamera(
         CameraUpdate.newLatLng(
-          LatLng(topDuplicate['latitude']??10.0202, topDuplicate['longitude']??102.0229),
+          LatLng(topDuplicate['latitude'] ?? 10.0202,
+              topDuplicate['longitude'] ?? 102.0229),
         ),
       );
     }
@@ -86,327 +94,350 @@ class DuplicatesTabState extends State<DuplicatesTab> {
 
   @override
   Widget build(BuildContext context) {
-
-    return Consumer<UploadSovProvider>(
-
-      builder: (context, provider, child) {
-        final bool hasDuplicates = provider.duplicateLocations.isNotEmpty;
-        var typography = CustomTypography(context);
-        return Scaffold(
-          body: RefreshIndicator(
-            onRefresh: () async {
-              await _getData();
-            },
-            child: hasDuplicates
-                ? Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                GoogleMap(
-                  key: _mapKey,
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: provider.duplicateLocations.isNotEmpty &&
-                        provider.duplicateLocations[currentIndex]
-                        ['top_duplicate'] !=
-                            null
-                        ? LatLng(
-                        provider.duplicateLocations[currentIndex]
-                        ['top_duplicate']['latitude'],
-                        provider.duplicateLocations[currentIndex]
-                        ['top_duplicate']['longitude'])
-                        : LatLng(0, 0),
-                    zoom: 14,
-                  ),
-                  markers: {
-                    // Main address marker
-                    Marker(
-                      markerId: MarkerId('mainAddress'),
-                      position: LatLng(
-                        provider.duplicateLocations[currentIndex]
-                        ['top_duplicate']?['latitude']??0,
-                        provider.duplicateLocations[currentIndex]
-                        ['top_duplicate']?['longitude']??0,
+    return Consumer<UploadSovProvider>(builder: (context, provider, child) {
+      final bool hasDuplicates = provider.duplicateLocations.isNotEmpty;
+      var typography = CustomTypography(context);
+      return Scaffold(
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await _getData();
+          },
+          child: hasDuplicates
+              ? Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    GoogleMap(
+                      key: _mapKey,
+                      onMapCreated: _onMapCreated,
+                      initialCameraPosition: CameraPosition(
+                        target: provider.duplicateLocations.isNotEmpty &&
+                                provider.duplicateLocations[currentIndex]
+                                        ['top_duplicate'] !=
+                                    null
+                            ? LatLng(
+                                provider.duplicateLocations[currentIndex]
+                                    ['top_duplicate']['latitude'],
+                                provider.duplicateLocations[currentIndex]
+                                    ['top_duplicate']['longitude'])
+                            : LatLng(0, 0),
+                        zoom: 14,
                       ),
-                      infoWindow: InfoWindow(
-                        title: '',
-                        snippet: provider.duplicateLocations[currentIndex]
-                        ['top_duplicate']?['geocode_input_address']?['formatted_address']??"",
-                      ),
-                    ),
-                  },
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        margin: EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16)),
+                      markers: {
+                        // Main address marker
+                        Marker(
+                          markerId: MarkerId('mainAddress'),
+                          position: LatLng(
+                            provider.duplicateLocations[currentIndex]
+                                    ['top_duplicate']?['latitude'] ??
+                                0,
+                            provider.duplicateLocations[currentIndex]
+                                    ['top_duplicate']?['longitude'] ??
+                                0,
+                          ),
+                          infoWindow: InfoWindow(
+                            title: '',
+                            snippet: provider.duplicateLocations[currentIndex]
+                                            ['top_duplicate']
+                                        ?['geocode_input_address']
+                                    ?['formatted_address'] ??
+                                "",
+                          ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
-                                borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(16)),
-                              ),
-                              child: Column(
-                                children: [
-                                  SizedBox(height: 16),
-                                  Row(
+                      },
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(16)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHigh,
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16)),
+                                  ),
+                                  child: Column(
                                     children: [
-                                      SizedBox(width: 8),
-                                      FloatingActionButton(
-                                        shape: CircleBorder(),
-                                        mini: true,
-                                        elevation: 0,
-                                        backgroundColor: Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHighest,
-                                        onPressed: _navigatePrevious,
-                                        child: Icon(
-                                          Icons.chevron_left,
-                                          size: 24,
-                                          color: AppColors.primaryMain,
-                                        ),
-                                      ),
-                                      Spacer(),
+                                      SizedBox(height: 16),
                                       Row(
                                         children: [
-                                          Text(
-                                            'Duplicates',
-                                            style: CustomTypography(context)
-                                                .Body1
-                                                .copyWith(
-                                              fontWeight: FontWeight.w500,
+                                          SizedBox(width: 8),
+                                          FloatingActionButton(
+                                            shape: CircleBorder(),
+                                            mini: true,
+                                            elevation: 0,
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest,
+                                            onPressed: _navigatePrevious,
+                                            child: Icon(
+                                              Icons.chevron_left,
+                                              size: 24,
+                                              color: AppColors.primaryMain,
+                                            ),
+                                          ),
+                                          Spacer(),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Duplicates',
+                                                style: CustomTypography(context)
+                                                    .Body1
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Chip(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(24),
+                                                  side: BorderSide(
+                                                      color:
+                                                          Colors.transparent),
+                                                ),
+                                                label: Text(
+                                                  '${currentIndex + 1} of ${provider.duplicateLocations.length}',
+                                                  style:
+                                                      CustomTypography(context)
+                                                          .Caption
+                                                          .copyWith(
+                                                            color: Colors.black,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                ),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            ],
+                                          ),
+                                          Spacer(),
+                                          FloatingActionButton(
+                                            shape: CircleBorder(),
+                                            mini: true,
+                                            elevation: 0,
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest,
+                                            onPressed: _navigateNext,
+                                            child: Icon(
+                                              Icons.chevron_right,
+                                              size: 24,
+                                              color: AppColors.primaryMain,
                                             ),
                                           ),
                                           SizedBox(width: 8),
-                                          Chip(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                              BorderRadius.circular(24),
-                                              side: BorderSide(
-                                                  color: Colors.transparent),
-                                            ),
-                                            label: Text(
-                                              '${currentIndex + 1} of ${provider.duplicateLocations.length}',
-                                              style: CustomTypography(context)
-                                                  .Caption
-                                                  .copyWith(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
                                         ],
                                       ),
-                                      Spacer(),
-                                      FloatingActionButton(
-                                        shape: CircleBorder(),
-                                        mini: true,
-                                        elevation: 0,
-                                        backgroundColor: Theme.of(context)
+                                      Divider(
+                                        color: Theme.of(context)
                                             .colorScheme
                                             .surfaceContainerHighest,
-                                        onPressed: _navigateNext,
-                                        child: Icon(
-                                          Icons.chevron_right,
-                                          size: 24,
-                                          color: AppColors.primaryMain,
+                                        thickness: 2,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0),
+                                        child: Text(
+                                          '${currentIndex + 1} - ${provider.duplicateLocations[currentIndex]['formatted_address']}',
+                                          style: CustomTypography(context)
+                                              .H7
+                                              .copyWith(
+                                                color: AppColors.primaryMain,
+                                                height: 1,
+                                                fontWeight: FontWeight.w300,
+                                              ),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      SizedBox(height: 18),
                                     ],
                                   ),
-                                  Divider(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
-                                    thickness: 2,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Padding(
+                                ),
+                                SizedBox(height: 16),
+                                Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16.0),
                                     child: Text(
                                       provider.duplicateLocations[currentIndex]
-                                      ['formatted_address'],
-                                      style: CustomTypography(context).H7.copyWith(
-                                        color: AppColors.primaryMain,
-                                        height: 1,
-                                        fontWeight: FontWeight.w300,
-                                      ),
+                                              ['top_duplicate']?['address'] ??
+                                          "",
+                                      style: CustomTypography(context)
+                                          .Body1
+                                          .copyWith(
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.color,
+                                          ),
                                     ),
-                                  ),
-                                  SizedBox(height: 18),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: Text(
-                                  provider.duplicateLocations[currentIndex]['top_duplicate']
-                                  ?['address']??"",
-                                  style: CustomTypography(context).Body1.copyWith(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color,
                                   ),
                                 ),
-                              ),
-                            ),
-                            // Add text
-                            SizedBox(height: 16),
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: MessageCard(
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text: "The locations are already in our database. Please review them for accuracy. If you find any discrepancies, click the \"It's not Duplicate!\" button.",
-                                      style: typography.Body2.copyWith(
-                                        color: AppColors.warning,
-                                      ),
-                                    ),
-                                  ],
-                                )
+                                // Add text
+                                SizedBox(height: 16),
+                                Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16.0),
+                                      child: MessageCard(
+                                        messageTextSpans: [
+                                          TextSpan(
+                                            text:
+                                                "The locations are already in our database. Please review them for accuracy. If you find any discrepancies, click the \"It's not Duplicate!\" button.",
+                                            style: typography.Body2.copyWith(
+                                              color: AppColors.warning,
+                                            ),
+                                          ),
+                                        ],
+                                      )),
+                                ),
+                                SizedBox(height: 4),
+                                Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      children: [
+                                        Expanded(
+                                          child: CustomButton(
+                                            type: ButtonType.elevated,
+                                            onPressed: () async {
+                                              // Get the current duplicate row
+                                              final currentDuplicate =
+                                                  provider.duplicateLocations[
+                                                      currentIndex];
 
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  children: [
-                                    Expanded(
-                                      child: CustomButton(
-                                        type: ButtonType.elevated,
-                                        onPressed: () async {
-                                          // Get the current duplicate row
-                                          final currentDuplicate = provider.duplicateLocations[currentIndex];
+                                              // Call the method to mark as not duplicate
+                                              bool success = await Provider.of<
+                                                  UploadSovProvider>(
+                                                context,
+                                                listen: false,
+                                              ).markAsNotDuplicate(
+                                                  context,
+                                                  widget.accountId,
+                                                  // Replace with actual account_id
+                                                  widget.subAccountId,
+                                                  // Replace with actual sub_account_id
+                                                  widget.processId,
+                                                  [currentDuplicate],
+                                                  provider.duplicateLocations[
+                                                          currentIndex]['id'] ??
+                                                      "" // Pass the current duplicate
+                                                  );
 
-                                          // Call the method to mark as not duplicate
-                                          bool success = await Provider.of<UploadSovProvider>(
-                                            context,
-                                            listen: false,
-                                          ).markAsNotDuplicate(
-                                            context,
-                                            widget.accountId, // Replace with actual account_id
-                                            widget.subAccountId, // Replace with actual sub_account_id
-                                              widget.processId,
-                                            [currentDuplicate],
-                                              provider.duplicateLocations[currentIndex]['id']??""// Pass the current duplicate
-                                          );
-
-                                          if (success) {
-                                            // Refresh the data if successful
-                                            await _getData();
-                                          }
-                                        },
-                                        child: Text(
-                                          "It's not duplicate!",
-                                          style: CustomTypography(context).ButtonLarge.copyWith(
-                                            color: Colors.black,
+                                              if (success) {
+                                                // Refresh the data if successful
+                                                await _getData();
+                                              }
+                                            },
+                                            child: Text(
+                                              "It's not duplicate!",
+                                              style: CustomTypography(context)
+                                                  .ButtonLarge
+                                                  .copyWith(
+                                                    color: Colors.black,
+                                                  ),
+                                            ),
                                           ),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                                SizedBox(height: 16),
+                              ],
                             ),
-                            SizedBox(height: 16),
-
-                          ],
-                        ),
+                          ),
+                          UploadPreviewButtons(
+                            accountId: widget.accountId,
+                            accountName: widget.accountName,
+                            tempId: widget.tempId,
+                            processId: widget.processId,
+                            subAccountId: widget.subAccountId,
+                          ),
+                        ],
                       ),
-                      UploadPreviewButtons(
-                        accountId: widget.accountId,
-                        accountName: widget.accountName,
-                        tempId: widget.tempId,
-                        processId: widget.processId,
-                        subAccountId: widget.subAccountId,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-                : Padding(
+                    ),
+                  ],
+                )
+              : Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Center(
-                            child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Looks Like none of the locations are present in the database.",
-                      textAlign: TextAlign.center,
-                      style: typography.Body1,
-                    ),
-                    SizedBox(height: 16),
-                    MessageCard(
-                      messageTextSpans: [
-                        TextSpan(
-                          text: "Please review the location list to ",
-                          style: typography.Body2,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Looks Like none of the locations are present in the database.",
+                          textAlign: TextAlign.center,
+                          style: typography.Body1,
                         ),
-                        TextSpan(
-                          text: "geocode",
-                          style: typography.Body2.copyWith(
-                            color: AppColors.primaryMain,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()..onTap = () {
-                            widget.masterTabController?.animateTo(0);  // Navigate to Geocode tab
-                          },
-                        ),
-                        TextSpan(
-                          text: " and resolve any ",
-                          style: typography.Body2,
-                        ),
-                        TextSpan(
-                          text: "conflicts.",
-                          style: typography.Body2.copyWith(
-                            color: AppColors.primaryMain,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()..onTap = () {
-                            widget.masterTabController?.animateTo(2);  // Navigate to Conflicts tab
-                          },
-                        ),
-                      ],
-                    )
-                  ],
+                        SizedBox(height: 16),
+                        MessageCard(
+                          messageTextSpans: [
+                            TextSpan(
+                              text: "Please review the location list to ",
+                              style: typography.Body2,
                             ),
-                          ),
+                            TextSpan(
+                              text: "geocode",
+                              style: typography.Body2.copyWith(
+                                color: AppColors.primaryMain,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  widget.masterTabController
+                                      ?.animateTo(0); // Navigate to Geocode tab
+                                },
+                            ),
+                            TextSpan(
+                              text: " and resolve any ",
+                              style: typography.Body2,
+                            ),
+                            TextSpan(
+                              text: "conflicts.",
+                              style: typography.Body2.copyWith(
+                                color: AppColors.primaryMain,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  widget.masterTabController?.animateTo(
+                                      2); // Navigate to Conflicts tab
+                                },
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
                 ),
-          ),
-        );
-      }
-    );
+        ),
+      );
+    });
   }
 }

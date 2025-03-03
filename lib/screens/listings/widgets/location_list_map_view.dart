@@ -1249,6 +1249,7 @@ import 'message_card.dart';
                 ),
               ),
               // Score filter tray below the map with rounded corners
+             if(_selectedTabIndex == 0)...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -1271,6 +1272,7 @@ import 'message_card.dart';
                   ],
                 ),
               ),
+              ],
               SizedBox(height: 16),
             ],
           );

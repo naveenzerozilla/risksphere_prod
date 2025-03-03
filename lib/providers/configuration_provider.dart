@@ -76,7 +76,10 @@ class ConfigurationProvider extends ChangeNotifier {
       String id,
       String key,
       String level,
-      dynamic value, {
+      dynamic value,
+      String status,
+
+      {
         String? accountId,
         String? subAccountId,
       }) async {
@@ -90,7 +93,7 @@ class ConfigurationProvider extends ChangeNotifier {
         "key": key,
         "value": value,
         "level": "global", // Include level
-        "update_all": true // Include update_all
+        "update_all": status // Include update_all
       };
 
       var response = await apiService.patch(body); // Assuming PATCH is correct

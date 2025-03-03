@@ -308,6 +308,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+
+
+                                //
+                                SizedBox(height: CustomSpacing.two),
+
+
                                 /*     Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
@@ -433,7 +439,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           Tab(
                                                               text:
                                                                   'Configuration'),
-                                                        //Tab(text: 'Access Requests'),
+                                                        Tab(text: 'Access Requested'),
                                                       ],
                                                     ),
                                                   ),
@@ -1077,60 +1083,92 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                 Row(
                                                   children: [
                                                     // Cancel Button
-                                                    Expanded(
-                                                      child: CustomButton(
-                                                        onPressed: () {
-                                                          Navigator.pop(context);
-                                                        },
-                                                        child: Text(
-                                                          LanguageService.getTranslated(
-                                                              context, "account_list_app_duplicate_cancel"),
-                                                          style: typography.ButtonLarge,
-                                                        ),
-                                                        type: ButtonType.text,
-                                                      ),
-                                                    ),
+                                                    Expanded(child: Consumer<
+                                                            AccountListProvider>(
+                                                        builder: (context,
+                                                            accountListProvider,
+                                                            child) {
+                                                      return CustomButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context);
+                                                          },
+                                                          child: Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "account_list_app_duplicate_cancel"),
+                                                            style: typography
+                                                                .ButtonLarge,
+                                                          ),
+                                                          type:
+                                                              ButtonType.text);
+                                                    })),
 
                                                     // Show Loader if Deleting, Otherwise Show Delete Button
                                                     Expanded(
-                                                      child: accountListProvider.isLoading
-                                                          ? SizedBox(
-                                                        width: 25,
-                                                        height: 25,
-                                                        child: CircularProgressIndicator(),
-                                                      )
-                                                          : CustomButton(
-                                                        onPressed: () async {
-                                                          setState(() {
-                                                            accountListProvider.isAddAccountLoading = true; // Start loader
-                                                          });
+                                                      child: Consumer<
+                                                              AccountListProvider>(
+                                                          builder: (context,
+                                                              accountListProvider,
+                                                              child) {
+                                                        return accountListProvider
+                                                                .isDeleteLocationLoading
+                                                            ? Center(
+                                                                child:
+                                                                    CircularProgressIndicator())
+                                                            : CustomButton(
+                                                                onPressed:
+                                                                    () async {
+                                                                  setState(() {
+                                                                    accountListProvider
+                                                                            .isAddAccountLoading =
+                                                                        true; // Start loader
+                                                                  });
 
-                                                          bool isSuccess = false;
-                                                          try {
-                                                            isSuccess = await accountListProvider.deleteAccount(
-                                                              context,
-                                                              accountListProvider.accountList[index].accountId!,
-                                                            );
-                                                          } catch (e) {
-                                                            print("Error deleting account: $e");
-                                                          }
+                                                                  bool
+                                                                      isSuccess =
+                                                                      false;
+                                                                  try {
+                                                                    isSuccess =
+                                                                        await accountListProvider
+                                                                            .deleteAccount(
+                                                                      context,
+                                                                      accountListProvider
+                                                                          .accountList[
+                                                                              index]
+                                                                          .accountId!,
+                                                                    );
+                                                                  } catch (e) {
+                                                                    print(
+                                                                        "Error deleting account: $e");
+                                                                  }
 
-                                                          if (isSuccess) {
-                                                            Navigator.pop(context);
-                                                            accountListProvider.fetchAccountList(
-                                                                context, _accountQuery, 1, 20);
-                                                          }
+                                                                  if (isSuccess) {
+                                                                    Navigator.pop(
+                                                                        context);
+                                                                    accountListProvider.fetchAccountList(
+                                                                        context,
+                                                                        _accountQuery,
+                                                                        1,
+                                                                        20);
+                                                                  }
 
-                                                          setState(() {
-                                                            accountListProvider.isAddAccountLoading = false; // Stop loader
-                                                          });
-                                                        },
-                                                        child: Text(
-                                                          "Delete",
-                                                          style: typography.ButtonLarge,
-                                                        ),
-                                                        type: ButtonType.elevated,
-                                                      ),
+                                                                  setState(() {
+                                                                    accountListProvider
+                                                                            .isAddAccountLoading =
+                                                                        false; // Stop loader
+                                                                  });
+                                                                },
+                                                                child: Text(
+                                                                  "Delete",
+                                                                  style: typography
+                                                                      .ButtonLarge,
+                                                                ),
+                                                                type: ButtonType
+                                                                    .elevated,
+                                                              );
+                                                      }),
                                                     ),
                                                   ],
                                                 ),
@@ -1144,7 +1182,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   );
                                 },
                               )
-
                             ],
                           ),
                         ),

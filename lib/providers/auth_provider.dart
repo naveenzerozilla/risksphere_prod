@@ -193,182 +193,295 @@ class AuthNotifier extends ChangeNotifier {
           barrierDismissible: false,
           builder: (BuildContext context) {
             var typography = CustomTypography(context);
-            return AlertDialog(
-              title: Text(
-                LanguageService.getTranslated(
-                    context, "login_admin_not_verified_dialog_title"),
-                style: typography.H6.copyWith(color: Colors.white),
-              ),
-              content: Text(
-                LanguageService.getTranslated(
-                    context, "login_admin_not_verified_dialog_description"),
-                style: typography.Body1.copyWith(color: Colors.white),
-              ),
-              actions: [
-                // Remind and cancel in column
-                Column(
-                  children: [
-                    Row(
+            return StatefulBuilder( // Use StatefulBuilder to update UI inside AlertDialog
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Text(
+                    LanguageService.getTranslated(
+                        context, "login_admin_not_verified_dialog_title"),
+                    style: typography.H6.copyWith(color: Colors.white),
+                  ),
+                  content: Text(
+                    LanguageService.getTranslated(
+                        context, "login_admin_not_verified_dialog_description"),
+                    style: typography.Body1.copyWith(color: Colors.white),
+                  ),
+                  actions: [
+                    Column(
                       children: [
-                        Expanded(
-                          child: CustomButton(
-                            type: ButtonType.elevated,
-                            onPressed: () async {
-                              // Start loading
-                              isRemindLoading = true;
-                              notifyListeners(); // Notify UI to update
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomButton(
+                                type: ButtonType.elevated,
+                                onPressed: () async {
+                                  // Start showing loader
+                                  setState(() {
+                                    isRemindLoading = true;
+                                  });
 
-                              bool result = await remindUser();
+                                  bool result = await remindUser();
 
-                              // Stop loading
-                              isRemindLoading = false;
-                              notifyListeners(); // Notify UI to update
+                                  // Stop showing loader
+                                  setState(() {
+                                    isRemindLoading = false;
+                                  });
 
-                              if (result) {
+                                  if (result) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          LanguageService.getTranslated(
+                                              context, "login_admin_not_verified_remind_success"),
+                                          style: typography.H6.copyWith(color: Colors.black),
+                                        ),
+                                      ),
+                                    );
+                                  }
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      LanguageService.getTranslated(
-                                          context, "login_admin_not_verified_remind_success"),
-                                      style: typography.H6.copyWith(color: Colors.black),
-                                    ),
-                                  ),
-                                );
+                                  final _googleSignIn = GoogleSignIn();
+                                  var isSignedIn = await _googleSignIn.isSignedIn();
 
-                              }
+                                  if (isSignedIn) await _googleSignIn.disconnect();
+                                  await _auth.signOut();
 
-                              final _googleSignIn = GoogleSignIn();
-                              var isSignedIn = await _googleSignIn.isSignedIn();
-
-                              if (isSignedIn) await _googleSignIn.disconnect();
-                              await _auth.signOut();
-                              Navigator.pop(context);
-                            },
-                            child: isRemindLoading
-                                ? Center(child: CircularProgressIndicator())
-                                : Text(
-                              LanguageService.getTranslated(
-                                  context, "login_admin_not_verified_remind_button"),
-                              style: typography.Body1,
+                                  // Ensure UI updates before closing dialog
+                                  Future.delayed(Duration(milliseconds: 500), () {
+                                    if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    }
+                                  });
+                                },
+                                child: isRemindLoading
+                                    ? Center(child: CircularProgressIndicator(color: Colors.white)) // Ensure visibility
+                                    : Text(
+                                  LanguageService.getTranslated(
+                                      context, "login_admin_not_verified_remind_button"),
+                                  style: typography.Body1,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
+                        SizedBox(height: CustomSpacing.four),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomButton(
+                                  type: ButtonType.text,
+                                  onPressed: () async {
+                                    final _googleSignIn = GoogleSignIn();
+                                    var isSignedIn = await _googleSignIn.isSignedIn();
+                                    if (isSignedIn) await _googleSignIn.disconnect();
+                                    await _auth.signOut();
 
-                        //           Expanded(
-                        //             child: CustomButton(
-                        //                 type: ButtonType.elevated,
-                        // // Add this to the state of your widget
-                        //
-                        //   onPressed: () async {
-                        //     showDialog(
-                        //       context: context,
-                        //       barrierDismissible: false, // Prevent dismissing the dialog
-                        //       builder: (BuildContext context) {
-                        //         return Center(
-                        //           child: CircularProgressIndicator(), // Show loading spinner
-                        //         );
-                        //       },
-                        //     );
-                        //
-                        //                   // Wait for 2 seconds before proceeding
-                        //                   await Future.delayed(Duration(seconds: 1));
-                        //
-                        //                   // Close the dialog after 2 seconds
-                        //                   // Navigator.pushAndRemoveUntil(
-                        //                   //     context,
-                        //                   //     MaterialPageRoute(
-                        //                   //         builder: (context) => LoginScreen()),
-                        //                   //     (route) => false);
-                        //                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //                         notifyListeners();
-                        //                         isRemindLoading =true;
-                        //                       });
-                        //
-                        //                   print("Remind user: ${_user?.email}");
-                        //
-                        //                   bool result = await remindUser();
-                        //
-                        //                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //                         notifyListeners();
-                        //                         isRemindLoading =false;
-                        //                       });
-                        //
-                        //
-                        //                       if (result) {
-                        //                   ScaffoldMessenger.of(context).showSnackBar(
-                        //                     SnackBar(
-                        //                       content: Text(
-                        //                         LanguageService.getTranslated(context,
-                        //                             "login_admin_not_verified_remind_success"),
-                        //                         // style: typography.Body1,
-                        //                         style: typography.H6
-                        //                             .copyWith(color: Colors.black),
-                        //                       ),
-                        //                     ),
-                        //                   );
-                        //                   }
-                        //
-                        //                   final _googleSignIn = GoogleSignIn();
-                        //                   var isSignedIn = await _googleSignIn.isSignedIn();
-                        //
-                        //                   if (isSignedIn) await _googleSignIn.disconnect();
-                        //                   await _auth.signOut();
-                        //
-                        //                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //                     notifyListeners();
-                        //                   });
-                        //                 },
-                        //                 child:
-                        //                     !isRemindLoading
-                        //                                           ? Center(child: CircularProgressIndicator())
-                        //                                           :
-                        //                     Text(
-                        //                   LanguageService.getTranslated(context1,
-                        //                       "login_admin_not_verified_remind_button"),
-                        //                   style: typography.Body1,
-                        //                 )),
-                        //           ),
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomButton(
-                              type: ButtonType.text,
-                              onPressed: () async {
-                                final _googleSignIn = GoogleSignIn();
-                                var isSignedIn =
-                                await _googleSignIn.isSignedIn();
-                                if (isSignedIn)
-                                  await _googleSignIn.disconnect();
-                                await _auth.signOut();
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  notifyListeners();
-                                });
-                                Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => SplashScreen()),
-                                        (route) => false);
-                              },
-                              child: Text(
-                                LanguageService.getTranslated(context,
-                                    "login_admin_not_verified_cancel_button"),
-                                style:
-                                typography.H6.copyWith(color: Colors.white),
-                              )),
+                                    if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    }
+                                    Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => SplashScreen()),
+                                            (route) => false);
+                                  },
+                                  child: Text(
+                                    LanguageService.getTranslated(context,
+                                        "login_admin_not_verified_cancel_button"),
+                                    style: typography.H6.copyWith(color: Colors.white),
+                                  )),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ],
-                ),
-              ],
+                );
+              },
             );
           },
         );
+
+        // await showDialog(
+        //   context: context1,
+        //   barrierDismissible: false,
+        //   builder: (BuildContext context) {
+        //     var typography = CustomTypography(context);
+        //     return AlertDialog(
+        //       title: Text(
+        //         LanguageService.getTranslated(
+        //             context, "login_admin_not_verified_dialog_title"),
+        //         style: typography.H6.copyWith(color: Colors.white),
+        //       ),
+        //       content: Text(
+        //         LanguageService.getTranslated(
+        //             context, "login_admin_not_verified_dialog_description"),
+        //         style: typography.Body1.copyWith(color: Colors.white),
+        //       ),
+        //       actions: [
+        //         // Remind and cancel in column
+        //         Column(
+        //           children: [
+        //             Row(
+        //               children: [
+        //                 Expanded(
+        //                   child: CustomButton(
+        //                     type: ButtonType.elevated,
+        //                     onPressed: () async {
+        //                       // Start loading
+        //                       isRemindLoading = true;
+        //                       notifyListeners(); // Notify UI to update
+        //
+        //                       bool result = await remindUser();
+        //
+        //                       // Stop loading
+        //                       isRemindLoading = false;
+        //                       notifyListeners(); // Notify UI to update
+        //
+        //                       if (result) {
+        //
+        //                         ScaffoldMessenger.of(context).showSnackBar(
+        //                           SnackBar(
+        //                             content: Text(
+        //                               LanguageService.getTranslated(
+        //                                   context, "login_admin_not_verified_remind_success"),
+        //                               style: typography.H6.copyWith(color: Colors.black),
+        //                             ),
+        //                           ),
+        //                         );
+        //
+        //                       }
+        //
+        //                       final _googleSignIn = GoogleSignIn();
+        //                       var isSignedIn = await _googleSignIn.isSignedIn();
+        //
+        //                       if (isSignedIn) await _googleSignIn.disconnect();
+        //                       await _auth.signOut();
+        //                       Navigator.pop(context);
+        //                     },
+        //                     child: isRemindLoading
+        //                         ? Center(child: CircularProgressIndicator())
+        //                         : Text(
+        //                       LanguageService.getTranslated(
+        //                           context, "login_admin_not_verified_remind_button"),
+        //                       style: typography.Body1,
+        //                     ),
+        //                   ),
+        //                 ),
+        //
+        //                 //           Expanded(
+        //                 //             child: CustomButton(
+        //                 //                 type: ButtonType.elevated,
+        //                 // // Add this to the state of your widget
+        //                 //
+        //                 //   onPressed: () async {
+        //                 //     showDialog(
+        //                 //       context: context,
+        //                 //       barrierDismissible: false, // Prevent dismissing the dialog
+        //                 //       builder: (BuildContext context) {
+        //                 //         return Center(
+        //                 //           child: CircularProgressIndicator(), // Show loading spinner
+        //                 //         );
+        //                 //       },
+        //                 //     );
+        //                 //
+        //                 //                   // Wait for 2 seconds before proceeding
+        //                 //                   await Future.delayed(Duration(seconds: 1));
+        //                 //
+        //                 //                   // Close the dialog after 2 seconds
+        //                 //                   // Navigator.pushAndRemoveUntil(
+        //                 //                   //     context,
+        //                 //                   //     MaterialPageRoute(
+        //                 //                   //         builder: (context) => LoginScreen()),
+        //                 //                   //     (route) => false);
+        //                 //                       WidgetsBinding.instance.addPostFrameCallback((_) {
+        //                 //                         notifyListeners();
+        //                 //                         isRemindLoading =true;
+        //                 //                       });
+        //                 //
+        //                 //                   print("Remind user: ${_user?.email}");
+        //                 //
+        //                 //                   bool result = await remindUser();
+        //                 //
+        //                 //                       WidgetsBinding.instance.addPostFrameCallback((_) {
+        //                 //                         notifyListeners();
+        //                 //                         isRemindLoading =false;
+        //                 //                       });
+        //                 //
+        //                 //
+        //                 //                       if (result) {
+        //                 //                   ScaffoldMessenger.of(context).showSnackBar(
+        //                 //                     SnackBar(
+        //                 //                       content: Text(
+        //                 //                         LanguageService.getTranslated(context,
+        //                 //                             "login_admin_not_verified_remind_success"),
+        //                 //                         // style: typography.Body1,
+        //                 //                         style: typography.H6
+        //                 //                             .copyWith(color: Colors.black),
+        //                 //                       ),
+        //                 //                     ),
+        //                 //                   );
+        //                 //                   }
+        //                 //
+        //                 //                   final _googleSignIn = GoogleSignIn();
+        //                 //                   var isSignedIn = await _googleSignIn.isSignedIn();
+        //                 //
+        //                 //                   if (isSignedIn) await _googleSignIn.disconnect();
+        //                 //                   await _auth.signOut();
+        //                 //
+        //                 //                   WidgetsBinding.instance.addPostFrameCallback((_) {
+        //                 //                     notifyListeners();
+        //                 //                   });
+        //                 //                 },
+        //                 //                 child:
+        //                 //                     !isRemindLoading
+        //                 //                                           ? Center(child: CircularProgressIndicator())
+        //                 //                                           :
+        //                 //                     Text(
+        //                 //                   LanguageService.getTranslated(context1,
+        //                 //                       "login_admin_not_verified_remind_button"),
+        //                 //                   style: typography.Body1,
+        //                 //                 )),
+        //                 //           ),
+        //               ],
+        //             ),
+        //             SizedBox(height: CustomSpacing.four),
+        //             Row(
+        //               children: [
+        //                 Expanded(
+        //                   child: CustomButton(
+        //                       type: ButtonType.text,
+        //                       onPressed: () async {
+        //
+        //                         final _googleSignIn = GoogleSignIn();
+        //                         var isSignedIn =
+        //                         await _googleSignIn.isSignedIn();
+        //                         if (isSignedIn)
+        //                           await _googleSignIn.disconnect();
+        //                         await _auth.signOut();
+        //                         WidgetsBinding.instance
+        //                             .addPostFrameCallback((_) {
+        //                           notifyListeners();
+        //                         });
+        //                         Navigator.pushAndRemoveUntil(
+        //                             context,
+        //                             MaterialPageRoute(
+        //                                 builder: (context) => SplashScreen()),
+        //                                 (route) => false);
+        //                       },
+        //                       child: Text(
+        //                         LanguageService.getTranslated(context,
+        //                             "login_admin_not_verified_cancel_button"),
+        //                         style:
+        //                         typography.H6.copyWith(color: Colors.white),
+        //                       )),
+        //                 ),
+        //               ],
+        //             ),
+        //           ],
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // );
 
         return;
       }

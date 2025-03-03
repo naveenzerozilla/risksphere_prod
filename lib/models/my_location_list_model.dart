@@ -37,7 +37,6 @@ class MyLocationModel {
         filterByLocationResult!.add(MyLocation.fromJson(v));
       });
     }
-
   }
 
   Map<String, dynamic> toJson() {
@@ -62,7 +61,7 @@ class MyLocationModel {
   }
 }
 
-class MyLocation with ClusterItem{
+class MyLocation with ClusterItem {
   String? id;
   FinalAddress? finalAddress;
   int? geocodingScore;
@@ -73,21 +72,20 @@ class MyLocation with ClusterItem{
   String? geocodedAddress;
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
+  bool? isHazardProcess;
 
-
-
-  MyLocation({
-    this.id,
-    this.finalAddress,
-    this.geocodingScore,
-    this.isSelected = false,
-    this.tags,
-    this.overallScore,
-    this.hazard,
-    this.geocodedAddress,
-    this.subdestinations,
-    this.screenshots,
-  });
+  MyLocation(
+      {this.id,
+      this.finalAddress,
+      this.geocodingScore,
+      this.isSelected = false,
+      this.tags,
+      this.overallScore,
+      this.hazard,
+      this.geocodedAddress,
+      this.subdestinations,
+      this.screenshots,
+      this.isHazardProcess});
 
   MyLocation.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -113,7 +111,8 @@ class MyLocation with ClusterItem{
     } else {
       overallScore = int.tryParse(json['overallScore']?.toString() ?? '');
     }
-    geocodedAddress = json['geocoded_address']??'';
+    geocodedAddress = json['geocoded_address'] ?? '';
+
     // Parse hazard as Map<String, HazardDetails>
     if (json['hazard'] != null) {
       hazard = {};
@@ -122,7 +121,6 @@ class MyLocation with ClusterItem{
       });
     }
 
-
     if (json['subdestinations'] != null) {
       subdestinations = <Subdestination>[];
       json['subdestinations'].forEach((v) {
@@ -130,12 +128,14 @@ class MyLocation with ClusterItem{
       });
     }
 
-    if (json['screen_shots'] != null) { // Corrected condition here
+    if (json['screen_shots'] != null) {
+      // Corrected condition here
       screenshots = <Screenshots>[];
       json['screen_shots'].forEach((v) {
         screenshots!.add(Screenshots.fromJson(v));
       });
     }
+    isHazardProcess = json['is_hazard_processed'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -149,14 +149,17 @@ class MyLocation with ClusterItem{
     data['overall_score'] = overallScore;
     data['geocoded_address'] = geocodedAddress;
     if (hazard != null) {
-      data['hazard'] = hazard!.map((key, value) => MapEntry(key, value.toJson()));
+      data['hazard'] =
+          hazard!.map((key, value) => MapEntry(key, value.toJson()));
     }
     if (subdestinations != null) {
-      data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
+      data['subdestinations'] =
+          subdestinations!.map((v) => v.toJson()).toList();
     }
     if (screenshots != null) {
       data['screen_shots'] = screenshots!.map((v) => v.toJson()).toList();
     }
+    data['is_hazard_processed'] = isHazardProcess;
     return data;
   }
 
@@ -167,9 +170,9 @@ class MyLocation with ClusterItem{
 
   @override
   LatLng get location => LatLng(
-    finalAddress?.latitude ?? 0.0,
-    finalAddress?.longitude ?? 0.0,
-  );
+        finalAddress?.latitude ?? 0.0,
+        finalAddress?.longitude ?? 0.0,
+      );
 }
 
 class Hazard {
@@ -214,7 +217,8 @@ class Hazard {
 }
 
 class VendorData {
-  String? key; // Key representing the type of information (e.g., "PGA", "Risk Impact")
+  String?
+      key; // Key representing the type of information (e.g., "PGA", "Risk Impact")
   String? value; // Value corresponding to the key (e.g., "Moderate", "0.31")
   String? vendorName; // Vendor providing the data (e.g., "Kineticast", "USGS")
   int? rating; // Rating of the hazard provided by the vendor, if applicable
@@ -243,9 +247,6 @@ class VendorData {
   }
 }
 
-
-
-
 class HazardDetails {
   String? vendorName; // Primary vendor providing the data
   dynamic value; // The hazard value (can be String, int, or double)
@@ -270,8 +271,9 @@ class HazardDetails {
     priority = json['priority'];
     date = json['date'] != null
         ? DateTime.fromMillisecondsSinceEpoch(
-      json['date']['_seconds'] * 1000 + (json['date']['_nanoseconds'] ~/ 1000000),
-    )
+            json['date']['_seconds'] * 1000 +
+                (json['date']['_nanoseconds'] ~/ 1000000),
+          )
         : null;
 
     // Parsing the `others` field
@@ -297,7 +299,8 @@ class HazardDetails {
     }
 
     if (others != null) {
-      data['others'] = others!.map((key, value) => MapEntry(key, value.toJson()));
+      data['others'] =
+          others!.map((key, value) => MapEntry(key, value.toJson()));
     }
 
     return data;
@@ -308,13 +311,6 @@ class HazardDetails {
     return 'HazardDetails(vendorName: $vendorName, value: $value, rating: $rating, priority: $priority, date: $date, others: $others)';
   }
 }
-
-
-
-
-
-
-
 
 class FinalAddress {
   String? campusId;

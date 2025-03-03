@@ -265,12 +265,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 border: Border.all(
                                   color: trialStatus.contains('Trial')
                                       ? (AppColors.warning)
-                                      : Colors.red,
+                                      : AppColors.warning,
                                   width: 1,
                                 ),
                                 color: trialStatus.contains('Trial')
                                     ? (AppColors.warning.withOpacity(0.1))
-                                    : Colors.red.withOpacity(0.1),
+                                    : AppColors.warning.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -278,7 +278,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 maxLines: 2,
                                 style: typography.BottomNavigationActiveLabel.copyWith(color: trialStatus.contains('Trial')
                                     ? (AppColors.warning)
-                                    : Colors.red,
+                                    : AppColors.warning,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 10,
                                 ),

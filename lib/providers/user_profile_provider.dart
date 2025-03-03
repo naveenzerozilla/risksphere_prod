@@ -185,7 +185,7 @@ class UserProfileProvider with ChangeNotifier {
             ? 'Expired'
             : trialDays <= (trialDays * 0.4)
             ? '$trialDays days left'
-            : 'Free Trial',
+            : '$trialDays day(s) free trail left',
         'subDestinations': trialSubdestination,
         'editLocations': trialEditLocations,
         'maxLocations': trialMaxLocations,

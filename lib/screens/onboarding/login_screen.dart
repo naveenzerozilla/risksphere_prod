@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:RiskSphare/main.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
@@ -459,6 +460,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
+                                  initFCM(user.uid);
+                                  print("fcmCall");
 
                                   Navigator.pushReplacement(
                                     context,

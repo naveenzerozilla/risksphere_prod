@@ -41,6 +41,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
   // Geographical
   String? selectedCountry;
   String? zipcode;
+  String? sortBy;
 
   // Campus
   List<String> selectedCampusIds = [];
@@ -63,6 +64,18 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     'Tornado': [],
     'Others': [],
   };
+  bool _showSortOptions = false; // Controls visibility of radio options
+  String _selectedSortOption = "none";
+
+  final List<Map<String, String>> sortOptions = [
+    {"key": "none", "label": "None"},
+    {"key": "address_asc", "label": "Addresses (A to Z)"},
+    {"key": "address_desc", "label": "Addresses (Z to A)"},
+    {"key": "geocode_high_to_low", "label": "Geocoding Rating (High to Low)"},
+    {"key": "geocode_low_to_high", "label": "Geocoding Rating (Low to High)"},
+    {"key": "hazard_high_to_low", "label": "Hazard Rating (High to Low)"},
+    {"key": "hazard_low_to_high", "label": "Hazard Rating (Low to High)"},
+  ];
 
   // Search query
   String searchQuery = '';
@@ -100,9 +113,13 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Apply filters
   void applyFilters(BuildContext context) {
+    print(sortBy);
+    print(sortBy);
     final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
     locationListProvider.countries = selectedCountry != null ? [selectedCountry!] : [];
     locationListProvider.zipcode = zipcode ?? '';
+    locationListProvider.sortBy = sortBy ?? '';
+
     locationListProvider.certifications = [
       if (manualCertified) 'Manual Certified',
       if (autoCertified) 'Auto Certified'
@@ -150,6 +167,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
           ? locationListProvider.countries.first
           : null;
       zipcode = locationListProvider.zipcode;
+      sortBy=locationListProvider.sortBy;
       manualCertified =
           locationListProvider.certifications.contains('Manual Certified');
       autoCertified =
@@ -212,7 +230,90 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
             builder: (context, locationListProvider, child) {
               return ListView(
                 children: [
-                  // Geographical Filter
+                  SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
+                          child: Text(
+                            'Sort By',
+                            style: typography.Base_Light,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _showSortOptions = !_showSortOptions; // Toggle visibility
+                                print("object");
+                              });
+                              print("_"+_showSortOptions.toString());
+                              print(_showSortOptions);
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(  // Prevents overflow issues in text
+                                    child: Text(
+                                      sortOptions.firstWhere(
+                                            (option) => option["key"] == _selectedSortOption,
+                                        orElse: () => {"label": "Select Sort Option"},
+                                      )["label"]!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.Body1,
+                                    ),
+                                  ),
+                                  Icon(
+                                    _showSortOptions ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Show Radio Buttons only when _showSortOptions is true
+                        if (_showSortOptions)
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
+                            child: Column(
+                              children: sortOptions.map((option) {
+                                return RadioListTile<String>(
+                                  title: Text(
+                                    option["label"] ?? "",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  value: option["key"] ?? "",
+                                  groupValue: _selectedSortOption,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      _selectedSortOption = value ?? "none";
+                                      _showSortOptions = false; // Hide options after selection
+                                      sortBy=_selectedSortOption;
+                                    });
+                                    print(value);
+                                    print(value);
+                                    print(value);
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
                   buildGeographicalFilter(context, typography, locationListProvider.countryList),
 
                   // Campus Filter

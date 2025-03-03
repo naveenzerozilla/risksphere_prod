@@ -239,7 +239,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               height: 200,
                                               width: double.infinity,
                                               child: GoogleMap(
-                                                mapType: MapType.normal,
+                                                mapType: MapType.satellite,
                                                 initialCameraPosition: _defaultLocation,
                                                 onMapCreated: (GoogleMapController controller) {
                                                   _mapController.complete(controller);
@@ -649,7 +649,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             children: [
                                               Checkbox(
                                                 value: addToSOVCheck,
-                                                onChanged: areFieldsDisabled()
+                                                onChanged:trialStatus.isNotEmpty
+                                                    ? null
+                                                    :
+                                                areFieldsDisabled()
                                                     ? null // Disable checkbox if `areFieldsDisabled` is true
                                                     : (bool? value) {
                                                   setState(() {
@@ -664,7 +667,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        ) ,
                                         if(addToSOVCheck)
                                           Padding(
                                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -696,7 +699,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   builder: (context, sovProvider, child) {
                                                     return Column(
                                                       children: [
-                                                        TextField(
+                                                        TextFormField(
                                                           controller: sovController,
                                                           onChanged: (value) {
                                                             setState(() {
@@ -707,11 +710,20 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                               sovProvider.updateFilteredList(value);
                                                             });
                                                           },
+                                                          validator: (value) {
+                                                            if (value == null || value.isEmpty) {
+                                                              return LanguageService.getTranslated(
+                                                                  context,
+                                                                  "addlocation_address_error");
+                                                            }
+                                                            return null;
+                                                          },
 
                                                           decoration: InputDecoration(
                                                             labelText: "Name of the SoV",
                                                             border: const OutlineInputBorder(),
                                                             suffixIcon: Icon(Icons.search),
+
                                                           ),
                                                         ),
                                                         if (sovController.text.isNotEmpty)

@@ -1161,7 +1161,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               TextField(
                                 readOnly: true,
-                                enabled: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin,
+                                enabled: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin ,
 
                                 onTap: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin
                                     ? () {
@@ -1240,6 +1240,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ),
                                 ),
                               ),
+
                               Positioned(
                                 top: 4.0,
                                 left: 10.0,
@@ -1249,22 +1250,58 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: Row(
-                                      children: _selectedRoles
-                                          .map(
-                                            (value) => Padding(
+                                      children: _selectedRoles.map((value) {
+                                        return Padding(
                                           padding: const EdgeInsets.only(right: 8.0),
-                                          child: Chip(
-                                            label: Text(value.name!),
-                                            deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
-                                            onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
+                                          child: Row(
+                                            children: [
+                                              Chip(
+                                                label: Text(value.name!),
+                                              ),
+                                              if (isEdit && !isSuperAdmin && !isPgAdmin || (isEdit && bool.parse(userProfileProvider.userData.isIndividual.toString())) )
+                                                IconButton(
+                                                  icon: Icon(Icons.cancel, size: 20, color: Colors.red),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _selectedRoles.remove(value);
+                                                    });
+                                                  },
+                                                ),
+                                            ],
                                           ),
-                                        ),
-                                      )
-                                          .toList(),
+                                        );
+                                      }).toList(),
                                     ),
                                   ),
                                 ),
                               ),
+
+
+                              // Positioned(
+                              //   top: 4.0,
+                              //   left: 10.0,
+                              //   right: 10.0,
+                              //   child: Container(
+                              //     margin: const EdgeInsets.only(right: 32.0),
+                              //     child: SingleChildScrollView(
+                              //       scrollDirection: Axis.horizontal,
+                              //       child: Row(
+                              //         children: _selectedRoles
+                              //             .map(
+                              //               (value) => Padding(
+                              //             padding: const EdgeInsets.only(right: 8.0),
+                              //             child: Chip(
+                              //               label: Text(value.name!),
+                              //               deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
+                              //               onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
+                              //             ),
+                              //           ),
+                              //         )
+                              //             .toList(),
+                              //       ),
+                              //     ),
+                              //   ),
+                              // ),
                             ],
                           ),
                           SizedBox(height: CustomSpacing.four),

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
-
 import 'package:RiskSphare/models/hazard_data.dart';
 import 'package:RiskSphare/providers/custom_tile_providers.dart';
 import 'package:RiskSphare/providers/custom_tile_providers_main_hazards.dart';
@@ -42,16 +41,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart'
     as cluster_manager;
-
 import '../../design_system/components/custom_button.dart';
-import '../../design_system/components/rating_slider.dart';
-import '../../design_system/components/rating_slider.dart';
 import '../../models/location_profile_model.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
+import 'widgets/location_list_map_view.dart';
 
 class LocationProfile extends StatefulWidget {
   const LocationProfile({
@@ -132,7 +129,7 @@ class _LocationProfileState extends State<LocationProfile>
   bool _isBottomSheetExpanded = false;
   bool _isBottomSheetFullScreen = false;
 
-  static const CameraPosition _kGooglePlex = CameraPosition(
+  static  CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(40.32434, -111.889),
     zoom: 16,
   );
@@ -142,22 +139,6 @@ class _LocationProfileState extends State<LocationProfile>
   late TextEditingController _searchController;
 
   ScrollController _scrollController = ScrollController();
-
-  void _scrollLeft() {
-    _scrollController.animateTo(
-      _scrollController.offset - 100, // Scroll left by 100 pixels
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _scrollRight() {
-    _scrollController.animateTo(
-      _scrollController.offset + 100, // Scroll right by 100 pixels
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
 
   @override
   void didChangeDependencies() {
@@ -394,36 +375,78 @@ class _LocationProfileState extends State<LocationProfile>
       });
     }
   }
-
   void _addSubdestinationMarkers() {
-    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
-    Map<MarkerId, Marker> newMarkers = {}; // Temporary map to hold markers
+    print("ADDsubDestionationstart");
+    try {
+      var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+      Map<MarkerId, Marker> newMarkers = {}; // Temporary map to hold markers
 
-    for (var subdestination
-        in provider.locationProfile?.subdestinations ?? []) {
-      var markerId = MarkerId(subdestination.id!);
-      var isAdded = (subdestination.status ?? "").toLowerCase() == "added";
-      var marker = Marker(
-        zIndex: isAdded ? 5 : 0,
-        markerId: markerId,
-        position: LatLng(subdestination.lat!, subdestination.lng!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-            isAdded ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueAzure),
-        onTap: () {
-          _onMarkerTapped(markerId);
-        },
-      );
+      for (var subdestination in provider.locationProfile?.subdestinations ?? []) {
+        print("ADDsubDestionationstart1oop");
+        try {
+          var markerId = MarkerId(subdestination.id!);
+          var isAdded = (subdestination.status ?? "").toLowerCase() == "added";
 
-      newMarkers[markerId] = marker; // Add marker to the temporary map
+          var marker = Marker(
+            zIndex: isAdded ? 5 : 0,
+            markerId: markerId,
+            position: LatLng(subdestination.lat!, subdestination.lng!),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                isAdded ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueAzure),
+            onTap: () {
+              _onMarkerTapped(markerId);
+            },
+          );
+
+          print("latlong ${subdestination.lat} ${subdestination.lng}");
+          newMarkers[markerId] = marker; // Add marker to the temporary map
+        } catch (e, stackTrace) {
+
+          print("Error processing subdestination: $e\n$stackTrace");
+        }
+      }
+
+      setState(() {
+        markers = newMarkers; // Set all markers at once to avoid unnecessary rebuilds
+      });
+
+      _add();
+    } catch (e, stackTrace) {
+      print("Error in _addSubdestinationMarkers: $e\n$stackTrace");
     }
-
-    setState(() {
-      markers =
-          newMarkers; // Set all markers at once to avoid unnecessary rebuilds
-    });
-
-    _add();
   }
+
+  // void _addSubdestinationMarkers() {
+  //   var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+  //   Map<MarkerId, Marker> newMarkers = {}; // Temporary map to hold markers
+  //
+  //   for (var subdestination
+  //       in provider.locationProfile?.subdestinations ?? []) {
+  //     var markerId = MarkerId(subdestination.id!);
+  //     var isAdded = (subdestination.status ?? "").toLowerCase() == "added";
+  //     var marker = Marker(
+  //       zIndex: isAdded ? 5 : 0,
+  //       markerId: markerId,
+  //       position: LatLng(subdestination.lat!, subdestination.lng!),
+  //
+  //       icon: BitmapDescriptor.defaultMarkerWithHue(
+  //           isAdded ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueAzure),
+  //       onTap: () {
+  //         _onMarkerTapped(markerId);
+  //       },
+  //     );
+  //     print("latlong"+subdestination.lat.toString() +subdestination.lng.toString());
+  //
+  //     newMarkers[markerId] = marker; // Add marker to the temporary map
+  //   }
+  //
+  //   setState(() {
+  //     markers =
+  //         newMarkers; // Set all markers at once to avoid unnecessary rebuilds
+  //   });
+  //
+  //   _add();
+  // }
 
   Future<void> _pickImage() async {
     final pickedFiles = await ImagePicker().pickMultiImage();
@@ -450,7 +473,11 @@ class _LocationProfileState extends State<LocationProfile>
 
     // Request storage permission for Android, not needed for iOS temporary storage
     if (Platform.isAndroid) {
-      status = await Permission.storage.request();
+      if (await Permission.photos.isGranted) {
+        status = PermissionStatus.granted;
+      } else {
+        status = await Permission.photos.request();
+      }
     } else {
       status = PermissionStatus.granted;
     }
@@ -476,7 +503,7 @@ class _LocationProfileState extends State<LocationProfile>
 
         // ✅ Upload the image using your provider
         var provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
+            Provider.of<MyLocationListProvider>(context, listen: false);
         await provider.uploadImage(
           context,
           filePath,
@@ -524,65 +551,6 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-
-  // Future<void> _captureAndUploadMapScreenshot() async {
-  //   var typography = CustomTypography(context);
-  //
-  //   // Request photo library permission (iOS)
-  //   PermissionStatus status = await Permission.photos.request();
-  //   print('After request, permission status: $status');
-  //
-  //   if (status.isGranted) {
-  //     Uint8List? screenshot = await screenshotController.capture();
-  //     if (screenshot != null) {
-  //       final Directory tempDir = await getTemporaryDirectory();
-  //       final String filePath =
-  //           '${tempDir.path}/map_screenshot${Random().nextInt(10000000)}.png';
-  //       final File file = File(filePath);
-  //       await file.writeAsBytes(screenshot);
-  //
-  //       setState(() {
-  //         _images.add(file);
-  //       });
-  //
-  //       var provider =
-  //       Provider.of<MyLocationListProvider>(context, listen: false);
-  //       await provider.uploadImage(
-  //           context,
-  //           filePath,
-  //           widget.accountId,
-  //           widget.subAccountId,
-  //           widget.sovId,
-  //           provider.locationProfile?.finalAddress!.locationId ?? "");
-  //     } else {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to capture screenshot', style: typography.Body1),
-  //         ),
-  //       );
-  //     }
-  //   } else if (status.isDenied) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Storage permission denied', style: typography.Body1),
-  //       ),
-  //     );
-  //   } else if (status.isPermanentlyDenied) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Storage permission permanently denied',
-  //             style: typography.Body1),
-  //         action: SnackBarAction(
-  //           label: 'Settings',
-  //           onPressed: () {
-  //             openAppSettings();
-  //           },
-  //         ),
-  //       ),
-  //     );
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
@@ -624,87 +592,9 @@ class _LocationProfileState extends State<LocationProfile>
                     children: [
                       Column(
                         children: [
-                          /*Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
-                        borderRadius:
-                            BorderRadius.circular(16), // Rounded edges
-                      ),
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                      child: DefaultTabController(
-                        length: 4,
-                        child: Column(
-                          children: <Widget>[
-                            // Container for the TabBar with arrows
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
-                              ),
-                              height: 50,
-                              child: Row(
-                                children: <Widget>[
-                                  // Left arrow button
-                                  IconButton(
-                                    icon: Icon(Icons.arrow_left,
-                                        color: Colors.grey),
-                                    onPressed: _scrollLeft,
-                                  ),
-                                  // Scrollable TabBar
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      controller: _scrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      child: TabBar(
-                                        tabAlignment: TabAlignment.start,
-                                        labelStyle: typography.Subtitle2,
-                                        isScrollable: true,
-                                        indicatorColor: Colors.lightBlueAccent,
-                                        labelColor: Colors.lightBlueAccent,
-                                        unselectedLabelColor: Colors.grey,
-                                        tabs: [
-                                          Tab(
-                                            text: 'Overall Score',
-                                          ),
-                                          Tab(text: 'Geocoding Score'),
-                                          Tab(text: 'Risk Score'),
-                                          Tab(text: 'Hazard Score'),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Right arrow button
-                                  IconButton(
-                                    icon: Icon(Icons.arrow_right,
-                                        color: Colors.grey),
-                                    onPressed: _scrollRight,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // TabBarView for the tab content
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            Center(child: Text('Overall Score Content')),
-                            Center(child: Text('Geocoding Score Content')),
-                            Center(child: Text('Risk Content')),
-                            Center(child: Text('Contruction Content')),
-                          ],
-                        ),
-                      ),
-                          ],
-                        ),
-                      ),
-                    ),*/
                           Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                                const EdgeInsets.symmetric(horizontal: 10.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,48 +735,9 @@ class _LocationProfileState extends State<LocationProfile>
                               ],
                             ),
                           ),
-
-                          /*ListTile(
-
-                        title: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-      */
                           SizedBox(
                             height: CustomSpacing.two,
                           ),
-                          /*                          Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    locationProfileProvider.result?.locationName ??
-                                        '',
-                                    style:
-                                    typography.H6.copyWith(height: 1.2),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.edit,
-                                      color: Theme.of(context).colorScheme.primary),
-                                  onPressed: () {
-                                    // Handle edit button press
-                                    _editName(locationProfileProvider);
-                                  },
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${locationProfileProvider.result?.locationIdForRef ?? ''}',
-                              style: typography.Subtitle1.copyWith(
-                                  fontWeight: FontWeight.w500, color: AppColors.primaryMain),
-                            )*/ /*
-                          ],
-                        ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        trailing:
-                      ),
-                      */
                           Container(
                             padding: EdgeInsets.only(left: 16, right: 24),
                             child: Row(
@@ -902,26 +753,6 @@ class _LocationProfileState extends State<LocationProfile>
                             child: Row(
                               // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                /*RatingSlider(
-                              progress: context
-                                  .read<LocationProfileProvider>()
-                                  .result
-                                  ?.score ??
-                                  0,
-                              total: 5,
-                              width: MediaQuery.of(context).size.width * 0.5,
-                              progressColor: Colors.amber,
-                              thumbColor: Colors.amberAccent,
-                              textColor: Colors.white,
-                            ),*/
-                                // RatingWidget(
-                                //     score: context
-                                //             .read<MyLocationListProvider>()
-                                //             .locationProfile
-                                //             ?.finalAddress
-                                //             ?.score ??
-                                //         0),
-
                                 VerticalBarIndicator(
                                     score: context
                                             .read<MyLocationListProvider>()
@@ -942,41 +773,50 @@ class _LocationProfileState extends State<LocationProfile>
                               ],
                             ),
                           ),
-                          DefaultTabController(
-                              length: 2, // Number of tabs
-                              child: Column(
-                                children: [
-                                  TabBar(
-                                    onTap: (value) {
-                                      setState(() {
-                                        tabIndex = value;
-                                      });
-                                      print(value);
-                                    },
-                                    tabs: [
-                                      Tab(
-                                        text: 'Geocoding',
-                                      ),
-                                      Tab(
-                                        text: 'Risk Score',
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.28, // Height of the TabBarView
-                                    child: TabBarView(
-                                      physics: NeverScrollableScrollPhysics(),
-                                      children: [
-                                        _geocodingScore(),
-                                        _riskScore(),
+                          Builder(
+                            builder: (context) {
+                              return
 
-                                        // _locationImagesBody(),
+                                DefaultTabController(
+                                length: 2, // Number of tabs
+                                child: Column(
+                                  children: [
+                                    TabBar(
+                                      onTap: (value) {
+                                        setState(() {
+                                          tabIndex = value;
+                                          _add();
+                                        });
+                                        print(value.toString()+"welcome${tabIndex.toString()}");
+                                      },
+                                      tabs: [
+                                        Tab(
+                                          text: 'Geocoding',
+                                        ),
+                                        Tab(
+                                          text: 'Risk Score',
+                                        ),
+                                        Tab(
+                                          text: 'Data Completeness',
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                ],
-                              )),
+                                    Container(
+                                      height: MediaQuery.of(context).size.height *
+                                          0.2, // Height of the TabBarView
+                                      child: TabBarView(
+                                        physics: NeverScrollableScrollPhysics(),
+                                        children: [
+                                          _geocodingScore(),
+                                          _riskScore(),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          ),
                           if (!_isBottomSheetFullScreen)
                             tabIndex == 0 ? _buildBottomSheet() : Container(),
                         ],
@@ -985,11 +825,6 @@ class _LocationProfileState extends State<LocationProfile>
                         Positioned.fill(
                           child: _locationProfileBody(),
                         ),
-                      /*Consumer<LocationProfileProvider>(
-                    builder: (context, provider, child) {
-                      return provider.isUploadingImage ? Center(child: CircularProgressIndicator()) : SizedBox.shrink();
-                    },
-                  ),*/
                       if (_selectedMarker != null) _buildCustomInfoWindow(),
                     ],
                   ),
@@ -1094,7 +929,7 @@ class _LocationProfileState extends State<LocationProfile>
       return AnimatedContainer(
         duration: Duration(milliseconds: 300),
         height: _isBottomSheetExpanded
-            ? MediaQuery.of(context).size.height * 0.3
+            ? MediaQuery.of(context).size.height * 0.4
             : MediaQuery.of(context).size.height * 0.14,
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.light
@@ -1116,8 +951,8 @@ class _LocationProfileState extends State<LocationProfile>
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
                   trailing: IconButton(
                     icon: Icon(_isBottomSheetExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up),
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down),
                     onPressed: () {
                       setState(() {
                         _isBottomSheetExpanded = !_isBottomSheetExpanded;
@@ -1902,7 +1737,9 @@ class _LocationProfileState extends State<LocationProfile>
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return LocationDetailsPopup(
+        return
+
+          LocationDetailsPopup(
           // location.overallScore ?? 0,
           address: location.finalAddress?.address ?? 'Unknown Address',
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
@@ -2016,6 +1853,11 @@ class _LocationProfileState extends State<LocationProfile>
                       ),
                     ),
                   ),
+                  Text(
+                   "tesat"+ (locationProfileProvider.locationProfile?.finalAddress?.longitude ?? '').toString(),
+                    style: typography.Body1,
+                  ),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
@@ -2624,55 +2466,163 @@ class _LocationProfileState extends State<LocationProfile>
       _markers = markers;
     });
   }
+  // Widget _geocodingScore() {
+  //   var typography = CustomTypography(context);
+  //
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, locationProfileProvider, child) {
+  //       double latitude = locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
+  //       double longitude = locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
+  //
+  //       return Stack(
+  //         children: [
+  //           // Map Container
+  //           Container(
+  //             margin: EdgeInsets.all(16),
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.circular(20),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: Colors.black.withOpacity(0.1),
+  //                   blurRadius: 10,
+  //                   offset: Offset(0, 5),
+  //                 ),
+  //               ],
+  //             ),
+  //             child: ClipRRect(
+  //               borderRadius: BorderRadius.circular(20),
+  //               child: Screenshot(
+  //                 controller: screenshotController,
+  //                 child: GoogleMap(
+  //                   key: _googleMapKey,
+  //                   mapType: _currentMapType,
+  //                   markers: _markers,
+  //                   zoomControlsEnabled: true,
+  //                   initialCameraPosition: CameraPosition(
+  //                     target: LatLng(latitude, longitude),
+  //                     zoom: 18,
+  //                   ),
+  //                   onMapCreated: (GoogleMapController controller) {
+  //                     if (!_controller.isCompleted) {
+  //                       _controller.complete(controller);
+  //                     }
+  //                   },
+  //                   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+  //                     Factory<OneSequenceGestureRecognizer>(
+  //                           () => EagerGestureRecognizer(),
+  //                     ),
+  //                   },
+  //                   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //
+  //           // Left Navigation Button
+  //           if ((int.tryParse(widget.page) ?? 1) > 1)
+  //             Positioned(
+  //               left: 16,
+  //               top: 0,
+  //               bottom: 0,
+  //               child: Align(
+  //                 alignment: Alignment.centerLeft,
+  //                 child: FloatingActionButton(
+  //                   shape: CircleBorder(),
+  //                   mini: true,
+  //                   backgroundColor: Theme.of(context).brightness == Brightness.light
+  //                       ? AppColors.paperElavation25Light
+  //                       : AppColors.paperElavation25,
+  //                   onPressed: _navigateLeft,
+  //                   child: Icon(Icons.chevron_left, size: 30),
+  //                 ),
+  //               ),
+  //             ),
+  //
+  //           // Right Navigation Button
+  //           if ((int.tryParse(widget.page) ?? 1) <
+  //               (widget.locationId.isNotEmpty
+  //                   ? locationProfileProvider.resetTotalPage - 1
+  //                   : (int.tryParse(widget.totalPages) ?? 1)))
+  //             Positioned(
+  //               right: 16,
+  //               top: 0,
+  //               bottom: 0,
+  //               child: Align(
+  //                 alignment: Alignment.centerRight,
+  //                 child: FloatingActionButton(
+  //                   mini: true,
+  //                   shape: CircleBorder(),
+  //                   backgroundColor: Theme.of(context).brightness == Brightness.light
+  //                       ? AppColors.paperElavation25Light
+  //                       : AppColors.paperElavation25,
+  //                   onPressed: _navigateRight,
+  //                   child: Icon(Icons.chevron_right, size: 30),
+  //                 ),
+  //               ),
+  //             ),
+  //
+  //           // Map Type Toggle Button
+  //           Positioned(
+  //             bottom: 16,
+  //             left: 16,
+  //             child: FloatingActionButton.small(
+  //               elevation: 0,
+  //               backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
+  //                   ? AppColors.paperElevation2Light
+  //                   : AppColors.paperElevation2,
+  //               onPressed: () {
+  //                 setState(() {
+  //                   _currentMapType = _currentMapType == MapType.normal
+  //                       ? MapType.satellite
+  //                       : MapType.normal;
+  //                 });
+  //               },
+  //               child: Icon(Icons.layers, color: Theme.of(context).colorScheme.onSurface),
+  //               tooltip: 'Change Map Type',
+  //             ),
+  //           ),
+  //
+  //           // Screenshot Capture Button
+  //           Positioned(
+  //             top: 16,
+  //             right: 16,
+  //             child: FloatingActionButton.small(
+  //               elevation: 0,
+  //               onPressed: () async {
+  //                 setState(() => _isLoading = true);
+  //                 await _captureAndUploadMapScreenshot();
+  //                 setState(() => _isLoading = false);
+  //               },
+  //               backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
+  //                   ? AppColors.paperElevation2Light
+  //                   : AppColors.paperElevation2,
+  //               child: _isLoading
+  //                   ? SizedBox(
+  //                 width: 20,
+  //                 height: 20,
+  //                 child: CircularProgressIndicator(
+  //                   color: Theme.of(context).colorScheme.onSurface,
+  //                   strokeWidth: 2.0,
+  //                 ),
+  //               )
+  //                   : Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.onSurface),
+  //               tooltip: 'Capture and Upload Screenshot',
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _geocodingScore() {
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
-      return Expanded(
-        child: Stack(
+      return Builder(builder: (context) {
+        return Stack(
           children: [
-            // Container(
-            //   margin: EdgeInsets.all(16),
-            //   decoration: BoxDecoration(
-            //     color: Colors.white,
-            //     borderRadius: BorderRadius.circular(20),
-            //     boxShadow: [
-            //       BoxShadow(
-            //         color: Colors.black.withOpacity(0.1),
-            //         blurRadius: 10,
-            //         offset: Offset(0, 5),
-            //       ),
-            //     ],
-            //   ),
-            //   child: ClipRRect(
-            //     borderRadius: BorderRadius.circular(20),
-            //     child: Screenshot(
-            //       controller: screenshotController,
-            //       child: GoogleMap(
-            //
-            //         key: _googleMapKey,
-            //         mapType: _currentMapType,
-            //         markers: _markers,
-            //         zoomControlsEnabled: true,
-            //         // markers: Set<Marker>.of(markers.values),
-            //         initialCameraPosition: _kGooglePlex,
-            //         onMapCreated: (GoogleMapController controller) {
-            //           if (!_controller.isCompleted) {
-            //             _controller.complete(controller);
-            //           }
-            //         },
-            //         gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-            //           Factory<OneSequenceGestureRecognizer>(
-            //             () => EagerGestureRecognizer(),
-            //           ),
-            //         },
-            //         onTap: _isAddingMarker ? _handleMapTap : null,
-            //       ),
-            //     ),
-            //   ),
-            // ),
-
             Container(
               margin: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -2695,9 +2645,15 @@ class _LocationProfileState extends State<LocationProfile>
                       GoogleMap(
                         key: _googleMapKey,
                         mapType: _currentMapType,
-                        markers: _markers,
+                        // markers: _markers,
+                        markers: Set<Marker>.of(markers.values),
                         zoomControlsEnabled: true,
-                        initialCameraPosition: _kGooglePlex,
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(locationProfileProvider.locationProfile!.location.latitude,
+                              locationProfileProvider.locationProfile!.location.longitude
+                          ),
+                          zoom: 18,
+                        ),
                         onMapCreated: (GoogleMapController controller) {
                           if (!_controller.isCompleted) {
                             _controller.complete(controller);
@@ -2717,27 +2673,6 @@ class _LocationProfileState extends State<LocationProfile>
               ),
             ),
 
-            /*Consumer<MyLocationListProvider>(
-                                builder: (context, locationProfileProvider, child) {
-                              return Positioned(
-                                top: 16,
-                                left: 28,
-                                right: 0,
-                                child: (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
-                                            3 ||
-                                        (locationProfileProvider.locationProfile?.finalAddress?.score ??
-                                                0) ==
-                                            4
-                                    ? Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                              child: _buildGoogleSearchBar(context)),
-                                        ],
-                                      )
-                                    : SizedBox(),
-                              );
-                            }),*/
             // Left navigation button
             Consumer<MyLocationListProvider>(
                 builder: (context, locationProfileProvider, child) {
@@ -2800,29 +2735,6 @@ class _LocationProfileState extends State<LocationProfile>
                       ),
                     ),
                   ),
-            /*
-                          Autocomplete
-                          Consumer<MyLocationListProvider>(
-                                builder: (context, locationProfileProvider, child) {
-                              return Positioned(
-                                top: 16,
-                                left: 28,
-                                right: 0,
-                                child: (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
-                                            3 ||
-                                        (locationProfileProvider.locationProfile?.finalAddress?.score ??
-                                                0) ==
-                                            4
-                                    ? Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                              child: _buildGoogleSearchBar(context)),
-                                        ],
-                                      )
-                                    : SizedBox(),
-                              );
-                            }),*/
             Consumer<MyLocationListProvider>(
                 builder: (context, locationProfileProvider, child) {
               print(
@@ -2867,9 +2779,10 @@ class _LocationProfileState extends State<LocationProfile>
                                 : AppColors.paperElevation2,
                         onPressed: () {
                           setState(() {
-                            _currentMapType = _currentMapType == MapType.normal
-                                ? MapType.satellite
-                                : MapType.normal;
+                            _currentMapType =
+                                _currentMapType == MapType.normal
+                                    ? MapType.satellite
+                                    : MapType.normal;
                           });
                         },
                         child: Icon(Icons.layers,
@@ -2877,30 +2790,6 @@ class _LocationProfileState extends State<LocationProfile>
                         tooltip: 'Change Map Type',
                       ),
                       SizedBox(height: 8),
-
-                      // : SizedBox.shrink(),
-                      /*
-                                      Add Marker
-                                      (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
-                                                  1 ||
-                                              (locationProfileProvider
-                                                          .locationProfile?.finalAddress?.score ??
-                                                      0) ==
-                                                  2
-                                          ? FloatingActionButton.small(
-                                        elevation: 0,
-                                              backgroundColor:
-                                              Theme.of(context).colorScheme.brightness ==
-                                                  Brightness.light
-                                                  ? AppColors.paperElevation2Light
-                                                  : AppColors.paperElevation2,
-                                              onPressed: _toggleAddMarkerMode,
-                                              child: _isAddingMarker
-                                                  ? const Icon(Icons.cancel)
-                                                  : const Icon(Icons.add_location),
-                                              tooltip: 'Add Marker',
-                                            )
-                                          : SizedBox.shrink(),*/
                     ],
                   ),
                 ),
@@ -2971,55 +2860,13 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               )
                             : Icon(Icons.camera_alt,
-                                color: Theme.of(context).colorScheme.onSurface),
+                                color:
+                                    Theme.of(context).colorScheme.onSurface),
                         tooltip: 'Capture and Upload Screenshot',
                       ),
 
-                      // FloatingActionButton.small(
-                      //   elevation: 0,
-                      //   onPressed:
-                      //       _captureAndUploadMapScreenshot,
-                      //   backgroundColor: Theme.of(context)
-                      //               .colorScheme
-                      //               .brightness ==
-                      //           Brightness.light
-                      //       ? AppColors.paperElevation2Light
-                      //       : AppColors.paperElevation2,
-                      //   child: Icon(Icons.camera,
-                      //       color: Theme.of(context)
-                      //           .colorScheme
-                      //           .onSurface),
-                      //   tooltip:
-                      //       'Capture and Upload Screenshot',
-                      // ),
                       SizedBox(height: 8),
 
-                      // FloatingActionButton.small(
-                      //   elevation: 0,
-                      //   backgroundColor:
-                      //       Theme.of(context).colorScheme.brightness ==
-                      //               Brightness.light
-                      //           ? AppColors.paperElevation2Light
-                      //           : AppColors.paperElevation2,
-                      //   onPressed: _goToTheInitialPin,
-                      //   child: Icon(Icons.pin_drop,
-                      //       color: Theme.of(context).colorScheme.onSurface),
-                      //   tooltip: 'Go to Initial Pin',
-                      // ),
-                      // (locationProfileProvider.locationProfile?.finalAddress
-                      //                     ?.score ??
-                      //                 0) ==
-                      //             5 &&
-                      //         (locationProfileProvider
-                      //                 .locationProfile?.finalAddress?.placeTypes
-                      //                 ?.any((placeType) => [
-                      //                       "premise",
-                      //                       "subpremise",
-                      //                       "rooftop",
-                      //                     ].contains(
-                      //                         placeType.toLowerCase())) ??
-                      //             false)
-                      //     ?
                       FloatingActionButton.small(
                         elevation: 0,
                         backgroundColor:
@@ -3029,126 +2876,81 @@ class _LocationProfileState extends State<LocationProfile>
                                 : AppColors.paperElevation2,
                         onPressed: () {},
                         //_handleSubDestinationTap,
-                        child: Icon(Icons.add_location_alt, color: Colors.grey),
+                        child:
+                            Icon(Icons.add_location_alt, color: Colors.grey),
                         // Theme.of(context).colorScheme.onSurface),
                         tooltip: 'Add Campus',
                       )
                       // : SizedBox.shrink(),
-                      /*
-                                      Add Marker
-                                      (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
-                                                  1 ||
-                                              (locationProfileProvider
-                                                          .locationProfile?.finalAddress?.score ??
-                                                      0) ==
-                                                  2
-                                          ? FloatingActionButton.small(
-                                        elevation: 0,
-                                              backgroundColor:
-                                              Theme.of(context).colorScheme.brightness ==
-                                                  Brightness.light
-                                                  ? AppColors.paperElevation2Light
-                                                  : AppColors.paperElevation2,
-                                              onPressed: _toggleAddMarkerMode,
-                                              child: _isAddingMarker
-                                                  ? const Icon(Icons.cancel)
-                                                  : const Icon(Icons.add_location),
-                                              tooltip: 'Add Marker',
-                                            )
-                                          : SizedBox.shrink(),*/
                     ],
                   ),
                 ),
               );
             }),
           ],
-        ),
-      );
+        );
+      });
     });
   }
-
   Widget _riskScore() {
     var typography = CustomTypography(context);
+
     return Consumer<MyLocationListProvider>(
       builder: (context, locationProfileProvider, child) {
-        return Expanded(
-          child: Stack(
-            children: [
-              // Google Map - Ensure it's the lowest layer
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Screenshot(
-                    controller: screenshotController,
-                    child: GoogleMap(
-                      key: _googleMapKey,
-                      mapType: _currentMapType1,
-                      zoomControlsEnabled: true,
-                      markers: Set<Marker>.of(markers.values),
-                      initialCameraPosition: _kGooglePlex,
-                      onMapCreated: (GoogleMapController controller) {
-                        if (!_controller.isCompleted) {
-                          _controller.complete(controller);
-                        }
-                      },
-                      gestureRecognizers: <Factory<
-                          OneSequenceGestureRecognizer>>{
-                        Factory<OneSequenceGestureRecognizer>(
-                          () => EagerGestureRecognizer(), // Allows button taps
-                        ),
-                      },
-                      onTap: _isAddingMarker ? _handleMapTap : null,
-                      tileOverlays: 0 == 1
-                          ? {} // No tile overlay when selectedTabIndex is 0
-                          : (_selectedHazard != null &&
-                                  _tileProviders.containsKey(_selectedHazard) &&
-                                  _mainHazardTileProvider != null &&
-                                  selectedHazardId != null &&
-                                  selectedVendor != null)
-                              ? {
-                                  TileOverlay(
-                                    tileOverlayId:
-                                        TileOverlayId(selectedHazardId!),
-                                    tileProvider: _mainHazardTileProvider!,
-                                  ),
-                                  TileOverlay(
-                                    tileOverlayId:
-                                        TileOverlayId(_selectedHazard!),
-                                    tileProvider:
-                                        _tileProviders[_selectedHazard!]!,
-                                  ),
-                                }
-                              : (_mainHazardTileProvider != null &&
-                                      selectedHazardId != null &&
-                                      selectedVendor != null)
-                                  ? {
-                                      TileOverlay(
-                                        tileOverlayId:
-                                            TileOverlayId(selectedHazardId!),
-                                        tileProvider: _mainHazardTileProvider!,
-                                      ),
-                                    }
-                                  : {},
+        // Ensure safe latitude and longitude values
+        double latitude = locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
+        double longitude = locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
+
+        return Stack(
+          children: [
+            // Google Map
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Screenshot(
+                  controller: screenshotController,
+                  child: GoogleMap(
+                    key: _googleMapKey,
+                    mapType: _currentMapType1,
+                    zoomControlsEnabled: true,
+                    markers: Set<Marker>.of(markers.values),
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(latitude, longitude),
+                      zoom: 16,
                     ),
+                    onMapCreated: (GoogleMapController controller) {
+                      if (!_controller.isCompleted) {
+                        _controller.complete(controller);
+                      }
+                    },
+                    gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                      Factory<OneSequenceGestureRecognizer>(
+                            () => EagerGestureRecognizer(), // Allows button taps
+                      ),
+                    },
+                    onTap: _isAddingMarker ? _handleMapTap : null,
+                    tileOverlays: _getTileOverlays(),
                   ),
                 ),
               ),
+            ),
 
-              // Hazard Controls - Move it to the top layer
-              Positioned(
-                bottom: 0,
-                left: 0,
-                child: _buildHazardControls(),
-              ),
+            // Hazard Controls (Bottom)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              child: _buildHazardControls(),
+            ),
 
-              // Right-side Map Type Button
-              Positioned(
-                top: 16,
-                right: 16,
-                child: _buildMapTypeSelector(),
-              ),
+            // Map Type Selector (Top Right)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildMapTypeSelector(),
+            ),
 
-              // Left Navigation Button
+            // Left Navigation Button
+            if ((int.tryParse(widget.page) ?? 1) > 1)
               _buildNavigationButton(
                 alignment: Alignment.centerLeft,
                 left: 16,
@@ -3156,19 +2958,163 @@ class _LocationProfileState extends State<LocationProfile>
                 onPressed: _navigateLeft,
               ),
 
-              // Right Navigation Button
+            // Right Navigation Button
+            if ((int.tryParse(widget.page) ?? 1) <
+                (widget.locationId.isNotEmpty
+                    ? locationProfileProvider.resetTotalPage - 1
+                    : (int.tryParse(widget.totalPages) ?? 1)))
               _buildNavigationButton(
                 alignment: Alignment.centerRight,
                 right: 16,
                 icon: Icons.chevron_right,
                 onPressed: _navigateRight,
               ),
-            ],
-          ),
+          ],
         );
       },
     );
   }
+
+  /// Returns tile overlays with safe null checks
+  Set<TileOverlay> _getTileOverlays() {
+    if (0 == 1) return {}; // No overlays if this condition is met
+
+    if (_selectedHazard != null &&
+        _tileProviders.containsKey(_selectedHazard) &&
+        _mainHazardTileProvider != null &&
+        selectedHazardId != null &&
+        selectedVendor != null) {
+      return {
+        TileOverlay(
+          tileOverlayId: TileOverlayId(selectedHazardId!),
+          tileProvider: _mainHazardTileProvider!,
+        ),
+        TileOverlay(
+          tileOverlayId: TileOverlayId(_selectedHazard!),
+          tileProvider: _tileProviders[_selectedHazard!]!,
+        ),
+      };
+    }
+
+    if (_mainHazardTileProvider != null &&
+        selectedHazardId != null &&
+        selectedVendor != null) {
+      return {
+        TileOverlay(
+          tileOverlayId: TileOverlayId(selectedHazardId!),
+          tileProvider: _mainHazardTileProvider!,
+        ),
+      };
+    }
+    return {};
+  }
+
+  // Widget _riskScore() {
+  //   var typography = CustomTypography(context);
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, locationProfileProvider, child) {
+  //
+  //       double latitude = locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
+  //       double longitude = locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
+  //
+  //       return Stack(
+  //         children: [
+  //           // Google Map - Ensure it's the lowest layer
+  //           Positioned.fill(
+  //             child: ClipRRect(
+  //               borderRadius: BorderRadius.circular(20),
+  //               child: Screenshot(
+  //                 controller: screenshotController,
+  //                 child: GoogleMap(
+  //                   key: _googleMapKey,
+  //                   mapType: _currentMapType1,
+  //                   zoomControlsEnabled: true,
+  //                   markers: Set<Marker>.of(markers.values),
+  //                   initialCameraPosition: CameraPosition(
+  //                     target: LatLng(latitude, longitude),
+  //                     zoom: 16,
+  //                   ),
+  //                   onMapCreated: (GoogleMapController controller) {
+  //                     if (!_controller.isCompleted) {
+  //                       _controller.complete(controller);
+  //                     }
+  //                   },
+  //                   gestureRecognizers: <Factory<
+  //                       OneSequenceGestureRecognizer>>{
+  //                     Factory<OneSequenceGestureRecognizer>(
+  //                       () => EagerGestureRecognizer(), // Allows button taps
+  //                     ),
+  //                   },
+  //                   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                   tileOverlays: 0 == 1
+  //                       ? {} // No tile overlay when selectedTabIndex is 0
+  //                       : (_selectedHazard != null &&
+  //                               _tileProviders.containsKey(_selectedHazard) &&
+  //                               _mainHazardTileProvider != null &&
+  //                               selectedHazardId != null &&
+  //                               selectedVendor != null)
+  //                           ? {
+  //                               TileOverlay(
+  //                                 tileOverlayId:
+  //                                     TileOverlayId(selectedHazardId!),
+  //                                 tileProvider: _mainHazardTileProvider!,
+  //                               ),
+  //                               TileOverlay(
+  //                                 tileOverlayId:
+  //                                     TileOverlayId(_selectedHazard!),
+  //                                 tileProvider:
+  //                                     _tileProviders[_selectedHazard!]!,
+  //                               ),
+  //                             }
+  //                           : (_mainHazardTileProvider != null &&
+  //                                   selectedHazardId != null &&
+  //                                   selectedVendor != null)
+  //                               ? {
+  //                                   TileOverlay(
+  //                                     tileOverlayId:
+  //                                         TileOverlayId(selectedHazardId!),
+  //                                     tileProvider: _mainHazardTileProvider!,
+  //                                   ),
+  //                                 }
+  //                               : {},
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //
+  //           // Hazard Controls - Move it to the top layer
+  //           Positioned(
+  //             bottom: 0,
+  //             left: 0,
+  //             child: _buildHazardControls(),
+  //           ),
+  //
+  //           // Right-side Map Type Button
+  //           Positioned(
+  //             top: 16,
+  //             right: 16,
+  //             child: _buildMapTypeSelector(),
+  //           ),
+  //
+  //           // Left Navigation Button
+  //           _buildNavigationButton(
+  //             alignment: Alignment.centerLeft,
+  //             left: 16,
+  //             icon: Icons.chevron_left,
+  //             onPressed: _navigateLeft,
+  //           ),
+  //
+  //           _buildNavigationButton(
+  //             alignment: Alignment.centerRight,
+  //             right: 16,
+  //             icon: Icons.chevron_right,
+  //             onPressed: _navigateRight,
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildNavigationButton({
     Alignment alignment = Alignment.center,
@@ -4104,7 +4050,7 @@ class _LocationProfileState extends State<LocationProfile>
                         onPressed: () {
                           Navigator.of(context).pop(); // Close the dialog
                         },
-                        child: Text("Close"),
+                        child: Text("Close1"),
                       ),
                       ElevatedButton(
                         onPressed: () {
@@ -5116,27 +5062,43 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-  void _navigateRight() {
-    print('Page: ${widget.page}, Total Pages: ${widget.totalPages}');
-    if ((int.tryParse(widget.page) ?? 1) >
-        (widget.locationId.isNotEmpty
-                ? Provider.of<MyLocationListProvider>(context, listen: false)
-                        .resetTotalPage -
-                    1
-                : (int.tryParse(widget.totalPages) ?? 1)) -
-            0) {
+  Future<void> _navigateRight() async {
+    print('Navigating from page ${widget.page} of ${widget.totalPages}');
+
+    final locationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+
+    int currentPage = int.tryParse(widget.page) ?? 1;
+    int totalPages = widget.locationId.isNotEmpty
+        ? locationProvider.resetTotalPage
+        : (int.tryParse(widget.totalPages) ?? 1);
+
+    if (currentPage >= totalPages) {
+      print('Already on the last page.');
       return;
     }
-    int pageToNavigate = 1;
-    bool isLocationIdNotNull = widget.locationId.isNotEmpty;
-    if (isLocationIdNotNull) {
-      pageToNavigate = (int.tryParse(widget.page) ?? 1);
-    } else {
-      pageToNavigate = (int.tryParse(widget.page) ?? 1) + 1;
+
+    int pageToNavigate = currentPage + 1;
+
+    print('Navigating to page: $pageToNavigate');
+
+    // Check if the page already exists in the navigation stack
+    bool alreadyExists = false;
+    Navigator.popUntil(context, (route) {
+      if (route.settings.name == 'LocationProfile$pageToNavigate') {
+        alreadyExists = true;
+      }
+      return true;
+    });
+
+    if (alreadyExists) {
+      print('Page $pageToNavigate already exists. Not pushing a new one.');
+      return;
     }
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
+    // Then, push the new screen
+    Navigator.of(context).replace(
+      oldRoute: ModalRoute.of(context)!,
+      newRoute: MaterialPageRoute(
         builder: (context) => LocationProfile(
           accountId: widget.accountId,
           subAccountId: widget.subAccountId,
@@ -5146,24 +5108,34 @@ class _LocationProfileState extends State<LocationProfile>
           sovName: widget.sovName,
           searchQuery: widget.searchQuery,
           page: pageToNavigate.toString(),
-          totalPages: (isLocationIdNotNull
-              ? Provider.of<MyLocationListProvider>(context, listen: false)
-                  .resetTotalPage
-                  .toString()
-              : widget.totalPages),
+          totalPages: totalPages.toString(),
         ),
       ),
     );
+
+    print('Returned from LocationProfile');
   }
 
   void _navigateLeft() {
-    if ((int.tryParse(widget.page) ?? 1) <= 1) {
+    int currentPage = int.tryParse(widget.page) ?? 1;
+
+    // Prevent navigation beyond first page
+    if (currentPage <= 1) {
+      print('Already on the first page.');
       return;
     }
-    bool isLocationIdNotNull = widget.locationId.isNotEmpty;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
+
+    int pageToNavigate = currentPage - 1;
+    print('Navigating to page: $pageToNavigate');
+
+    final locationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    int totalPages = widget.locationId.isNotEmpty
+        ? locationProvider.resetTotalPage
+        : (int.tryParse(widget.totalPages) ?? 1);
+    Navigator.of(context).replace(
+      oldRoute: ModalRoute.of(context)!,
+      newRoute: MaterialPageRoute(
         builder: (context) => LocationProfile(
           accountId: widget.accountId,
           subAccountId: widget.subAccountId,
@@ -5172,12 +5144,8 @@ class _LocationProfileState extends State<LocationProfile>
           subAccountName: widget.subAccountName,
           sovName: widget.sovName,
           searchQuery: widget.searchQuery,
-          page: ((int.tryParse(widget.page) ?? 1) - 1).toString(),
-          totalPages: (isLocationIdNotNull
-              ? Provider.of<MyLocationListProvider>(context, listen: false)
-                  .resetTotalPage
-                  .toString()
-              : widget.totalPages),
+          page: pageToNavigate.toString(),
+          totalPages: totalPages.toString(),
         ),
       ),
     );

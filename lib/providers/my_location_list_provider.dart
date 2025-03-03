@@ -33,6 +33,12 @@ import '../service/language_service.dart';
 
 class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
+  int currentPage = 1;
+
+  void goToNextPage() {
+    currentPage++;
+    notifyListeners(); // Triggers UI update
+  }
 
   bool get isLoading => _isLoading;
 
@@ -44,7 +50,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isSearchLoading = false;
+
   bool get isSearchLoading => _isSearchLoading;
+
   set isSearchLoading(bool value) {
     _isSearchLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -53,7 +61,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isHeatMapGeneratingLive = false;
+
   bool get isHeatMapGeneratingLive => _isHeatMapGeneratingLive;
+
   set isHeatMapGeneratingLive(bool value) {
     _isHeatMapGeneratingLive = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -194,7 +204,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   bool _isMainTileProvidersLoading = false;
+
   bool get isMainTileProvidersLoading => _isMainTileProvidersLoading;
+
   set isMainTileProvidersLoading(bool value) {
     _isMainTileProvidersLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -244,11 +256,19 @@ class MyLocationListProvider extends ChangeNotifier {
 
   List<int> get rating => _rating;
   String _zipcode = '';
+  String _sortBy = '';
 
   String get zipcode => _zipcode;
 
   set zipcode(String value) {
     _zipcode = value;
+    notifyListeners();
+  }
+
+  String get sortBy => _sortBy;
+
+  set sortBy(String value) {
+    _sortBy = value;
     notifyListeners();
   }
 
@@ -369,7 +389,9 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   List<MyLocation> _searchLocationList = [];
+
   List<MyLocation> get searchLocationList => _searchLocationList;
+
   set searchLocationList(List<MyLocation> value) {
     _searchLocationList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -514,6 +536,7 @@ class MyLocationListProvider extends ChangeNotifier {
     _propertyType = [];
     _constructionType = [];
     _rating = [];
+    _sortBy = "";
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -734,11 +757,8 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-
-
-
-
-  Future<List<MyLocation>> performGlobalSearch(BuildContext context, String query) async {
+  Future<List<MyLocation>> performGlobalSearch(
+      BuildContext context, String query) async {
     if (query.isEmpty) {
       searchLocationList = []; // Clear the search results if query is empty
       notifyListeners();
@@ -749,38 +769,35 @@ class MyLocationListProvider extends ChangeNotifier {
       isSearchLoading = true; // Notify UI that loading has started
 
       // Construct the API Service for the global search endpoint
-      ApiService apiService = ApiService(
-          '${AppConstant.GLOBAL_SEARCH}/$query');
+      ApiService apiService = ApiService('${AppConstant.GLOBAL_SEARCH}/$query');
 
       // Fetch the search results
       final response = await apiService.get();
 
-      if(response.containsKey('result')) {
+      if (response.containsKey('result')) {
         // Parse the response and update locationList
-        List<MyLocation> searchResults = (response['result'] as List).map((e) =>
-            MyLocation.fromJson(e)).toList();
+        List<MyLocation> searchResults = (response['result'] as List)
+            .map((e) => MyLocation.fromJson(e))
+            .toList();
 
         searchLocationList = searchResults; // Update the provider state
         return searchResults;
       } else {
         print("Failed to load search results");
         return [];
-
-
       }
     } on BackendException catch (e) {
       //CustomToast.error(context, e.message); // Show error toast
       log("Global search backend error: ${e.message}");
       return [];
     } catch (e) {
-     // CustomToast.error(context, "An unexpected error occurred."); // Show generic error
+      // CustomToast.error(context, "An unexpected error occurred."); // Show generic error
       log("Global search error: $e");
       return [];
     } finally {
       isSearchLoading = false; // Notify UI that loading has stopped
     }
   }
-
 
   void updateCampusIds(List<String> campusIds) {
     _campusIds = campusIds;
@@ -818,11 +835,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
   /// Fetch all sov list
   Future<void> fetchAllLocationList(
-    BuildContext context,
-    String? accountID,
-    String? subAccountID,
-  {String? processId, String? subProcessId}
-  ) async {
+      BuildContext context, String? accountID, String? subAccountID,
+      {String? processId, String? subProcessId}) async {
     var typography = CustomTypography(context);
     try {
       isAllLocationLoading = true;
@@ -836,10 +850,9 @@ class MyLocationListProvider extends ChangeNotifier {
       if (processId != null && subProcessId != null) {
         url = AppConstant.MY_LOCATION +
             "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId&sub_process_id=$subProcessId";
-
-      } else if (processId != null) {     url = AppConstant.MY_LOCATION +
-          "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
-
+      } else if (processId != null) {
+        url = AppConstant.MY_LOCATION +
+            "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
       } else {
         url = AppConstant.MY_LOCATION +
             "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
@@ -898,17 +911,23 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   /// Fetch sov list with pagination, search query, and filters
-  Future<void> fetchLocationList(BuildContext context, String searchQuery,
-      int page, int pageSize, String? accountID, String? subAccountID,
-      String? processId, String? subProcessId,
+  Future<void> fetchLocationList(
+      BuildContext context,
+      String searchQuery,
+      int page,
+      int pageSize,
+      String? accountID,
+      String? subAccountID,
+      String? processId,
+      String? subProcessId,
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
       print('Api called page and total page are $page and $totalPages');
       // Check if api is already working
-     // if (isLoading || isNextPageLoading) return;
+      // if (isLoading || isNextPageLoading) return;
       // dont call api is next page does not exist
-      if (page-1 > totalPages) return;
+      if (page - 1 > totalPages) return;
       if (page == 1) {
         myLocationList = [];
         isLoading = true;
@@ -935,6 +954,10 @@ class MyLocationListProvider extends ChangeNotifier {
       if (zipcode.isNotEmpty) {
         url += "&zip=$state";
       }
+      if (sortBy.isNotEmpty) {
+        url += "&sort=$sortBy";
+      }
+
 
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
@@ -1034,14 +1057,15 @@ class MyLocationListProvider extends ChangeNotifier {
       int pageSize,
       String? accountID,
       String? subAccountID,
-      String? processId, String? subProcessId,
+      String? processId,
+      String? subProcessId,
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
       print("Condition: Certified fetch with rating 5");
       print("Rating: 5");
 
-      if (page-1 > certifiedTotalPages) return;
+      if (page - 1 > certifiedTotalPages) return;
       if (page == 1) {
         isCertifiedLoading = true;
       } else {
@@ -1286,7 +1310,8 @@ class MyLocationListProvider extends ChangeNotifier {
   Future<void> fetchMainTileProviders(BuildContext context) async {
     try {
       isMainTileProvidersLoading = true;
-      ApiService apiService = ApiService(AppConstant.MAIN_HAZARDS_TILE_PROVIDERS);
+      ApiService apiService =
+          ApiService(AppConstant.MAIN_HAZARDS_TILE_PROVIDERS);
       var response = await apiService.get();
       log(response.toString());
       mainHazardData = response;
@@ -2001,7 +2026,7 @@ class MyLocationListProvider extends ChangeNotifier {
     String? accountID,
     String? subAccountID,
     String? sovID,
-      String? locationId,
+    String? locationId,
   ) async {
     var typography = CustomTypography(context);
     try {
@@ -2027,37 +2052,37 @@ class MyLocationListProvider extends ChangeNotifier {
             "?page=$page&pageSize=1&account_id=$accountID&sub_account_id=$subAccountID";
       }
 
-      if(locationId != null && locationId.isNotEmpty){
+      if (locationId != null && locationId.isNotEmpty) {
         url += "&filter_by_location_id=$locationId";
       }
-        if (countries.isNotEmpty) {
-          url += "&country=${countries.join(",")}";
-        }
-        if (zipcode.isNotEmpty) {
-          url += "&zip=$state";
-        }
+      if (countries.isNotEmpty) {
+        url += "&country=${countries.join(",")}";
+      }
+      if (zipcode.isNotEmpty) {
+        url += "&zip=$state";
+      }
 
-        if (certifications.isNotEmpty) {
-          for (var cert in certifications) {
-            if (cert == "Manual Certified") {
-              url += "&manual_certified=true";
-            } else if (cert == "Auto Certified") {
-              url += "&auto_certified=true";
-            }
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if (cert == "Manual Certified") {
+            url += "&manual_certified=true";
+          } else if (cert == "Auto Certified") {
+            url += "&auto_certified=true";
           }
         }
-        if (hazardRatings.isNotEmpty) {
-          for (var hazard in hazardRatings.keys) {
-            url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-          }
+      }
+      if (hazardRatings.isNotEmpty) {
+        for (var hazard in hazardRatings.keys) {
+          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
         }
-        if (rating.isNotEmpty) {
-          url += "&score=${rating.join(",")}";
-        }
+      }
+      if (rating.isNotEmpty) {
+        url += "&score=${rating.join(",")}";
+      }
 
-        if (_selectedCampusIds.isNotEmpty) {
-          url += "&campus_id=${_selectedCampusIds.join(",")}";
-        }
+      if (_selectedCampusIds.isNotEmpty) {
+        url += "&campus_id=${_selectedCampusIds.join(",")}";
+      }
 
       print(url);
       var uri = Uri.parse(url);
@@ -2076,18 +2101,18 @@ class MyLocationListProvider extends ChangeNotifier {
             MyLocationModel.fromJson(jsonResponse);
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
-        if(locationId != null && locationId.isNotEmpty){
+        if (locationId != null && locationId.isNotEmpty) {
           locationProfile = locationListModel.filterByLocationResult?.first;
           resetTotalPage = locationListModel.totalRecords ?? 1;
         } else {
           locationProfile = locationListModel.results?.first;
         }
 
-        log(locationProfile?.toString()??"");
+        log(locationProfile?.toString() ?? "");
         print("totalPages: $totalPages");
         log(page.toString());
       } else {
-        print(json.decode(response.body)?["error"]??"");
+        print(json.decode(response.body)?["error"] ?? "");
         throw Exception('Failed to load data');
       }
       isLoading = false;
@@ -2823,5 +2848,4 @@ PATCH
       notifyListeners();
     }
   }
-
 }

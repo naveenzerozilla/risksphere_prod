@@ -2135,41 +2135,49 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           ],
         ),
         SizedBox(height: CustomSpacing.two),
+
         Expanded(
           child: Consumer<ConnectionsProvider>(
               builder: (context, connectionsProvider, child) {
-            return connectionsProvider.isNetworkLoading
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                : connectionsProvider.networkingUsers.isEmpty
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Center(
-                            child: Text("No users"),
-                          ),
-                        ],
-                      )
-                    : ListView.builder(
-                        itemCount: connectionsProvider.networkingUsers.length,
-                        itemBuilder: (context, index) {
-                          return _networkingCardUI(connectionsProvider, index);
-                        },
-                      );
+            return RefreshIndicator(
+              onRefresh: () async {
+                // Call API to reload data
+                Provider.of<ConnectionsProvider>(context, listen: false)
+                    .getAllConnections(context, widget.userId); //getAllNetworkingUsers(context, widget.userId);
+              },
+              child: connectionsProvider.isNetworkLoading
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : connectionsProvider.networkingUsers.isEmpty
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Center(
+                              child: Text("No users"),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          itemCount: connectionsProvider.networkingUsers.length,
+                          itemBuilder: (context, index) {
+                            return _networkingCardUI(connectionsProvider, index);
+                          },
+                        ),
+            );
           }),
         ),
       ],

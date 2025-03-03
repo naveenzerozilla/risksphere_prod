@@ -1,3 +1,4 @@
+import 'package:RiskSphare/providers/user_profile_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphare/screens/event/notification_map_screen.dart';
 import 'package:RiskSphare/screens/listings/hazard_proto.dart';
@@ -43,7 +44,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showCorporateProfile = true;
 
   final TextEditingController searchController = TextEditingController();
-  final Debouncer debouncer = Debouncer(milliseconds: 300); // Debouncer with 300ms delay
+  final Debouncer debouncer =
+      Debouncer(milliseconds: 300); // Debouncer with 300ms delay
 
   late ScrollController _scrollController;
 
@@ -62,17 +64,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   _getClaims() async {
     showNonCorporateManagementTab =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMUL) ?? false;
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.NCMUL) ??
+            false;
     showEmployeeManagementTab =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPUL) ?? false;
-    showCorporateList =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCL) ?? false;
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.EMPUL) ??
+            false;
+    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCL) ??
+        false;
     showCorporateUserListDropdown =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUM) ?? false;
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMCUM) ??
+            false;
     showCorporateVerificationTab =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMLL) ?? false;
-    showCorporateProfile =
-        await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUL) ?? false;
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMLL) ??
+            false;
+    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCUL) ??
+        false;
 
     showCorporateManagementTab = showCorporateList ||
         showCorporateUserListDropdown ||
@@ -112,11 +124,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         onChanged: (value) {
                           if (value.isNotEmpty && value.length > 2) {
                             debouncer.run(() {
-                              Provider.of<MyLocationListProvider>(context, listen: false)
+                              Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
                                   .performGlobalSearch(context, value);
                             });
                           } else {
-                            Provider.of<MyLocationListProvider>(context, listen: false)
+                            Provider.of<MyLocationListProvider>(context,
+                                    listen: false)
                                 .searchLocationList = [];
                           }
                         },
@@ -125,9 +139,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           hintText: 'Search Locations',
                           hintStyle: typography.Body1,
                           filled: true,
-                          fillColor: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.grey[800]
-                              : Colors.grey[200], // Use a lighter color for light theme
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
+                          // Use a lighter color for light theme
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
@@ -143,7 +159,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               // Handle location selection
                               searchController.text =
                                   selectedLocation.finalAddress?.address ?? '';
-                              provider.searchLocationList = []; // Clear results after selection
+                              provider.searchLocationList =
+                                  []; // Clear results after selection
                             },
                           );
                         },
@@ -170,8 +187,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           icon: Icons.home,
                           onTap: () {
                             provider.setSelectedItem("dashboard");
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => DashboardScreen()));
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => DashboardScreen()));
                           },
                           isSelected: provider.selectedItem == "dashboard",
                         ),
@@ -182,8 +199,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           icon: Icons.account_balance_wallet,
                           onTap: () {
                             provider.setSelectedItem("accounts");
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => AccountListScreen()));
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => AccountListScreen()));
                           },
                           isSelected: provider.selectedItem == "accounts",
                         ),
@@ -194,12 +211,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           icon: Icons.space_dashboard,
                           onTap: () {
                             provider.setSelectedItem("news");
-                            Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => NewsFeedScreen()));
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => NewsFeedScreen()));
                           },
                           isSelected: provider.selectedItem == "news",
                         ),
-
                       ],
                     );
                   },
@@ -219,10 +235,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         width: 28.0, // Adjust the width as needed
                         height: 28.0, // Adjust the height as needed
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0), // Set the desired border radius
+                          borderRadius: BorderRadius.circular(10.0),
+                          // Set the desired border radius
                           image: DecorationImage(
                             image: AssetImage(
-                              CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
+                              CountryPickerUtils.getFlagImageAssetPath(
+                                  country.isoCode),
                               package: 'country_pickers',
                             ),
                             fit: BoxFit.cover,
@@ -232,7 +250,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     },
                     itemFilter: (Country country) {
                       // Only include countries with these ISO codes
-                      return ['US', 'ES', 'FR', 'JP', 'CN'].contains(country.isoCode);
+                      return ['US', 'ES', 'FR', 'JP', 'CN']
+                          .contains(country.isoCode);
                     },
                     icon: SizedBox(),
                     onValuePicked: (Country country) {
@@ -265,12 +284,15 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             builder: (context) {
                               return AlertDialog(
                                 title: Text(
-                                    LanguageService.getTranslated(context, "drawer_menu_logout"),
-                                    style: typography.Body1.copyWith(color: iconColor)),
-                                content: Text(
                                     LanguageService.getTranslated(
-                                        context, "drawer_menu_logout_confirmation"),
-                                    style: typography.Body1.copyWith(color: iconColor)),
+                                        context, "drawer_menu_logout"),
+                                    style: typography.Body1.copyWith(
+                                        color: iconColor)),
+                                content: Text(
+                                    LanguageService.getTranslated(context,
+                                        "drawer_menu_logout_confirmation"),
+                                    style: typography.Body1.copyWith(
+                                        color: iconColor)),
                                 actions: <Widget>[
                                   TextButton(
                                     onPressed: () {
@@ -279,24 +301,28 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                     child: Text(
                                         LanguageService.getTranslated(
                                             context, "drawer_menu_cancel"),
-                                        style: typography.Body1.copyWith(color: iconColor)),
+                                        style: typography.Body1.copyWith(
+                                            color: iconColor)),
                                   ),
                                   TextButton(
-                                    onPressed: ()async {
-                                     await authNotifier.signOut();
+                                    onPressed: () async {
+                                      await authNotifier.signOut();
 
-                                      Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                      Provider.of<DrawerSelectionProvider>(
+                                              context,
+                                              listen: false)
                                           .setSelectedItem("dashboard");
                                       Navigator.pushAndRemoveUntil(
                                           context,
                                           MaterialPageRoute(
                                               builder: (_) => SplashScreen()),
-                                              (route) => false);
+                                          (route) => false);
                                     },
                                     child: Text(
                                         LanguageService.getTranslated(
                                             context, "drawer_menu_logout"),
-                                        style: typography.Body1.copyWith(color: iconColor)),
+                                        style: typography.Body1.copyWith(
+                                            color: iconColor)),
                                   ),
                                 ],
                               );
@@ -306,32 +332,86 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
-                  if (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
+                  if (showCorporateManagementTab ||
+                      showNonCorporateManagementTab ||
+                      showEmployeeManagementTab)
                     Consumer<DrawerSelectionProvider>(
                       builder: (context, provider, child) {
-                        return Container(
+                        return Consumer<UserProfileProvider>(
+                          builder: (context, userProfileProvider, child) {
+                            return
+                              bool.parse((!userProfileProvider.userData.isIndividual!).toString()) ?
+                              Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(66),
+                                color:
+                                    provider.selectedItem == "user_management"
+                                        ? AppColors.primaryMain.withOpacity(0.4)
+                                        : Colors.transparent,
+                              ),
+                              child:
 
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(66),
-                            color: provider.selectedItem == "user_management"
-                                ? AppColors.primaryMain.withOpacity(0.4)
-                                : Colors.transparent,
-
-                          ),
-                          child: IconButton(
-                            icon: Icon(Icons.person,
-                                color: provider.selectedItem == "user_management"
-                                    ? AppColors.primaryMain
-                                    : iconColor),
-                            onPressed: () {
-                              provider.setSelectedItem("user_management");
-                              Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => UserManagementScreen()));
-                            },
-                          ),
+                              IconButton(
+                                icon:
+                                Icon(
+                                  Icons.person,
+                                  color:
+                                      provider.selectedItem == "user_management"
+                                          ? AppColors.primaryMain
+                                          : iconColor,
+                                ),
+                                onPressed: () {
+                                  provider.setSelectedItem("user_management");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => UserManagementScreen()),
+                                  );
+                                },
+                              ),
+                            ):Container();
+                          },
                         );
                       },
-                    ),
+                    )
+                  //               if (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
+                  //                 Consumer<DrawerSelectionProvider>(
+                  //                   builder: (context, provider, child) {
+                  //                     return
+                  //
+                  //                       Consumer<UserProfileProvider>(
+                  //                         builder: (context, userProfileProvider, child) {
+                  //                           builder:
+                  //                               (context) {
+                  //                             return Container(
+                  //
+                  //                               decoration: BoxDecoration(
+                  //                                 borderRadius: BorderRadius.circular(66),
+                  //                                 color: provider.selectedItem ==
+                  //                                     "user_management"
+                  //                                     ? AppColors.primaryMain.withOpacity(0.4)
+                  //                                     : Colors.transparent,
+                  //
+                  //                               ),
+                  //                               child: IconButton(
+                  //                                 icon: Icon(Icons.person,
+                  //                                     color: provider.selectedItem ==
+                  //                                         "user_management"
+                  //                                         ? AppColors.primaryMain
+                  //                                         : iconColor),
+                  //                                 onPressed: () {
+                  //                                   provider.setSelectedItem(
+                  //                                       "user_management");
+                  //                                   Navigator.of(context).push(
+                  //                                       MaterialPageRoute(builder: (_) =>
+                  //                                           UserManagementScreen()));
+                  //                                 },
+                  //                               ),
+                  //                             );
+                  //                           };
+                  //                         }
+                  //                         );
+                  //                         },
+                  // ),
                 ],
               ),
             ),
@@ -342,17 +422,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   Widget _buildDrawerItem(
-      BuildContext context,
-      DrawerSelectionProvider provider, {
-        required String title,
-        required IconData icon,
-        required VoidCallback onTap,
-        required bool isSelected,
-      }) {
+    BuildContext context,
+    DrawerSelectionProvider provider, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isSelected,
+  }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-
         color: isSelected
             ? AppColors.primaryMain.withOpacity(0.1)
             : Colors.transparent,
@@ -380,4 +459,3 @@ class _CustomDrawerState extends State<CustomDrawer> {
     return 'US';
   }
 }
-
