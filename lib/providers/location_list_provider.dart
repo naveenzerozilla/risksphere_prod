@@ -252,6 +252,37 @@ class LocationListProvider extends ChangeNotifier {
     }
   }
 
+  //LocationSummary
+  Future<void> fetchLocationSummary(String accountId, String subAccountId, String sovId) async {
+    final url = Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/locations/location_summary/$accountId/subaccount/$subAccountId/sov/$subAccountId");
+print(url);
+print(url);
+    try {
+      var headers = await CommonHeaders.createHeaders();
+      final response = await http.get(url, headers: headers);
+      print(response.body);
+      if (response.statusCode == 200) {
+        print("data");
+        final data = json.decode(response.body); // Parse as a Map
+
+        print(data);
+        // Extracting the list from the "result" field
+        campusIds = List<String>.from(data['result']);
+      } else {
+        print("Failed to load campus IDs");
+        print(response.body);
+        throw Exception("Failed to load campus IDs");
+      }
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: ${e.message}");
+    }
+    catch (e, stackTrace) {
+      print(stackTrace);
+      print("Error fetching campus IDs: $e");
+    }
+  }
+
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchLocationList(
       BuildContext context,

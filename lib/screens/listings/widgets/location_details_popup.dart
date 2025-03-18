@@ -8,6 +8,8 @@ import '../../../design_system/primitives/custom_typography.dart';
 import 'hazard_section_widget.dart';
 
 class LocationDetailsPopup extends StatelessWidget {
+  final String? lat;
+  final String? long;
   final String? imageUrl;
   final String address;
   final String locationId;
@@ -16,17 +18,20 @@ class LocationDetailsPopup extends StatelessWidget {
   final Map<String, HazardDetails> hazards;
   final List<String> geocodedAt;
   final List<String> occupancy;
-  final String? campus;
+
   final String? accountId;
   final String? accountName;
   final String? subAccountId;
   final String? subAccountName;
   final String? sovId;
   final String? sovName;
+  final String? campus;
   final bool? rented;
   final bool? hideNavigation;
 
   LocationDetailsPopup({
+    this.lat,
+    this.long,
     this.imageUrl,
     required this.address,
     required this.locationId,
@@ -65,27 +70,63 @@ class LocationDetailsPopup extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(imageUrl.toString()),
-                Image.network(imageUrl.toString()),
-                Text(
-                  address,
-                  style: typography.InputLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                  children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: (geocodingScore == 5)
+                        ? Image.network(
+                      "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                        : imageUrl!.isNotEmpty
+                        ? Image.network(
+                      imageUrl!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                        : Image.asset(
+                      'assets/images/building_image.png',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Container(
+                    width: 180,
+                    child: Text(
+                      address,
+                      textAlign: TextAlign.justify,
+                      style: typography.InputLabel,
+                      maxLines: 7,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],),
 
                 SizedBox(height: 8),
-                if ((campus ?? "").isNotEmpty)
-                  Text(
-                    campus ?? "",
-                    style: typography.Body2,
-                  ),
-                SizedBox(height: 8),
-                Chip(
-                  label: Text(
-                    (rented ?? true) ? 'Rented' : "Leased",
-                    style: typography.Caption,
-                  ),
+                // if ((campus ?? "").isNotEmpty)
+                //   Text(
+                //     campus ?? "",
+                //     style: typography.Body2,
+                //   ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+
+                  children: [
+                    Chip(
+                      label: Text(
+                        (rented ?? true) ? 'Rented' : "owned",
+                        style: typography.Caption,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -106,11 +147,12 @@ class LocationDetailsPopup extends StatelessWidget {
               'Hazard Ratings',
               style: typography.Body1,
             ),
-            HazardsSection(hazards: hazards),
+
+             HazardsSection(hazards: hazards),
             SizedBox(height: 16),
 
             // Information Section
-            _buildInformationSection(typography),
+            // _buildInformationSection(typography),
 
             // Navigation and Close Buttons
             SizedBox(height: 16),
@@ -127,10 +169,10 @@ class LocationDetailsPopup extends StatelessWidget {
   Widget _buildInformationSection(CustomTypography typography) {
     final information = {
       'Location Geocoded at': geocodedAt.join(', '),
-      // 'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
-      // 'Construction': '--',
-      // 'Floor Area': '--',
-      // 'Year of construction': '--',
+      'Occupancy': occupancy[0][0].toUpperCase() + occupancy[0].substring(1),
+      'Construction': '--',
+      'Floor Area': '--',
+      'Year of construction': '--',
     };
 
     return Container(
@@ -170,6 +212,9 @@ class LocationDetailsPopup extends StatelessWidget {
   Widget _buildCloseButton(BuildContext context, CustomTypography typography) {
     return Center(
       child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Theme.of(context).colorScheme.onSurface, width: 2), // Change border color and width
+        ),
         onPressed: () => Navigator.pop(context),
         child: Text(
           'Close',
@@ -188,40 +233,41 @@ class LocationDetailsPopup extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         OutlinedButton(
+
           onPressed: () => Navigator.pop(context),
           child: Text(
             'Close',
             style: typography.ButtonLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LocationProfile(
-                  accountId: accountId ?? "",
-                  accountName: accountName ?? "",
-                  subAccountId: subAccountId ?? "",
-                  subAccountName: subAccountName ?? "",
-                  sovId: sovId ?? "",
-                  sovName: sovName ?? "",
-                  page: "0",
-                  totalPages: "0",
-                  searchQuery: "",
-                ),
-              ),
-            );
-          },
-          child: Text(
-            'View Profile',
-            style: typography.ButtonLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ),
+        // ElevatedButton(
+        //   onPressed: () {
+        //     Navigator.push(
+        //       context,
+        //       MaterialPageRoute(
+        //         builder: (_) => LocationProfile(
+        //           accountId: accountId ?? "",
+        //           accountName: accountName ?? "",
+        //           subAccountId: subAccountId ?? "",
+        //           subAccountName: subAccountName ?? "",
+        //           sovId: sovId ?? "",
+        //           sovName: sovName ?? "",
+        //           page: "0",
+        //           totalPages: "0",
+        //           searchQuery: "",
+        //         ),
+        //       ),
+        //     );
+        //   },
+        //   child: Text(
+        //     'View Profile',
+        //     style: typography.ButtonLarge.copyWith(
+        //       color: Theme.of(context).colorScheme.onSurface,
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }

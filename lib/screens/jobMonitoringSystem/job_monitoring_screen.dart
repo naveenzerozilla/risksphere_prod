@@ -145,6 +145,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 // Change this value to set the desired opacity (0.0 to 1.0)
                 child: Image.asset(
                   'assets/images/mesh.png',
+
                   fit: BoxFit.cover,
                 ),
               ),
@@ -329,6 +330,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                       Tooltip(
                         message: jobId,
                         child: Text(
+
                           jobData["process_name"] ?? "Process",
                           style: typography.Body1.copyWith(
                             fontWeight: FontWeight.w500,
@@ -1250,7 +1252,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         color: Theme.of(context).hoverColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
+      child:
+      Container(
         decoration: BoxDecoration(
           color: Theme.of(context).hoverColor,
           borderRadius: BorderRadius.circular(16),
@@ -1870,7 +1873,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Text(
-              "Geo Rating Summary",
+              "Geo Rating Summary1",
               style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
             ),
           ),

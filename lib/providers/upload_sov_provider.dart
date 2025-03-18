@@ -8,6 +8,7 @@ import 'package:RiskSphare/screens/processMonitoringScreen/process_monitoring_sy
 import 'package:RiskSphare/service/api_service.dart';
 import 'package:RiskSphare/service/shared_preference_service.dart';
 import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:provider/provider.dart';
 
 import '../screens/listings/account_list.dart';
 import '../screens/listings/widgets/location_data.dart';
@@ -17,11 +18,22 @@ class UploadSovProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
+
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+  List<Map<String, dynamic>> geocodingList = [];
+
+  void toggleSelection(int index) {
+    geocodingList[index]['isChecked'] = !(geocodingList[index]['isChecked'] ?? false);
+    notifyListeners(); // Notify only for this change
+  }
+
+  bool areAllSelected() {
+    return geocodingList.every((item) => item['isChecked'] == true);
   }
 
   bool _isSubmitLoading = false;
@@ -43,13 +55,8 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   List<Map<String, dynamic>> _geocodingList = [];
-  List<Map<String, dynamic>> get geocodingList => _geocodingList;
-  set geocodingList(List<Map<String, dynamic>> value) {
-    _geocodingList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
+
+  
 
   List<Map<String, dynamic>> _duplicateLocations = [];
   List<Map<String, dynamic>> get duplicateLocations => _duplicateLocations;
@@ -68,7 +75,46 @@ class UploadSovProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  int locationCount = 0;
+  int duplicateCount = 0;
+  int conflictCount = 0;
 
+  void refreshCounts() {
+    notifyListeners();
+  }
+
+  //count update logic
+
+  // int get locationCount => geocodingList.length;
+  // int get duplicateCount => duplicateLocations.length;
+  // int get conflictCount => conflictLocations.length;
+
+  // Update methods (use `.toList()` to trigger reactivity)
+  void updateLocation(int index, Map<String, dynamic> updatedLocation) {
+    if (index >= 0 && index < _geocodingList.length) {
+      _geocodingList = List.from(_geocodingList)..[index] = updatedLocation;
+      notifyListeners();
+    }
+  }
+
+  void updateDuplicate(int index, Map<String, dynamic> updatedDuplicate) {
+    if (index >= 0 && index < _duplicateLocations.length) {
+      _duplicateLocations = List.from(_duplicateLocations)..[index] = updatedDuplicate;
+      notifyListeners();
+    }
+  }
+
+  void updateConflict(int index, Map<String, dynamic> updatedConflict) {
+    if (index >= 0 && index < _conflictLocations.length) {
+      _conflictLocations = List.from(_conflictLocations)..[index] = updatedConflict;
+      notifyListeners();
+    }
+  }
+
+  // Method to refresh counts explicitly
+  // void refreshCounts() {
+  //   notifyListeners(); // This will trigger UI update
+  // }
 
   Future<void> createEmptySov(BuildContext context, String tempId) async {
     var typography = CustomTypography(context);
@@ -213,6 +259,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   Future<void> submitSovHeadersSubAccounts(
       BuildContext context,
+      String subAccountName,
       String tempId,
       String docUrl,
       List<Map<String, dynamic>> fields,
@@ -261,6 +308,7 @@ class UploadSovProvider extends ChangeNotifier {
       if (response['message'] != null) {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => LocationDataScreen(
+            subAccountName: subAccountName,
             processId: response['process_id'] ?? "",
             tempId: tempId,
             accountId: accountId,
@@ -309,6 +357,10 @@ class UploadSovProvider extends ChangeNotifier {
           'type': item['type'] ?? '',
         };
       }).toList();
+      // **Update counts in UploadSovProvider**
+
+      locationCount = geocodingList.length;
+
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -351,6 +403,9 @@ class UploadSovProvider extends ChangeNotifier {
               : null
         };
       }).toList();
+      // **Update duplicate count**
+      duplicateCount = duplicateLocations.length;
+      locationCount = geocodingList.length;
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -390,6 +445,7 @@ class UploadSovProvider extends ChangeNotifier {
           'conflicts': item['similar'] ?? [],
         };
       }).toList();
+      conflictCount = conflictLocations.length;
       isLoading = false;
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
@@ -421,7 +477,6 @@ class UploadSovProvider extends ChangeNotifier {
   ) async {
     try {
       isLoading = true;
-      log("Selected Rows: $selectedRows");
 
       // Prepare the data payload
       final List<Map<String, dynamic>> requestData = selectedRows.map((row) {
@@ -434,9 +489,9 @@ class UploadSovProvider extends ChangeNotifier {
           'location_id': row['top_duplicate']?['location_id'] ?? "",
         };
       }).toList();
-
-      // Log the request body for debugging
-      log('Request Payload: $requestData');
+      //
+      // // Log the request body for debugging
+      // log('Request Payload: $requestData');
 
       // API endpoint and request
       ApiService apiService =
@@ -459,7 +514,7 @@ class UploadSovProvider extends ChangeNotifier {
       }
     } catch (error, stackTrace) {
       log('Error: $error');
-      log('StackTrace: $stackTrace');
+      // log('StackTrace: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Failed to update duplicate status"),
@@ -683,6 +738,7 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context,
       String accountId,
       String accountName,
+      String subAccountName,
       String subAccountId,
       String tempProcessId,
       String state) async {
@@ -696,6 +752,7 @@ class UploadSovProvider extends ChangeNotifier {
                       accountId: accountId,
                       subAccountId: subAccountId,
                       accountName: accountName,
+                  subAccountName: subAccountName
                     )));
       } else {
         String processId = await SharedPreferenceService.getSovUploadProcessId()??"";
@@ -709,6 +766,7 @@ class UploadSovProvider extends ChangeNotifier {
               accountId: accountId,
               subAccountId: subAccountId,
               accountName: accountName,
+              subAccountName: subAccountName,
             ),
           ),
         );

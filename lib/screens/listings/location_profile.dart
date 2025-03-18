@@ -757,9 +757,9 @@ class _LocationProfileState extends State<LocationProfile>
                                     score: context
                                             .read<MyLocationListProvider>()
                                             .locationProfile
-                                            ?.finalAddress
-                                            ?.score ??
-                                        0),
+                                            ?.geocodingScore??
+                                        0
+                                ),
                                 SizedBox(width: 8),
                                 (locationProfileProvider.locationProfile
                                                 ?.finalAddress?.score ??
@@ -1744,7 +1744,7 @@ class _LocationProfileState extends State<LocationProfile>
           address: location.finalAddress?.address ?? 'Unknown Address',
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
-          riskScore: location.hazard?['Overall']?.rating ?? 0,
+          riskScore: location.overallScore ?? 5,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
           occupancy: location.finalAddress?.placeTypes ?? ["--"],
@@ -4050,7 +4050,7 @@ class _LocationProfileState extends State<LocationProfile>
                         onPressed: () {
                           Navigator.of(context).pop(); // Close the dialog
                         },
-                        child: Text("Close1"),
+                        child: Text("Close"),
                       ),
                       ElevatedButton(
                         onPressed: () {

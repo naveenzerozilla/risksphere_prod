@@ -162,6 +162,31 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> fetchLocationSummary(String accountId,String subaccountId) async {
+    try {
+      isSummaryLoading = true; // Trigger loader
+      notifyListeners();
+      print('${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
+      // Initialize the API service
+      ApiService apiService = ApiService('${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
+
+      final response = await apiService.get();
+
+      if (response != null) {
+        print('Summary Data: $response');
+        print('Summary Data: ${response.length}');
+        return response;
+      }
+      return null; // Handle null response
+    } catch (error) {
+      print('Error fetching summary: $error');
+      return null;
+    } finally {
+      isSummaryLoading = false; // Stop loader
+      notifyListeners();
+    }
+  }
+
 
 
 /*  // Fetch company IDs from the API

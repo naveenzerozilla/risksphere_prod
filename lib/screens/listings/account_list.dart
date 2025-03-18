@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:io';
 
-import 'package:country_list_picker/country_list_picker.dart';
+// import 'package:country_list_picker/country_list_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +84,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   TextEditingController _accountEditNameController = TextEditingController();
 
   int _selectedAccountIndex = 0;
-
+  Timer? _debounce;
   String _accountQuery = "";
   bool _accountAlreadyExists = false;
   Accounts? _selectedAccount;
@@ -173,7 +173,7 @@ class _AccountListScreenState extends State<AccountListScreen>
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
-    int tabCount = trialStatus.isEmpty ? 3 : 2;
+    int tabCount = trialStatus.isEmpty ? 3 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
     super.initState();
     _getData();
@@ -371,6 +371,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     scrollDirection:
                                                         Axis.horizontal,
                                                     child: TabBar(
+                                                      onTap: (index) {
+                                                        // Prevent navigating to "Access Requested" tab
+                                                        if (index == 3) {
+                                                          _tabController?.animateTo(0); // Stay on the first tab (My Accounts)
+                                                        }
+                                                      },
                                                       controller:
                                                           _tabController,
                                                       tabAlignment:
@@ -390,8 +396,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                             children: [
                                                               Text(
                                                                   'My Accounts',
-                                                                  style: typography
-                                                                      .Subtitle2),
+                                                                  ),
                                                               accountListProvider
                                                                           .isLoading ||
                                                                       accountListProvider
@@ -1854,43 +1859,83 @@ class _AccountListScreenState extends State<AccountListScreen>
                           children: [
                             TextField(
                               controller: _textEditingController,
-                              focusNode: FocusNode(),
-                              onChanged: (value) async {
+                              onChanged: (value) {
                                 setState(() {
                                   _accountAlreadyExists = false;
                                   _selectedAccount = null;
-                                  // Clear the autocomplete list when user starts typing
                                   accountListProvider.clearAutoCompleteList();
                                 });
+
                                 _autocompleteText = value;
-                                await autoCompleteAccountsSearchClient(
-                                    _autocompleteText);
+
+                                // Cancel the previous debounce timer
+                                if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+                                // Start a new debounce timer
+                                _debounce = Timer(const Duration(milliseconds: 500), () async {
+                                  await autoCompleteAccountsSearchClient(_autocompleteText);
+                                });
                               },
                               decoration: InputDecoration(
-                                suffixIcon:
-                                    _textEditingController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: Icon(Icons.clear),
-                                            onPressed: () {
-                                              setState(() {
-                                                _textEditingController.clear();
-                                                _accountAlreadyExists = false;
-                                                _selectedAccount = null;
-                                                // Clear the autocomplete list when user clears the text
-                                                accountListProvider
-                                                    .clearAutoCompleteList();
-                                              });
-                                            },
-                                          )
-                                        : null,
+                                suffixIcon: _textEditingController.text.isNotEmpty
+                                    ? IconButton(
+                                  icon: Icon(Icons.clear),
+                                  onPressed: () {
+                                    setState(() {
+                                      _textEditingController.clear();
+                                      _accountAlreadyExists = false;
+                                      _selectedAccount = null;
+                                      accountListProvider.clearAutoCompleteList();
+                                    });
+                                  },
+                                )
+                                    : null,
                                 labelText: LanguageService.getTranslated(
-                                    context,
-                                    "account_list_app_add_account_title"),
-                                hintText: LanguageService.getTranslated(context,
-                                    "account_list_app_add_account_title"),
+                                    context, "account_list_app_add_account_title"),
+                                hintText: LanguageService.getTranslated(
+                                    context, "account_list_app_add_account_title"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),
+                            // TextField(
+                            //   controller: _textEditingController,
+                            //   focusNode: FocusNode(),
+                            //   onChanged: (value) async {
+                            //     setState(() {
+                            //       _accountAlreadyExists = false;
+                            //       _selectedAccount = null;
+                            //       // Clear the autocomplete list when user starts typing
+                            //       accountListProvider.clearAutoCompleteList();
+                            //     });
+                            //     _autocompleteText = value;
+                            //     await autoCompleteAccountsSearchClient(
+                            //         _autocompleteText);
+                            //   },
+                            //   decoration: InputDecoration(
+                            //     suffixIcon:
+                            //         _textEditingController.text.isNotEmpty
+                            //             ? IconButton(
+                            //                 icon: Icon(Icons.clear),
+                            //                 onPressed: () {
+                            //                   setState(() {
+                            //                     _textEditingController.clear();
+                            //                     _accountAlreadyExists = false;
+                            //                     _selectedAccount = null;
+                            //                     // Clear the autocomplete list when user clears the text
+                            //                     accountListProvider
+                            //                         .clearAutoCompleteList();
+                            //                   });
+                            //                 },
+                            //               )
+                            //             : null,
+                            //     labelText: LanguageService.getTranslated(
+                            //         context,
+                            //         "account_list_app_add_account_title"),
+                            //     hintText: LanguageService.getTranslated(context,
+                            //         "account_list_app_add_account_title"),
+                            //     border: const OutlineInputBorder(),
+                            //   ),
+                            // ),
                             if (_textEditingController.text.isNotEmpty &&
                                 !_accountAlreadyExists)
                               AutocompleteOptions(
@@ -2162,7 +2207,8 @@ class _AccountListScreenState extends State<AccountListScreen>
         Expanded(
           child: Consumer<AccountListProvider>(
               builder: (context, accountListProvider, _) {
-            return accountListProvider.isLoading
+            return
+              accountListProvider.isLoading
                 ? Stack(
                     alignment: Alignment.center,
                     children: [
@@ -2174,7 +2220,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                       ),
                     ],
                   )
-                : accountListProvider.accountList.isEmpty
+                :
+              accountListProvider.accountList.isEmpty
                     ? Center(
                         child: Text(
                           "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",

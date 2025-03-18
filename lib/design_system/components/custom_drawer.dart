@@ -176,7 +176,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 controller: _scrollController,
                 child: Consumer<DrawerSelectionProvider>(
                   builder: (context, provider, child) {
-                    return ListView(
+                    return
+                      provider.isLoading
+                          ? Center(child: CircularProgressIndicator()) // Show Loader
+                          :
+                      ListView(
                       physics: ClampingScrollPhysics(),
                       padding: EdgeInsets.only(top: 0),
                       children: <Widget>[
@@ -337,9 +341,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       showEmployeeManagementTab)
                     Consumer<DrawerSelectionProvider>(
                       builder: (context, provider, child) {
-                        return Consumer<UserProfileProvider>(
+                        return
+
+                          Consumer<UserProfileProvider>(
                           builder: (context, userProfileProvider, child) {
                             return
+                            userProfileProvider.isLoading ? Center(child: CircularProgressIndicator()) :
+
                               bool.parse((!userProfileProvider.userData.isIndividual!).toString()) ?
                               Container(
                               decoration: BoxDecoration(

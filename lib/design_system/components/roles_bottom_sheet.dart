@@ -73,7 +73,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
       filteredOptionsIndividual = (authNotifier.companyTypeList ?? [])
           .where((companyType) {
         log("Processing companyType: ${companyType.type}");
-        return companyType.type.toLowerCase() == 'individual_account';
+        return companyType.type!.toLowerCase() == 'individual_account';
       })
           .expand((companyType) {
         log("Roles for companyType: ${companyType.roles}");

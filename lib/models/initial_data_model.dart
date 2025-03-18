@@ -256,6 +256,8 @@ class Role {
   }
 }
 
+
+
 class Categories {
   Categories({
     required this.isForIndividual,
@@ -303,6 +305,7 @@ class Companies {
     required this.adminSelfRegistration,
     required this.companyTypeId,
     required this.name,
+    required this.companyTypeName,
     required this.corporateUserSelfRegistration,
     required this.corporateUserVerificationByAdmin,
     required this.noOfUsers,
@@ -318,6 +321,7 @@ class Companies {
   late final bool adminSelfRegistration;
   late final String companyTypeId;
   late final String name;
+  late final String companyTypeName;
   late final bool corporateUserSelfRegistration;
   late final bool corporateUserVerificationByAdmin;
   late final int noOfUsers;
@@ -349,6 +353,12 @@ class Companies {
     } else {
       name = "";
     }
+
+    if (json['company_type_name'] != null) {
+      companyTypeName = json['company_type_name'];
+    } else {
+      companyTypeName = "";
+    }
     corporateUserSelfRegistration =
         json['corporate_user_self_registration'] ?? false;
     corporateUserVerificationByAdmin =
@@ -377,6 +387,7 @@ class Companies {
     _data['admin_self_registration'] = adminSelfRegistration;
     _data['company_type_id'] = companyTypeId;
     _data['company_name'] = name;
+    _data['company_type_name'] = companyTypeName;
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['corporate_user_verification_by_admin'] =
         corporateUserVerificationByAdmin;

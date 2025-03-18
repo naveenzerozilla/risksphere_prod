@@ -85,10 +85,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onTap: () {
                   //onExpandPressed(!isExpanded);
                 },
-                child: Container(
+                child:
+                Container(
+
                   padding: EdgeInsets.all(8),
                   child: SvgPicture.asset(
                     'assets/images/logoHalf.svg',
+                    width: 28,
+                    height: 28,
                   ),
                 ),
               ),

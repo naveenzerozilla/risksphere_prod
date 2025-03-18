@@ -11,6 +11,7 @@ import '../../../providers/upload_sov_provider.dart';
 import 'message_card.dart';
 
 class ConflictsTab extends StatefulWidget {
+  final String ?subAccountName;
   final String processId;
   final String accountId;
   final String subAccountId;
@@ -20,6 +21,7 @@ class ConflictsTab extends StatefulWidget {
 
   const ConflictsTab({
     super.key,
+     this.subAccountName,
     required this.processId,
     required this.accountId,
     required this.subAccountId,
@@ -41,22 +43,49 @@ class ConflictsTabState extends State<ConflictsTab> {
   String? selectedOption =
       "none"; // To store the selected conflict resolution option
 
-  Future<void> _getData() async {
-    response = await Provider.of<UploadSovProvider>(context, listen: false)
-        .fetchConflicts(context, widget.processId);
-    List<dynamic> data = response['result'] ?? [];
-
-    if (Provider.of<UploadSovProvider>(context, listen: false)
-        .conflictLocations
-        .isNotEmpty) {
-      _updateMap();
-    }
-  }
+  // Future<void> _getData() async {
+  //   response = await Provider.of<UploadSovProvider>(context, listen: false)
+  //       .fetchConflicts(context, widget.processId);
+  //   response = await Provider.of<UploadSovProvider>(context, listen: false)
+  //       .fetchLocations(context, widget.processId);
+  //   response = await Provider.of<UploadSovProvider>(context, listen: false)
+  //       .fetchDuplicates(context, widget.processId);
+  //   List<dynamic> data = response['result'] ?? [];
+  //
+  //   if (Provider.of<UploadSovProvider>(context, listen: false)
+  //       .conflictLocations
+  //       .isNotEmpty) {
+  //     _updateMap();
+  //   }
+  // }
 
   @override
   void initState() {
     super.initState();
-    _getData();
+    _getDataInital();
+  }
+  Future<void> _getDataInital() async {
+    response = await Provider.of<UploadSovProvider>(context, listen: false)
+        .fetchConflicts(context, widget.processId);
+  }
+  Future<void> _getData() async {
+    final uploadSovProvider = Provider.of<UploadSovProvider>(context, listen: false);
+
+    // Perform API calls in parallel
+    final results = await Future.wait([
+      uploadSovProvider.fetchConflicts(context, widget.processId),
+      uploadSovProvider.fetchLocations(context, widget.processId),
+      uploadSovProvider.fetchDuplicates(context, widget.processId),
+    ]);
+
+    // Assign the response from the last call (if needed)
+    response = results.last;
+
+    List<dynamic> data = response['result'] ?? [];
+
+    if (uploadSovProvider.conflictLocations.isNotEmpty) {
+      _updateMap();
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -519,6 +548,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                           ),
                         ),
                         UploadPreviewButtons(
+                          subAccountName: widget.subAccountName,
                           accountId: widget.accountId,
                           accountName: widget.accountName,
                           tempId: widget.tempId,

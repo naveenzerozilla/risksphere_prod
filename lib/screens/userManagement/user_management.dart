@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:country_list_picker/country_list_picker.dart' as clp;
 
-import 'package:country_list_picker/country_list_picker.dart';
+// import 'package:country_list_picker/country_list_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +28,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 import '../../constants/enums.dart';
 import '../../design_system/components/country_picker_flag_name.dart';
@@ -207,6 +208,101 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   Timer? corporateEmployeeDeBouncer;
   Timer? nonCorporateDeBouncer;
   Timer? employeeDeBouncer;
+
+  List<companyType.Roles> _roles = [];
+  bool _isLoading = false;
+
+  /// Fetch roles from the API with Firebase Token
+  Future<void> _fetchRoles() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    const String apiUrl =
+        "https://us-central1-project-green-dev-429104.cloudfunctions.net/companies?role=external";
+
+    try {
+      // Get the Firebase Authentication token
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print("User not authenticated!");
+        return;
+      }
+
+      IdTokenResult? tokenResult = await user.getIdTokenResult();
+      String? token = tokenResult.token;
+
+      if (token == null || token.isEmpty) {
+        print("Error: Firebase token is null or empty.");
+        return;
+      }
+
+      // Set headers with the Authorization token
+      var headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      };
+
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> rolesData = data["roles"];
+
+        List<companyType.Roles> fetchedRoles = rolesData.map((role) {
+          return companyType.Roles(
+            isForIndividual: role["is_for_individual"] ?? false,
+            isMultipleRoleEnabled: role["is_multiple_role_enabled"] ?? false,
+            isApplicableForTrial: role["is_applicable_for_trial"] ?? false,
+            name: role["name"] ?? "",
+            role: role["role"] ?? "",
+            isApplicableForInternal: role["is_applicable_for_internal"] ?? false,
+            status: role["status"] ?? false,
+          );
+        }).toList();
+
+        setState(() {
+          _roles = fetchedRoles;
+        });
+
+        // Debug: Print roles
+        for (var role in _roles) {
+          print("Role: ${role.name}, Status: ${role.status}");
+        }
+      } else {
+        print("Failed to load roles: ${response.statusCode}, Response: ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching roles: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+
+  void _openBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return CorporateTypeRolesBottomSheet(
+          selectedRoles: selectedCorporateTypeRole,
+          addChip: _addCorporateChip,
+          removeChip: _removeCorporateChip,
+          removeAllChips: _removeAllCorporateChips,
+          roles: _roles,
+          isEnabled: true,
+        );
+      },
+    );
+  }
+
 
   void companyDebounce(
     VoidCallback callback, {
@@ -491,7 +587,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         clearFilters();
         _tabVerificationController?.animateTo(widget.subIndex ?? 0);
       });
-    }else if(widget.initialIndex == 0 &&
+    } else if (widget.initialIndex == 0 &&
         widget.initialScreen == Screens.corporateAdd) {
       print('Initial Screen: ${widget.initialScreen}');
       setState(() {
@@ -499,7 +595,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         clearFilters();
         _tabVerificationController?.animateTo(widget.subIndex ?? 0);
       });
-    }else{
+    } else if (widget.initialIndex == 0 &&
+        widget.initialScreen == Screens.corporateEmployeeAdd) {
+      print('Initial Screen123: ${widget.initialScreen}');
+      setState(() {
+        _selectedScreen = Screens.corporateEmployeeAdd;
+        clearFilters();
+        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+      });
+    } else {
       print('Initial Screen: ${widget.initialScreen}');
       setState(() {
         _selectedScreen = Screens.verificationList;
@@ -513,109 +617,74 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showMainLoading = false;
     });
   }
-
   Future<void> _setTabs() async {
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    //isPgAdmin = true;
-    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMCL) ??
-        false;
-    showCorporateUserListDropdown =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMCUM) ??
-            false;
-    showCorporateUserList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMUL) ??
-        false;
-    showCreateCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMCC) ??
-        false;
-    showEditCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMEC) ??
-        false;
-    showViewCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMVC) ??
-        false;
-    showDeleteCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMDC) ??
-        false;
-    showEnableDisableCorporate =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMED) ??
-            false;
-    showCorporateVerificationTab =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMLL) ??
-            false;
-    showUserVerificationTab =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CAMVU) ??
-            false;
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUM),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMUL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCC),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMEC),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMDC),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMED),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMED),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMEU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMCL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMCU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMED),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMDU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMEU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMCL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPED),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPDU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPEU),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPCL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMUL),
+      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPUL),
+    ]);
 
-    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CAMCUL) ??
-        false;
+    // Assign values
+    isPgAdmin = results[0] ?? false;
+    showCorporateList = results[1] ?? false;
+    showCorporateUserListDropdown = results[2] ?? false;
+    showCorporateUserList = results[3] ?? false;
+    showCreateCorporate = results[4] ?? false;
+    showEditCorporate = results[5] ?? false;
+    showViewCorporate = results[6] ?? false;
+    showDeleteCorporate = results[7] ?? false;
+    showEnableDisableCorporate = results[8] ?? false;
+    showCorporateVerificationTab = results[9] ?? false;
+    showUserVerificationTab = results[10] ?? false;
+    showCorporateProfile = results[11] ?? false;
+    showEnableDisableUser = results[12] ?? false;
+    showDeleteUser = results[13] ?? false;
+    showEditUser = results[14] ?? false;
+    showConnectionListUser = results[15] ?? false;
+    showCreateUser = results[16] ?? false;
+    showEnableDisableNonCorporate = results[17] ?? false;
+    showDeleteNonCorporate = results[18] ?? false;
+    showEditNonCorporate = results[19] ?? false;
+    showNonCorporateConnectionList = results[20] ?? false;
+    showEnableDisableEmployee = results[21] ?? false;
+    showDeleteEmployee = results[22] ?? false;
+    showEditEmployee = results[23] ?? false;
+    showConnectionListEmployee = results[24] ?? false;
+    showNonCorporateList = results[25] ?? false;
+    showEmployeeList = results[26] ?? false;
 
-    showEnableDisableUser = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CUMED) ??
-        false;
-    showDeleteUser = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CUMDU) ??
-        false;
-    showEditUser = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CUMEU) ??
-        false;
-    showConnectionListUser =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.CUMCL) ??
-            false;
-    showCreateUser = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.CUMCU) ??
-        false;
-    showEnableDisableNonCorporate =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.NCMED) ??
-            false;
-    showDeleteNonCorporate =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.NCMDU) ??
-            false;
-    showEditNonCorporate = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.NCMEU) ??
-        false;
-    showNonCorporateConnectionList =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.NCMCL) ??
-            false;
-    showEnableDisableEmployee =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.EMPED) ??
-            false;
-    showDeleteEmployee = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.EMPDU) ??
-        false;
-    showEditEmployee = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.EMPEU) ??
-        false;
-    showConnectionListEmployee =
-        await SharedPreferenceService.getClaimForSubfeature(
-                SharedPreferenceService.EMPCL) ??
-            false;
-    showNonCorporateList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.NCMUL) ??
-        false;
-    showEmployeeList = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.EMPUL) ??
-        false;
-
+    // Compute tab visibility
     showCorporateManagementTab = showCorporateList ||
         showCorporateUserListDropdown ||
         showCorporateVerificationTab ||
         showCorporateProfile;
     showNonCorporateManagementTab = showNonCorporateList;
     showEmployeeManagementTab = showEmployeeList;
+
     if (!showCorporateManagementTab &&
         !showNonCorporateManagementTab &&
         !showEmployeeManagementTab) {
@@ -632,11 +701,137 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
     _tabController = TabController(length: visibleTabCount, vsync: this);
     print('Tab Count: $visibleTabCount');
+
     _removeUnusedDropdownItems();
     _adjustVerificationTabs(context);
 
+    // Fetch data after setting up tabs
     _getData();
   }
+
+  // Future<void> _setTabs() async {
+  //   isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_PG_ADMIN) ??
+  //       false;
+  //   //isPgAdmin = true;
+  //   showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMCL) ??
+  //       false;
+  //   showCorporateUserListDropdown =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMCUM) ??
+  //           false;
+  //   showCorporateUserList = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMUL) ??
+  //       false;
+  //   showCreateCorporate = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMCC) ??
+  //       false;
+  //   showEditCorporate = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMEC) ??
+  //       false;
+  //   showViewCorporate = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMVC) ??
+  //       false;
+  //   showDeleteCorporate = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMDC) ??
+  //       false;
+  //   showEnableDisableCorporate =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMED) ??
+  //           false;
+  //   showCorporateVerificationTab =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMLL) ??
+  //           false;
+  //   showUserVerificationTab =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMVU) ??
+  //           false;
+  //
+  //   showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CAMCUL) ??
+  //       false;
+  //
+  //   showEnableDisableUser = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CUMED) ??
+  //       false;
+  //   showDeleteUser = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CUMDU) ??
+  //       false;
+  //   showEditUser = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CUMEU) ??
+  //       false;
+  //   showConnectionListUser =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CUMCL) ??
+  //           false;
+  //   showCreateUser = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.CUMCU) ??
+  //       false;
+  //   showEnableDisableNonCorporate =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.NCMED) ??
+  //           false;
+  //   showDeleteNonCorporate =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.NCMDU) ??
+  //           false;
+  //   showEditNonCorporate = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.NCMEU) ??
+  //       false;
+  //   showNonCorporateConnectionList =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.NCMCL) ??
+  //           false;
+  //   showEnableDisableEmployee =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.EMPED) ??
+  //           false;
+  //   showDeleteEmployee = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.EMPDU) ??
+  //       false;
+  //   showEditEmployee = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.EMPEU) ??
+  //       false;
+  //   showConnectionListEmployee =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.EMPCL) ??
+  //           false;
+  //   showNonCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.NCMUL) ??
+  //       false;
+  //   showEmployeeList = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.EMPUL) ??
+  //       false;
+  //
+  //   showCorporateManagementTab = showCorporateList ||
+  //       showCorporateUserListDropdown ||
+  //       showCorporateVerificationTab ||
+  //       showCorporateProfile;
+  //   showNonCorporateManagementTab = showNonCorporateList;
+  //   showEmployeeManagementTab = showEmployeeList;
+  //   if (!showCorporateManagementTab &&
+  //       !showNonCorporateManagementTab &&
+  //       !showEmployeeManagementTab) {
+  //     setState(() {
+  //       _selectedScreen = Screens.defaultScreen;
+  //     });
+  //   }
+  //
+  //   visibleTabCount = [
+  //     showCorporateManagementTab,
+  //     showNonCorporateManagementTab,
+  //     showEmployeeManagementTab,
+  //   ].where((tab) => tab).length;
+  //
+  //   _tabController = TabController(length: visibleTabCount, vsync: this);
+  //   print('Tab Count: $visibleTabCount');
+  //   _removeUnusedDropdownItems();
+  //   _adjustVerificationTabs(context);
+  //
+  //   _getData();
+  // }
 
   void _removeUnusedDropdownItems() {
     // Get the current corporate dropdown items
@@ -761,102 +956,201 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }
 
   Future<void> _getData() async {
+    List<Future> apiCalls = [];
+
     if (showCorporateUserListDropdown) {
       print("API call for corporate user list");
-      Provider.of<CorporateProvider>(context, listen: false)
-          .getCorporateUserList(context);
+      apiCalls.add(Provider.of<CorporateProvider>(context, listen: false)
+          .getCorporateUserList(context));
     }
     if (showNonCorporateList) {
       print("API call for non corporate user list");
-      Provider.of<NonCorporateProvider>(context, listen: false)
-          .getNonCorporateUserList(context);
+      apiCalls.add(Provider.of<NonCorporateProvider>(context, listen: false)
+          .getNonCorporateUserList(context));
     }
     if (showCorporateList) {
       print("API call for corporate list");
-      Provider.of<CompanyProvider>(context, listen: false)
-          .getAllCompanies(context, "", "", "");
+      apiCalls.add(Provider.of<CompanyProvider>(context, listen: false)
+          .getAllCompanies(context, "", "", ""));
     }
-    Provider.of<CompanyProvider>(context, listen: false)
-        .getCorporateType(context);
+
+    apiCalls.add(Provider.of<CompanyProvider>(context, listen: false)
+        .getCorporateType(context));
+
     if (showCorporateVerificationTab) {
       print("API call for corporate verification list");
-      Provider.of<VerificationProvider>(context, listen: false)
-          .getAllCorporateRequests(context);
+      apiCalls.add(Provider.of<VerificationProvider>(context, listen: false)
+          .getAllCorporateRequests(context));
     }
     if (showUserVerificationTab) {
       print("API call for user verification list");
-      Provider.of<VerificationProvider>(context, listen: false)
-          .getAllUserRequests(context);
+      apiCalls.add(Provider.of<VerificationProvider>(context, listen: false)
+          .getAllUserRequests(context));
     }
     if (showEmployeeList) {
       print("API call for employee list");
-      Provider.of<EmployeeProvider>(context, listen: false)
-          .getAllEmployees(context);
+      apiCalls.add(Provider.of<EmployeeProvider>(context, listen: false)
+          .getAllEmployees(context));
     }
-    filterRoleList = allRoles =
-        await Provider.of<RoleProvider>(context, listen: false)
-            .getAllRoles(context);
-    selectedEmployeeRoles =
-        await Provider.of<EmployeeProvider>(context, listen: false)
-            .getRoles(context);
-    filterRoleList = allRoles =
-        await Provider.of<RoleProvider>(context, listen: false)
-            .getAllRoles(context);
-    // if only view corporate in dropdown then call view api
+
+    // Parallel API calls for fetching roles
+    var roleFuture = Provider.of<RoleProvider>(context, listen: false)
+        .getAllRoles(context);
+    var employeeRoleFuture = Provider.of<EmployeeProvider>(context, listen: false)
+        .getRoles(context);
+
+    // Await all API calls in parallel
+    var results = await Future.wait([...apiCalls, roleFuture, employeeRoleFuture]);
+
+    // Assign results to variables after completion
+    filterRoleList = allRoles = results[apiCalls.length];
+    selectedEmployeeRoles = results[apiCalls.length + 1];
+
+    // If only the corporate profile needs to be loaded, fetch it separately
     if (!showCorporateList &&
         !showCorporateUserListDropdown &&
         !showCorporateVerificationTab &&
         !showUserVerificationTab &&
         showCorporateProfile) {
-      var companyProvider =
-          Provider.of<CompanyProvider>(context, listen: false);
-      companyProvider.viewCompany(context, "current").then((value) {
-        companyImageUrl = companyProvider.company.companyImageUrl;
-        selectedCompanyType = CorporateType(
-          name: companyProvider.company.companyTypeName,
-          type: companyProvider.company.companyType,
-        );
-        _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
-        selectedCorporateTypeRole = [
-          companyType.Roles(
-            name: "Admin",
-            role: "admin",
-          )
-        ];
-        _domainListController.text =
-            companyProvider.company.domainList?.join(",") ?? '';
-        _companyLegalNameController.text = companyProvider.company.name ?? '';
-        if (companyProvider.company.displayName != null) {
-          _companyDisplayNameController.text = companyProvider
-                      .company.displayName!
-                      .substring(0, 1)
-                      .toUpperCase() +
-                  companyProvider.company.displayName!.substring(1) ??
-              '';
-        }
+      var companyProvider = Provider.of<CompanyProvider>(context, listen: false);
+      await companyProvider.viewCompany(context, "current");
+      var company = companyProvider.company;
 
-        _adminNameController.text = companyProvider.company.adminName ?? "";
-        _adminDisplayNameController.text =
-            companyProvider.company.adminName ?? '';
-        _adminEmailController.text = companyProvider.company.adminEmail ?? '';
-        _selectedCountryCode = _adminMobileController.text =
-            companyProvider.company.adminCountryCode?.replaceAll('+', '') ??
-                "1";
-        print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
-        corporateEditMobileController.value = PhoneNumber(
-            isoCode:
-                countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
-            nsn: companyProvider.company.adminMobile ?? "");
-        _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
-        _selectedCorporateCountryName =
-            companyProvider.company.countryName ?? 'United States';
-        // Set screen to edit
-        _selectedScreen = Screens.corporateProfile;
-        clearFilters();
-        log(companyProvider.company.toJson().toString());
-      });
+      companyImageUrl = company.companyImageUrl;
+      selectedCompanyType = CorporateType(
+        name: company.companyTypeName,
+        type: company.companyType,
+      );
+      _enableDomainCheck = company.enableDomainCheck ?? false;
+      selectedCorporateTypeRole = [
+        companyType.Roles(
+          name: "Admin",
+          role: "admin",
+        )
+      ];
+      _domainListController.text = company.domainList?.join(",") ?? '';
+      _companyLegalNameController.text = company.name ?? '';
+      if (company.displayName != null) {
+        _companyDisplayNameController.text =
+            company.displayName!.substring(0, 1).toUpperCase() +
+                company.displayName!.substring(1);
+      }
+
+      _adminNameController.text = company.adminName ?? "";
+      _adminDisplayNameController.text = company.adminName ?? '';
+      _adminEmailController.text = company.adminEmail ?? '';
+      _selectedCountryCode = _adminMobileController.text =
+          company.adminCountryCode?.replaceAll('+', '') ?? "1";
+      corporateEditMobileController.value = PhoneNumber(
+          isoCode: countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
+          nsn: company.adminMobile ?? "");
+      _enableDomainCheck = company.enableDomainCheck ?? false;
+      _selectedCorporateCountryName = company.countryName ?? 'United States';
+
+      // Set screen to edit
+      _selectedScreen = Screens.corporateProfile;
+      clearFilters();
+      log(company.toJson().toString());
     }
   }
+
+  // Future<void> _getData() async {
+  //   if (showCorporateUserListDropdown) {
+  //     print("API call for corporate user list");
+  //     Provider.of<CorporateProvider>(context, listen: false)
+  //         .getCorporateUserList(context);
+  //   }
+  //   if (showNonCorporateList) {
+  //     print("API call for non corporate user list");
+  //     Provider.of<NonCorporateProvider>(context, listen: false)
+  //         .getNonCorporateUserList(context);
+  //   }
+  //   if (showCorporateList) {
+  //     print("API call for corporate list");
+  //     Provider.of<CompanyProvider>(context, listen: false)
+  //         .getAllCompanies(context, "", "", "");
+  //   }
+  //   Provider.of<CompanyProvider>(context, listen: false)
+  //       .getCorporateType(context);
+  //   if (showCorporateVerificationTab) {
+  //     print("API call for corporate verification list");
+  //     Provider.of<VerificationProvider>(context, listen: false)
+  //         .getAllCorporateRequests(context);
+  //   }
+  //   if (showUserVerificationTab) {
+  //     print("API call for user verification list");
+  //     Provider.of<VerificationProvider>(context, listen: false)
+  //         .getAllUserRequests(context);
+  //   }
+  //   if (showEmployeeList) {
+  //     print("API call for employee list");
+  //     Provider.of<EmployeeProvider>(context, listen: false)
+  //         .getAllEmployees(context);
+  //   }
+  //   filterRoleList = allRoles =
+  //       await Provider.of<RoleProvider>(context, listen: false)
+  //           .getAllRoles(context);
+  //   selectedEmployeeRoles =
+  //       await Provider.of<EmployeeProvider>(context, listen: false)
+  //           .getRoles(context);
+  //   filterRoleList = allRoles =
+  //       await Provider.of<RoleProvider>(context, listen: false)
+  //           .getAllRoles(context);
+  //   // if only view corporate in dropdown then call view api
+  //   if (!showCorporateList &&
+  //       !showCorporateUserListDropdown &&
+  //       !showCorporateVerificationTab &&
+  //       !showUserVerificationTab &&
+  //       showCorporateProfile) {
+  //     var companyProvider =
+  //         Provider.of<CompanyProvider>(context, listen: false);
+  //     companyProvider.viewCompany(context, "current").then((value) {
+  //       companyImageUrl = companyProvider.company.companyImageUrl;
+  //       selectedCompanyType = CorporateType(
+  //         name: companyProvider.company.companyTypeName,
+  //         type: companyProvider.company.companyType,
+  //       );
+  //       _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
+  //       selectedCorporateTypeRole = [
+  //         companyType.Roles(
+  //           name: "Admin",
+  //           role: "admin",
+  //         )
+  //       ];
+  //       _domainListController.text =
+  //           companyProvider.company.domainList?.join(",") ?? '';
+  //       _companyLegalNameController.text = companyProvider.company.name ?? '';
+  //       if (companyProvider.company.displayName != null) {
+  //         _companyDisplayNameController.text = companyProvider
+  //                     .company.displayName!
+  //                     .substring(0, 1)
+  //                     .toUpperCase() +
+  //                 companyProvider.company.displayName!.substring(1) ??
+  //             '';
+  //       }
+  //
+  //       _adminNameController.text = companyProvider.company.adminName ?? "";
+  //       _adminDisplayNameController.text =
+  //           companyProvider.company.adminName ?? '';
+  //       _adminEmailController.text = companyProvider.company.adminEmail ?? '';
+  //       _selectedCountryCode = _adminMobileController.text =
+  //           companyProvider.company.adminCountryCode?.replaceAll('+', '') ??
+  //               "1";
+  //       print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
+  //       corporateEditMobileController.value = PhoneNumber(
+  //           isoCode:
+  //               countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
+  //           nsn: companyProvider.company.adminMobile ?? "");
+  //       _enableDomainCheck = companyProvider.company.enableDomainCheck ?? false;
+  //       _selectedCorporateCountryName =
+  //           companyProvider.company.countryName ?? 'United States';
+  //       // Set screen to edit
+  //       _selectedScreen = Screens.corporateProfile;
+  //       clearFilters();
+  //       log(companyProvider.company.toJson().toString());
+  //     });
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -5224,134 +5518,208 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     SizedBox(
                       height: CustomSpacing.four,
                     ),
+                    TextFormField(
+                      controller: _employeeDisplayNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Display Name',
+                        labelStyle: typography.Body1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == "") {
+                          return 'Display name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: CustomSpacing.four,
+                    ),
                     // Role Dropdown
-                    Consumer<CorporateProvider>(
-                        builder: (_, employeeProvider, child) {
-                      print(
-                          'Selected Employee Type: $selectedCorporateTypeRole');
+
+                  Consumer<CorporateProvider>(
+                    builder: (_, employeeProvider, child) {
                       return Stack(
                         children: [
                           TextField(
                             readOnly: true,
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                useSafeArea: true,
-                                isScrollControlled: true,
-                                builder: (BuildContext context) {
-                                  List<companyType.Roles> roles = [];
-
-                                  if (employeeProvider.roles != null) {
-                                    employeeProvider.roles!.forEach((role) {
-                                      roles.add(companyType.Roles(
-                                        isForIndividual: role.isForIndividual,
-                                        isMultipleRoleEnabled:
-                                            role.isMultipleRoleEnabled,
-                                        isApplicableForTrial:
-                                            role.isApplicableForTrial,
-                                        name: role.name,
-                                        role: role.role,
-                                        isApplicableForInternal:
-                                            role.isApplicableForInternal,
-                                        status: role.status,
-                                      ));
-                                    });
-                                  }
-                                  return CorporateTypeRolesBottomSheet(
-                                    selectedRoles: selectedCorporateTypeRole,
-                                    addChip: _addCorporateChip,
-                                    removeChip: _removeCorporateChip,
-                                    removeAllChips: _removeAllCorporateChips,
-                                    roles: roles,
-                                    isEnabled: true,
-                                  );
-                                },
-                              );
+                            onTap: () async {
+                              await _fetchRoles();
+                              _openBottomSheet(context);
                             },
                             controller: _textEditingController,
-                            onChanged: (value) {
-                              // Handle input changes
-                            },
                             decoration: InputDecoration(
                               labelText: LanguageService.getTranslated(
                                   context, 'usermanagement_cuser_roles_label'),
-                              hintText:
-                                  _selectedRoles.isEmpty ? 'Select Roles' : "",
+                              hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                               border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.arrow_drop_down),
-                                onPressed: () {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    useSafeArea: true,
-                                    isScrollControlled: true,
-                                    builder: (BuildContext context) {
-                                      List<companyType.Roles> roles = [];
-
-                                      if (employeeProvider.roles != null) {
-                                        employeeProvider.roles!.forEach((role) {
-                                          roles.add(companyType.Roles(
-                                            isForIndividual:
-                                                role.isForIndividual,
-                                            isMultipleRoleEnabled:
-                                                role.isMultipleRoleEnabled,
-                                            isApplicableForTrial:
-                                                role.isApplicableForTrial,
-                                            name: role.name,
-                                            role: role.role,
-                                            isApplicableForInternal:
-                                                role.isApplicableForInternal,
-                                            status: role.status,
-                                          ));
-                                        });
-                                      }
-                                      return CorporateTypeRolesBottomSheet(
-                                        selectedRoles:
-                                            selectedCorporateTypeRole,
-                                        addChip: _addCorporateChip,
-                                        removeChip: _removeCorporateChip,
-                                        removeAllChips:
-                                            _removeAllCorporateChips,
-                                        roles: roles,
-                                        isEnabled: true,
-                                      );
-                                    },
-                                  );
+                                onPressed: () async {
+                                  await _fetchRoles();
+                                  _openBottomSheet(context);
                                 },
                               ),
                             ),
                           ),
-                          Positioned(
-                            top: 10.0,
-                            left: 10.0,
-                            right: 10.0,
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 32.0),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: selectedCorporateTypeRole
-                                      .map(
-                                        (value) => Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8.0),
-                                          child: Chip(
-                                            label: Text(value.name ?? ''),
-                                            deleteIcon:
-                                                const Icon(Icons.cancel),
-                                            onDeleted: () =>
-                                                _removeCorporateChip(value),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                              ),
+                          if (_isLoading)
+                            Positioned.fill(
+                              child: Center(child: CircularProgressIndicator()),
                             ),
-                          ),
+                                Positioned(
+                                  top: 8.0,
+                                  left: 10.0,
+                                  right: 10.0,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 32.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: selectedCorporateTypeRole
+                                            .map(
+                                              (value) => Padding(
+                                                padding:
+                                                    const EdgeInsets.only(right: 8.0),
+                                                child: Chip(
+                                                  label: Text(value.name ?? ''),
+                                                  deleteIcon:
+                                                      const Icon(Icons.cancel),
+                                                  onDeleted: () =>
+                                                      _removeCorporateChip(value),
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                      )
+                                    )
+                      ),
+
+                                ),
                         ],
                       );
-                    }),
+                    },
+                  ),
+                    // Consumer<CorporateProvider>(
+                    //     builder: (_, employeeProvider, child) {
+                    //   print(
+                    //       'Selected Employee Type: $selectedCorporateTypeRole');
+                    //   return Stack(
+                    //     children: [
+                    //       TextField(
+                    //         readOnly: true,
+                    //         onTap: () {
+                    //           List<companyType.Roles> roles = [];
+                    //
+                    //           if (employeeProvider.roles != null) {
+                    //             employeeProvider.roles!.forEach((role) {
+                    //               roles.add(companyType.Roles(
+                    //                 isForIndividual: role.isForIndividual,
+                    //                 isMultipleRoleEnabled: role.isMultipleRoleEnabled,
+                    //                 isApplicableForTrial: role.isApplicableForTrial,
+                    //                 name: role.name,
+                    //                 role: role.role,
+                    //                 isApplicableForInternal: role.isApplicableForInternal,
+                    //                 status: role.status,
+                    //               ));
+                    //             });
+                    //           }
+                    //
+                    //           // Print roles
+                    //           if (roles.isEmpty) {
+                    //             print("No roles found!");
+                    //           } else {
+                    //             for (var role in roles) {
+                    //               print("Role: ${role.name}, Status: ${role.status}");
+                    //             }
+                    //           }
+                    //         },
+                    //
+                    //         controller: _textEditingController,
+                    //         onChanged: (value) {
+                    //           // Handle input changes
+                    //         },
+                    //         decoration: InputDecoration(
+                    //           labelText: LanguageService.getTranslated(
+                    //               context, 'usermanagement_cuser_roles_label'),
+                    //           hintText:
+                    //               _selectedRoles.isEmpty ? 'Select Roles' : "",
+                    //           border: const OutlineInputBorder(),
+                    //           suffixIcon: IconButton(
+                    //             icon: const Icon(Icons.arrow_drop_down),
+                    //             onPressed: () {
+                    //               showModalBottomSheet(
+                    //                 context: context,
+                    //                 useSafeArea: true,
+                    //                 isScrollControlled: true,
+                    //                 builder: (BuildContext context) {
+                    //                   List<companyType.Roles> roles = [];
+                    //
+                    //                   if (employeeProvider.roles != null) {
+                    //                     employeeProvider.roles!.forEach((role) {
+                    //                       roles.add(companyType.Roles(
+                    //                         isForIndividual:
+                    //                             role.isForIndividual,
+                    //                         isMultipleRoleEnabled:
+                    //                             role.isMultipleRoleEnabled,
+                    //                         isApplicableForTrial:
+                    //                             role.isApplicableForTrial,
+                    //                         name: role.name,
+                    //                         role: role.role,
+                    //                         isApplicableForInternal:
+                    //                             role.isApplicableForInternal,
+                    //                         status: role.status,
+                    //                       ));
+                    //                     });
+                    //                   }
+                    //                   return CorporateTypeRolesBottomSheet(
+                    //                     selectedRoles:
+                    //                         selectedCorporateTypeRole,
+                    //                     addChip: _addCorporateChip,
+                    //                     removeChip: _removeCorporateChip,
+                    //                     removeAllChips:
+                    //                         _removeAllCorporateChips,
+                    //                     roles: roles,
+                    //                     isEnabled: true,
+                    //                   );
+                    //                 },
+                    //               );
+                    //             },
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       Positioned(
+                    //         top: 10.0,
+                    //         left: 10.0,
+                    //         right: 10.0,
+                    //         child: Container(
+                    //           margin: const EdgeInsets.only(right: 32.0),
+                    //           child: SingleChildScrollView(
+                    //             scrollDirection: Axis.horizontal,
+                    //             child: Row(
+                    //               children: selectedCorporateTypeRole
+                    //                   .map(
+                    //                     (value) => Padding(
+                    //                       padding:
+                    //                           const EdgeInsets.only(right: 8.0),
+                    //                       child: Chip(
+                    //                         label: Text(value.name ?? ''),
+                    //                         deleteIcon:
+                    //                             const Icon(Icons.cancel),
+                    //                         onDeleted: () =>
+                    //                             _removeCorporateChip(value),
+                    //                       ),
+                    //                     ),
+                    //                   )
+                    //                   .toList(),
+                    //             ),
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   );
+                    // }),
 
                     SizedBox(
                       height: CustomSpacing.four,
@@ -5528,6 +5896,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   //Clear all fields
                                                   _employeeNameController
                                                       .clear();
+                                                  _employeeDisplayNameController
+                                                      .clear();
                                                   _employeeEmailController
                                                       .clear();
                                                   corporateEmployeeMobileController
@@ -5564,6 +5934,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     corporateEmployeeMobileController
                                                             .value?.nsn ??
                                                         "",
+
                                                 "email":
                                                     _employeeEmailController
                                                         .text,
@@ -9167,9 +9538,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         itemCount: verificationProvider
                                             .userRequests.length,
                                         itemBuilder: (context, index) {
-                                          return
-
-                                            _verificationUserRequestsListItem(
+                                          return _verificationUserRequestsListItem(
                                               index, verificationProvider);
                                         },
                                       );
@@ -9674,20 +10043,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           )
                         : CustomButton(
                             type: ButtonType.text,
-                            onPressed: () async{
+                            onPressed: () async {
                               // Handle reject
                               setState(() {
                                 selectedUserVerificationRejectListIndex = index;
                               });
                               // Perform reject API call
-                              bool isRejected = await verificationProvider.changeUserVerificationStatus(
-                                  context,
-                                  verificationProvider.userRequests[index].id ?? "",
-                                  false);
+                              bool isRejected = await verificationProvider
+                                  .changeUserVerificationStatus(
+                                      context,
+                                      verificationProvider
+                                              .userRequests[index].id ??
+                                          "",
+                                      false);
 
                               if (isRejected) {
                                 // Fetch updated list and refresh UI
-                                await verificationProvider.getAllUserRequests(context);
+                                await verificationProvider
+                                    .getAllUserRequests(context);
                                 setState(() {}); // Trigger UI rebuild
                               }
                             },

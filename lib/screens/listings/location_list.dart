@@ -757,99 +757,101 @@ class _LocationListState extends State<LocationList>
     var typography = CustomTypography(context);
     return Consumer<LocationListProvider>(
       builder: (context, locationListProvider, child) {
-        return locationListProvider.isLoading
-            ? Column(
-                children: [
-                  SizedBox(
-                    height: 100,
-                  ),
-                  Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ],
-              )
-            : locationListProvider.locationList.isEmpty
-                ? Center(
-                    child: Text(
-                      LanguageService.getTranslated(
-                          context, "location_list_app_no_accounts_text"),
-                      style: typography.Body1,
-                    ),
-                  )
-                : ListView.builder(
-                    physics: ClampingScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: locationListProvider.locationList.length,
-                    itemBuilder: (context, index) {
-                      if (index ==
-                          locationListProvider.locationList.length - 1) {
-                        // Check if it's the last item
-                        if (locationListProvider.isNextPageLoading) {
-                          // Display loading indicator
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        } else if (locationListProvider.page >=
-                                locationListProvider.totalPages &&
-                            locationListProvider.locationList.isNotEmpty) {
-                          // Display end of list message
-                          print(
-                              "location list: ${locationListProvider.locationList}");
-                          return Column(
-                            children: [
-                              locationListCard(
-                                  index, locationListProvider.locationList),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: Text(
-                                    LanguageService.getTranslated(
-                                        context, "location_list_end_of_list"),
-                                    style: typography.Body1,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        } else {
-                          // Trigger fetching the next page
-                          locationListProvider.page =
-                              locationListProvider.page + 1;
-                          print("Fetching page ${locationListProvider.page}");
-                          print(
-                              "Query: $locationQuery, Page: ${locationListProvider.page}");
-                          locationListProvider.fetchLocationList(
-                            context,
-                            widget.accountId,
-                            widget.subAccountId,
-                            widget.sovId,
-                            locationQuery,
-                            // Pass the search query if any
-                            locationListProvider.page,
-                            "forward",
-                            40,
-                            // Page size
-                            countries: [],
-                            // Add your filter parameters here
-                            state: "",
-                            propertyType: [],
-                            constructionType: [],
-                            certifications: [],
-                            hazard: [],
-                            rating: [],
-                          );
-                          return SizedBox();
-                        }
-                      }
-
-                      return
-                        locationListCard(
-                          index, locationListProvider.locationList);
-                    },
-                  );
+        return Container();
+        //   locationListProvider.isLoading
+        //     ? Column(
+        //         children: [
+        //           SizedBox(
+        //             height: 100,
+        //           ),
+        //           Center(
+        //             child: CircularProgressIndicator(),
+        //           ),
+        //         ],
+        //       )
+        //     : locationListProvider.locationList.isEmpty
+        //         ? Center(
+        //             child: Text(
+        //               LanguageService.getTranslated(
+        //                   context, "location_list_app_no_accounts_text"),
+        //               style: typography.Body1,
+        //             ),
+        //           )
+        //         :
+        // ListView.builder(
+        //             physics: ClampingScrollPhysics(),
+        //             shrinkWrap: true,
+        //             itemCount: locationListProvider.locationList.length,
+        //             itemBuilder: (context, index) {
+        //               if (index ==
+        //                   locationListProvider.locationList.length - 1) {
+        //                 // Check if it's the last item
+        //                 if (locationListProvider.isNextPageLoading) {
+        //                   // Display loading indicator
+        //                   return Padding(
+        //                     padding: const EdgeInsets.all(8.0),
+        //                     child: Center(
+        //                       child: CircularProgressIndicator(),
+        //                     ),
+        //                   );
+        //                 } else if (locationListProvider.page >=
+        //                         locationListProvider.totalPages &&
+        //                     locationListProvider.locationList.isNotEmpty) {
+        //                   // Display end of list message
+        //                   print(
+        //                       "location list: ${locationListProvider.locationList}");
+        //                   return Column(
+        //                     children: [
+        //                       locationListCard(
+        //                           index, locationListProvider.locationList),
+        //                       Padding(
+        //                         padding: const EdgeInsets.all(8.0),
+        //                         child: Center(
+        //                           child: Text(
+        //                             LanguageService.getTranslated(
+        //                                 context, "location_list_end_of_list"),
+        //                             style: typography.Body1,
+        //                           ),
+        //                         ),
+        //                       ),
+        //                     ],
+        //                   );
+        //                 } else {
+        //                   // Trigger fetching the next page
+        //                   locationListProvider.page =
+        //                       locationListProvider.page + 1;
+        //                   print("Fetching page ${locationListProvider.page}");
+        //                   print(
+        //                       "Query: $locationQuery, Page: ${locationListProvider.page}");
+        //                   locationListProvider.fetchLocationList(
+        //                     context,
+        //                     widget.accountId,
+        //                     widget.subAccountId,
+        //                     widget.sovId,
+        //                     locationQuery,
+        //                     // Pass the search query if any
+        //                     locationListProvider.page,
+        //                     "forward",
+        //                     40,
+        //                     // Page size
+        //                     countries: [],
+        //                     // Add your filter parameters here
+        //                     state: "",
+        //                     propertyType: [],
+        //                     constructionType: [],
+        //                     certifications: [],
+        //                     hazard: [],
+        //                     rating: [],
+        //                   );
+        //                   return SizedBox();
+        //                 }
+        //               }
+        //
+        //               return
+        //                 locationListCard(
+        //                   index, locationListProvider.locationList);
+        //             },
+        //           );
       },
     );
   }
@@ -865,6 +867,7 @@ class _LocationListState extends State<LocationList>
         Navigator.of(context)
             .push(MaterialPageRoute(
           builder: (_) => LocationProfile(
+
             accountId: widget.accountId,
             accountName: widget.companyName,
             subAccountId: widget.subAccountId,
@@ -1485,12 +1488,14 @@ class _LocationListState extends State<LocationList>
                                               context,
                                               MaterialPageRoute(
                                                   builder: (_) => MappingScreen(
+                                                    subAccountName: widget.subAccountName ??"",
                                                         tempId: success,
                                                         accountId:
                                                             widget.accountId,
                                                         accountName: widget
                                                                 .accountName ??
                                                             "",
+
                                                       )));
                                         }
                                       },

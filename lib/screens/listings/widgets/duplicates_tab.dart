@@ -11,6 +11,7 @@ import '../../../providers/upload_sov_provider.dart';
 import 'message_card.dart';
 
 class DuplicatesTab extends StatefulWidget {
+  final String? subAccountName;
   final String processId;
   final String accountId;
   final String subAccountId;
@@ -20,6 +21,7 @@ class DuplicatesTab extends StatefulWidget {
 
   const DuplicatesTab(
       {super.key,
+       this.subAccountName,
       required this.processId,
       required this.accountId,
       required this.subAccountId,
@@ -39,6 +41,24 @@ class DuplicatesTabState extends State<DuplicatesTab> {
   final GlobalKey _mapKey = GlobalKey();
 
   Future<void> _getData() async {
+    final uploadSovProvider =
+        Provider.of<UploadSovProvider>(context, listen: false);
+
+    List<dynamic> responses = await Future.wait([
+      uploadSovProvider.fetchDuplicates(context, widget.processId),
+      uploadSovProvider.fetchLocations(context, widget.processId),
+      uploadSovProvider.fetchConflicts(context, widget.processId),
+    ]);
+
+    // Access responses if needed
+    final duplicatesResponse = responses[0];
+    final locationsResponse = responses[1];
+    final conflictsResponse = responses[2];
+
+    // Perform any further processing if necessary
+  }
+
+  Future<void> _getDataInital() async {
     response = await Provider.of<UploadSovProvider>(context, listen: false)
         .fetchDuplicates(context, widget.processId);
   }
@@ -52,7 +72,10 @@ class DuplicatesTabState extends State<DuplicatesTab> {
   @override
   void initState() {
     super.initState();
-    _getData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getDataInital(); // Ensures API calls happen after the widget is built
+    });
+    // _getData();
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -338,9 +361,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                               ).markAsNotDuplicate(
                                                   context,
                                                   widget.accountId,
-                                                  // Replace with actual account_id
                                                   widget.subAccountId,
-                                                  // Replace with actual sub_account_id
                                                   widget.processId,
                                                   [currentDuplicate],
                                                   provider.duplicateLocations[
@@ -348,9 +369,51 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                                       "" // Pass the current duplicate
                                                   );
 
+                                              final uploadSovProvider = Provider
+                                                  .of<UploadSovProvider>(
+                                                      context,
+                                                      listen: false);
+
                                               if (success) {
-                                                // Refresh the data if successful
-                                                await _getData();
+                                                // Remove from duplicate list
+                                                provider.duplicateLocations
+                                                    .removeAt(currentIndex);
+
+                                                // Add the item to the geocoding list (assuming it should now be treated as a valid location)
+                                                provider.geocodingList
+                                                    .add(currentDuplicate);
+
+                                                // If the item was in the conflict list, remove it
+                                                provider.conflictLocations
+                                                    .removeWhere((conflict) =>
+                                                        conflict['id'] ==
+                                                        currentDuplicate['id']);
+
+                                                // Update counts locally without API call
+                                                uploadSovProvider
+                                                        .duplicateCount =
+                                                    provider.duplicateLocations
+                                                        .length;
+                                                uploadSovProvider
+                                                        .locationCount =
+                                                    provider
+                                                        .geocodingList.length;
+                                                uploadSovProvider
+                                                        .conflictCount =
+                                                    provider.conflictLocations
+                                                        .length;
+
+                                                // Notify UI about the update
+                                                uploadSovProvider
+                                                    .refreshCounts();
+
+                                                // Debugging log for verification
+                                                print(
+                                                    "Updated Counts - Duplicates: ${uploadSovProvider.duplicateCount}");
+                                                print(
+                                                    "Updated Counts - Locations: ${uploadSovProvider.locationCount}");
+                                                print(
+                                                    "Updated Counts - Conflicts: ${uploadSovProvider.conflictCount}");
                                               }
                                             },
                                             child: Text(
@@ -372,6 +435,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                             ),
                           ),
                           UploadPreviewButtons(
+                            subAccountName: widget.subAccountName,
                             accountId: widget.accountId,
                             accountName: widget.accountName,
                             tempId: widget.tempId,

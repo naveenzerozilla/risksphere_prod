@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:RiskSphare/screens/listings/account_list.dart';
-import 'package:country_list_picker/country_list_picker.dart';
+// import 'package:country_list_picker/country_list_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +66,7 @@ class SubAccountListScreen extends StatefulWidget {
 class _SubAccountListScreenState extends State<SubAccountListScreen>
     with TickerProviderStateMixin {
   bool _isExpanded = false;
+  Timer? _debounce;
   bool _showNotificationDot = true;
   TabController? _tabController;
   Screens _selectedScreen = Screens.subAccountList;
@@ -170,14 +171,15 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   @override
   void initState() {
+    super.initState();
+    _getData();
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
     int tabCount = trialStatus.isEmpty ? 3 : 2;
     _tabController = TabController(length: tabCount, vsync: this);
-    super.initState();
-    _getData();
+
   }
 
   _getData() async {
@@ -287,15 +289,22 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: CustomSpacing.two),
+                              SizedBox(height: CustomSpacing.one),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
+                                    horizontal: 10.0),
+                                child: Text(widget.accountName.toString(),
+                                    style: typography.Base_Bold),
+                              ),
+
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0),
                                 child: Row(
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                          top: 8.0, bottom: 6),
+                                          top: 6.0, bottom: 6),
                                       child: Row(
                                         children: [
                                           InkWell(
@@ -310,12 +319,13 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             },
                                             child: Text(
                                                 widget.accountName.toString(),
-                                                style: typography.InputLabel),
+                                                style: TextStyle(fontSize: 14,color: Colors.white70)),
                                           ),
                                           Text(' > ',
                                               style: typography.InputLabel),
                                           Text("Sub Accounts",
-                                              style: typography.InputLabel),
+
+                                              style: TextStyle(fontSize: 14,color: Colors.white)),
                                         ],
                                       ),
                                     ),
@@ -1362,27 +1372,55 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                             TextField(
                               controller: _textEditingController,
                               focusNode: FocusNode(),
-                              onChanged: (value) async {
+                              onChanged: (value) {
                                 setState(() {
                                   _subAccountAlreadyExists = false;
                                   _selectedSubAccount = null;
-                                  // Clear the autocomplete list when user starts typing
-                                  subAccountListProvider
-                                      .clearAutoCompleteList();
+                                  subAccountListProvider.clearAutoCompleteList();
                                 });
+
                                 _autocompleteText = value;
-                                await autoCompleteAccountsSearchClient(
-                                    _autocompleteText);
+
+                                // Cancel the previous debounce timer
+                                if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+                                // Start a new debounce timer
+                                _debounce = Timer(const Duration(milliseconds: 500), () async {
+                                  await autoCompleteAccountsSearchClient(_autocompleteText);
+                                });
                               },
                               decoration: InputDecoration(
                                 labelText: LanguageService.getTranslated(
-                                    context,
-                                    "sub_account_list_app_account_name_field_label"),
-                                hintText: LanguageService.getTranslated(context,
-                                    "sub_account_list_app_account_name_field_hint"),
+                                    context, "sub_account_list_app_account_name_field_label"),
+                                hintText: LanguageService.getTranslated(
+                                    context, "sub_account_list_app_account_name_field_hint"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),
+                            // TextField(
+                            //   controller: _textEditingController,
+                            //   focusNode: FocusNode(),
+                            //   onChanged: (value) async {
+                            //     setState(() {
+                            //       _subAccountAlreadyExists = false;
+                            //       _selectedSubAccount = null;
+                            //       // Clear the autocomplete list when user starts typing
+                            //       subAccountListProvider
+                            //           .clearAutoCompleteList();
+                            //     });
+                            //     _autocompleteText = value;
+                            //     await autoCompleteAccountsSearchClient(
+                            //         _autocompleteText);
+                            //   },
+                            //   decoration: InputDecoration(
+                            //     labelText: LanguageService.getTranslated(
+                            //         context,
+                            //         "sub_account_list_app_account_name_field_label"),
+                            //     hintText: LanguageService.getTranslated(context,
+                            //         "sub_account_list_app_account_name_field_hint"),
+                            //     border: const OutlineInputBorder(),
+                            //   ),
+                            // ),
                             if (_textEditingController.text.isNotEmpty &&
                                 !_subAccountAlreadyExists)
                               AutocompleteOptionsSubAccount(

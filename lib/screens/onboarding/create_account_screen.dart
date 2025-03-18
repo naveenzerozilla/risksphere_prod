@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
-import 'package:country_list_picker/country_list_picker.dart';
+import 'package:RiskSphare/models/companymodel.dart';
+// import 'package:country_list_picker/country_list_picker.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -57,6 +59,50 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   TextEditingController _textEditingController = TextEditingController();
 
   String _selectedCountryCode = '+1';
+  List<Companies> companyOptions = [];
+  Timer? _debounce;
+
+  // TextEditingController _textEditingController = TextEditingController();
+  bool isLoading = false;
+
+  // void onSearchChanged(String query, AuthNotifier authNotifier, Function setState) {
+  //   if (_debounce?.isActive ?? false) _debounce!.cancel();
+  //
+  //   _debounce = Timer(Duration(milliseconds: 300), () async {
+  //     await authNotifier.fetchCompanies(query);
+  //     setState(() {}); // Force UI to refresh and show results
+  //   });
+  // }
+  // void onSearchChanged(String query, AuthNotifier authNotifier) {
+  //   if (_debounce?.isActive ?? false) _debounce!.cancel();
+  //
+  //   _debounce = Timer(Duration(milliseconds: 300), () {
+  //     authNotifier.fetchCompanies(query); // 🔹 Fetch data and trigger UI updates
+  //   });
+  // }
+
+  // Future<void> fetchCompanies(String name, AuthNotifier authNotifier) async {
+  //   if (name.isEmpty) {
+  //     // setState(() {
+  //       companyOptions = [];
+  //     // });
+  //
+  //     return;
+  //   }
+  //
+  //   // setState(() {
+  //     isLoading = true; // Show loading indicator
+  //   // });
+  //
+  //   List<Companies> fetchedCompanies = await authNotifier.fetchCompanies(name);
+  //
+  //   // setState(() {
+  //     companyOptions = fetchedCompanies;
+  //     isLoading = false;
+  //
+  //     // Hide loading indicator
+  //   // });
+  // }
 
   List<Categories> _selectedRoles = [];
 
@@ -106,6 +152,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   @override
   void initState() {
     super.initState();
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+    authNotifier.fetchCompanies(""); // Initial fetch
+    authNotifier.companyOptionsNotifier.addListener(() {
+      setState(() {}); // Force rebuild when data changes
+    });
     _selectedOption = SignUpOptions.individual;
     /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
@@ -475,7 +526,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                           // Check selected_company_type in the companyTypeList
                                           (authNotifier.companyTypeList ?? [])
                                                   .any((companyType) {
-                                            log("Checking selectedCompanyType: ${selectedCompanyType}");
+                                            // log("Checking selectedCompanyType: ${selectedCompanyType}");
                                             return companyType.id ==
                                                     selectedCompanyType?.id &&
                                                 companyType
@@ -660,12 +711,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Name
         TextFormField(
           decoration: InputDecoration(
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text:  LanguageService.getTranslated(
-    context, "user_profile_user_management_name_filed_label"), // Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "user_profile_user_management_name_filed_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -676,17 +727,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
-
-
-            hintText:
-
-            LanguageService.getTranslated(
+            hintText: LanguageService.getTranslated(
                 context, "user_profile_user_management_name_placeholder"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
@@ -696,7 +743,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             if (value == null ||
                 value.isEmpty ||
                 value.contains(RegExp(r'[0-9]'))) {
-              return 'Name is required and should not be empty or contain numbers';
+              return 'Name is required';
             }
             // You can add more specific email validation here if needed
             return null;
@@ -707,10 +754,32 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Display Name
         TextFormField(
           decoration: InputDecoration(
-            labelText: LanguageService.getTranslated(
-                context, "usermanagement_display_name_field_label"),
+            // labelText: LanguageService.getTranslated(
+            //     context, "usermanagement_display_name_field_label"),
+            label: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: LanguageService.getTranslated(context,
+                        "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
+                  ),
+                  WidgetSpan(
+                    child: Text(
+                      " *",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
+                  ),
+                ],
+              ),
+            ),
             hintText: LanguageService.getTranslated(
-                context, "usermanagement_display_name_placeholder"),
+                context, "usermanagement_display_name_field_label"),
             hintStyle: typography.Body1,
             labelStyle: typography.Body1,
             border: const OutlineInputBorder(),
@@ -720,7 +789,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 value.isEmpty ||
                 value.startsWith(RegExp(r'[0-9]')) ||
                 value.contains(RegExp(r'[!@#<>?":_`~;[\]\\|=+)(*&^%0-9]'))) {
-              return 'Display name is required, should not start with a number and should not contain special characters';
+              return 'Display name is required';
             }
             // You can add more specific email validation here if needed
             return null;
@@ -733,12 +802,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "register_non_corporate_emailfield_label"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(
-        context, "register_non_corporate_emailfield_label"), // Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "register_non_corporate_emailfield_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -749,9 +818,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -776,69 +845,155 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Expanded(
-              child: PhoneInput(
-                key: const Key('phone-field'),
-                controller: mobileController,
-                shouldFormat: true,
-                defaultCountry: IsoCode.US,
-                decoration: InputDecoration(
-                  // labelText: LanguageService.getTranslated(
-                  //     context, "register_mobile_number"),
-                  label:RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: LanguageService.getTranslated(
-        context, "register_mobile_number"), // Label text, // Black color for "Name"
-                        ),
-                        WidgetSpan(
-                          child: Text(
-                            " *",
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+              child: FormField<String>(
+                validator: (value) {
+                  if (mobileController.value!.nsn.isEmpty) {
+                    return 'Mobile number is required.';
+                  }
+                  if (mobileController.value!.nsn.length < 10) {
+                    return 'Enter a valid mobile number.';
+                  }
+                  return null;
+                },
+                builder: (FormFieldState<String> fieldState) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PhoneInput(
+                        key: const Key('phone-field'),
+                        controller: mobileController,
+                        shouldFormat: true,
+                        defaultCountry: IsoCode.US,
+                        decoration: InputDecoration(
+                          label: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: LanguageService.getTranslated(
+                                    context,
+                                    "register_mobile_number",
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: " *",
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                          hintText: _individualHintText,
+                          border: const OutlineInputBorder(),
+                          counterText: '',
+                          errorText:
+                              fieldState.errorText, // Show validation error
                         ),
-
-                      ],
-                    ),
-                  ),
-                  hintText: _individualHintText,
-                  border: const OutlineInputBorder(),
-                  counterText: '',
-                ),
-                countrySelectorNavigator: CountrySelectorNavigator.dialog(
-                  showSearchInput: true,
-                  searchInputDecoration: InputDecoration(
-                    hintText: 'Search Country',
-                  ),
-                ),
-                showFlagInInput: true,
-                flagShape: BoxShape.circle,
-                flagSize: 35,
-                onChanged: (PhoneNumber? p) {
-                  if (p == null) return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                    _selectedIndividualCountry = p.isoCode.name;
-                    _updateHintText();
-                  });
-                  print('changed ${p.countryCode}');
-                },
-                onSaved: (PhoneNumber? p) {
-                  if (p == null) return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                  });
-                  print('changed ${p.countryCode}');
+                        countrySelectorNavigator:
+                            CountrySelectorNavigator.dialog(
+                          showSearchInput: true,
+                          searchInputDecoration: const InputDecoration(
+                            hintText: 'Search Country',
+                          ),
+                        ),
+                        showFlagInInput: true,
+                        flagShape: BoxShape.circle,
+                        flagSize: 35,
+                        onChanged: (PhoneNumber? p) {
+                          if (p == null) return;
+                          setState(() {
+                            _selectedCountryCode = p.countryCode;
+                            _selectedIndividualCountry = p.isoCode.name;
+                            _updateHintText();
+                          });
+                          print('changed ${p.countryCode}');
+                          fieldState.didChange(
+                              mobileController.value!.nsn); // Notify validator
+                        },
+                        onSaved: (PhoneNumber? p) {
+                          if (p == null) return;
+                          setState(() {
+                            _selectedCountryCode = p.countryCode;
+                          });
+                          print('changed ${p.countryCode}');
+                        },
+                      ),
+                    ],
+                  );
                 },
               ),
             ),
           ],
         ),
+
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: PhoneInput(
+        //         key: const Key('phone-field'),
+        //         controller: mobileController,
+        //         shouldFormat: true,
+        //         defaultCountry: IsoCode.US,
+        //         decoration: InputDecoration(
+        //           // labelText: LanguageService.getTranslated(
+        //           //     context, "register_mobile_number"),
+        //           label: RichText(
+        //             text: TextSpan(
+        //               children: [
+        //                 TextSpan(
+        //                   text: LanguageService.getTranslated(context,
+        //                       "register_mobile_number"), // Label text, // Black color for "Name"
+        //                 ),
+        //                 WidgetSpan(
+        //                   child: Text(
+        //                     " *",
+        //                     style: TextStyle(
+        //                       color: Colors.red,
+        //                       fontSize: 16,
+        //                       fontWeight: FontWeight.bold,
+        //                     ),
+        //                   ),
+        //                   alignment: PlaceholderAlignment
+        //                       .bottom, // Center aligns the asterisk
+        //                 ),
+        //               ],
+        //             ),
+        //           ),
+        //           hintText: _individualHintText,
+        //           border: const OutlineInputBorder(),
+        //           counterText: '',
+        //         ),
+        //         countrySelectorNavigator: CountrySelectorNavigator.dialog(
+        //           showSearchInput: true,
+        //           searchInputDecoration: InputDecoration(
+        //             hintText: 'Search Country',
+        //           ),
+        //         ),
+        //         showFlagInInput: true,
+        //         flagShape: BoxShape.circle,
+        //         flagSize: 35,
+        //         onChanged: (PhoneNumber? p) {
+        //           if (p == null) return;
+        //           setState(() {
+        //             _selectedCountryCode = p.countryCode;
+        //             _selectedIndividualCountry = p.isoCode.name;
+        //             _updateHintText();
+        //           });
+        //           print('changed ${p.countryCode}');
+        //         },
+        //         onSaved: (PhoneNumber? p) {
+        //           if (p == null) return;
+        //           setState(() {
+        //             _selectedCountryCode = p.countryCode;
+        //           });
+        //           print('changed ${p.countryCode}');
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
         SizedBox(height: CustomSpacing.two),
         // Password
         TextFormField(
@@ -855,12 +1010,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
             // labelText: LanguageService.getTranslated(
             //     context, "register_non_corporate_passwordfield_label"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(
-        context, "register_non_corporate_passwordfield_label"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "register_non_corporate_passwordfield_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -871,9 +1026,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -893,7 +1048,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           controller: passwordController,
         ),
         SizedBox(height: CustomSpacing.two),
-        // Confirm Password
+
         // Confirm Password
         TextFormField(
           decoration: InputDecoration(
@@ -904,18 +1059,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               onPressed: () {
                 setState(() {
                   _showPasswordConfirmationIndividual =
-                  !_showPasswordConfirmationIndividual;
+                      !_showPasswordConfirmationIndividual;
                 });
               },
             ),
             // labelText: LanguageService.getTranslated(
             //     context, "register_corporate_confirm_password_field_label"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(
-        context, "register_corporate_confirm_password_field_label"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "register_corporate_confirm_password_field_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -926,14 +1081,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
-            hintText: LanguageService.getTranslated(
-                context, "register_corporate_confirm_password_field_placeholder"),
+            hintText: LanguageService.getTranslated(context,
+                "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           obscureText: !_showPasswordConfirmationIndividual,
@@ -1001,119 +1156,283 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         Stack(
           children: [
-            TextField(
-              readOnly: true,
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  useSafeArea: true,
-                  isScrollControlled: true,
-                  builder: (BuildContext context) {
-                    return RolesBottomSheet(
-                      showCorporateSwitch: true,
-                      options: roles,
-                      selectedRoles: _selectedRoles,
-                      addChip: _addChip,
-                      removeChip: _removeChip,
-                      removeAllChips: _removeAllChips,
-                      selectedOption:
-                          _selectedOption ?? SignUpOptions.individual,
-                      onOptionChanged: (SignUpOptions option) {
-                        setState(() {
-                          _selectedOption = option;
-                        });
-                      },
-                    );
-                  },
+            FormField<String>(
+              validator: (value) {
+                if (_selectedRoles.isEmpty) {
+                  return 'Please select at least one role.';
+                }
+                return null;
+              },
+              builder: (FormFieldState<String> fieldState) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TextField(
+                    //   readOnly: true,
+                    //   onTap: () {
+                    //     showModalBottomSheet(
+                    //       context: context,
+                    //       useSafeArea: true,
+                    //       isScrollControlled: true,
+                    //       builder: (BuildContext context) {
+                    //         return RolesBottomSheet(
+                    //           showCorporateSwitch: true,
+                    //           options: roles,
+                    //           selectedRoles: _selectedRoles,
+                    //           addChip: (role) {
+                    //             setState(() {
+                    //               _selectedRoles.add(role);
+                    //               fieldState.didChange(
+                    //                   role.name); // Trigger validation update
+                    //             });
+                    //           },
+                    //           removeChip: (role) {
+                    //             setState(() {
+                    //               _selectedRoles.remove(role);
+                    //               fieldState.didChange(
+                    //                   null); // Revalidate when removed
+                    //             });
+                    //           },
+                    //           removeAllChips: () {
+                    //             setState(() {
+                    //               _selectedRoles.clear();
+                    //               fieldState.didChange(
+                    //                   null); // Revalidate when cleared
+                    //             });
+                    //           },
+                    //           selectedOption:
+                    //               _selectedOption ?? SignUpOptions.individual,
+                    //           onOptionChanged: (SignUpOptions option) {
+                    //             setState(() {
+                    //               _selectedOption = option;
+                    //             });
+                    //           },
+                    //         );
+                    //       },
+                    //     );
+                    //   },
+                    //   controller: _textEditingController,
+                    //   decoration: InputDecoration(
+                    //     label: RichText(
+                    //       text: TextSpan(
+                    //         children: [
+                    //           TextSpan(
+                    //             text: LanguageService.getTranslated(context,
+                    //                 "register_non_corporate_role_field_label"),
+                    //           ),
+                    //           TextSpan(
+                    //             text: " *",
+                    //             style: const TextStyle(
+                    //               color: Colors.red,
+                    //               fontSize: 16,
+                    //               fontWeight: FontWeight.bold,
+                    //             ),
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ),
+                    //     hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                    //     border: const OutlineInputBorder(),
+                    //     errorText: fieldState.errorText,
+                    //     // Show validation error
+                    //     suffixIcon: IconButton(
+                    //       icon: const Icon(Icons.arrow_drop_down),
+                    //       onPressed: () {
+                    //         showModalBottomSheet(
+                    //           context: context,
+                    //           useSafeArea: true,
+                    //           isScrollControlled: true,
+                    //           builder: (BuildContext context) {
+                    //             return RolesBottomSheet(
+                    //               showCorporateSwitch: true,
+                    //               options: roles,
+                    //               selectedRoles: _selectedRoles,
+                    //               addChip: (role) {
+                    //                 setState(() {
+                    //                   _selectedRoles.add(role);
+                    //                   fieldState.didChange(role.name);
+                    //                 });
+                    //               },
+                    //               removeChip: (role) {
+                    //                 setState(() {
+                    //                   _selectedRoles.remove(role);
+                    //                   fieldState.didChange(null);
+                    //                 });
+                    //               },
+                    //               removeAllChips: () {
+                    //                 setState(() {
+                    //                   _selectedRoles.clear();
+                    //                   fieldState.didChange(null);
+                    //                 });
+                    //               },
+                    //               selectedOption: _selectedOption ??
+                    //                   SignUpOptions.individual,
+                    //               onOptionChanged:
+                    //                   (SignUpOptions signUpOptions) {
+                    //                 setState(() {
+                    //                   _selectedOption = signUpOptions;
+                    //                 });
+                    //               },
+                    //             );
+                    //           },
+                    //         );
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
+                    // Positioned(
+                    //   top: 12.0,
+                    //   left: 10.0,
+                    //   right: 50.0,
+                    //   child: Container(
+                    //     margin: const EdgeInsets.only(right: 8.0),
+                    //     child: SingleChildScrollView(
+                    //       scrollDirection: Axis.horizontal,
+                    //       child: Row(
+                    //         children: _selectedRoles
+                    //             .map(
+                    //               (value) => Padding(
+                    //                 padding: const EdgeInsets.only(right: 8.0),
+                    //                 child: Chip(
+                    //                   label: Text(value.name!),
+                    //                   deleteIcon: const Icon(Icons.cancel),
+                    //                   onDeleted: () {
+                    //                     setState(() {
+                    //                       _selectedRoles.remove(value);
+                    //                       fieldState.didChange(
+                    //                           null); // Update validation
+                    //                     });
+                    //                   },
+                    //                 ),
+                    //               ),
+                    //             )
+                    //             .toList(),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                  ],
                 );
               },
-              controller: _textEditingController,
-              onChanged: (value) {
-                // Handle input changes
-              },
-              decoration: InputDecoration(
-                // labelText: LanguageService.getTranslated(
-                //     context, "register_non_corporate_role_field_label"),
-                label:RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text:LanguageService.getTranslated(
-        context, "register_non_corporate_role_field_label"),// Label text, // Black color for "Name"
-                      ),
-                      WidgetSpan(
-                        child: Text(
-                          " *",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
-                      ),
-
-                    ],
-                  ),
-                ),
-                hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
-                border: OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_drop_down),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      useSafeArea: true,
-                      isScrollControlled: true,
-                      builder: (BuildContext context) {
-                        return RolesBottomSheet(
-                          showCorporateSwitch: true,
-                          options: roles,
-                          selectedRoles: _selectedRoles,
-                          addChip: _addChip,
-                          removeChip: _removeChip,
-                          removeAllChips: _removeAllChips,
-                          selectedOption:
-                              _selectedOption ?? SignUpOptions.individual,
-                          onOptionChanged: (SignUpOptions signUpOptions) {
-                            setState(() {
-                              _selectedOption = signUpOptions;
-                            });
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: 4.0,
-              left: 10.0,
-              right: 10.0,
-              child: Container(
-                margin: const EdgeInsets.only(right: 32.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _selectedRoles
-                        .map(
-                          (value) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(value.name!),
-                              deleteIcon: Icon(Icons.cancel),
-                              onDeleted: () => _removeChip(value),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ),
             ),
           ],
         ),
+
+        // Stack(
+        //   children: [
+        //     TextField(
+        //       readOnly: true,
+        //       onTap: () {
+        //         showModalBottomSheet(
+        //           context: context,
+        //           useSafeArea: true,
+        //           isScrollControlled: true,
+        //           builder: (BuildContext context) {
+        //             return RolesBottomSheet(
+        //               showCorporateSwitch: true,
+        //               options: roles,
+        //               selectedRoles: _selectedRoles,
+        //               addChip: _addChip,
+        //               removeChip: _removeChip,
+        //               removeAllChips: _removeAllChips,
+        //               selectedOption:
+        //                   _selectedOption ?? SignUpOptions.individual,
+        //               onOptionChanged: (SignUpOptions option) {
+        //                 setState(() {
+        //                   _selectedOption = option;
+        //                 });
+        //               },
+        //             );
+        //           },
+        //         );
+        //       },
+        //       controller: _textEditingController,
+        //       onChanged: (value) {
+        //         // Handle input changes
+        //       },
+        //       decoration: InputDecoration(
+        //         // labelText: LanguageService.getTranslated(
+        //         //     context, "register_non_corporate_role_field_label"),
+        //         label: RichText(
+        //           text: TextSpan(
+        //             children: [
+        //               TextSpan(
+        //                 text: LanguageService.getTranslated(context,
+        //                     "register_non_corporate_role_field_label"), // Label text, // Black color for "Name"
+        //               ),
+        //               WidgetSpan(
+        //                 child: Text(
+        //                   " *",
+        //                   style: TextStyle(
+        //                     color: Colors.red,
+        //                     fontSize: 16,
+        //                     fontWeight: FontWeight.bold,
+        //                   ),
+        //                 ),
+        //                 alignment: PlaceholderAlignment
+        //                     .bottom, // Center aligns the asterisk
+        //               ),
+        //             ],
+        //           ),
+        //         ),
+        //         hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+        //         border: OutlineInputBorder(),
+        //         suffixIcon: IconButton(
+        //           icon: Icon(Icons.arrow_drop_down),
+        //           onPressed: () {
+        //             showModalBottomSheet(
+        //               context: context,
+        //               useSafeArea: true,
+        //               isScrollControlled: true,
+        //               builder: (BuildContext context) {
+        //                 return RolesBottomSheet(
+        //                   showCorporateSwitch: true,
+        //                   options: roles,
+        //                   selectedRoles: _selectedRoles,
+        //                   addChip: _addChip,
+        //                   removeChip: _removeChip,
+        //                   removeAllChips: _removeAllChips,
+        //                   selectedOption:
+        //                       _selectedOption ?? SignUpOptions.individual,
+        //                   onOptionChanged: (SignUpOptions signUpOptions) {
+        //                     setState(() {
+        //                       _selectedOption = signUpOptions;
+        //                     });
+        //                   },
+        //                 );
+        //               },
+        //             );
+        //           },
+        //         ),
+        //       ),
+        //     ),
+        //     Positioned(
+        //       top: 4.0,
+        //       left: 10.0,
+        //       right: 10.0,
+        //       child: Container(
+        //         margin: const EdgeInsets.only(right: 32.0),
+        //         child: SingleChildScrollView(
+        //           scrollDirection: Axis.horizontal,
+        //           child: Row(
+        //             children: _selectedRoles
+        //                 .map(
+        //                   (value) => Padding(
+        //                     padding: const EdgeInsets.only(right: 8.0),
+        //                     child: Chip(
+        //                       label: Text(value.name!),
+        //                       deleteIcon: Icon(Icons.cancel),
+        //                       onDeleted: () => _removeChip(value),
+        //                     ),
+        //                   ),
+        //                 )
+        //                 .toList(),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
@@ -1135,12 +1454,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 decoration: InputDecoration(
                   // labelText: LanguageService.getTranslated(
                   //     context, "register_mobile_number"),
-                  label:RichText(
+                  label: RichText(
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: LanguageService.getTranslated(
-        context, "register_mobile_number"),// Label text, // Black color for "Name"
+                          text: LanguageService.getTranslated(context,
+                              "register_mobile_number"), // Label text, // Black color for "Name"
                         ),
                         WidgetSpan(
                           child: Text(
@@ -1151,9 +1470,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                          alignment: PlaceholderAlignment
+                              .bottom, // Center aligns the asterisk
                         ),
-
                       ],
                     ),
                   ),
@@ -1346,166 +1665,320 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.eight),
-
         // Company Legal Name
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return Autocomplete<Companies>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty ||
-                        authNotifier.companyList == null) {
-                      return const Iterable<Companies>.empty();
-                    }
-                    return authNotifier.companyList!.where((Companies option) {
-                      return option.name
-                          .toLowerCase()
-                          .contains(textEditingValue.text.toLowerCase());
-                    });
-                  },
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                              bottom: Radius.circular(4.0)),
-                        ),
-                        child: Container(
-                          height: 52.0 * options.length,
-                          width: MediaQuery.of(context)
-                              .size
-                              .width, // Adjust the width to fit your needs
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: options.length,
-                            physics: ClampingScrollPhysics(),
-                            shrinkWrap: false,
-                            itemBuilder: (BuildContext context, int index) {
-                              final option = options.elementAt(index);
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                      '${option.name} (${option.countryName})',
-                                      style: typography.Subtitle1),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ValueListenableBuilder<List<Companies>>(
+                  valueListenable: authNotifier.companyOptionsNotifier,
+                  builder: (context, companyOptions, _) {
+                    return Autocomplete<Companies>(
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        print(
+                            'Options builder called with: ${textEditingValue.text}');
+
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<Companies>.empty();
+                        }
+
+                        final filteredOptions = List<Companies>.from(
+                            companyOptions.where((Companies) =>
+                                Companies.name.toLowerCase().contains(
+                                    textEditingValue.text.toLowerCase())));
+                        print('Filtered options count: ${filteredOptions.length}');
+                        return filteredOptions;
+                      },
+                      onSelected: (Companies selection) {
+                        print('Selected: ${selection.name}');
+                        _textEditingController.text = selection.name;
+                        companyDisplayNameController.text =
+                            selection.name;
+                        setState(() {
+                          _enableCompanyTypeDropdown = false;
+                        });
+                      },
+                      displayStringForOption: (Companies option) =>
+                          option.name,
+                      fieldViewBuilder: (context, textEditingController,
+                          focusNode, onFieldSubmitted) {
+                        _textEditingController = textEditingController;
+                        return TextFormField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            labelText: "Company Name",
+                            hintText: "Enter company name...",
+                            border: const OutlineInputBorder(),
+                            suffixIcon: isLoading
+                                ? const Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    ),
+                                  )
+                                : const Icon(Icons.search),
+                          ),
+
+                        );
+                      },
+                        optionsViewBuilder: (context, onSelected, options) {
+                        print("options");
+                        print(options);
+                          return StatefulBuilder(
+                            builder: (context, setState) {
+                              return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  elevation: 4.0,
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.9,
+                                    constraints: BoxConstraints(maxHeight: 130),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      itemCount: options.length,
+                                      itemBuilder: (BuildContext context, int index) {
+                                        final option = options.elementAt(index);
+                                        return ListTile(
+                                          title: Text(option.name),
+                                          onTap: () {
+                                            onSelected(option);
+                                            setState(() {}); // Ensures UI updates
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               );
                             },
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  onSelected: (Companies selection) {
-                    setState(() {
-                      selectedCompany = selection;
-                      companyName = selection.name;
-                      companyId = selection.id;
-                      selectedCompanyType = authNotifier.companyTypeList
-                          ?.firstWhere((element) =>
-                              element.id == selection.companyTypeId);
-                      companyDisplayNameController.text = selection.displayName;
-                      _enableCompanyTypeDropdown = false;
-                      _enableCountryDropdown = false;
-                      _customRoles = true;
-                      _selectedCorporateCountryName = selection.countryName;
-                      print(
-                          'Selected Company Country: $_selectedCorporateCountryName');
-                    });
-                  },
-                  displayStringForOption: (Companies option) => option.name,
-                  fieldViewBuilder: (BuildContext context,
-                      TextEditingController textEditingController,
-                      FocusNode focusNode,
-                      VoidCallback onFieldSubmitted) {
-                    return TextFormField(
-                      controller: textEditingController,
-                      focusNode: focusNode,
-                      onFieldSubmitted: (_) {},
-                      onChanged: (value) {
-                        final splitValue = value.split(' ');
-                        final normalizedWords = splitValue.map((word) {
-                          final matchedAbbr = abbreviationMap.keys.firstWhere(
-                            (abbr) =>
-                                word.toLowerCase() == (abbr.toLowerCase()),
-                            orElse: () => '',
                           );
+                        }
 
-                          if (matchedAbbr.isEmpty) {
-                            return word;
-                          } else {
-                            final fullForm = abbreviationMap[matchedAbbr]!;
-                            //final prefix = word.substring(0, word.length - matchedAbbr.length);
-                            // if (prefix.isEmpty) {
-                            return fullForm;
-                            // } else {
-                            //    return '$prefix${fullForm.capitalizeAfterAbbr(matchedAbbr)}';
-                            // }
-                          }
-                        }).toList();
-                        final normalizedValue = normalizedWords.join(' ');
-                        textEditingController.value = TextEditingValue(
-                          text: normalizedValue,
-                          selection: TextSelection.collapsed(
-                              offset: normalizedValue.length),
-                        );
-                        setState(() {
-                          companyId = "";
-                          _showRoles = false;
-                          _showCompanyType = false;
-                          selectedCompany = null;
-                          selectedCompanyType = null;
-                          _enableCompanyTypeDropdown = true;
-                          _enableCountryDropdown = true;
-                          _customRoles = false;
-                          companyName = normalizedValue;
-                        });
-                        Future.delayed(Duration(milliseconds: 1), () {
-                          setState(() {
-                            _showCompanyType = true;
-                            _showRoles = true;
-                          });
-                        });
-                      },
-                      decoration: InputDecoration(
-                        // labelText: LanguageService.getTranslated(context,
-                        //     "register_corporate_legalname_field_label"),
-                        label:RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                "register_corporate_legalname_field_label"),// Label text, // Black color for "Name"
-                              ),
-                              WidgetSpan(
-                                child: Text(
-                                  " *",
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
-                              ),
-
-                            ],
-                          ),
-                        ),
-                        hintText: LanguageService.getTranslated(context,
-                            "register_corporate_legalname_filed_placeholder"),
-                        border: const OutlineInputBorder(),
-                      ),
                     );
                   },
-                );
-              },
+                ),
+              ],
             );
           },
         ),
+
+        // Consumer<AuthNotifier>(
+        //   builder: (context, authNotifier, child) {
+        //     return Column(
+        //       crossAxisAlignment: CrossAxisAlignment.start,
+        //       children: [
+        //         Autocomplete<Companies>(
+        //
+        //           optionsBuilder: (TextEditingValue textEditingValue) {
+        //             if (textEditingValue.text.isEmpty) {
+        //               return const Iterable<Companies>.empty();
+        //             }
+        //             return authNotifier.companyOptions.where((company) =>
+        //                 company.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+        //           },
+        //
+        //           onSelected: (Companies selection) {
+        //             _textEditingController.text = selection.name;
+        //             companyDisplayNameController.text = selection.name;
+        //             _enableCompanyTypeDropdown = false;
+        //           },
+        //           displayStringForOption: (Companies option) => option.name,
+        //           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+        //             _textEditingController = textEditingController;
+        //             return TextFormField(
+        //               controller: textEditingController,
+        //               focusNode: focusNode,
+        //               decoration: InputDecoration(
+        //                 labelText: "Company Name",
+        //                 hintText: "Enter company name...",
+        //                 border: OutlineInputBorder(),
+        //                 suffixIcon: isLoading
+        //                     ? Padding(
+        //                   padding: EdgeInsets.all(10),
+        //                   child: SizedBox(
+        //                     width: 20,
+        //                     height: 20,
+        //                     child: CircularProgressIndicator(strokeWidth: 2),
+        //                   ),
+        //                 )
+        //                     : Icon(Icons.search),
+        //
+        //               ),
+        //     onChanged: (value) {
+        //     if (_debounce?.isActive ?? false) _debounce!.cancel();
+        //
+        //     setState(() { isLoading = true; }); // Show loading immediately
+        //
+        //     _debounce = Timer(const Duration(milliseconds: 500), () {
+        //     if (value.isEmpty) {
+        //     _enableCompanyTypeDropdown = true;
+        //     companyDisplayNameController.clear();
+        //     authNotifier.companyOptions = [];
+        //     setState(() { isLoading = false; }); // Stop loading
+        //     } else {
+        //     authNotifier.fetchCompanies(value).then((_) {
+        //     setState(() { isLoading = false; }); // Stop loading after response
+        //     });
+        //     }
+        //     });
+        //
+        //
+        //
+        //
+        //               },
+        //             );
+        //           },
+        //
+        //           optionsViewBuilder: (context, onSelected, options) {
+        //             return Align(
+        //               alignment: Alignment.topLeft,
+        //               child: Material(
+        //                 elevation: 4.0,
+        //                 child: Container(
+        //                   width: MediaQuery.of(context).size.width * 0.9,
+        //                   constraints: BoxConstraints(maxHeight: 250),
+        //                   child: ListView.builder(
+        //                     padding: EdgeInsets.zero,
+        //                     itemCount: options.length,
+        //                     itemBuilder: (BuildContext context, int index) {
+        //                       final option = options.elementAt(index);
+        //                       return ListTile(
+        //                         title: Text('${option.name}'),
+        //                         onTap: () => onSelected(option),
+        //                       );
+        //                     },
+        //                   ),
+        //                 ),
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // ),
+
+        // Consumer<AuthNotifier>(
+        //   builder: (context, authNotifier, child) {
+        //     return Column(
+        //       crossAxisAlignment: CrossAxisAlignment.start,
+        //       children: [
+        //         Autocomplete<Companies>(
+        //           optionsBuilder: (TextEditingValue textEditingValue) {
+        //             if (textEditingValue.text.isEmpty) {
+        //               return const Iterable<Companies>.empty();
+        //             }
+        //             return companyOptions.where((company) => company.name
+        //                 .toLowerCase()
+        //                 .contains(textEditingValue.text.toLowerCase()));
+        //           },
+        //           onSelected: (Companies selection) {
+        //             setState(() {
+        //               _textEditingController.text = selection.name;
+        //               companyDisplayNameController.text = selection.name;
+        //
+        //               // Disable dropdown when a company is selected
+        //               _enableCompanyTypeDropdown = false;
+        //
+        //               // Map company type
+        //               selectedCompanyType = authNotifier.companyTypeList?.firstWhere(
+        //                     (type) => type.name == selection.companyTypeName,
+        //                 orElse: () => null as CompanyType,
+        //               );
+        //
+        //               // If no valid match, set it to null
+        //               if (selectedCompanyType?.id == "") {
+        //                 selectedCompanyType = null;
+        //               }
+        //             });
+        //           },
+        //           // onSelected: (Companies selection) {
+        //           //   setState(() {
+        //           //     _textEditingController.text = selection.name;
+        //           //     companyDisplayNameController.text = selection.name;
+        //           //     _enableCompanyTypeDropdown=false;
+        //           //     selectedCompanyType =
+        //           //         authNotifier.companyTypeList?.firstWhere(
+        //           //       (type) => type.name == selection.companyTypeName,
+        //           //       orElse: () => null as CompanyType,
+        //           //     );
+        //           //   });
+        //           //
+        //           //   print(
+        //           //       "Selected: ${selection.name}, Type: ${selection.name}");
+        //           // },
+        //           displayStringForOption: (Companies option) => option.name,
+        //           fieldViewBuilder: (context, textEditingController, focusNode,
+        //               onFieldSubmitted) {
+        //             _textEditingController = textEditingController;
+        //             return TextFormField(
+        //               controller: textEditingController,
+        //               focusNode: focusNode,
+        //               decoration: InputDecoration(
+        //                 labelText: "Company Name",
+        //                 hintText: "Enter company name...",
+        //                 border: OutlineInputBorder(),
+        //                 suffixIcon: isLoading
+        //                     ? Padding(
+        //                         padding: EdgeInsets.all(10),
+        //                         child: SizedBox(
+        //                           width: 20,
+        //                           height: 20,
+        //                           child:
+        //                               CircularProgressIndicator(strokeWidth: 2),
+        //                         ),
+        //                       )
+        //                     : Icon(Icons.search),
+        //               ),
+        //
+        //               onChanged: (value) {
+        //                 if (value.isEmpty) {
+        //                   setState(() {
+        //                     _enableCompanyTypeDropdown = true; // Enable dropdown when cleared
+        //                     selectedCompanyType = null; // Reset selected type
+        //                     companyDisplayNameController.clear(); // Clear company display name
+        //                   });
+        //                 }
+        //                 onSearchChanged(value, authNotifier); // Uses debouncer
+        //               },
+        //             );
+        //           },
+        //           optionsViewBuilder: (context, onSelected, options) {
+        //             return Align(
+        //               alignment: Alignment.topLeft,
+        //               child: Material(
+        //                 elevation: 4.0,
+        //                 child: Container(
+        //                   width: MediaQuery.of(context).size.width * 0.9,
+        //                   constraints: BoxConstraints(maxHeight: 250),
+        //                   child: ListView.builder(
+        //                     padding: EdgeInsets.zero,
+        //                     itemCount: options.length,
+        //                     itemBuilder: (BuildContext context, int index) {
+        //                       final option = options.elementAt(index);
+        //                       return ListTile(
+        //                         title: Text(
+        //                             '${option.name} (${option.countryName})'),
+        //                         onTap: () {
+        //                           onSelected(option);
+        //                         },
+        //                       );
+        //                     },
+        //                   ),
+        //                 ),
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // ),
 
         SizedBox(height: CustomSpacing.four),
         // Company Type
@@ -1549,12 +2022,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             enabled: _enableCompanyTypeDropdown,
                             // labelText: LanguageService.getTranslated(context,
                             //     "register_corporate_company_type_field_label"),
-                            label:RichText(
+                            label: RichText(
                               text: TextSpan(
                                 children: [
                                   TextSpan(
                                     text: LanguageService.getTranslated(context,
-                                    "register_corporate_company_type_field_label"),// Label text, // Black color for "Name"
+                                        "register_corporate_company_type_field_label"), // Label text, // Black color for "Name"
                                   ),
                                   WidgetSpan(
                                     child: Text(
@@ -1565,9 +2038,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                                    alignment: PlaceholderAlignment
+                                        .bottom, // Center aligns the asterisk
                                   ),
-
                                 ],
                               ),
                             ),
@@ -1599,12 +2072,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             enabled: _enableCompanyTypeDropdown,
             // labelText: LanguageService.getTranslated(
             //     context, "register_corporate_company_displayname_field_label"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text:LanguageService.getTranslated(
-                    context, "register_corporate_company_displayname_field_label"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -1615,9 +2088,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -1631,7 +2104,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         .isEmpty /*||
                 value.contains(RegExp(r'[0-9]'))*/
                 ) {
-              return 'Company display name is required and should not be empty or contain numbers';
+              return 'Company display name is required';
             }
             // You can add more specific email validation here if needed
             return null;
@@ -1713,12 +2186,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "usermanagement_name_field_label"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text:LanguageService.getTranslated(
-                    context, "usermanagement_name_field_label"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "usermanagement_name_field_label"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -1729,9 +2202,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -1743,7 +2216,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             if (value == null ||
                 value.isEmpty ||
                 value.contains(RegExp(r'[0-9]'))) {
-              return 'Name is required and should not be empty or contain numbers';
+              return 'Name is required';
             }
             // You can add more specific email validation here if needed
             return null;
@@ -1757,12 +2230,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "connections_user_connection_email_filter"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(
-        context, "connections_user_connection_email_filter"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "connections_user_connection_email_filter"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -1773,9 +2246,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -1797,81 +2270,167 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Expanded(
-              child: PhoneInput(
-                key: const Key('phone-field'),
-                controller: mobileController,
-                shouldFormat: true,
-                defaultCountry: IsoCode.US,
-                decoration: InputDecoration(
-                  // labelText: LanguageService.getTranslated(
-                  //     context, "register_mobile_number"),
-                  label:RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: LanguageService.getTranslated(
-        context, "register_mobile_number"),// Label text, // Black color for "Name"
-                        ),
-                        WidgetSpan(
-                          child: Text(
-                            " *",
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+              child: FormField<String>(
+                validator: (value) {
+                  if (mobileController.value!.nsn.isEmpty) {
+                    return 'Mobile number is required.';
+                  }
+                  if (mobileController.value!.nsn.length < 10) {
+                    return 'Enter a valid mobile number.';
+                  }
+                  return null;
+                },
+                builder: (FormFieldState<String> fieldState) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PhoneInput(
+                        key: const Key('phone-field'),
+                        controller: mobileController,
+                        shouldFormat: true,
+                        defaultCountry: IsoCode.US,
+                        decoration: InputDecoration(
+                          label: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: LanguageService.getTranslated(
+                                    context,
+                                    "register_mobile_number",
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: " *",
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                          hintText: _corporateAdminHintText,
+                          border: const OutlineInputBorder(),
+                          counterText: '',
+                          errorText:
+                              fieldState.errorText, // Show validation error
                         ),
-
-                      ],
-                    ),
-                  ),
-                  hintText: _corporateAdminHintText,
-                  border: const OutlineInputBorder(),
-                  counterText: '',
-                ),
-                countrySelectorNavigator: CountrySelectorNavigator.dialog(
-                  showSearchInput: true,
-                  searchInputDecoration: InputDecoration(
-                    hintText: 'Search Country',
-                  ),
-                ),
-                showFlagInInput: true,
-                flagShape: BoxShape.circle,
-                flagSize: 35,
-                onChanged: (PhoneNumber? p) {
-                  if (p == null) return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                    _selectedAdminCorporateCountry = p.isoCode.name;
-                    _updateHintText();
-                  });
-                  print('changed ${p.countryCode}');
-                },
-                onSaved: (PhoneNumber? p) {
-                  if (p == null) return;
-                  setState(() {
-                    _selectedCountryCode = p.countryCode;
-                  });
-                  print('changed ${p.countryCode}');
+                        countrySelectorNavigator:
+                            CountrySelectorNavigator.dialog(
+                          showSearchInput: true,
+                          searchInputDecoration: const InputDecoration(
+                            hintText: 'Search Country',
+                          ),
+                        ),
+                        showFlagInInput: true,
+                        flagShape: BoxShape.circle,
+                        flagSize: 35,
+                        onChanged: (PhoneNumber? p) {
+                          if (p == null) return;
+                          setState(() {
+                            _selectedCountryCode = p.countryCode;
+                            _selectedAdminCorporateCountry = p.isoCode.name;
+                            _updateHintText();
+                          });
+                          print('changed ${p.countryCode}');
+                          fieldState.didChange(
+                              mobileController.value!.nsn); // Notify validator
+                        },
+                        onSaved: (PhoneNumber? p) {
+                          if (p == null) return;
+                          setState(() {
+                            _selectedCountryCode = p.countryCode;
+                          });
+                          print('changed ${p.countryCode}');
+                        },
+                      ),
+                    ],
+                  );
                 },
               ),
             ),
           ],
         ),
+
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: PhoneInput(
+        //         key: const Key('phone-field'),
+        //         controller: mobileController,
+        //         shouldFormat: true,
+        //         defaultCountry: IsoCode.US,
+        //         decoration: InputDecoration(
+        //           // labelText: LanguageService.getTranslated(
+        //           //     context, "register_mobile_number"),
+        //           label: RichText(
+        //             text: TextSpan(
+        //               children: [
+        //                 TextSpan(
+        //                   text: LanguageService.getTranslated(context,
+        //                       "register_mobile_number"), // Label text, // Black color for "Name"
+        //                 ),
+        //                 WidgetSpan(
+        //                   child: Text(
+        //                     " *",
+        //                     style: TextStyle(
+        //                       color: Colors.red,
+        //                       fontSize: 16,
+        //                       fontWeight: FontWeight.bold,
+        //                     ),
+        //                   ),
+        //                   alignment: PlaceholderAlignment
+        //                       .bottom, // Center aligns the asterisk
+        //                 ),
+        //               ],
+        //             ),
+        //           ),
+        //           hintText: _corporateAdminHintText,
+        //           border: const OutlineInputBorder(),
+        //           counterText: '',
+        //         ),
+        //         countrySelectorNavigator: CountrySelectorNavigator.dialog(
+        //           showSearchInput: true,
+        //           searchInputDecoration: InputDecoration(
+        //             hintText: 'Search Country',
+        //           ),
+        //         ),
+        //         showFlagInInput: true,
+        //         flagShape: BoxShape.circle,
+        //         flagSize: 35,
+        //         onChanged: (PhoneNumber? p) {
+        //           if (p == null) return;
+        //           setState(() {
+        //             _selectedCountryCode = p.countryCode;
+        //             _selectedAdminCorporateCountry = p.isoCode.name;
+        //             _updateHintText();
+        //           });
+        //           print('changed ${p.countryCode}');
+        //         },
+        //         onSaved: (PhoneNumber? p) {
+        //           if (p == null) return;
+        //           setState(() {
+        //             _selectedCountryCode = p.countryCode;
+        //           });
+        //           print('changed ${p.countryCode}');
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
         // Admin Password
         SizedBox(height: CustomSpacing.four),
         TextFormField(
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "emailsetup_field_password"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text:  LanguageService.getTranslated(
-        context, "emailsetup_field_password"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "emailsetup_field_password"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -1882,9 +2441,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
@@ -1918,12 +2477,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "register_corporate_password_field_placeholder"),
-            label:RichText(
+            label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(
-                    context, "register_corporate_password_field_placeholder"),// Label text, // Black color for "Name"
+                    text: LanguageService.getTranslated(context,
+                        "register_corporate_password_field_placeholder"), // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -1934,14 +2493,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    alignment: PlaceholderAlignment.bottom, // Center aligns the asterisk
+                    alignment: PlaceholderAlignment
+                        .bottom, // Center aligns the asterisk
                   ),
-
                 ],
               ),
             ),
-            hintText: LanguageService.getTranslated(
-                context, "register_corporate_confirm_password_field_placeholder"),
+            hintText: LanguageService.getTranslated(context,
+                "register_corporate_confirm_password_field_placeholder"),
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
               icon: _showPasswordConfirmationCorporate
@@ -1950,7 +2509,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               onPressed: () {
                 setState(() {
                   _showPasswordConfirmationCorporate =
-                  !_showPasswordConfirmationCorporate;
+                      !_showPasswordConfirmationCorporate;
                 });
               },
             ),

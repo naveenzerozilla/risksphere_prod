@@ -19,6 +19,7 @@ import 'message_card.dart';
 import 'upload_preview_buttons.dart';
 
 class LocationDataScreen extends StatefulWidget {
+ final String? subAccountName;
   final String tempId;
   final String processId;
   final String accountId;
@@ -27,6 +28,7 @@ class LocationDataScreen extends StatefulWidget {
 
   const LocationDataScreen({
     Key? key,
+    this.subAccountName,
     required this.tempId,
     required this.processId,
     //required this.targetHeaders,
@@ -52,22 +54,24 @@ class LocationDataScreenState extends State<LocationDataScreen>
   int selectedMasterTab = 0;
   late ScrollController _scrollController;
   TextEditingController _textEditingController = TextEditingController();
+  List<Map<String, dynamic>> selectedLocations = [];
 
   @override
   void initState() {
     super.initState();
+
     _scrollController = ScrollController();
     _masterTabController = TabController(length: 3, vsync: this);
-    _getData();
+
     _masterTabController?.addListener(() {
       setState(() {
         selectedMasterTab = _masterTabController?.index ?? 0;
       });
       if (selectedMasterTab == 0 && !_isLoading) {
-        _getData();
+        // _getData();
       }
     });
-
+    _getData();
     // Initial data fetch
   }
 
@@ -95,39 +99,145 @@ class LocationDataScreenState extends State<LocationDataScreen>
   }
 
   Future<void> _getData() async {
-    if (_isLoading) return; // Prevent multiple simultaneous calls
-    setState(() {
-      _isLoading = true;
-    });
+    if (_isLoading) return; // Prevent multiple calls
+
+    setState(() => _isLoading = true);
 
     try {
-      Provider.of<UploadSovProvider>(context, listen: false)
-          .fetchLocations(context, widget.processId);
-      Provider.of<UploadSovProvider>(context, listen: false)
-          .fetchDuplicates(context, widget.processId);
-      Provider.of<UploadSovProvider>(context, listen: false)
-          .fetchConflicts(context, widget.processId);
+      final uploadSovProvider =
+          Provider.of<UploadSovProvider>(context, listen: false);
+
+      // Call APIs in parallel
+      await Future.wait([
+        uploadSovProvider.fetchLocations(context, widget.processId),
+        uploadSovProvider.fetchDuplicates(context, widget.processId),
+        uploadSovProvider.fetchConflicts(context, widget.processId),
+      ]);
     } catch (e) {
-      print("Error fetching locations: $e");
+      print("Error fetching data: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching locations. Please try again.")),
+        SnackBar(content: Text("Error fetching data. Please try again.")),
       );
     } finally {
-      setState(() {
-        _isLoading = false; // Reset the loading flag
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
+  Future<void> _getLocationData() async {
+    if (_isLoading) return; // Prevent multiple calls
+
+    setState(() => _isLoading = true);
+
+    try {
+      final uploadSovProvider =
+          Provider.of<UploadSovProvider>(context, listen: false);
+
+      // Step 1: Store IDs of selected locations before refresh
+      List<String> selectedIds = uploadSovProvider.geocodingList
+          .where((location) => location['isChecked'] == true)
+          .map(
+              (location) => location['id'].toString()) // Ensure IDs are strings
+          .toList();
+
+      // Call APIs in parallel
+      await Future.wait([
+        uploadSovProvider.fetchLocations(context, widget.processId),
+      ]);
+
+      // Step 2: Restore the selected state after refreshing
+      for (var location in uploadSovProvider.geocodingList) {
+        if (selectedIds.contains(location['id'].toString())) {
+          location['isChecked'] = true;
+        }
+      }
+
+      // Step 3: Check if all items are selected and update `_selectAll`
+      _selectAll = uploadSovProvider.geocodingList.isNotEmpty &&
+          uploadSovProvider.geocodingList
+              .every((location) => location['isChecked'] == true);
+    } catch (e) {
+      print("Error fetching data: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error fetching data. Please try again.")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  //
+  // Future<void> _getData() async {
+  //   if (_isLoading) return; // Prevent multiple simultaneous calls
+  //   setState(() {
+  //     _isLoading = true;
+  //   });
+  //
+  //   try {
+  //     Provider.of<UploadSovProvider>(context, listen: false)
+  //         .fetchLocations(context, widget.processId);
+  //     Provider.of<UploadSovProvider>(context, listen: false)
+  //         .fetchDuplicates(context, widget.processId);
+  //     Provider.of<UploadSovProvider>(context, listen: false)
+  //         .fetchConflicts(context, widget.processId);
+  //   } catch (e) {
+  //     print("Error fetching locations: $e");
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text("Error fetching locations. Please try again.")),
+  //     );
+  //   } finally {
+  //     setState(() {
+  //       _isLoading = false; // Reset the loading flag
+  //     });
+  //   }
+  // }
+
+  // void _toggleSelectAll(bool? value) {
+  //     var provider = Provider.of<UploadSovProvider>(context, listen: false);
+  //   setState(() {
+  //     _selectAll = value ?? false;
+  //
+  //     // Update all checkboxes in the list
+  //     for (var location in provider.geocodingList) {
+  //       location['isChecked'] = _selectAll;
+  //     }
+  //
+  //     // Update the selectedLocations list
+  //     if (_selectAll) {
+  //       selectedLocations = List.from(provider.geocodingList);
+  //     } else {
+  //       selectedLocations.clear();
+  //     }
+  //   });
+  // }
   void _toggleSelectAll(bool? value) {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
     setState(() {
       _selectAll = value ?? false;
+
+      // Update all checkboxes in the list
       for (var location in provider.geocodingList) {
         location['isChecked'] = _selectAll;
       }
+
+      // Update the selectedLocations list and its count
+      selectedLocations = _selectAll ? List.from(provider.geocodingList) : [];
     });
   }
+
+  // void _toggleSelectAll(bool? value) {
+  //   var provider = Provider.of<UploadSovProvider>(context, listen: false);
+  //   setState(() {
+  //     _selectAll = value ?? false;
+  //     for (var location in provider.geocodingList) {
+  //       location['isChecked'] = _selectAll;
+  //     }
+  //     selectedLocations.length;
+  //   });
+  // }
 
   void _toggleCheckbox(bool? value, int index) {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
@@ -358,30 +468,30 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                         PlaceholderAlignment
                                                             .middle,
                                                     // Aligns the widget properly in RichText
-                                                    child:  Container(
-                                                      width: 20,
-                                                            alignment: Alignment.center,
-                                                            // padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors
-                                                                  .white38,
-                                                              // Blinking background color
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10), // Rounded corners
-                                                            ),
-                                                            child: Text(
-                                                              provider
-                                                                  .geocodingList
-                                                                  .length
-                                                                  .toString(),
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white),
-                                                            ),
-                                                          ), // Hides widget when count is 0
+                                                    child: Container(
+                                                      width: 25,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      // padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white38,
+                                                        // Blinking background color
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                                10), // Rounded corners
+                                                      ),
+                                                      child: Builder(
+                                                          builder: (context) {
+                                                        return Text(
+                                                          provider.geocodingList
+                                                              .length
+                                                              .toString(),
+                                                          style: TextStyle(
+                                                              color:
+                                                                  Colors.white),
+                                                        );
+                                                      }),
+                                                    ), // Hides widget when count is 0
                                                   ),
                                                 ],
                                               ),
@@ -649,13 +759,14 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                 }
                                 return Expanded(
                                     child: RefreshIndicator(
-                                        onRefresh: _getData,
+                                        onRefresh: _getLocationData,
                                         child: _locationListBody(
                                             typography, context)));
                               }),
                         ],
                       ),
                       DuplicatesTab(
+                        subAccountName: widget.subAccountName,
                         processId: widget.processId,
                         accountId: widget.accountId,
                         subAccountId: widget.subAccountId,
@@ -664,6 +775,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         tempId: widget.tempId,
                       ),
                       ConflictsTab(
+                        subAccountName: widget.subAccountName,
                         processId: widget.processId,
                         accountId: widget.accountId,
                         subAccountId: widget.subAccountId,
@@ -858,15 +970,17 @@ class LocationDataScreenState extends State<LocationDataScreen>
                     ),
                   )
                 : Expanded(
-                    child: ListView.builder(
+                    child:
+                    ListView.builder(
                       itemCount: provider.geocodingList.length,
                       itemBuilder: (context, index) {
                         final location = provider.geocodingList[index];
+
                         if (_searchQuery.isNotEmpty &&
                             !(location['formatted_address']
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(_searchQuery.toLowerCase()) ||
+                                .toString()
+                                .toLowerCase()
+                                .contains(_searchQuery.toLowerCase()) ||
                                 location['city']
                                     .toString()
                                     .toLowerCase()
@@ -875,42 +989,48 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         }
 
                         return Container(
-                          margin:
-                              EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                          margin: EdgeInsets.only(bottom: 8, left: 16, right: 16),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IntrinsicHeight(
                             child: Row(
                               children: [
-                                Checkbox(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  value: location['isChecked'],
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      provider.geocodingList[index]
-                                          ['isChecked'] = value!;
-                                      if (!value) {
-                                        _selectAll = false;
-                                      }
-                                    });
+
+                                StatefulBuilder(
+                                  builder: (context, setStateLocal) {
+                                    return Checkbox(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      value: location['isChecked'] ?? false,
+                                      onChanged: (bool? value) {
+                                        if (value != null) {
+                                          setStateLocal(() {
+                                            location['isChecked'] = value;
+                                          });
+
+                                          if (value) {
+                                            selectedLocations.add(location);
+                                          } else {
+                                            selectedLocations.removeWhere((item) => item['id'] == location['id']);
+                                          }
+
+                                          // Check if all items are selected
+                                          _selectAll = provider.geocodingList.every((item) => item['isChecked'] == true);
+                                        }
+                                      },
+                                    );
                                   },
                                 ),
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       SizedBox(height: 10),
                                       Text(
@@ -922,8 +1042,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                       SizedBox(height: 4),
                                       Text(
                                         "${location['city'] != null && location['city'].isNotEmpty ? location['city'] : ''}"
-                                        "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
-                                        "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
+                                            "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
+                                            "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
                                         style: typography.Caption,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -937,24 +1057,17 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                       topRight: Radius.circular(12),
                                       bottomRight: Radius.circular(12),
                                     ),
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerLow,
+                                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                                   ),
                                   width: 50,
                                   height: double.infinity,
                                   child: IconButton(
-                                    icon: Icon(Icons.info,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary),
+                                    icon: Icon(Icons.info, color: Theme.of(context).colorScheme.primary),
                                     onPressed: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              LocationHeadersScreen(
-                                                  location: location),
+                                          builder: (context) => LocationHeadersScreen(location: location),
                                         ),
                                       );
                                     },
@@ -966,6 +1079,124 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         );
                       },
                     ),
+
+              // ListView.builder(
+                    //   itemCount: provider.geocodingList.length,
+                    //   itemBuilder: (context, index) {
+                    //     final location = provider.geocodingList[index];
+                    //
+                    //     if (_searchQuery.isNotEmpty &&
+                    //         !(location['formatted_address']
+                    //                 .toString()
+                    //                 .toLowerCase()
+                    //                 .contains(_searchQuery.toLowerCase()) ||
+                    //             location['city']
+                    //                 .toString()
+                    //                 .toLowerCase()
+                    //                 .contains(_searchQuery.toLowerCase()))) {
+                    //       return Container();
+                    //     }
+                    //
+                    //     return Container(
+                    //       margin:
+                    //           EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                    //       decoration: BoxDecoration(
+                    //         color: Theme.of(context)
+                    //             .colorScheme
+                    //             .surfaceContainerHighest,
+                    //         border: Border.all(
+                    //           color: Theme.of(context)
+                    //               .colorScheme
+                    //               .surfaceContainerHighest,
+                    //         ),
+                    //         borderRadius: BorderRadius.circular(12),
+                    //       ),
+                    //       child: IntrinsicHeight(
+                    //         child: Row(
+                    //           children: [
+                    //             Checkbox(
+                    //               shape: RoundedRectangleBorder(
+                    //                 borderRadius: BorderRadius.circular(6),
+                    //               ),
+                    //               value: location['isChecked'] ?? false,
+                    //               onChanged: (bool? value) {
+                    //                 setState(() {
+                    //                   location['isChecked'] = value!;
+                    //
+                    //                   if (value) {
+                    //                     selectedLocations.add(
+                    //                         location); // Use add() instead of insert()
+                    //                   } else {
+                    //                     selectedLocations.removeWhere((item) =>
+                    //                         item['id'] == location['id']);
+                    //                   }
+                    //
+                    //                   // Check if all items are selected
+                    //                   _selectAll = provider.geocodingList.every(
+                    //                       (item) => item['isChecked'] == true);
+                    //                 });
+                    //               },
+                    //             ),
+                    //             SizedBox(width: 8),
+                    //             Expanded(
+                    //               child: Column(
+                    //                 crossAxisAlignment:
+                    //                     CrossAxisAlignment.start,
+                    //                 children: [
+                    //                   SizedBox(height: 10),
+                    //                   Text(
+                    //                     location['formatted_address'],
+                    //                     style: typography.Body1,
+                    //                     maxLines: 2,
+                    //                     overflow: TextOverflow.ellipsis,
+                    //                   ),
+                    //                   SizedBox(height: 4),
+                    //                   Text(
+                    //                     "${location['city'] != null && location['city'].isNotEmpty ? location['city'] : ''}"
+                    //                     "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
+                    //                     "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
+                    //                     style: typography.Caption,
+                    //                     overflow: TextOverflow.ellipsis,
+                    //                   ),
+                    //                   SizedBox(height: 10),
+                    //                 ],
+                    //               ),
+                    //             ),
+                    //             Container(
+                    //               decoration: BoxDecoration(
+                    //                 borderRadius: BorderRadius.only(
+                    //                   topRight: Radius.circular(12),
+                    //                   bottomRight: Radius.circular(12),
+                    //                 ),
+                    //                 color: Theme.of(context)
+                    //                     .colorScheme
+                    //                     .surfaceContainerLow,
+                    //               ),
+                    //               width: 50,
+                    //               height: double.infinity,
+                    //               child: IconButton(
+                    //                 icon: Icon(Icons.info,
+                    //                     color: Theme.of(context)
+                    //                         .colorScheme
+                    //                         .primary),
+                    //                 onPressed: () {
+                    //                   Navigator.push(
+                    //                     context,
+                    //                     MaterialPageRoute(
+                    //                       builder: (context) =>
+                    //                           LocationHeadersScreen(
+                    //                               location: location),
+                    //                     ),
+                    //                   );
+                    //                 },
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     );
+                    //   },
+                    // ),
                   ),
 
             UploadPreviewButtons(
@@ -974,6 +1205,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
               tempId: widget.tempId,
               processId: widget.processId,
               subAccountId: widget.subAccountId,
+              selectedLocations: selectedLocations,
             ),
           ],
         );

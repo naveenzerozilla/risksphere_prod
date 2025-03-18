@@ -232,24 +232,18 @@ class AccountListProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
 
-
       AccountListModel accountListModel = AccountListModel.fromJson(response);
-
       showOwner = accountListModel.settings?.owner ?? true;
       showSOVCount = accountListModel.settings?.sovCount ?? true;
       showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
       showOverallScore = accountListModel.settings?.overallScore ?? true;
       accountHits = accountListModel.totalRecords??0;
       totalPages = accountHits~/pageSize;
-     // totalPages = accountListModel.totalPages??1;
       if (page == 1) {
         accountList = accountListModel.results ?? [];
       } else {
         addToAccountList(accountListModel.results ?? []);
       }
-      // log(accountList.toString());
-      // log(totalPages.toString());
-      // log(page.toString());
       isLoading = false;
       isNextPageLoading = false;
     } on BackendException catch (e, stackTrace) {

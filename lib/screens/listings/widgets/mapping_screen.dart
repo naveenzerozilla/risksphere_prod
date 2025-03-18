@@ -7,6 +7,7 @@ import '../../../service/language_service.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class MappingScreen extends StatefulWidget {
+  final String? subAccountName;
   final String tempId;
   final String accountId;
   final String accountName;
@@ -14,6 +15,7 @@ class MappingScreen extends StatefulWidget {
 
   const MappingScreen(
       {super.key,
+        this.subAccountName,
       required this.tempId,
       this.accountId = '',
       this.accountName = '',
@@ -2102,6 +2104,7 @@ class _MappingScreenState extends State<MappingScreen> {
       if (widget.accountId != '' && widget.accountName != '') {
         provider.submitSovHeadersSubAccounts(
           context,
+          widget.subAccountName??"",
           widget.tempId,
           provider.sovUploadModel?.url ?? "",
           _fields,

@@ -8,19 +8,23 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class UploadPreviewButtons extends StatefulWidget {
+  final String? subAccountName;
   final String processId;
   final String accountId;
   final String accountName;
   final String tempId;
   final String subAccountId;
+  final List<Map<String, dynamic>>? selectedLocations;
 
   const UploadPreviewButtons({
     Key? key,
+     this.subAccountName,
     required this.processId,
     required this.accountId,
     required this.accountName,
     required this.tempId,
     required this.subAccountId,
+    this.selectedLocations,
   }) : super(key: key);
 
   @override
@@ -171,21 +175,20 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: _isSubmitLoading ? null : () => _showCommitDialog(context),
+                onPressed:
+                    _isSubmitLoading ? null : () => _showCommitDialog(context),
                 child: _isSubmitLoading
                     ? Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                )
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
                     : Text(
-                  'Commit Locations',
-                  style: typography.ButtonLarge.copyWith(
-                    color: Colors.black,
-                  ),
-                ),
+                        'Commit Locations',
+                        style: typography.ButtonLarge.copyWith(
+                          color: Colors.black,
+                        ),
+                      ),
               ),
             ),
-
-
           ],
         ),
       ),
@@ -195,15 +198,17 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
   void _showCommitDialog(BuildContext context) {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
 
-    int geocodingCount = provider.geocodingList.length;
-    int duplicateCount = provider.duplicateLocations.length;
+    int geocodingCount = provider.geocodingList?.length ?? 0;
+    int duplicateCount = provider.duplicateLocations?.length ?? 0;
+    int conflictCount = provider.conflictLocations?.length ?? 0;
     showDialog(
       context: context,
       builder: (context) {
-        final typography = CustomTypography(context);  // Get typography instance
+        final typography = CustomTypography(context); // Get typography instance
 
         return AlertDialog(
-          insetPadding: EdgeInsets.symmetric(horizontal: 10),  // Adjust inset padding
+          insetPadding: EdgeInsets.symmetric(horizontal: 10),
+          // Adjust inset padding
           backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -218,12 +223,11 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                   color: Colors.white,
                 ),
               ),
-
               SizedBox(height: 12),
               Container(
                 width: double.infinity,
                 height: 1,
-                color: Colors.white12,  // Divider color matching the screenshot
+                color: Colors.white12, // Divider color matching the screenshot
               ),
             ],
           ),
@@ -231,47 +235,74 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      "$geocodingCount",
-                      style: typography.Body1.copyWith(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
+                // if (geocodingCount != 0) ...[
+                  Row(
+                    children: [
+                      Text(
+                        // "$geocodingCount",
+                        widget.selectedLocations!.length.toString(),
+                        style: typography.Body1.copyWith(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      SizedBox(width: 8),
+                      Text(
+                        "Locations will be processed!",
+                        style: typography.Body2.copyWith(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                // ],
+                //   if (duplicateCount != 0) ...[
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          "$duplicateCount",
+                          style: typography.Body1.copyWith(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Locations will be reused!",
+                          style:
+                              typography.Body2.copyWith(color: Colors.white70),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Locations will be processed!",
-                      style: typography.Body2.copyWith(color: Colors.white70),
+                  // ],
+                  // if (conflitCount != 0) ...[
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          "$conflictCount",
+                          style: typography.Body1.copyWith(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Locations will be ignored!",
+                          style:
+                              typography.Body2.copyWith(color: Colors.white70),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      "$duplicateCount",
-                      style: typography.Body1.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Locations will be reused!",
-                      style: typography.Body2.copyWith(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ],
+                // ],
+
             ),
           ),
           actions: [
             Container(
               width: double.infinity,
               height: 1,
-              color: Colors.white12,  // Divider color matching the screenshot
+              color: Colors.white12, // Divider color matching the screenshot
             ),
             SizedBox(height: 12),
             Row(
@@ -280,16 +311,20 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(
-                      side: BorderSide(color: AppColors.primaryMain),  // Border for the "No" button
+                      side: BorderSide(color: AppColors.primaryMain),
+                      // Border for the "No" button
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     child: Text(
                       "No",
-                      style: typography.Body1.copyWith(color: AppColors.primaryMain),
+                      style: typography.Body1.copyWith(
+                          color: AppColors.primaryMain),
                     ),
                   ),
                 ),
@@ -304,21 +339,31 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>MyLocationList(accountID: widget.accountId, subAccountID: widget.subAccountId, accountName: widget.accountName, subAccountName: "",)), (route) => false);
+
                       // Navigator.pop(context);
                       // Navigator.pop(context);
                       // Navigator.pop(context);
-            //           Navigator.push(context, MaterialPageRoute(builder: (context) {
-            //             return /* LocationProfile(
-            //   account: accountListProvider.accountList[index],
-            // );*/
-            //               MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
-            //           }));
+                      //           Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      //             return /* LocationProfile(
+                      //   account: accountListProvider.accountList[index],
+                      // );*/
+                      //               MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
+                      //           }));
 
                       if (geocodingCount + duplicateCount > 0) {
                         // Proceed only if there are locations to commit
                         // Call the function to commit locations
                         _commitLocations(context);
+                        Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => MyLocationList(
+                                  accountID: widget.accountId,
+                                  subAccountID: widget.subAccountId,
+                                  accountName: widget.accountName,
+                                  subAccountName: widget.subAccountName?? "",
+                                )),
+                                (route) => false);
                       } else {
                         // Show a snackbar if there are no locations to commit
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -327,6 +372,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                           ),
                         );
                       }
+
                     },
                     child: Text(
                       "Yes",
@@ -340,23 +386,20 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
         );
       },
     );
-
   }
 
   void _commitLocations(BuildContext context) async {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
 
     setState(() {
-      _isSubmitLoading = true;  // Show loader
+      _isSubmitLoading = true; // Show loader
     });
 
-    await provider.commitSelectedLocations(
-        context, widget.accountId, widget.accountName, widget.tempId,widget.subAccountId);
+    await provider.commitSelectedLocations(context, widget.accountId,
+        widget.accountName, widget.tempId, widget.subAccountId);
 
     setState(() {
-      _isSubmitLoading = false;  // Hide loader after submission
+      _isSubmitLoading = false; // Hide loader after submission
     });
   }
-
-
 }

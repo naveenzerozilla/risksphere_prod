@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:RiskSphare/models/companymodel.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import 'package:flutter/foundation.dart';
@@ -27,6 +28,8 @@ import 'package:http/http.dart' as http;
 import '../utils/api_constants.dart';
 
 class AuthNotifier extends ChangeNotifier {
+  ValueNotifier<List<Companies>> companyOptionsNotifier = ValueNotifier([]);
+  List<Companies> companyOptions = [];
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
@@ -79,6 +82,7 @@ class AuthNotifier extends ChangeNotifier {
   List<Companies>? _companyList;
   List<CompanyType>? _companyTypeList;
   bool isRemindLoadings = false;
+  List<Companies> companyLists = [];
 
 // Getters for role list, company list, and company type list
   List<Role>? get roleList => _roleList;
@@ -132,6 +136,151 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   /// Splash Screen
+  ///
+
+  /// fetch company
+  ///
+  // Future<List<Companies>> fetchCompanies(String name) async {
+  //   final url =
+  //       "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$name";
+  //
+  //   try {
+  //     final response = await http.get(Uri.parse(url));
+  //     if (response.statusCode == 200) {
+  //       final List<dynamic> jsonResponse = json.decode(response.body);
+  //       return jsonResponse.map((data) => Companies.fromJson(data)).toList();
+  //     } else {
+  //       return [];
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching companies: $e");
+  //     return [];
+  //   }
+  // }
+
+  // Future<List<Companies>> fetchCompanies(String name) async {
+  //   print(name);
+  //   String encodedName = Uri.encodeComponent(name);
+  //   final url =
+  //       "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$encodedName";
+  //   print(url);
+  //
+  //   try {
+  //     final response = await http.get(Uri.parse(url), headers: {
+  //       'Content-Type': 'application/json',
+  //       'Accept': 'application/json',
+  //     });
+  //
+  //     print(response.statusCode);
+  //     print("Raw API Response: ${response.body}");
+  //
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //
+  //       if (data is Map &&
+  //           data.containsKey("result") &&
+  //           data["result"] is List) {
+  //         final List<dynamic> companyList = data["result"];
+  //         return companyList.map((json) => Companies.fromJson(json)).toList();
+  //       } else {
+  //         print("⚠ Unexpected API response format: $data");
+  //         return [];
+  //       }
+  //     } else {
+  //       print(" Error: ${response.statusCode}");
+  //       return [];
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching companies: $e");
+  //     return [];
+  //   }
+  // }
+
+  Future<void> fetchCompanies(String name) async {
+    print("Fetching: $name");
+
+    // if (name.isEmpty) {
+    //   companyOptionsNotifier.value = [];
+    //   return;
+    // }
+
+    try {
+      final response = await http.get(
+        Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=${Uri.encodeComponent(name)}"),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        print("object");
+        final data = json.decode(response.body);
+
+        if (data is Map && data.containsKey("result") && data["result"] is List) {
+          print("data");
+          final List<dynamic> companyList = data["result"];
+          print(companyList);
+          companyOptionsNotifier.value = companyList.map((json) => Companies.fromJson(json)).toList();
+        } else {
+          companyOptionsNotifier.value = [];
+        }
+      } else {
+        companyOptionsNotifier.value = [];
+      }
+    } catch (e) {
+      print("Error fetching companies: $e");
+      companyOptionsNotifier.value = [];
+    }
+    companyOptionsNotifier.notifyListeners();
+  }
+
+
+
+
+//   Future<List<Companies>> fetchCompanies(String name) async {
+//     print(name);
+//     String encodedName = Uri.encodeComponent(name);
+//     final url =
+//         "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$encodedName";
+// print(url);
+//     try {
+//       final response = await http.get(Uri.parse(url),  headers: {
+//         'Content-Type': 'application/json',
+//         'Accept': 'application/json',
+//       },);
+// print(response.statusCode);
+//       // Debugging: Print raw response
+//       print("Raw API Response: ${response.body}");
+//
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//
+//         if (data is List) {
+//           // ✅ Case 1: API returns a direct list of companies
+//           return data.map((json) => Companies.fromJson(json)).toList();
+//         } else if (data is Map) {
+//           // ✅ Case 2: API returns an object, check where the list exists
+//           if (data.containsKey("companies") && data["companies"] is List) {
+//             final List<dynamic> companyList = data["companies"];
+//             return companyList.map((json) => Companies.fromJson(json)).toList();
+//           } else if (data.containsKey("data") && data["data"] is List) {
+//             final List<dynamic> companyList = data["data"];
+//             return companyList.map((json) => Companies.fromJson(json)).toList();
+//           } else {
+//             print("⚠ Unexpected API response format: $data");
+//             return [];
+//           }
+//         } else {
+//           print("⚠ Unexpected data type from API");
+//           return [];
+//         }
+//       } else {
+//         print("❌ Error: ${response.statusCode}");
+//         return [];
+//       }
+//     } catch (e) {
+//       print("❌ Error fetching companies: $e");
+//       return [];
+//     }
+//   }
 
   /// Login
 
@@ -147,7 +296,6 @@ class AuthNotifier extends ChangeNotifier {
           await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
-
       );
       _user = userCredential.user;
 
@@ -158,8 +306,6 @@ class AuthNotifier extends ChangeNotifier {
       String isAdminVerified = await getAllClaims();
       print("is admin verified" + isAdminVerified.length.toString());
       print(isAdminVerified.toLowerCase());
-
-
 
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
@@ -182,8 +328,7 @@ class AuthNotifier extends ChangeNotifier {
           notifyListeners();
         });
         return;
-      }
-      else  if (isAdminVerified.toLowerCase() == "false" ||
+      } else if (isAdminVerified.toLowerCase() == "false" ||
           isAdminVerified.length.toString() == "0") {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
@@ -193,7 +338,8 @@ class AuthNotifier extends ChangeNotifier {
           barrierDismissible: false,
           builder: (BuildContext context) {
             var typography = CustomTypography(context);
-            return StatefulBuilder( // Use StatefulBuilder to update UI inside AlertDialog
+            return StatefulBuilder(
+              // Use StatefulBuilder to update UI inside AlertDialog
               builder: (context, setState) {
                 return AlertDialog(
                   title: Text(
@@ -231,34 +377,41 @@ class AuthNotifier extends ChangeNotifier {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          LanguageService.getTranslated(
-                                              context, "login_admin_not_verified_remind_success"),
-                                          style: typography.H6.copyWith(color: Colors.black),
+                                          LanguageService.getTranslated(context,
+                                              "login_admin_not_verified_remind_success"),
+                                          style: typography.H6
+                                              .copyWith(color: Colors.black),
                                         ),
                                       ),
                                     );
                                   }
 
                                   final _googleSignIn = GoogleSignIn();
-                                  var isSignedIn = await _googleSignIn.isSignedIn();
+                                  var isSignedIn =
+                                      await _googleSignIn.isSignedIn();
 
-                                  if (isSignedIn) await _googleSignIn.disconnect();
+                                  if (isSignedIn)
+                                    await _googleSignIn.disconnect();
                                   await _auth.signOut();
 
                                   // Ensure UI updates before closing dialog
-                                  Future.delayed(Duration(milliseconds: 500), () {
+                                  Future.delayed(Duration(milliseconds: 500),
+                                      () {
                                     if (Navigator.canPop(context)) {
                                       Navigator.pop(context);
                                     }
                                   });
                                 },
                                 child: isRemindLoading
-                                    ? Center(child: CircularProgressIndicator(color: Colors.white)) // Ensure visibility
+                                    ? Center(
+                                        child: CircularProgressIndicator(
+                                            color: Colors
+                                                .white)) // Ensure visibility
                                     : Text(
-                                  LanguageService.getTranslated(
-                                      context, "login_admin_not_verified_remind_button"),
-                                  style: typography.Body1,
-                                ),
+                                        LanguageService.getTranslated(context,
+                                            "login_admin_not_verified_remind_button"),
+                                        style: typography.Body1,
+                                      ),
                               ),
                             ),
                           ],
@@ -271,8 +424,10 @@ class AuthNotifier extends ChangeNotifier {
                                   type: ButtonType.text,
                                   onPressed: () async {
                                     final _googleSignIn = GoogleSignIn();
-                                    var isSignedIn = await _googleSignIn.isSignedIn();
-                                    if (isSignedIn) await _googleSignIn.disconnect();
+                                    var isSignedIn =
+                                        await _googleSignIn.isSignedIn();
+                                    if (isSignedIn)
+                                      await _googleSignIn.disconnect();
                                     await _auth.signOut();
 
                                     if (Navigator.canPop(context)) {
@@ -280,13 +435,16 @@ class AuthNotifier extends ChangeNotifier {
                                     }
                                     Navigator.pushAndRemoveUntil(
                                         context,
-                                        MaterialPageRoute(builder: (context) => SplashScreen()),
-                                            (route) => false);
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                SplashScreen()),
+                                        (route) => false);
                                   },
                                   child: Text(
                                     LanguageService.getTranslated(context,
                                         "login_admin_not_verified_cancel_button"),
-                                    style: typography.H6.copyWith(color: Colors.white),
+                                    style: typography.H6
+                                        .copyWith(color: Colors.white),
                                   )),
                             ),
                           ],
@@ -1228,7 +1386,7 @@ class AuthNotifier extends ChangeNotifier {
             },
           );
         } else if (selectedCompany != null &&
-            selectedCompany.corporateUserVerificationByAdmin &&
+            selectedCompany!.corporateUserVerificationByAdmin! &&
             roles?.name.toLowerCase() != 'admin') {
           showDialog(
             context: context,
@@ -1444,7 +1602,6 @@ class AuthNotifier extends ChangeNotifier {
 
     return '$localPart@$domainPart';
   }
-
   Future<String> getAllClaims() async {
     try {
       if (isAssignClaimsLoading) return "";
@@ -1455,90 +1612,152 @@ class AuthNotifier extends ChangeNotifier {
         return "";
       }
 
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('assignClaims');
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('assignClaims');
 
-      String? token = await _auth.currentUser!.getIdToken(true);
-      log("Old Token: $token");
+      // Use cached token if available
+      String? token = await _auth.currentUser!.getIdToken(false);
+      log("Token: $token");
 
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
 
-      print("Raw Firebase Response: $response"); // Log full response
-
-      if (!response.data.containsKey('is_user_exists')) {
-        print("Response missing expected field");
+      if (response.data == null || response.data is! Map || !response.data.containsKey('is_user_exists')) {
+        print("Invalid response from Firebase");
         return "";
-        // throw Exception("Response missing expected field: is_user_exists");
-      }
-      if (response.data == null) {
-        throw Exception("Response data is null");
-      }
-      if (response.data is! Map) {
-        throw Exception("Response data is not a Map: ${response.data}");
       }
 
-      print("is_user_exists: ${response.data["is_user_exists"]}");
-      print("is_user_exists: ${response.data['schedule_inprogress']}");
-      print("is_user_exists: ${response.data['last_account']}");
-      print("is_user_exists: ${response.data['last_sub_account']}");
-          SharedPreferenceService.setScheduleInProgress(
-              response.data['schedule_inprogress'].toString());
-          // SharedPreferenceService.setScheduleInProgress(
-          //     response.data['schedule_inprogress']);
-          SharedPreferenceService.setSovUploadTempId(
-              response.data['last_process_temp_id'] ?? "");
-          SharedPreferenceService.setSovUploadProcessId(
-              response.data['last_process_id'] ?? "");
-          SharedPreferenceService.setSovUploadState(
-              response.data['last_process_state'] ?? "");
-          SharedPreferenceService.setSovAccountId(
-              response.data['last_account'] ?? "");
-          SharedPreferenceService.setSovSubAccountId(
-              response.data['last_sub_account'] ?? "");
-          SharedPreferenceService.setSovAccountName(
-              response.data['last_account_name'] ?? "");
-          SharedPreferenceService.setSovSubAccountName(
-              response.data['last_sub_account_name'] ?? "");
-          if (response.data.containsKey('remaining_trial_days')) {
-            int? trialDays = response.data['remaining_trial_days'];
-            bool isTrialApplicable =
-                response.data['is_applicable_for_trial'] ?? false;
-            int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
-            int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
-            int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
-            int? trialLocations = response.data['trial_locations'] ?? 0;
-            int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
-            int? trialTotalUsersVerified =
-                response.data['total_users_verified'] ?? 0;
+      final data = response.data as Map<String, dynamic>;
 
-            // Store trial info in shared preferences
-            await SharedPreferenceService.saveTrialInfo(
-                trialDays ?? 0,
-                isTrialApplicable,
-                trialSubdestinations ?? 0,
-                trialEditLocations ?? 0,
-                trialMaxLocations ?? 0,
-                trialLocations ?? 0,
-                trailTotalUsers ?? 0,
-                trialTotalUsersVerified ?? 0);
+      // Batch shared preferences updates
+      await Future.wait([
+        SharedPreferenceService.setScheduleInProgress(data['schedule_inprogress'].toString()),
+        SharedPreferenceService.setSovUploadTempId(data['last_process_temp_id'] ?? ""),
+        SharedPreferenceService.setSovUploadProcessId(data['last_process_id'] ?? ""),
+        SharedPreferenceService.setSovUploadState(data['last_process_state'] ?? ""),
+        SharedPreferenceService.setSovAccountId(data['last_account'] ?? ""),
+        SharedPreferenceService.setSovSubAccountId(data['last_sub_account'] ?? ""),
+        SharedPreferenceService.setSovAccountName(data['last_account_name'] ?? ""),
+        SharedPreferenceService.setSovSubAccountName(data['last_sub_account_name'] ?? ""),
+      ]);
 
-            print(
-                "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
-          } else {
-            print("No trial info found in claims response.");
-            //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
-          }
-      return response.data["is_user_exists"].toString();
+      // Parallel trial info saving
+      if (data.containsKey('remaining_trial_days')) {
+        await SharedPreferenceService.saveTrialInfo(
+          data['remaining_trial_days'] ?? 0,
+          data['is_applicable_for_trial'] ?? false,
+          data['trial_subdestinations'] ?? 0,
+          data['trial_max_updates'] ?? 0,
+          data['trial_max_locations'] ?? 0,
+          data['trial_locations'] ?? 0,
+          data['total_trial_users'] ?? 0,
+          data['total_users_verified'] ?? 0,
+        );
+      }
+
+      return data["is_user_exists"].toString();
     } catch (e, stack) {
-      print(stack);
       print('Error getting all claims: $e');
       return "";
     } finally {
       isAssignClaimsLoading = false;
     }
   }
+//before shared preference call
+  // Future<String> getAllClaims() async {
+  //   try {
+  //     if (isAssignClaimsLoading) return "";
+  //     isAssignClaimsLoading = true;
+  //
+  //     if (_auth.currentUser == null) {
+  //       print("User is not authenticated.");
+  //       return "";
+  //     }
+  //
+  //     final HttpsCallable callable =
+  //         FirebaseFunctions.instance.httpsCallable('assignClaims');
+  //
+  //     String? token = await _auth.currentUser!.getIdToken(true);
+  //     log("Old Token: $token");
+  //
+  //     HttpsCallableResult response = await callable.call(<String, dynamic>{
+  //       'Authorization': 'Bearer ${token ?? ""}',
+  //     });
+  //
+  //     print("Raw Firebase Response: $response"); // Log full response
+  //
+  //     if (!response.data.containsKey('is_user_exists')) {
+  //       print("Response missing expected field");
+  //       return "";
+  //       // throw Exception("Response missing expected field: is_user_exists");
+  //     }
+  //     if (response.data == null) {
+  //       throw Exception("Response data is null");
+  //     }
+  //     if (response.data is! Map) {
+  //       throw Exception("Response data is not a Map: ${response.data}");
+  //     }
+  //
+  //     // print("is_user_exists: ${response.data["is_user_exists"]}");
+  //     // print("is_user_exists: ${response.data['schedule_inprogress']}");
+  //     // print("is_user_exists: ${response.data['last_account']}");
+  //     // print("is_user_exists: ${response.data['last_sub_account']}");
+  //     SharedPreferenceService.setScheduleInProgress(
+  //         response.data['schedule_inprogress'].toString());
+  //     // SharedPreferenceService.setScheduleInProgress(
+  //     //     response.data['schedule_inprogress']);
+  //     SharedPreferenceService.setSovUploadTempId(
+  //         response.data['last_process_temp_id'] ?? "");
+  //     SharedPreferenceService.setSovUploadProcessId(
+  //         response.data['last_process_id'] ?? "");
+  //     SharedPreferenceService.setSovUploadState(
+  //         response.data['last_process_state'] ?? "");
+  //     SharedPreferenceService.setSovAccountId(
+  //         response.data['last_account'] ?? "");
+  //     SharedPreferenceService.setSovSubAccountId(
+  //         response.data['last_sub_account'] ?? "");
+  //     SharedPreferenceService.setSovAccountName(
+  //         response.data['last_account_name'] ?? "");
+  //     SharedPreferenceService.setSovSubAccountName(
+  //         response.data['last_sub_account_name'] ?? "");
+  //     if (response.data.containsKey('remaining_trial_days')) {
+  //       int? trialDays = response.data['remaining_trial_days'];
+  //       bool isTrialApplicable =
+  //           response.data['is_applicable_for_trial'] ?? false;
+  //       int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
+  //       int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
+  //       int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
+  //       int? trialLocations = response.data['trial_locations'] ?? 0;
+  //       int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
+  //       int? trialTotalUsersVerified =
+  //           response.data['total_users_verified'] ?? 0;
+  //
+  //       // Store trial info in shared preferences
+  //       await SharedPreferenceService.saveTrialInfo(
+  //           trialDays ?? 0,
+  //           isTrialApplicable,
+  //           trialSubdestinations ?? 0,
+  //           trialEditLocations ?? 0,
+  //           trialMaxLocations ?? 0,
+  //           trialLocations ?? 0,
+  //           trailTotalUsers ?? 0,
+  //           trialTotalUsersVerified ?? 0);
+  //
+  //       print(
+  //           "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
+  //     } else {
+  //       print("No trial info found in claims response.");
+  //       //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
+  //     }
+  //     return response.data["is_user_exists"].toString();
+  //   } catch (e, stack) {
+  //     print(stack);
+  //     print('Error getting all claims: $e');
+  //     return "";
+  //   } finally {
+  //     isAssignClaimsLoading = false;
+  //   }
+  // }
 
   // Future<String> getAllClaims() async {
   //   try {

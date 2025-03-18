@@ -13,6 +13,7 @@ import '../../../providers/location_list_provider.dart';
 import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
+  final Map<String, HazardDetails>? hazards;
   final String imageUrl;
   final String locationId;
   final String accountName;
@@ -32,7 +33,7 @@ class MyLocationCard extends StatefulWidget {
   final String? subAccountId;
   final String? lat;
   final String? long;
-  final String? overallScore;
+  final dynamic overallScore;
   final int index;
   final String? sovId;
   final String? sovName;
@@ -46,6 +47,7 @@ class MyLocationCard extends StatefulWidget {
 
   const MyLocationCard({
     super.key,
+    this.hazards,
     required this.imageUrl,
     required this.locationId,
     required this.accountName,
@@ -315,7 +317,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
             ],
           ),
         ),
-
         /*SizedBox(width: 12),
         // Circular score with percentage and gaped border
         Stack(
@@ -341,6 +342,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
         SizedBox(width: 4),
         // Popup menu for actions
         CustomPopupMenuButton(
+          // geocodeingScore:  widget.geocodingScore,
+          //   imageUrl: widget.
           locationId: widget.locationId,
           onDelete: widget.onDelete,
           onAddToSOV: widget.onAddToSOV,
@@ -387,7 +390,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             widget.accountId!,
             widget.subAccountId!,
           ),
-          _buildScoreCard(context, 'Risk Score', widget.address, 5,
+          _buildScoreCard(context, 'Risk Score', widget.address, widget.riskScore ==0 ?5 :widget.riskScore,
               widget.accountId!, widget.subAccountId!),
           //int.parse(widget.overallScore!)),
           _buildScoreCard(
@@ -485,26 +488,28 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                   height: 24)
                               : const SizedBox(),
                   SizedBox(width: 4),
-                  // Text(widget.hazardProcess.toString()),
+                  // Text(widget.hazards.toString()),
 
                   InkWell(
                     onTap: () {
                       if (title == 'Geocoding') {
-                        // showLocationDetailsPopup(
-                        //   context,
-                        //   widget.imageUrl,
-                        //   widget.address,
-                        //   widget.locationId,
-                        //   widget.geocodingScore,
-                        //   widget.riskScore,
-                        //   null,
-                        //   "MAc",
-                        //   widget.accountId!,
-                        //   widget.subAccountId!,
-                        //   "widget.sovId!",
-                        //   widget.accountName,
-                        //   widget.subAccountName!,
-                        // );
+                        showLocationDetailsPopup(
+                          context,
+                          widget.lat,
+                          widget.long!,
+                          widget.imageUrl,
+                          widget.address,
+                          widget.locationId,
+                          widget.geocodingScore,
+                        int.parse(widget.overallScore!),
+                          widget.hazards,
+                          "MAc",
+                          widget.accountId!,
+                          widget.subAccountId!,
+                          "widget.sovId!",
+                          widget.accountName,
+                          widget.subAccountName!,
+                        );
                       }
                     },
                     child: VerticalBarIndicator(score: score),
@@ -548,12 +553,14 @@ class _MyLocationCardState extends State<MyLocationCard> {
 // Call this function to show the popup on tap
 void showLocationDetailsPopup(
     BuildContext context,
-    String imageUrl,
+    String? lat,
+    String? long,
+    String? imageUrl,
     String address,
     String locationId,
     int geocodingScore,
-    String,
-    void Function()? getData,
+    int overallScore,
+    Map<String, HazardDetails>? hazards,
     String? professional,
     String accountId,
     String subAccountId,
@@ -565,16 +572,18 @@ void showLocationDetailsPopup(
     context: context,
     builder: (BuildContext context) {
       return LocationDetailsPopup(
+        lat: lat,
+        long: long,
         // location.overallScore ?? 0,
-        imageUrl:imageUrl,
+        imageUrl: imageUrl,
         address: address ?? 'Unknown Address',
         locationId: locationId ?? 'Unknown ID',
         geocodingScore: geocodingScore,
-        riskScore: 0,
-        hazards: {},
+        riskScore: overallScore ?? 5,
+        hazards: hazards ?? {},
         geocodedAt: [""],
         occupancy: ["--"],
-        campus: address,
+        campus: locationId,
         accountId: accountId,
         subAccountId: subAccountId,
         sovId: sovId,

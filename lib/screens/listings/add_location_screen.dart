@@ -310,27 +310,17 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           padding: const EdgeInsets.all(8.0),
                                           child: TypeAheadField<Suggestion>(
                                             hideOnEmpty: true,
+                                            // hideSuggestionsOnKeyboardHide: true, // Hides suggestions when keyboard is closed
                                             hideKeyboardOnDrag: false,
                                             controller: _locationNameController,
                                             suggestionsCallback: (pattern) async {
-                                              if (pattern.isEmpty) return [];
-                                              final apiProvider =
-                                                  PlaceApiProvider(sessionToken);
-                                              return await apiProvider
-                                                  .fetchSuggestions(pattern, 'en');
+                                              if (pattern.isEmpty || _isSelectedFromAutocomplete) return [];
+                                              final apiProvider = PlaceApiProvider(sessionToken);
+                                              return await apiProvider.fetchSuggestions(pattern, 'en');
                                             },
-                                            loadingBuilder: (context) {
-                                              /*return ListTile(
-                                                title: Text('Loading...'),
-                                              );*/
-                                              return SizedBox(
-                                                height: 0,
-                                              );
-                                            },
+                                            loadingBuilder: (context) => SizedBox(height: 0),
                                             itemBuilder: (context, suggestion) {
-                                              if (areFieldsDisabled()) {
-                                                return Container(); // Return an empty widget but still valid
-                                              }
+                                              if (areFieldsDisabled()) return Container();
                                               return ListTile(
                                                 title: Text(
                                                   suggestion.description,
@@ -338,16 +328,13 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 ),
                                               );
                                             },
-                                            builder:
-                                                (context, controller, focusNode) {
+                                            builder: (context, controller, focusNode) {
                                               return Container(
                                                 decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
+                                                  borderRadius: BorderRadius.circular(8),
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.1),
+                                                      color: Colors.black.withOpacity(0.1),
                                                       blurRadius: 8,
                                                       offset: Offset(0, 2),
                                                     ),
@@ -357,34 +344,117 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   enabled: !areFieldsDisabled(),
                                                   controller: controller,
                                                   focusNode: focusNode,
+                                                  onTap: () {
+                                                    if (_isSelectedFromAutocomplete) {
+                                                      focusNode.unfocus(); // Prevent dropdown from showing again
+                                                    }
+                                                  },
                                                   onChanged: (value) {
                                                     if (_isSelectedFromAutocomplete) {
-                                                      _isSelectedFromAutocomplete =
-                                                          false;
+                                                      _isSelectedFromAutocomplete = false;
                                                       return;
                                                     }
                                                     if (value.isEmpty) {
                                                       markers.clear();
-                                                      return;
                                                     }
                                                   },
                                                   decoration: InputDecoration(
-                                                    labelText:
-                                                        LanguageService.getTranslated(
-                                                            context,
-                                                            "addlocation_location_name"),
+                                                    labelText: LanguageService.getTranslated(
+                                                        context, "addlocation_location_name"),
                                                     border: OutlineInputBorder(),
                                                     prefixIcon: Icon(Icons.search),
                                                   ),
                                                 ),
                                               );
                                             },
-                                            onSelected:
-                                            areFieldsDisabled()?null:(suggestion) {
+                                            onSelected: areFieldsDisabled()
+                                                ? null
+                                                : (suggestion) {
+                                              _isSelectedFromAutocomplete = true;
                                               _handlePlaceSelection(suggestion);
                                             },
                                           ),
                                         ),
+
+                                        // Padding(
+                                        //   padding: const EdgeInsets.all(8.0),
+                                        //   child: TypeAheadField<Suggestion>(
+                                        //     hideOnEmpty: true,
+                                        //     hideKeyboardOnDrag: false,
+                                        //     controller: _locationNameController,
+                                        //     suggestionsCallback: (pattern) async {
+                                        //       if (pattern.isEmpty) return [];
+                                        //       final apiProvider =
+                                        //           PlaceApiProvider(sessionToken);
+                                        //       return await apiProvider
+                                        //           .fetchSuggestions(pattern, 'en');
+                                        //     },
+                                        //     loadingBuilder: (context) {
+                                        //       /*return ListTile(
+                                        //         title: Text('Loading...'),
+                                        //       );*/
+                                        //       return SizedBox(
+                                        //         height: 0,
+                                        //       );
+                                        //     },
+                                        //     itemBuilder: (context, suggestion) {
+                                        //       if (areFieldsDisabled()) {
+                                        //         return Container(); // Return an empty widget but still valid
+                                        //       }
+                                        //       return ListTile(
+                                        //         title: Text(
+                                        //           suggestion.description,
+                                        //           style: typography.Body1,
+                                        //         ),
+                                        //       );
+                                        //     },
+                                        //     builder:
+                                        //         (context, controller, focusNode) {
+                                        //       return Container(
+                                        //         decoration: BoxDecoration(
+                                        //           borderRadius:
+                                        //               BorderRadius.circular(8),
+                                        //           boxShadow: [
+                                        //             BoxShadow(
+                                        //               color: Colors.black
+                                        //                   .withOpacity(0.1),
+                                        //               blurRadius: 8,
+                                        //               offset: Offset(0, 2),
+                                        //             ),
+                                        //           ],
+                                        //         ),
+                                        //         child: TextField(
+                                        //           enabled: !areFieldsDisabled(),
+                                        //           controller: controller,
+                                        //           focusNode: focusNode,
+                                        //           onChanged: (value) {
+                                        //             if (_isSelectedFromAutocomplete) {
+                                        //               _isSelectedFromAutocomplete =
+                                        //                   false;
+                                        //               return;
+                                        //             }
+                                        //             if (value.isEmpty) {
+                                        //               markers.clear();
+                                        //               return;
+                                        //             }
+                                        //           },
+                                        //           decoration: InputDecoration(
+                                        //             labelText:
+                                        //                 LanguageService.getTranslated(
+                                        //                     context,
+                                        //                     "addlocation_location_name"),
+                                        //             border: OutlineInputBorder(),
+                                        //             prefixIcon: Icon(Icons.search),
+                                        //           ),
+                                        //         ),
+                                        //       );
+                                        //     },
+                                        //     onSelected:
+                                        //     areFieldsDisabled()?null:(suggestion) {
+                                        //       _handlePlaceSelection(suggestion);
+                                        //     },
+                                        //   ),
+                                        // ),
 
                                         SizedBox(height: CustomSpacing.four),
                                         // Location Address
@@ -711,13 +781,24 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                             });
                                                           },
                                                           validator: (value) {
-                                                            if (value == null || value.isEmpty) {
-                                                              return LanguageService.getTranslated(
+                                                            if (addToSOVCheck) { // Apply validation only if addToSOVCheck is true
+                                                              if (value == null || value.isEmpty) {
+                                                                return LanguageService.getTranslated(
                                                                   context,
-                                                                  "addlocation_address_error");
+                                                                  "addlocation_address_error",
+                                                                );
+                                                              }
                                                             }
                                                             return null;
                                                           },
+                                                          // validator: (value) {
+                                                          //   if (value == null || value.isEmpty) {
+                                                          //     return LanguageService.getTranslated(
+                                                          //         context,
+                                                          //         "addlocation_address_error");
+                                                          //   }
+                                                          //   return null;
+                                                          // },
 
                                                           decoration: InputDecoration(
                                                             labelText: "Name of the SoV",

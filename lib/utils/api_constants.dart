@@ -45,6 +45,8 @@ class AppConstant {
   static String get ADD_TEAM_MEMBERS => '$baseURL/user_management';
   static String get GET_CORPORATE_USER => '$baseURL/companies';
   static String get GET_CORPORATE_USER_NEW => '$baseURL/user_management_new/company_user_list';
+  static String get GET_CORPORATE_Company => '$baseURL/send_default_data?name=Test one';
+
 
   static String get UPDATE_USER_STATUS => '$baseURL/user_management';
   static String get NON_CORPORATE_USER_STATUS => '$baseURL/user_management';
@@ -112,6 +114,7 @@ class AppConstant {
 
   // Upload Images New
   static String get UPLOAD_IMAGES_NEW => '$baseURL/locations/location_profile_images';
+  static String get LOCATION_SUMMARY => '$baseURL/locations/location_summary';
 
   /// R3 APIS
   static String get GET_JOB_MONITORING => '$baseURL/job_monitoring';
