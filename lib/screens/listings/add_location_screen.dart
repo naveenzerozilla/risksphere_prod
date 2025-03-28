@@ -94,6 +94,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   bool disableToggle = false;
   String selectedSovId = "";
   TextEditingController sovController = TextEditingController();
+
   // radio group for rented and leased
   bool rented = false;
   bool leased = false;
@@ -167,6 +168,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           key: _scaffoldKey,
           backgroundColor: themeProvider.getTheme.colorScheme.background,
           appBar: CustomAppBar(
@@ -195,703 +197,815 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                 ),
               ),
               Consumer<UserProfileProvider>(
-                builder: (context, userProfileProvider, child) {
-                  final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-                  int locations = userProfileProvider.trialInfo['locations']??0;
-                  int total = userProfileProvider.trialInfo['maxLocations']??0;
-                  return Column(
-                    children: [
-                      SizedBox(height: CustomSpacing.four),
-
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            //color: Theme.of(context).hoverColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
+                  builder: (context, userProfileProvider, child) {
+                final trialStatus =
+                    userProfileProvider.trialInfo['status'] ?? '';
+                int locations = userProfileProvider.trialInfo['locations'] ?? 0;
+                int total = userProfileProvider.trialInfo['maxLocations'] ?? 0;
+                return Column(
+                  children: [
+                    SizedBox(height: CustomSpacing.four),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          //color: Theme.of(context).hoverColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-
-                              // Form
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Form(
-                                    key: _formKey,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-
-                                          margin: EdgeInsets.only(left: 8, right: 8),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(8),
-                                              topRight: Radius.circular(8),
-                                              bottomLeft: Radius.circular(8),
-                                              bottomRight: Radius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Form
+                            Expanded(
+                              child: SingleChildScrollView(
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        margin:
+                                            EdgeInsets.only(left: 8, right: 8),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                          ),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: Container(
+                                            height: 180,
+                                            width: double.infinity,
+                                            child: Image.asset(
+                                              'assets/images/google_map.png',
+                                              fit: BoxFit.cover,
                                             ),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: Container(
-                                              height: 200,
-                                              width: double.infinity,
-                                              child: GoogleMap(
-                                                mapType: MapType.satellite,
-                                                initialCameraPosition: _defaultLocation,
-                                                onMapCreated: (GoogleMapController controller) {
-                                                  _mapController.complete(controller);
-                                                },
-                                                markers: Set<Marker>.of(markers.values),
-                                              ),
-                                            ),
+                                            // GoogleMap(
+                                            //   mapType: MapType.satellite,
+                                            //   initialCameraPosition: _defaultLocation,
+                                            //   onMapCreated: (GoogleMapController controller) {
+                                            //     _mapController.complete(controller);
+                                            //   },
+                                            //   markers: Set<Marker>.of(markers.values),
+                                            // ),
                                           ),
                                         ),
-                                        SizedBox(height: CustomSpacing.four),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8.0),
-                                          child: Text(
-                                              widget.locationId.isEmpty
-                                                  ? LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_app_title")
-                                                  : "Edit Location",
-                                              style: typography.H5_Regular),
-                                        ),
-                                        if(trialStatus.isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: MessageCard(
-                                                isError: locations<1,
-                                                messageTextSpans: [
-                                                  TextSpan(
-                                                    text: '$locations of $total locations left.',
-                                                  ),
-                                                  TextSpan(
-                                                    recognizer: TapGestureRecognizer()
-                                                      ..onTap = () {
-                                                        ScaffoldMessenger.of(context).showSnackBar(
-                                                          SnackBar(
-                                                            content: Text(
-                                                              "Coming Soon!",
-                                                              style: typography.Body1.copyWith(
-                                                                color: AppColors.primaryMain,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    text: ' Upgrade Now!',
-                                                    style: TextStyle(
-                                                      color: AppColors.primaryMain,
-                                                    ),
-                                                  ),
-                                                ]
-                                             ),
-                                            ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8.0),
-                                          child: Text(
+                                      ),
+                                      SizedBox(height: CustomSpacing.four),
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 8.0),
+                                        child: Text(
                                             widget.locationId.isEmpty
                                                 ? LanguageService.getTranslated(
                                                     context,
-                                                    "addlocation_app_subtitle")
-                                                : "Please provide the necessary information to update the location details",
-                                            style: typography.Subtitle1,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: CustomSpacing.four,
-                                        ),
-                                        // Location Name
+                                                    "addlocation_app_title")
+                                                : "Edit Location",
+                                            style: typography.H5_Regular),
+                                      ),
+                                      if (trialStatus.isNotEmpty)
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
-                                          child: TypeAheadField<Suggestion>(
-                                            hideOnEmpty: true,
-                                            // hideSuggestionsOnKeyboardHide: true, // Hides suggestions when keyboard is closed
-                                            hideKeyboardOnDrag: false,
-                                            controller: _locationNameController,
-                                            suggestionsCallback: (pattern) async {
-                                              if (pattern.isEmpty || _isSelectedFromAutocomplete) return [];
-                                              final apiProvider = PlaceApiProvider(sessionToken);
-                                              return await apiProvider.fetchSuggestions(pattern, 'en');
-                                            },
-                                            loadingBuilder: (context) => SizedBox(height: 0),
-                                            itemBuilder: (context, suggestion) {
-                                              if (areFieldsDisabled()) return Container();
-                                              return ListTile(
-                                                title: Text(
-                                                  suggestion.description,
-                                                  style: typography.Body1,
+                                          child: MessageCard(
+                                              isError: locations < 1,
+                                              messageTextSpans: [
+                                                TextSpan(
+                                                  text:
+                                                      '$locations of $total locations left.',
                                                 ),
-                                              );
-                                            },
-                                            builder: (context, controller, focusNode) {
-                                              return Container(
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.1),
-                                                      blurRadius: 8,
-                                                      offset: Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: TextField(
-                                                  enabled: !areFieldsDisabled(),
-                                                  controller: controller,
-                                                  focusNode: focusNode,
-                                                  onTap: () {
-                                                    if (_isSelectedFromAutocomplete) {
-                                                      focusNode.unfocus(); // Prevent dropdown from showing again
-                                                    }
-                                                  },
-                                                  onChanged: (value) {
-                                                    if (_isSelectedFromAutocomplete) {
-                                                      _isSelectedFromAutocomplete = false;
-                                                      return;
-                                                    }
-                                                    if (value.isEmpty) {
-                                                      markers.clear();
-                                                    }
-                                                  },
-                                                  decoration: InputDecoration(
-                                                    labelText: LanguageService.getTranslated(
-                                                        context, "addlocation_location_name"),
-                                                    border: OutlineInputBorder(),
-                                                    prefixIcon: Icon(Icons.search),
+                                                TextSpan(
+                                                  recognizer:
+                                                      TapGestureRecognizer()
+                                                        ..onTap = () {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                "Coming Soon!",
+                                                                style: typography
+                                                                        .Body1
+                                                                    .copyWith(
+                                                                  color: AppColors
+                                                                      .primaryMain,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                  text: ' Upgrade Now!',
+                                                  style: TextStyle(
+                                                    color:
+                                                        AppColors.primaryMain,
                                                   ),
                                                 ),
-                                              );
-                                            },
-                                            onSelected: areFieldsDisabled()
-                                                ? null
-                                                : (suggestion) {
-                                              _isSelectedFromAutocomplete = true;
-                                              _handlePlaceSelection(suggestion);
-                                            },
-                                          ),
+                                              ]),
                                         ),
-
-                                        // Padding(
-                                        //   padding: const EdgeInsets.all(8.0),
-                                        //   child: TypeAheadField<Suggestion>(
-                                        //     hideOnEmpty: true,
-                                        //     hideKeyboardOnDrag: false,
-                                        //     controller: _locationNameController,
-                                        //     suggestionsCallback: (pattern) async {
-                                        //       if (pattern.isEmpty) return [];
-                                        //       final apiProvider =
-                                        //           PlaceApiProvider(sessionToken);
-                                        //       return await apiProvider
-                                        //           .fetchSuggestions(pattern, 'en');
-                                        //     },
-                                        //     loadingBuilder: (context) {
-                                        //       /*return ListTile(
-                                        //         title: Text('Loading...'),
-                                        //       );*/
-                                        //       return SizedBox(
-                                        //         height: 0,
-                                        //       );
-                                        //     },
-                                        //     itemBuilder: (context, suggestion) {
-                                        //       if (areFieldsDisabled()) {
-                                        //         return Container(); // Return an empty widget but still valid
-                                        //       }
-                                        //       return ListTile(
-                                        //         title: Text(
-                                        //           suggestion.description,
-                                        //           style: typography.Body1,
-                                        //         ),
-                                        //       );
-                                        //     },
-                                        //     builder:
-                                        //         (context, controller, focusNode) {
-                                        //       return Container(
-                                        //         decoration: BoxDecoration(
-                                        //           borderRadius:
-                                        //               BorderRadius.circular(8),
-                                        //           boxShadow: [
-                                        //             BoxShadow(
-                                        //               color: Colors.black
-                                        //                   .withOpacity(0.1),
-                                        //               blurRadius: 8,
-                                        //               offset: Offset(0, 2),
-                                        //             ),
-                                        //           ],
-                                        //         ),
-                                        //         child: TextField(
-                                        //           enabled: !areFieldsDisabled(),
-                                        //           controller: controller,
-                                        //           focusNode: focusNode,
-                                        //           onChanged: (value) {
-                                        //             if (_isSelectedFromAutocomplete) {
-                                        //               _isSelectedFromAutocomplete =
-                                        //                   false;
-                                        //               return;
-                                        //             }
-                                        //             if (value.isEmpty) {
-                                        //               markers.clear();
-                                        //               return;
-                                        //             }
-                                        //           },
-                                        //           decoration: InputDecoration(
-                                        //             labelText:
-                                        //                 LanguageService.getTranslated(
-                                        //                     context,
-                                        //                     "addlocation_location_name"),
-                                        //             border: OutlineInputBorder(),
-                                        //             prefixIcon: Icon(Icons.search),
-                                        //           ),
-                                        //         ),
-                                        //       );
-                                        //     },
-                                        //     onSelected:
-                                        //     areFieldsDisabled()?null:(suggestion) {
-                                        //       _handlePlaceSelection(suggestion);
-                                        //     },
-                                        //   ),
-                                        // ),
-
-                                        SizedBox(height: CustomSpacing.four),
-                                        // Location Address
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            enabled: !areFieldsDisabled(),
-                                            controller: _locationAddressController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_address1"),
-                                              border: OutlineInputBorder(),
-                                              hintText: LanguageService.getTranslated(
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 8.0),
+                                        child: Text(
+                                          widget.locationId.isEmpty
+                                              ? LanguageService.getTranslated(
                                                   context,
-                                                  "addlocation_address1_hint"),
-                                            ),
-                                            validator: (value) {
-                                              if (value == null || value.isEmpty) {
-                                                return LanguageService.getTranslated(
-                                                    context,
-                                                    "addlocation_address_error");
-                                              }
-                                              return null;
-                                            },
-                                          ),
+                                                  "addlocation_app_subtitle")
+                                              : "Please provide the necessary information to update the location details",
+                                          style: typography.Subtitle1,
                                         ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Country just show flag and country name
-                                        Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: StatefulBuilder(
-                                    builder: (BuildContext context, StateSetter setState) {
-                                      bool disabled = areFieldsDisabled();
-                                      return AbsorbPointer(
-                                        absorbing: disabled, // Prevent interactions if disabled
-                                        child: Opacity(
-                                          opacity: disabled ? 0.5 : 1.0, // Visual indication of disabled state
-                                          child: CountryPickerFlagName(
-                                            key: countryPickerKey,
-                                            onCountryChange: (country) {
-                                              if (!disabled) {
-                                                setState(() {
-                                                  _selectedCountry = country.name;
-                                                });
-                                              }
-                                            },
-                                            initialValue: country_picker.Country(
-                                              phoneCode: '1',
-                                              countryCode: getCountryCodeFromName(_selectedCountry) ?? "",
-                                              e164Sc: 1,
-                                              geographic: true,
-                                              level: 1,
-                                              name: _selectedCountry,
-                                              example: '',
-                                              displayName: '',
-                                              displayNameNoCountryCode: '',
-                                              e164Key: '',
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Location Zip/Postal Code
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            style: typography.Body1,
-                                            enabled: !areFieldsDisabled(),
-                                            controller: _locationZipCodeController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context, "addlocation_zip"),
-                                              border: OutlineInputBorder(),
-                                              hintText: LanguageService.getTranslated(
-                                                  context, "addlocation_zip_hint"),
-                                            ),
-                                            validator: (value) {
-                                              if (value == null || value.isEmpty) {
-                                                return LanguageService.getTranslated(
-                                                    context, "addlocation_zip_error");
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Optional Details text with divider in row
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Row(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.all(8.0),
-                                                child: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_optional_details"),
-                                                  style: typography.Body1,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: Divider(
-                                                  color: themeProvider
-                                                      .getTheme.colorScheme.onSurface,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Selecting whether rented or leased
-                                        Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: rented,
-                                  onChanged: areFieldsDisabled()
-                                      ? null // Disable checkbox if `areFieldsDisabled` returns true
-                                      : (bool? value) {
-                                    setState(() {
-                                      rented = !rented; // Toggle `rented`
-                                      if (rented) {
-                                        leased = false; // Ensure mutual exclusivity
-                                      }
-                                    });
-                                  },
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Rented",
-                                  style: typography.Body1,
-                                ),
-                                SizedBox(width: 16),
-                                Checkbox(
-                                  value: leased,
-                                  onChanged: areFieldsDisabled()
-                                      ? null // Disable checkbox if `areFieldsDisabled` returns true
-                                      : (bool? value) {
-                                    setState(() {
-                                      leased = !leased; // Toggle `leased`
-                                      if (leased) {
-                                        rented = false; // Ensure mutual exclusivity
-                                      }
-                                    });
-                                  },
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Leased",
-                                  style: typography.Body1,
-                                ),
-                              ],
-                            ),
-                          ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Location Type Dropdown
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: DropdownButtonFormField<String>(
-                                            decoration: InputDecoration(
-                                              labelText: LanguageService.getTranslated(
-                                                  context, "addlocation_location_type"),
-                                              border: OutlineInputBorder(),
-                                            ),
-                                            value: _selectedLocationType,
-                                            onChanged: areFieldsDisabled()
-                                                ? null // Disable dropdown if `areFieldsDisabled` is true
-                                                : (String? newValue) {
-                                              setState(() {
-                                                _selectedLocationType = newValue;
-                                              });
-                                            },
-                                            items: <String>[
-                                              'Residential',
-                                              'Commercial',
-                                              'Industrial',
-                                            ].map<DropdownMenuItem<String>>((String value) {
-                                              return DropdownMenuItem<String>(
-                                                value: value,
-                                                child: Text(value),
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ),
-
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Location City
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            enabled: !areFieldsDisabled(),
-                                            controller: _locationCityController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context, "addlocation_city"),
-                                              border: OutlineInputBorder(),
-                                              hintText: LanguageService.getTranslated(
-                                                  context, "addlocation_city_hint"),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Location State/Province/Region
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            enabled: !areFieldsDisabled(),
-                                            controller: _locationStateController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context, "addlocation_state"),
-                                              border: OutlineInputBorder(),
-                                              hintText: LanguageService.getTranslated(
-                                                  context, "addlocation_state_hint"),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Description
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            enabled: !areFieldsDisabled(),
-                                            maxLines: 3,
-                                            controller:
-                                                _locationDescriptionController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_description"),
-                                              border: OutlineInputBorder(),
-                                              hintText: LanguageService.getTranslated(
-                                                  context,
-                                                  "addlocation_description_hint"),
-                                            ),
-                                          ),
-                                        ),
-
-                                        SizedBox(height: CustomSpacing.three),
-                                        Padding(
-                                          padding: EdgeInsets.all(0.0),
-                                          child: Row(
-                                            children: [
-                                              Checkbox(
-                                                value: addToSOVCheck,
-                                                onChanged:trialStatus.isNotEmpty
-                                                    ? null
-                                                    :
-                                                areFieldsDisabled()
-                                                    ? null // Disable checkbox if `areFieldsDisabled` is true
-                                                    : (bool? value) {
-                                                  setState(() {
-                                                    addToSOVCheck = !addToSOVCheck;
-                                                  });
-                                                },
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                "Add to SOV",
+                                      ),
+                                      SizedBox(
+                                        height: CustomSpacing.four,
+                                      ),
+                                      // Location Name
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TypeAheadField<Suggestion>(
+                                          hideOnEmpty: true,
+                                          // hideSuggestionsOnKeyboardHide: true, // Hides suggestions when keyboard is closed
+                                          hideKeyboardOnDrag: true,
+                                          controller: _locationNameController,
+                                          suggestionsCallback: (pattern) async {
+                                            if (pattern.isEmpty ||
+                                                _isSelectedFromAutocomplete)
+                                              return [];
+                                            final apiProvider =
+                                                PlaceApiProvider(sessionToken);
+                                            return await apiProvider
+                                                .fetchSuggestions(
+                                                    pattern, 'en');
+                                          },
+                                          loadingBuilder: (context) =>
+                                              SizedBox(height: 0),
+                                          itemBuilder: (context, suggestion) {
+                                            if (areFieldsDisabled())
+                                              return Container();
+                                            return ListTile(
+                                              title: Text(
+                                                suggestion.description,
                                                 style: typography.Body1,
                                               ),
-                                            ],
-                                          ),
-                                        ) ,
-                                        if(addToSOVCheck)
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                // Account Name (Pre-filled and non-editable)
-                                                TextField(
-                                                  controller: TextEditingController(text: widget.accountName),
-                                                  enabled: false,
-                                                  decoration: InputDecoration(
-                                                    labelText: "Account Name",
-                                                    border: const OutlineInputBorder(),
-                                                  ),
-                                                ),
-                                                SizedBox(height: 8.0),
-                                                // Sub-account Name (Pre-filled and non-editable)
-                                                TextField(
-                                                  controller: TextEditingController(text: widget.subAccountName),
-                                                  enabled: false,
-                                                  decoration: InputDecoration(
-                                                    labelText: "Sub-account Name",
-                                                    border: const OutlineInputBorder(),
-                                                  ),
-                                                ),
-                                                SizedBox(height: 8.0),
-                                                // SoV Autocomplete Dropdown
-                                                Consumer<SOVListProvider>(
-                                                  builder: (context, sovProvider, child) {
-                                                    return Column(
-                                                      children: [
-                                                        TextFormField(
-                                                          controller: sovController,
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              // Reset SoV ID when typing
-                                                              selectedSovId = "";
-
-                                                              // Filter the autocomplete list based on user input
-                                                              sovProvider.updateFilteredList(value);
-                                                            });
-                                                          },
-                                                          validator: (value) {
-                                                            if (addToSOVCheck) { // Apply validation only if addToSOVCheck is true
-                                                              if (value == null || value.isEmpty) {
-                                                                return LanguageService.getTranslated(
-                                                                  context,
-                                                                  "addlocation_address_error",
-                                                                );
-                                                              }
-                                                            }
-                                                            return null;
-                                                          },
-                                                          // validator: (value) {
-                                                          //   if (value == null || value.isEmpty) {
-                                                          //     return LanguageService.getTranslated(
-                                                          //         context,
-                                                          //         "addlocation_address_error");
-                                                          //   }
-                                                          //   return null;
-                                                          // },
-
-                                                          decoration: InputDecoration(
-                                                            labelText: "Name of the SoV",
-                                                            border: const OutlineInputBorder(),
-                                                            suffixIcon: Icon(Icons.search),
-
-                                                          ),
-                                                        ),
-                                                        if (sovController.text.isNotEmpty)
-                                                          AutocompleteOptionsSovs(
-                                                            options: sovProvider.filteredAutoCompleteList,
-                                                            onSelected: (SovAccount selection) {
-                                                              setState(() {
-                                                                selectedSovId = selection.id ?? "";
-                                                                sovController.text = selection.name ?? "";
-                                                                sovProvider.clearAutoCompleteList();
-                                                              });
-                                                            },
-                                                            isLoading: sovProvider.isAutoCompleteLoading,
-
-                                                          ),
-
-                                                      ],
-                                                    );
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        SizedBox(height: CustomSpacing.three),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                          child: Column(
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: CustomButton(
-                                                      type: ButtonType.elevated,
-                                                      onPressed: () async {
-                                                        if (_formKey.currentState!.validate()) {
-                                                          var body = _buildRequestBody(); // Use a helper method for the body
-                                                          if (widget.locationId.isEmpty) {
-                                                            // Add Location
-                                                            await _handleAddLocation(context, body);
-                                                          } else {
-                                                            // Update Location
-                                                            await _handleUpdateLocation(context, body);
-                                                          }
-                                                        }
-                                                      },
-                                                      child: _buildButtonChild(context),
-                                                    ),
+                                            );
+                                          },
+                                          builder:
+                                              (context, controller, focusNode) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.1),
+                                                    blurRadius: 8,
+                                                    offset: Offset(0, 2),
                                                   ),
                                                 ],
                                               ),
-                                              SizedBox(height: CustomSpacing.two),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: CustomButton(
-                                                      type: ButtonType.outlined,
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: Text(
-                                                        LanguageService.getTranslated(
-                                                            context, "addlocation_cancel_button_text"),
-                                                        style: typography.ButtonLarge.copyWith(
-                                                          color: themeProvider.getTheme.colorScheme.primary,
+                                              child: TextField(
+                                                enabled: !areFieldsDisabled(),
+                                                controller: controller,
+                                                focusNode: focusNode,
+                                                onTap: () {
+                                                  if (_isSelectedFromAutocomplete) {
+                                                    focusNode
+                                                        .unfocus(); // Prevent dropdown from showing again
+                                                  }
+                                                },
+                                                onChanged: (value) {
+                                                  if (_isSelectedFromAutocomplete) {
+                                                    _isSelectedFromAutocomplete =
+                                                        false;
+                                                    return;
+                                                  }
+                                                  if (value.isEmpty) {
+                                                    markers.clear();
+                                                  }
+                                                },
+                                                decoration: InputDecoration(
+                                                  labelText: LanguageService
+                                                      .getTranslated(context,
+                                                          "addlocation_location_name"),
+                                                  border: OutlineInputBorder(),
+                                                  prefixIcon:
+                                                      Icon(Icons.search),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          onSelected: areFieldsDisabled()
+                                              ? null
+                                              : (suggestion) {
+                                                  _isSelectedFromAutocomplete =
+                                                      true;
+                                                  _handlePlaceSelection(
+                                                      suggestion);
+                                                },
+                                        ),
+                                      ),
+
+                                      // Padding(
+                                      //   padding: const EdgeInsets.all(8.0),
+                                      //   child: TypeAheadField<Suggestion>(
+                                      //     hideOnEmpty: true,
+                                      //     hideKeyboardOnDrag: false,
+                                      //     controller: _locationNameController,
+                                      //     suggestionsCallback: (pattern) async {
+                                      //       if (pattern.isEmpty) return [];
+                                      //       final apiProvider =
+                                      //           PlaceApiProvider(sessionToken);
+                                      //       return await apiProvider
+                                      //           .fetchSuggestions(pattern, 'en');
+                                      //     },
+                                      //     loadingBuilder: (context) {
+                                      //       /*return ListTile(
+                                      //         title: Text('Loading...'),
+                                      //       );*/
+                                      //       return SizedBox(
+                                      //         height: 0,
+                                      //       );
+                                      //     },
+                                      //     itemBuilder: (context, suggestion) {
+                                      //       if (areFieldsDisabled()) {
+                                      //         return Container(); // Return an empty widget but still valid
+                                      //       }
+                                      //       return ListTile(
+                                      //         title: Text(
+                                      //           suggestion.description,
+                                      //           style: typography.Body1,
+                                      //         ),
+                                      //       );
+                                      //     },
+                                      //     builder:
+                                      //         (context, controller, focusNode) {
+                                      //       return Container(
+                                      //         decoration: BoxDecoration(
+                                      //           borderRadius:
+                                      //               BorderRadius.circular(8),
+                                      //           boxShadow: [
+                                      //             BoxShadow(
+                                      //               color: Colors.black
+                                      //                   .withOpacity(0.1),
+                                      //               blurRadius: 8,
+                                      //               offset: Offset(0, 2),
+                                      //             ),
+                                      //           ],
+                                      //         ),
+                                      //         child: TextField(
+                                      //           enabled: !areFieldsDisabled(),
+                                      //           controller: controller,
+                                      //           focusNode: focusNode,
+                                      //           onChanged: (value) {
+                                      //             if (_isSelectedFromAutocomplete) {
+                                      //               _isSelectedFromAutocomplete =
+                                      //                   false;
+                                      //               return;
+                                      //             }
+                                      //             if (value.isEmpty) {
+                                      //               markers.clear();
+                                      //               return;
+                                      //             }
+                                      //           },
+                                      //           decoration: InputDecoration(
+                                      //             labelText:
+                                      //                 LanguageService.getTranslated(
+                                      //                     context,
+                                      //                     "addlocation_location_name"),
+                                      //             border: OutlineInputBorder(),
+                                      //             prefixIcon: Icon(Icons.search),
+                                      //           ),
+                                      //         ),
+                                      //       );
+                                      //     },
+                                      //     onSelected:
+                                      //     areFieldsDisabled()?null:(suggestion) {
+                                      //       _handlePlaceSelection(suggestion);
+                                      //     },
+                                      //   ),
+                                      // ),
+
+                                      SizedBox(height: CustomSpacing.four),
+                                      // Location Address
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          enabled: !areFieldsDisabled(),
+                                          controller:
+                                              _locationAddressController,
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_address1"),
+                                            border: OutlineInputBorder(),
+                                            hintText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_address1_hint"),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return LanguageService.getTranslated(
+                                                  context,
+                                                  "addlocation_address_error");
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Country just show flag and country name
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 8.0),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: StatefulBuilder(
+                                                builder: (BuildContext context,
+                                                    StateSetter setState) {
+                                                  bool disabled =
+                                                      areFieldsDisabled();
+                                                  return AbsorbPointer(
+                                                    absorbing: disabled,
+                                                    // Prevent interactions if disabled
+                                                    child: Opacity(
+                                                      opacity:
+                                                          disabled ? 0.5 : 1.0,
+                                                      // Visual indication of disabled state
+                                                      child:
+                                                          CountryPickerFlagName(
+                                                        key: countryPickerKey,
+                                                        onCountryChange:
+                                                            (country) {
+                                                          if (!disabled) {
+                                                            setState(() {
+                                                              _selectedCountry =
+                                                                  country.name;
+                                                            });
+                                                          }
+                                                        },
+                                                        initialValue:
+                                                            country_picker
+                                                                .Country(
+                                                          phoneCode: '1',
+                                                          countryCode:
+                                                              getCountryCodeFromName(
+                                                                      _selectedCountry) ??
+                                                                  "",
+                                                          e164Sc: 1,
+                                                          geographic: true,
+                                                          level: 1,
+                                                          name:
+                                                              _selectedCountry,
+                                                          example: '',
+                                                          displayName: '',
+                                                          displayNameNoCountryCode:
+                                                              '',
+                                                          e164Key: '',
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Location Zip/Postal Code
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          style: typography.Body1,
+                                          enabled: !areFieldsDisabled(),
+                                          controller:
+                                              _locationZipCodeController,
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context, "addlocation_zip"),
+                                            border: OutlineInputBorder(),
+                                            hintText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_zip_hint"),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return LanguageService
+                                                  .getTranslated(context,
+                                                      "addlocation_zip_error");
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Optional Details text with divider in row
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_optional_details"),
+                                                style: typography.Body1,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Divider(
+                                                color: themeProvider.getTheme
+                                                    .colorScheme.onSurface,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Selecting whether rented or leased
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8.0),
+                                        child: Row(
+                                          children: [
+                                            Checkbox(
+                                              value: rented,
+                                              onChanged: areFieldsDisabled()
+                                                  ? null // Disable checkbox if `areFieldsDisabled` returns true
+                                                  : (bool? value) {
+                                                      setState(() {
+                                                        rented =
+                                                            !rented; // Toggle `rented`
+                                                        if (rented) {
+                                                          leased =
+                                                              false; // Ensure mutual exclusivity
+                                                        }
+                                                      });
+                                                    },
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Rented",
+                                              style: typography.Body1,
+                                            ),
+                                            SizedBox(width: 16),
+                                            Checkbox(
+                                              value: leased,
+                                              onChanged: areFieldsDisabled()
+                                                  ? null // Disable checkbox if `areFieldsDisabled` returns true
+                                                  : (bool? value) {
+                                                      setState(() {
+                                                        leased =
+                                                            !leased; // Toggle `leased`
+                                                        if (leased) {
+                                                          rented =
+                                                              false; // Ensure mutual exclusivity
+                                                        }
+                                                      });
+                                                    },
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Leased",
+                                              style: typography.Body1,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Location Type Dropdown
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_location_type"),
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          value: _selectedLocationType,
+                                          onChanged: areFieldsDisabled()
+                                              ? null // Disable dropdown if `areFieldsDisabled` is true
+                                              : (String? newValue) {
+                                                  setState(() {
+                                                    _selectedLocationType =
+                                                        newValue;
+                                                  });
+                                                },
+                                          items: <String>[
+                                            'Residential',
+                                            'Commercial',
+                                            'Industrial',
+                                          ].map<DropdownMenuItem<String>>(
+                                              (String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Location City
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          enabled: !areFieldsDisabled(),
+                                          controller: _locationCityController,
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_city"),
+                                            border: OutlineInputBorder(),
+                                            hintText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_city_hint"),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Location State/Province/Region
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          enabled: !areFieldsDisabled(),
+                                          controller: _locationStateController,
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_state"),
+                                            border: OutlineInputBorder(),
+                                            hintText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_state_hint"),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      // Description
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          enabled: !areFieldsDisabled(),
+                                          maxLines: 3,
+                                          controller:
+                                              _locationDescriptionController,
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "addlocation_description"),
+                                            border: OutlineInputBorder(),
+                                            hintText: LanguageService.getTranslated(
+                                                context,
+                                                "addlocation_description_hint"),
+                                          ),
+                                        ),
+                                      ),
+
+                                      SizedBox(height: CustomSpacing.three),
+                                      Padding(
+                                        padding: EdgeInsets.all(0.0),
+                                        child: Row(
+                                          children: [
+                                            Checkbox(
+                                              value: addToSOVCheck,
+                                              onChanged: trialStatus.isNotEmpty
+                                                  ? null
+                                                  : areFieldsDisabled()
+                                                      ? null // Disable checkbox if `areFieldsDisabled` is true
+                                                      : (bool? value) {
+                                                          setState(() {
+                                                            addToSOVCheck =
+                                                                !addToSOVCheck;
+                                                          });
+                                                        },
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Add to SOV",
+                                              style: typography.Body1,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (addToSOVCheck)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // Account Name (Pre-filled and non-editable)
+                                              TextField(
+                                                controller:
+                                                    TextEditingController(
+                                                        text:
+                                                            widget.accountName),
+                                                enabled: false,
+                                                decoration: InputDecoration(
+                                                  labelText: "Account Name",
+                                                  border:
+                                                      const OutlineInputBorder(),
+                                                ),
+                                              ),
+                                              SizedBox(height: 8.0),
+                                              // Sub-account Name (Pre-filled and non-editable)
+                                              TextField(
+                                                controller:
+                                                    TextEditingController(
+                                                        text: widget
+                                                            .subAccountName),
+                                                enabled: false,
+                                                decoration: InputDecoration(
+                                                  labelText: "Sub-account Name",
+                                                  border:
+                                                      const OutlineInputBorder(),
+                                                ),
+                                              ),
+                                              SizedBox(height: 8.0),
+                                              // SoV Autocomplete Dropdown
+                                              Consumer<SOVListProvider>(
+                                                builder: (context, sovProvider,
+                                                    child) {
+                                                  return Column(
+                                                    children: [
+                                                      TextFormField(
+                                                        controller:
+                                                            sovController,
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            // Reset SoV ID when typing
+                                                            selectedSovId = "";
+
+                                                            // Filter the autocomplete list based on user input
+                                                            sovProvider
+                                                                .updateFilteredList(
+                                                                    value);
+                                                          });
+                                                        },
+                                                        validator: (value) {
+                                                          if (addToSOVCheck) {
+                                                            // Apply validation only if addToSOVCheck is true
+                                                            if (value == null ||
+                                                                value.isEmpty) {
+                                                              return LanguageService
+                                                                  .getTranslated(
+                                                                context,
+                                                                "addlocation_address_error",
+                                                              );
+                                                            }
+                                                          }
+                                                          return null;
+                                                        },
+                                                        // validator: (value) {
+                                                        //   if (value == null || value.isEmpty) {
+                                                        //     return LanguageService.getTranslated(
+                                                        //         context,
+                                                        //         "addlocation_address_error");
+                                                        //   }
+                                                        //   return null;
+                                                        // },
+
+                                                        decoration:
+                                                            InputDecoration(
+                                                          labelText:
+                                                              "Name of the SoV",
+                                                          border:
+                                                              const OutlineInputBorder(),
+                                                          suffixIcon: Icon(
+                                                              Icons.search),
+                                                        ),
+                                                      ),
+                                                      if (sovController
+                                                          .text.isNotEmpty)
+                                                        AutocompleteOptionsSovs(
+                                                          options: sovProvider
+                                                              .filteredAutoCompleteList,
+                                                          onSelected:
+                                                              (SovAccount
+                                                                  selection) {
+                                                            setState(() {
+                                                              selectedSovId =
+                                                                  selection
+                                                                          .id ??
+                                                                      "";
+                                                              sovController
+                                                                      .text =
+                                                                  selection
+                                                                          .name ??
+                                                                      "";
+                                                              sovProvider
+                                                                  .clearAutoCompleteList();
+                                                            });
+                                                          },
+                                                          isLoading: sovProvider
+                                                              .isAutoCompleteLoading,
+                                                        ),
+                                                    ],
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
                                         ),
-
-                                      ],
-                                    ),
+                                      SizedBox(height: CustomSpacing.three),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8.0),
+                                        child: Column(
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: CustomButton(
+                                                    type: ButtonType.elevated,
+                                                    onPressed: () async {
+                                                      if (_formKey.currentState!
+                                                          .validate()) {
+                                                        var body =
+                                                            _buildRequestBody(); // Use a helper method for the body
+                                                        if (widget.locationId
+                                                            .isEmpty) {
+                                                          // Add Location
+                                                          await _handleAddLocation(
+                                                              context, body);
+                                                        } else {
+                                                          // Update Location
+                                                          await _handleUpdateLocation(
+                                                              context, body);
+                                                        }
+                                                      }
+                                                    },
+                                                    child: _buildButtonChild(
+                                                        context),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: CustomSpacing.two),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: CustomButton(
+                                                    type: ButtonType.outlined,
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text(
+                                                      LanguageService.getTranslated(
+                                                          context,
+                                                          "addlocation_cancel_button_text"),
+                                                      style: typography
+                                                          .ButtonLarge.copyWith(
+                                                        color: themeProvider
+                                                            .getTheme
+                                                            .colorScheme
+                                                            .primary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  );
-                }
-              ),
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         );
@@ -899,7 +1013,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
   }
 
- Map<String, dynamic> _buildRequestBody() {
+  Map<String, dynamic> _buildRequestBody() {
     return {
       "data": {
         "account_id": widget.accountId,
@@ -930,8 +1044,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     };
   }
 
-  Future<void> _handleAddLocation(BuildContext context, Map<String, dynamic> body) async {
-    final locationListProvider = Provider.of<LocationListProvider>(context, listen: false);
+  Future<void> _handleAddLocation(
+      BuildContext context, Map<String, dynamic> body) async {
+    final locationListProvider =
+        Provider.of<LocationListProvider>(context, listen: false);
     await locationListProvider.addLocation(
       context,
       widget.accountId,
@@ -941,8 +1057,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
   }
 
-  Future<void> _handleUpdateLocation(BuildContext context, Map<String, dynamic> body) async {
-    final locationProfileProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+  Future<void> _handleUpdateLocation(
+      BuildContext context, Map<String, dynamic> body) async {
+    final locationProfileProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
     var success = await locationProfileProvider.updateLocationDetails(
       context,
       widget.accountId,
@@ -974,7 +1092,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                   totalPages: widget.totalPages,
                 ),
               ),
-                  (route) => false,
+              (route) => false,
             );
           }
         });
@@ -984,10 +1102,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   Widget _buildButtonChild(BuildContext context) {
     final locationListProvider = Provider.of<LocationListProvider>(context);
-    final locationProfileProvider = Provider.of<MyLocationListProvider>(context);
+    final locationProfileProvider =
+        Provider.of<MyLocationListProvider>(context);
 
     var typography = CustomTypography(context);
-    if (locationListProvider.isAddLocationLoading || locationProfileProvider.isLoading) {
+    if (locationListProvider.isAddLocationLoading ||
+        locationProfileProvider.isLoading) {
       return Center(
         child: SizedBox(
           height: 25,
@@ -1000,7 +1120,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     } else {
       return Text(
         widget.locationId.isEmpty
-            ? LanguageService.getTranslated(context, "addlocation_create_button_text")
+            ? LanguageService.getTranslated(
+                context, "addlocation_create_button_text")
             : "Update",
         style: typography.ButtonLarge.copyWith(
           color: Colors.black,
@@ -1009,14 +1130,13 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
   }
 
-
   bool areFieldsDisabled() {
     var provider = Provider.of<UserProfileProvider>(context, listen: false);
     var trialStatus = provider.trialInfo['status'] ?? '';
     var locations = provider.trialInfo['locations'] ?? 0;
     var total = provider.trialInfo['maxLocations'] ?? 0;
     bool isAdd = widget.locationId.isEmpty;
-    return trialStatus.isNotEmpty && locations <1 && isAdd;
+    return trialStatus.isNotEmpty && locations < 1 && isAdd;
   }
 
   String? getCountryCodeFromName(String countryName) {

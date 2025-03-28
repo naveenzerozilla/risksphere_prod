@@ -68,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool isPgAdmin = false;
   bool isAdmin = false;
   bool isSuperAdmin = false;
+  bool isIndividual = false;
 
   // General Info
   String userImageUrl = '';
@@ -110,12 +111,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   _setClaims() async {
     _selectedScreen = Screens.generalInfo;
-    /*isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
     isAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_ADMIN)??false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;*/
-    isPgAdmin = false;
-    isAdmin = true;
-    isSuperAdmin = true;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;
+    isIndividual = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.Is_Indivudual)??false;
+    // isPgAdmin = false;
+    // isAdmin = true;
+    // isSuperAdmin = true;
     showAssignDeleteManager = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMAM)?? false;
     showAddDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDA)??false;
     showRevokeDelegate = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMRD)??false;

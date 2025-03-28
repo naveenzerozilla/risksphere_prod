@@ -312,7 +312,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Risk Score",
         value: mainValue.toString(),
-        vendorName: hazardDetails.vendorName.toString()== "MM FRI" ?"MM FRI *":"MM FRI",//"MM FRI",
+        vendorName: hazardDetails.vendorName.toString()== "MM FRI" ?"MM FRI **":"MM FRI",//"MM FRI",
         score: score,
       ));
     }
@@ -323,7 +323,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "PGA (%g)",
         value: _formatNumber(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "GEM" ?"GEM *":"GEM",//"GEM",
+        vendorName: hazardDetails.vendorName.toString()== "GEM" ?"GEM **":"GEM",//"GEM",
         score: score,
       ));
     }
@@ -334,7 +334,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Wind Speed (mph)",
         value: _formatNumber1(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "KinetiCast" ?"KinetiCast *":"Kineticast",
+        vendorName: hazardDetails.vendorName.toString()== "KinetiCast" ?"KinetiCast **":"Kineticast",
         score: score,
       ));
     }
@@ -344,7 +344,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Temp(K) / FRP",
         value: _formatNumber(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "MODIS" ?"MODIS *":"MODIS", //"MODIS",
+        vendorName: hazardDetails.vendorName.toString()== "MODIS" ?"MODIS **":"MODIS", //"MODIS",
         score: score,
       ));
     }
@@ -355,7 +355,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Depth (ft)",
         value: _formatNumber(mainValue, decimalPlaces: 1),
-        vendorName:hazardDetails.vendorName.toString()== "EU JRC" ?"EU JRC *":"EU JRC", //"EU JRC",
+        vendorName:hazardDetails.vendorName.toString()== "EU JRC" ?"EU JRC **":"EU JRC", //"EU JRC",
         score: score,
       ));
     }
@@ -378,7 +378,7 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Risk Index",
         value: formattedValue,
-        vendorName: hazardDetails.vendorName.toString()== "USGS" ?"USGS *":"USGS", //"USGS",
+        vendorName: hazardDetails.vendorName.toString()== "USGS" ?"USGS **":"USGS", //"USGS",
         score: score,
       ));
     }

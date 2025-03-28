@@ -12,7 +12,7 @@ class CustomTileProviderMainHazards implements TileProvider {
 
   CustomTileProviderMainHazards({
     required this.tileUrls,
-    required this.hazardType,
+    this.hazardType = "",
     this.minZoom = 0,
     this.maxZoom = 22,
     this.vendor = "mean",

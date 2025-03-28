@@ -173,31 +173,37 @@ class _LoginScreenState extends State<LoginScreen> {
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
             return SocialMediaButton(
               onPressed: () async {
-                // Add your onPressed function here
-                await authNotifier.signInWithGoogle(context: context);
-                // Check if the user is authenticated after login attempt
-                if (authNotifier.user != null && !authNotifier.isNewUser) {
-                  // Navigate to the home screen or any other screen after login
-                  Provider.of<UserProfileProvider>(context, listen: false)
-                      .getAllUserData(context, '', '');
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => /*Home(
-                        useLightMode: false,
-                        useMaterial3: true,
-                        colorSelected: ColorSeed.baseColor,
-                        imageSelected: ColorImageProvider.leaves,
-                        handleBrightnessChange: handleBrightnessChange,
-                        handleMaterialVersionChange:
-                            handleMaterialVersionChange,
-                        handleColorSelect: handleColorSelect,
-                        handleImageSelect: handleImageSelect,
-                        colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                      ),*/
-                              DashboardScreen(),
-                    ),
+                try {
+                  await authNotifier.signInWithGoogle(context: context);
+
+                  if (authNotifier.user != null) {
+                    // Fetch user data only if user exists
+                    Provider.of<UserProfileProvider>(context, listen: false)
+                        .getAllUserData(context, '', '');
+
+                    // Navigate to Dashboard if not a new user
+                    if (!authNotifier.isNewUser) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DashboardScreen(),
+                        ),
+                      );
+                    }
+                  } else {
+                    // Handle sign-in failure
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text("Google sign-in failed. Please try again.")),
+                    );
+                  }
+                } catch (e) {
+                  // Catch any errors during sign-in
+                  debugPrint("Error during Google sign-in: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text("An error occurred. Please try again.")),
                   );
                 }
               },
@@ -206,6 +212,43 @@ class _LoginScreenState extends State<LoginScreen> {
               iconPath: 'assets/images/googleLogo.svg',
             );
           }),
+
+          // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+          //   return SocialMediaButton(
+          //     onPressed: () async {
+          //       // Add your onPressed function here
+          //       await authNotifier.signInWithGoogle(context: context);
+          //       // Check if the user is authenticated after login attempt
+          //       if (authNotifier.user != null && !authNotifier.isNewUser) {
+          //         // Navigate to the home screen or any other screen after login
+          //         Provider.of<UserProfileProvider>(context, listen: false)
+          //             .getAllUserData(context, '', '');
+          //         Navigator.pushReplacement(
+          //           context,
+          //           MaterialPageRoute(
+          //             builder:
+          //                 (context) => /*Home(
+          //               useLightMode: false,
+          //               useMaterial3: true,
+          //               colorSelected: ColorSeed.baseColor,
+          //               imageSelected: ColorImageProvider.leaves,
+          //               handleBrightnessChange: handleBrightnessChange,
+          //               handleMaterialVersionChange:
+          //                   handleMaterialVersionChange,
+          //               handleColorSelect: handleColorSelect,
+          //               handleImageSelect: handleImageSelect,
+          //               colorSelectionMethod: ColorSelectionMethod.colorSeed,
+          //             ),*/
+          //                     DashboardScreen(),
+          //           ),
+          //         );
+          //       }
+          //     },
+          //     buttonText:
+          //         LanguageService.getTranslated(context, "login_googlebutton"),
+          //     iconPath: 'assets/images/googleLogo.svg',
+          //   );
+          // }),
 
           SizedBox(
             height: CustomSpacing.one,
@@ -460,6 +503,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
+                                  print("fcmCall");
                                   initFCM(user.uid);
                                   print("fcmCall");
 

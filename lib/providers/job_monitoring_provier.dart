@@ -27,6 +27,29 @@ class JobMonitoringProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  //processing
+  bool _isProcessing = false;
+  String _processStatus = 'completed'; // Default status
+
+  bool get isProcessing => _isProcessing;
+  String get processStatus => _processStatus;
+  void updateProcessStatus(String newStatus) {
+    if (_processStatus != newStatus) {
+      _processStatus = newStatus;
+      _isProcessing = newStatus.toLowerCase() == 'processing';
+
+      notifyListeners();
+    }
+  }
+
+
+  // void setProcessing(bool value) {
+  //   _isProcessing = value;
+  //   notifyListeners();
+  // }
+
+
+
 
   bool _isAddLoading = false;
 

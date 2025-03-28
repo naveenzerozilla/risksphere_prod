@@ -15,6 +15,9 @@ class SubscriptionCard extends StatelessWidget {
   final String iconPath;
   final bool isSubscribed;
   final Function()? onSubscribe;
+  final bool isPgAdmin;
+  final bool isAdmin;
+  final bool isSuperAdmin;
 
   const SubscriptionCard({
     Key? key,
@@ -23,6 +26,9 @@ class SubscriptionCard extends StatelessWidget {
     required this.iconPath,
     required this.isSubscribed,
     this.onSubscribe,
+    required this.isPgAdmin,
+    required this.isAdmin,
+    required this.isSuperAdmin,
   }) : super(key: key);
 
   @override
@@ -170,10 +176,39 @@ class SubscriptionCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: isSubscribed
-                      ? Row(
+                      ?
+                  isPgAdmin || isAdmin || isSuperAdmin
+                      ?
+                      
+                  
+                  Row(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+
+                            isPgAdmin || isAdmin || isSuperAdmin
+                                ?
+                            ElevatedButton(
+                                    onPressed: onSubscribe,
+                                    style: ElevatedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4.0),
+                                      ),
+                                      backgroundColor: Colors.amber,
+                                    ),
+                                    child: Text(
+                                      trialStatus.isEmpty
+                                          ? "  Unsubscribe  "
+                                          : trialStatus.toLowerCase() == 'expired'
+                                              ? "  Upgrade Now  "
+                                              : "  Trial Activated  ",
+                                      style: typography.Body1.copyWith(
+                                        color: Theme.of(context).colorScheme.surface,
+                                      ),
+                                    ),
+                                  )
+                                :
+
                             ElevatedButton(
                               onPressed: onSubscribe,
                               style: ElevatedButton.styleFrom(
@@ -194,11 +229,27 @@ class SubscriptionCard extends StatelessWidget {
                               ),
                             ),
                           ],
-                        )
-                      : Row(
+                        ):ElevatedButton(
+            onPressed: onSubscribe,
+
+
+            child: Text(
+            "unSubscribed",
+            // style: typography.Body1.copyWith(
+            //   color: Theme.of(context).colorScheme.surface,
+            // ),
+            ),
+            )
+                      :
+
+
+                  Row(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+
+                            isPgAdmin || isAdmin || isSuperAdmin
+                                ?
                             ElevatedButton(
                               onPressed: onSubscribe,
                               style: ElevatedButton.styleFrom(
@@ -217,6 +268,17 @@ class SubscriptionCard extends StatelessWidget {
                                 style: typography.Body1.copyWith(
                                   color: Theme.of(context).colorScheme.surface,
                                 ),
+                              ),
+                            ):
+                            ElevatedButton(
+                              onPressed: onSubscribe,
+
+
+                              child: Text(
+                               "Subscribed",
+                                // style: typography.Body1.copyWith(
+                                //   color: Theme.of(context).colorScheme.surface,
+                                // ),
                               ),
                             ),
                           ],

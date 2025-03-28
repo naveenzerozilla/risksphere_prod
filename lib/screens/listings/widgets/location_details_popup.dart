@@ -14,7 +14,7 @@ class LocationDetailsPopup extends StatelessWidget {
   final String address;
   final String locationId;
   final int geocodingScore;
-  final int riskScore;
+  final dynamic riskScore;
   final Map<String, HazardDetails> hazards;
   final List<String> geocodedAt;
   final List<String> occupancy;
@@ -28,6 +28,7 @@ class LocationDetailsPopup extends StatelessWidget {
   final String? campus;
   final bool? rented;
   final bool? hideNavigation;
+  final bool? hazardProcess;
 
   LocationDetailsPopup({
     this.lat,
@@ -49,6 +50,7 @@ class LocationDetailsPopup extends StatelessWidget {
     this.campus,
     this.rented,
     this.hideNavigation = false,
+    this.hazardProcess,
   });
 
   @override
@@ -74,34 +76,59 @@ class LocationDetailsPopup extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: (geocodingScore == 5)
-                        ? Image.network(
-                      "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    )
-                        : imageUrl!.isNotEmpty
-                        ? Image.network(
-                      imageUrl!,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    )
-                        : Image.asset(
-                      'assets/images/building_image.png',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: (geocodingScore == 5)
+                          ? Image.network(
+                        "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      )
+                          : (imageUrl != null && imageUrl!.isNotEmpty)
+                          ? Image.network(
+                        imageUrl!,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      )
+                          : Image.asset(
+                        'assets/images/building_image.png',
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
+
+                    // ClipRRect(
+                  //   borderRadius: BorderRadius.circular(8),
+                  //   child: (geocodingScore == 5)
+                  //       ? Image.network(
+                  //     "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                  //     width: 50,
+                  //     height: 50,
+                  //     fit: BoxFit.cover,
+                  //   )
+                  //       :
+                  //   imageUrl!.isNotEmpty
+                  //       ? Image.network(
+                  //     imageUrl!  ,
+                  //     width: 50,
+                  //     height: 50,
+                  //     fit: BoxFit.cover,
+                  //   )
+                  //       : Image.asset(
+                  //     'assets/images/building_image.png',
+                  //     width: 50,
+                  //     height: 50,
+                  //     fit: BoxFit.cover,
+                  //   ),
+                  // ),
                   Container(
                     width: 180,
                     child: Text(
                       address,
-                      textAlign: TextAlign.justify,
+                      textAlign: TextAlign.right,
                       style: typography.InputLabel,
                       maxLines: 7,
                       overflow: TextOverflow.ellipsis,
@@ -137,14 +164,15 @@ class LocationDetailsPopup extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: MyScrollableScoresWidget(
                 geocodingScore: geocodingScore,
-                riskScore: riskScore,
+                riskScore: (riskScore is int) ? riskScore : int.tryParse(riskScore.toString()) ?? 0,
+                hazardProcess: hazardProcess,
               ),
             ),
             SizedBox(height: 16),
 
             // Hazard Ratings Section
             Text(
-              'Hazard Ratings',
+              'Geocoded at',
               style: typography.Body1,
             ),
 

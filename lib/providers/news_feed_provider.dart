@@ -83,7 +83,10 @@ class NewsFeedProvider extends ChangeNotifier {
       }
 
       ApiService apiService = ApiService('${AppConstant.GET_NEWS_FEED}/$userId');
-      String url = '?hazard=${hazard ?? _selectedHazard}';
+      String url =
+          _selectedHazard =="All"?
+          '?hazard=${hazard ?? _selectedHazard}': '?activity=${_selectedHazard.toLowerCase()}';
+      // String url = '?hazard=${hazard ?? _selectedHazard}';
 
       if (startDate != null && endDate != null) {
         url += '&start_date=${startDate.toIso8601String()}&end_date=${endDate.toIso8601String()}';

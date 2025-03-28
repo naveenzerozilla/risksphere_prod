@@ -96,7 +96,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       _buildNewsFeedList(context, typography),
                       _buildEventFeedList(context, typography),
                       _getNewFeedComingSoonUI(),
-                      _getComingSoonUI(),
+                      _getNewPendingActionSoonUI(),
                     ],
                   )),
                 ],
@@ -267,25 +267,48 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   child: Consumer<NewsFeedProvider>(
                     builder: (context, provider, child) {
                       return DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child:
+                        DropdownButton<String>(
                           isExpanded: true,
-                          value: provider.selectedHazard,
+                          value: ['All', 'Geocoding', 'Hazard'].contains(provider.selectedHazard)
+                              ? provider.selectedHazard
+                              : 'All', // Fallback if selectedHazard is invalid
                           onChanged: (String? newValue) {
                             provider.updateSelectedHazard(newValue!);
-                            provider.fetchNewsFeed();
+                            Future.microtask(() => provider.fetchNewsFeed());
                           },
-                          items: ['All', 'Earthquake', 'Hurricane', 'Flood']
+                          items: ['All', 'Geocoding', 'Hazard']
                               .map<DropdownMenuItem<String>>((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                 child: Text(value, style: typography.Body2),
                               ),
                             );
                           }).toList(),
-                        ),
+                        )
+
+
+                        // DropdownButton<String>(
+                        //   isExpanded: true,
+                        //   value: provider.selectedHazard ?? 'All',
+                        //   onChanged: (String? newValue) {
+                        //     provider.updateSelectedHazard(newValue!);
+                        //     provider.fetchNewsFeed();
+                        //   },
+                        //   items: ['All', 'Geocoding', 'Hazard']
+                        //       .map<DropdownMenuItem<String>>((String value) {
+                        //     return DropdownMenuItem<String>(
+                        //       value: value,
+                        //       child: Padding(
+                        //         padding: const EdgeInsets.symmetric(
+                        //             horizontal: 16.0),
+                        //         child: Text(value, style: typography.Body2),
+                        //       ),
+                        //     );
+                        //   }).toList(),
+                        // ),
                       );
                     },
                   ),
@@ -752,6 +775,38 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
               child: Column(
                 children: [
                   Text("Stay Informed—News Feed Coming Soon! ",
+                      textAlign: TextAlign.center,
+                      // LanguageService.getTranslated(
+                      //     context, 'coming_soon_title'),
+                      style: typography.H4),
+                 SizedBox(height: 8),
+                  Text(
+                      LanguageService.getTranslated(
+                          context, 'coming_soon_subtitle'),
+                      textAlign: TextAlign.center,
+                      style: typography.Body1),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  _getNewPendingActionSoonUI() {
+    var typography = CustomTypography(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          // mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Text("Stay Informed—Pending Feed Coming Soon! ",
                       textAlign: TextAlign.center,
                       // LanguageService.getTranslated(
                       //     context, 'coming_soon_title'),

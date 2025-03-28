@@ -41,6 +41,7 @@ class MyLocationCard extends StatefulWidget {
   final String? locationQuery;
   final String? campusId;
   final bool? hazardProcess;
+  final bool? rented;
 
   // callback to get gata after coming back from profile page (nullable)
   final void Function()? getData;
@@ -75,6 +76,7 @@ class MyLocationCard extends StatefulWidget {
     this.subAccountName,
     this.locationQuery,
     this.hazardProcess,
+    this.rented,
     this.getData,
   });
 
@@ -117,6 +119,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
     // final image = widget.imageUrl;
     return GestureDetector(
       onTap: () {
+        var locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+
         // In selection mode, toggle the selection if its last selection getting unselected we remove the selection mode
         if (selectionMode) {
           setState(() {
@@ -143,16 +147,18 @@ class _MyLocationCardState extends State<MyLocationCard> {
           Navigator.of(context)
               .push(MaterialPageRoute(
             builder: (_) => LocationProfile(
-              accountId: widget.accountId ?? "",
-              accountName: widget.accountName ?? "",
-              subAccountId: widget.subAccountId ?? "",
-              subAccountName: widget.subAccountName ?? "",
-              sovId: widget.sovId ?? "",
-              sovName: widget.sovName ?? "",
-              searchQuery: widget.locationQuery ?? "",
-              page: (widget.index + 1).toString(),
-              totalPages: locationListProvider.locationHits.toString(),
-            ),
+                accountId: widget.accountId ?? "",
+                accountName: widget.accountName ?? "",
+                subAccountId: widget.subAccountId ?? "",
+                subAccountName: widget.subAccountName ?? "",
+                sovId: widget.sovId ?? "",
+                sovName: widget.sovName ?? "",
+                searchQuery: widget.locationQuery ?? "",
+                page: (widget.index + 1).toString(),
+                totalPages: locationListProvider.locationHits.toString(),
+                hazardProcess: widget.hazardProcess
+                //here
+                ),
           ))
               .then((_) {
             // Call getData after pop
@@ -390,12 +396,17 @@ class _MyLocationCardState extends State<MyLocationCard> {
             widget.accountId!,
             widget.subAccountId!,
           ),
-          _buildScoreCard(context, 'Risk Score', widget.address, widget.riskScore ==0 ?5 :widget.riskScore,
-              widget.accountId!, widget.subAccountId!),
+          _buildScoreCard(
+              context,
+              'Risk Score',
+              widget.address,
+              widget.riskScore == 0 ? 5 : widget.riskScore,
+              widget.accountId!,
+              widget.subAccountId!),
           //int.parse(widget.overallScore!)),
           _buildScoreCard(
             context,
-            'Data Completeness',
+            'Completeness',
             widget.address,
             widget.dataCompletenessScore,
             widget.accountId!,
@@ -422,7 +433,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return Container(
       margin: EdgeInsets.only(right: 5),
       padding: EdgeInsets.all(8),
-      width: 100,
+      width: 130,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -472,11 +483,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
               children: [
                 if (widget.hazardProcess == true ||
                     title == 'Geocoding' ||
-                    title == 'Data Completeness') ...[
+                    title == 'Completeness') ...[
                   title == 'Risk Score'
                       ? SvgPicture.asset('assets/images/hazard_icon.svg',
                           width: 24, height: 24)
-                      : title == 'Data Completeness'
+                      : title == 'Completeness'
                           ? SvgPicture.asset(
                               'assets/images/data_completeness_icon.svg',
                               width: 24,
@@ -494,22 +505,23 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     onTap: () {
                       if (title == 'Geocoding') {
                         showLocationDetailsPopup(
-                          context,
-                          widget.lat,
-                          widget.long!,
-                          widget.imageUrl,
-                          widget.address,
-                          widget.locationId,
-                          widget.geocodingScore,
-                        int.parse(widget.overallScore!),
-                          widget.hazards,
-                          "MAc",
-                          widget.accountId!,
-                          widget.subAccountId!,
-                          "widget.sovId!",
-                          widget.accountName,
-                          widget.subAccountName!,
-                        );
+                            context,
+                            widget.lat,
+                            widget.long!,
+                            widget.imageUrl,
+                            widget.address,
+                            widget.locationId,
+                            widget.geocodingScore,
+                            widget.overallScore!,
+                            widget.hazards,
+                            "MAc",
+                            widget.accountId!,
+                            widget.subAccountId!,
+                            "widget.sovId!",
+                            widget.accountName,
+                            widget.subAccountName!,
+                            widget.hazardProcess!,
+                            widget.rented);
                       }
                     },
                     child: VerticalBarIndicator(score: score),
@@ -559,7 +571,7 @@ void showLocationDetailsPopup(
     String address,
     String locationId,
     int geocodingScore,
-    int overallScore,
+    dynamic overallScore,
     Map<String, HazardDetails>? hazards,
     String? professional,
     String accountId,
@@ -567,6 +579,8 @@ void showLocationDetailsPopup(
     String sovId,
     String accountName,
     String subAccountName,
+    bool? hazardProcess,
+    bool? rented,
     [bool hideNavigation = false]) {
   showDialog(
     context: context,
@@ -579,17 +593,19 @@ void showLocationDetailsPopup(
         address: address ?? 'Unknown Address',
         locationId: locationId ?? 'Unknown ID',
         geocodingScore: geocodingScore,
-        riskScore: overallScore ?? 5,
+        riskScore: overallScore.toString() ?? "5",
         hazards: hazards ?? {},
         geocodedAt: [""],
         occupancy: ["--"],
         campus: locationId,
+        rented: rented,
         accountId: accountId,
         subAccountId: subAccountId,
         sovId: sovId,
         accountName: accountName,
         subAccountName: subAccountName,
         sovName: address,
+        hazardProcess: hazardProcess,
         // hideNavigation: "hideNavigation",
       );
     },

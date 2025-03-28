@@ -21,7 +21,7 @@ class DuplicatesTab extends StatefulWidget {
 
   const DuplicatesTab(
       {super.key,
-       this.subAccountName,
+      this.subAccountName,
       required this.processId,
       required this.accountId,
       required this.subAccountId,
@@ -39,6 +39,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
 
   GoogleMapController? _mapController;
   final GlobalKey _mapKey = GlobalKey();
+  bool _isLoading = false;
 
   Future<void> _getData() async {
     final uploadSovProvider =
@@ -104,7 +105,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
   void _updateMap() {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
     final currentLocation = provider.duplicateLocations[currentIndex];
-    final topDuplicate = currentLocation['top_duplicate'];
+    final topDuplicate = currentLocation['duplicates'];
     if (topDuplicate != null) {
       _mapController?.animateCamera(
         CameraUpdate.newLatLng(
@@ -135,32 +136,71 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                       initialCameraPosition: CameraPosition(
                         target: provider.duplicateLocations.isNotEmpty &&
                                 provider.duplicateLocations[currentIndex]
-                                        ['top_duplicate'] !=
+                                        ['duplicates'] !=
                                     null
                             ? LatLng(
-                                provider.duplicateLocations[currentIndex]
-                                    ['top_duplicate']['latitude'],
-                                provider.duplicateLocations[currentIndex]
-                                    ['top_duplicate']['longitude'])
+                                provider.duplicateLocations.isNotEmpty &&
+                                        provider.duplicateLocations[currentIndex]
+                                                ['duplicates'] !=
+                                            null
+                                    ? double.tryParse((provider.duplicateLocations[
+                                                        currentIndex]
+                                                    ['duplicates'] is List
+                                                ? provider.duplicateLocations[currentIndex]
+                                                        ['duplicates'][0]
+                                                    ['latitude']
+                                                : provider.duplicateLocations[currentIndex]
+                                                    ['duplicates']['latitude'])
+                                            .toString()) ??
+                                        0.0
+                                    : 0.0,
+                                provider.duplicateLocations.isNotEmpty &&
+                                        provider.duplicateLocations[currentIndex]
+                                                ['duplicates'] !=
+                                            null
+                                    ? double.tryParse((provider.duplicateLocations[
+                                                        currentIndex]
+                                                    ['duplicates'] is List
+                                                ? provider.duplicateLocations[currentIndex]
+                                                        ['duplicates'][0]
+                                                    ['longitude']
+                                                : provider.duplicateLocations[currentIndex]
+                                                    ['duplicates']['longitude'])
+                                            .toString()) ??
+                                        0.0
+                                    : 0.0,
+                              )
                             : LatLng(0, 0),
-                        zoom: 14,
+                        zoom: 10,
                       ),
                       markers: {
                         // Main address marker
                         Marker(
                           markerId: MarkerId('mainAddress'),
                           position: LatLng(
-                            provider.duplicateLocations[currentIndex]
-                                    ['top_duplicate']?['latitude'] ??
-                                0,
-                            provider.duplicateLocations[currentIndex]
-                                    ['top_duplicate']?['longitude'] ??
-                                0,
+                            (provider.duplicateLocations[currentIndex]
+                                        ['duplicates'][0]?['latitude'] !=
+                                    null)
+                                ? double.tryParse(provider
+                                        .duplicateLocations[currentIndex]
+                                            ['duplicates'][0]!['latitude']
+                                        .toString()) ??
+                                    0.0
+                                : 0.0,
+                            (provider.duplicateLocations[currentIndex]
+                                        ['duplicates'][0]?['longitude'] !=
+                                    null)
+                                ? double.tryParse(provider
+                                        .duplicateLocations[currentIndex]
+                                            ['duplicates'][0]!['longitude']
+                                        .toString()) ??
+                                    0.0
+                                : 0.0,
                           ),
                           infoWindow: InfoWindow(
                             title: '',
                             snippet: provider.duplicateLocations[currentIndex]
-                                            ['top_duplicate']
+                                            ['duplicates'][0]
                                         ?['geocode_input_address']
                                     ?['formatted_address'] ??
                                 "",
@@ -303,7 +343,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                         horizontal: 16.0),
                                     child: Text(
                                       provider.duplicateLocations[currentIndex]
-                                              ['top_duplicate']?['address'] ??
+                                              ['duplicates'][0]?['address'] ??
                                           "",
                                       style: CustomTypography(context)
                                           .Body1
@@ -347,88 +387,203 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                         Expanded(
                                           child: CustomButton(
                                             type: ButtonType.elevated,
-                                            onPressed: () async {
-                                              // Get the current duplicate row
-                                              final currentDuplicate =
-                                                  provider.duplicateLocations[
-                                                      currentIndex];
+                                            onPressed: _isLoading
+                                                ? null // Disable button while loading
+                                                : () async {
+                                                    setState(() => _isLoading =
+                                                        true); // Show loader
 
-                                              // Call the method to mark as not duplicate
-                                              bool success = await Provider.of<
-                                                  UploadSovProvider>(
-                                                context,
-                                                listen: false,
-                                              ).markAsNotDuplicate(
-                                                  context,
-                                                  widget.accountId,
-                                                  widget.subAccountId,
-                                                  widget.processId,
-                                                  [currentDuplicate],
-                                                  provider.duplicateLocations[
-                                                          currentIndex]['id'] ??
-                                                      "" // Pass the current duplicate
-                                                  );
-
-                                              final uploadSovProvider = Provider
-                                                  .of<UploadSovProvider>(
+                                                    final provider = Provider
+                                                        .of<UploadSovProvider>(
                                                       context,
-                                                      listen: false);
+                                                      listen: false,
+                                                    );
 
-                                              if (success) {
-                                                // Remove from duplicate list
-                                                provider.duplicateLocations
-                                                    .removeAt(currentIndex);
+                                                    final currentDuplicate =
+                                                        provider.duplicateLocations[
+                                                            currentIndex];
 
-                                                // Add the item to the geocoding list (assuming it should now be treated as a valid location)
-                                                provider.geocodingList
-                                                    .add(currentDuplicate);
+                                                    bool success =
+                                                        await Provider.of<
+                                                            UploadSovProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    ).markAsNotDuplicate(
+                                                      context,
+                                                      widget.accountId,
+                                                      widget.subAccountId,
+                                                      widget.processId,
+                                                      [currentDuplicate],
+                                                      provider.duplicateLocations[
+                                                                  currentIndex]
+                                                              ['id'] ??
+                                                          "",
+                                                    );
 
-                                                // If the item was in the conflict list, remove it
-                                                provider.conflictLocations
-                                                    .removeWhere((conflict) =>
-                                                        conflict['id'] ==
-                                                        currentDuplicate['id']);
+                                                    if (success) {
+                                                      provider
+                                                          .duplicateLocations
+                                                          .removeAt(
+                                                              currentIndex);
+                                                      provider.geocodingList
+                                                          .add(
+                                                              currentDuplicate);
+                                                      provider.conflictLocations
+                                                          .removeWhere(
+                                                              (conflict) =>
+                                                                  conflict[
+                                                                      'id'] ==
+                                                                  currentDuplicate[
+                                                                      'id']);
 
-                                                // Update counts locally without API call
-                                                uploadSovProvider
-                                                        .duplicateCount =
-                                                    provider.duplicateLocations
-                                                        .length;
-                                                uploadSovProvider
-                                                        .locationCount =
-                                                    provider
-                                                        .geocodingList.length;
-                                                uploadSovProvider
-                                                        .conflictCount =
-                                                    provider.conflictLocations
-                                                        .length;
+                                                      final uploadSovProvider =
+                                                          Provider.of<
+                                                                  UploadSovProvider>(
+                                                              context,
+                                                              listen: false);
+                                                      uploadSovProvider
+                                                              .duplicateCount =
+                                                          provider
+                                                              .duplicateLocations
+                                                              .length;
+                                                      uploadSovProvider
+                                                              .locationCount =
+                                                          provider.geocodingList
+                                                              .length;
+                                                      uploadSovProvider
+                                                              .conflictCount =
+                                                          provider
+                                                              .conflictLocations
+                                                              .length;
+                                                      uploadSovProvider
+                                                          .refreshCounts();
+                                                    }
 
-                                                // Notify UI about the update
-                                                uploadSovProvider
-                                                    .refreshCounts();
-
-                                                // Debugging log for verification
-                                                print(
-                                                    "Updated Counts - Duplicates: ${uploadSovProvider.duplicateCount}");
-                                                print(
-                                                    "Updated Counts - Locations: ${uploadSovProvider.locationCount}");
-                                                print(
-                                                    "Updated Counts - Conflicts: ${uploadSovProvider.conflictCount}");
-                                              }
-                                            },
-                                            child: Text(
-                                              "It's not duplicate!",
-                                              style: CustomTypography(context)
-                                                  .ButtonLarge
-                                                  .copyWith(
-                                                    color: Colors.black,
+                                                    setState(() => _isLoading =
+                                                        false); // Hide loader
+                                                  },
+                                            child: _isLoading
+                                                ? SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 5,
+                                                      color: Colors.blue,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    "It's not duplicate!",
+                                                    style: CustomTypography(
+                                                            context)
+                                                        .ButtonLarge
+                                                        .copyWith(
+                                                            color:
+                                                                Colors.black),
                                                   ),
-                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
+
+//                           Container(
+//                             margin: EdgeInsets.symmetric(horizontal: 8),
+//                             child: Padding(
+//                               padding: const EdgeInsets.symmetric(
+//                                   horizontal: 16.0),
+//                               child: Row(
+//                                 mainAxisSize: MainAxisSize.max,
+//                                 children: [
+//                                   Expanded(
+//                                     child: CustomButton(
+//                                       type: ButtonType.elevated,
+//                                       onPressed: () async {
+//                                         // Get the current duplicate row
+//                                         final currentDuplicate =
+//                                         provider.duplicateLocations[
+//                                         currentIndex];
+// print("object");
+//                                         // Call the method to mark as not duplicate
+//                                         bool success = await Provider.of<
+//                                             UploadSovProvider>(
+//                                           context,
+//                                           listen: false,
+//                                         ).markAsNotDuplicate(
+//                                             context,
+//                                             widget.accountId,
+//                                             widget.subAccountId,
+//                                             widget.processId,
+//                                             [currentDuplicate],
+//                                             provider.duplicateLocations[
+//                                             currentIndex]['id'] ??
+//                                                 "" // Pass the current duplicate
+//                                         );
+//
+//                                         final uploadSovProvider = Provider
+//                                             .of<UploadSovProvider>(
+//                                             context,
+//                                             listen: false);
+//
+//                                         if (success) {
+//                                           print("Success");
+//                                           // Remove from duplicate list
+//                                           provider.duplicateLocations
+//                                               .removeAt(currentIndex);
+//
+//                                           // Add the item to the geocoding list (assuming it should now be treated as a valid location)
+//                                           provider.geocodingList
+//                                               .add(currentDuplicate);
+//
+//                                           // If the item was in the conflict list, remove it
+//                                           provider.conflictLocations
+//                                               .removeWhere((conflict) =>
+//                                           conflict['id'] ==
+//                                               currentDuplicate['id']);
+//
+//                                           // Update counts locally without API call
+//                                           uploadSovProvider
+//                                               .duplicateCount =
+//                                               provider.duplicateLocations
+//                                                   .length;
+//                                           uploadSovProvider
+//                                               .locationCount =
+//                                               provider
+//                                                   .geocodingList.length;
+//                                           uploadSovProvider
+//                                               .conflictCount =
+//                                               provider.conflictLocations
+//                                                   .length;
+//
+//                                           // Notify UI about the update
+//                                           uploadSovProvider
+//                                               .refreshCounts();
+//
+//                                           // Debugging log for verification
+//                                           print(
+//                                               "Updated Counts - Duplicates: ${uploadSovProvider
+//                                                   .duplicateCount}");
+//                                           print(
+//                                               "Updated Counts - Locations: ${uploadSovProvider
+//                                                   .locationCount}");
+//                                           print(
+//                                               "Updated Counts - Conflicts: ${uploadSovProvider
+//                                                   .conflictCount}");
+//                                         }
+//                                       },
+//                                       child: Text(
+//                                         "It's not duplicate!",
+//                                         style: CustomTypography(context)
+//                                             .ButtonLarge
+//                                             .copyWith(
+//                                           color: Colors.black,
+//                                         ),
+//                                       ),
+//                                     ),
+//                                   ),
+//                                 ],
+//                               ),
+//                             ),
                                 ),
                                 SizedBox(height: 16),
                               ],

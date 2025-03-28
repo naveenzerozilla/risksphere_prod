@@ -66,6 +66,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> vendorList = [];
   var subscriptions = {};
   String isMaintenance = "";
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
 
   @override
   void initState() {
@@ -86,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final results = await Future.wait([
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASTC),
-      SharedPreferenceService.getClaimForSubfeature(
+    SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASTU),
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASCR),
@@ -101,6 +105,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASVR),
     ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_ADMIN)??false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.Is_Indivudual)??false;
+
+print(results.toString());
+print(isIndivudual);
+print("results.toString()");
 
     showTotalCorporates = results[0] ?? false;
     showAllUsers = results[1] ?? false;
@@ -318,9 +330,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 SizedBox(height: 20),
                 _homeScreenBody(typography),
+                // Column(
+                //   children: [
+                //     Text(isPgAdmin.toString()),
+                //     Text(isPgAdmin.toString()),
+                //     Text(isSuperAdmin.toString()),
+                //   ],
+                // ),
 
                 // Overlay for trial expiration
-
                 Consumer<UserProfileProvider>(
                   builder: (context, userProfile, child) {
                     final trialStatus = userProfile.trialInfo['status'] ?? '';
@@ -395,17 +413,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, child) {
       return
-      // dashboardProvider.dashboard.toString()=="null"
-      //       ? Column(
-      //           children: [
-      //             Expanded(
-      //               child: Center(
-      //                 child: CircularProgressIndicator(),
-      //               ),
-      //             ),
-      //           ],
-      //         )
-      //       :
+      dashboardProvider.dashboard.toString()=="null"
+            ? Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                ],
+              )
+            :
           SingleChildScrollView(
         child: Container(
           margin: EdgeInsets.only(
@@ -642,14 +660,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(
                 height: CustomSpacing.one,
               ),
-              Text(
-                "My Subscriptions",
-                style: typography.H5_Regular,
-              ),
-              SizedBox(
-                height: CustomSpacing.two,
-              ),
-              _subscriptionBody(typography),
+          Consumer2<UserProfileProvider, ConfigurationProvider>(
+          builder: (context, userProfileProvider, provider, child) {
+          if (provider.isLoading) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 50),
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height / 2,
+            child: const CircularProgressIndicator(),
+          );
+          }
+
+          return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          Text(
+          "My Subscriptions",
+          style: typography.H5_Regular,
+          ),
+          SizedBox(
+          height: CustomSpacing.two,
+          ),
+          _subscriptionBody(), // Show content once loading is complete
+          ],
+          );
+          },
+          ),
               SizedBox(height: CustomSpacing.one),
               !showCompanyOnboardingStats
                   ? SizedBox()
@@ -710,7 +747,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  Widget _subscriptionBody(CustomTypography typography) {
+  Widget _subscriptionBody() {
     return
       Consumer2<UserProfileProvider, ConfigurationProvider>(
           builder: (context, userProfileProvider, provider, child) {
@@ -723,18 +760,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const CircularProgressIndicator(),
             )
                 :
-      // Consumer<ConfigurationProvider>(builder: (context, provider, child) {
-      // return
-      //   provider.isLoading
-      //     ? Container(
-      //         padding: EdgeInsets.only(right: 50, left: 50),
-      //         alignment: Alignment.center,
-      //         width: MediaQuery.of(context).size.width / 1,
-      //         height: MediaQuery.of(context).size.height / 2,
-      //         child: Center(
-      //           child: CircularProgressIndicator(),
-      //         ))
-      //     :
       Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: subscriptions.keys.map((key) {
@@ -755,21 +780,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     final data = snapshot.data!;
                     return Column(
                       children: [
-                        SubscriptionCard(
-                          title:
-                              '${data['hazardLabel']} (${data['vendorName']})',
-                          description: data['description'],
-                          iconPath: data['vendorImage'],
-                          isSubscribed: data['isSubscribed'],
-                          onSubscribe: () async {
-                            setState(() =>
-                                loadingSubscriptions.add(key)); // Show loader
-                            await _updateSubscription(key, data['isSubscribed'],
-                                data['mainId'], data['level']);
-                            setState(() => loadingSubscriptions
-                                .remove(key)); // Remove loader
-                          },
-                        ),
+                    SubscriptionCard(
+                    title: '${data['hazardLabel']} (${data['vendorName']})',
+                      description: data['description'],
+                      iconPath: data['vendorImage'],
+                      isSubscribed: data['isSubscribed'],
+                      onSubscribe: () async {
+                        if (isPgAdmin || isAdmin || isSuperAdmin ) {
+                          setState(() => loadingSubscriptions.add(key)); // Show loader
+                          await _updateSubscription(
+                              key, data['isSubscribed'], data['mainId'], data['level']);
+                          setState(() => loadingSubscriptions.remove(key)); // Remove loader
+                        } else {
+                          // Show dialog if the user doesn't have permission
+
+                        }
+                      },
+                      isPgAdmin: isPgAdmin,
+                      isAdmin: isAdmin,
+                      isSuperAdmin: isSuperAdmin,
+
+                    ),
+
+                    // SubscriptionCard(
+                        //   title:
+                        //       '${data['hazardLabel']} (${data['vendorName']})',
+                        //   description: data['description'],
+                        //   iconPath: data['vendorImage'],
+                        //   isSubscribed: data['isSubscribed'],
+                        //   onSubscribe: () async {
+                        //     isPgAdmin.toString();
+                        //     setState(() =>
+                        //         loadingSubscriptions.add(key)); // Show loader
+                        //     await _updateSubscription(key, data['isSubscribed'],
+                        //         data['mainId'], data['level']);
+                        //     setState(() => loadingSubscriptions
+                        //         .remove(key)); // Remove loader
+                        //   },
+                        // ),
                         SizedBox(height: CustomSpacing.one),
                       ],
                     );

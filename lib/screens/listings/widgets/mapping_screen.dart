@@ -7,18 +7,20 @@ import '../../../service/language_service.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class MappingScreen extends StatefulWidget {
-  final String? subAccountName;
+
   final String tempId;
   final String accountId;
   final String accountName;
+  final String? subAccountName;
   final String subAccountId;
 
   const MappingScreen(
       {super.key,
-        this.subAccountName,
+
       required this.tempId,
       this.accountId = '',
       this.accountName = '',
+        this.subAccountName,
       this.subAccountId = ''});
 
   @override
@@ -194,6 +196,7 @@ class _MappingScreenState extends State<MappingScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
+
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(LanguageService.getTranslated(
@@ -2102,14 +2105,15 @@ class _MappingScreenState extends State<MappingScreen> {
       // Proceed with the submission process if all fields are mapped
       final provider = Provider.of<UploadSovProvider>(context, listen: false);
       if (widget.accountId != '' && widget.accountName != '') {
+
         provider.submitSovHeadersSubAccounts(
           context,
-          widget.subAccountName??"",
           widget.tempId,
           provider.sovUploadModel?.url ?? "",
           _fields,
           widget.accountId,
           widget.accountName,
+          widget.subAccountName ??"",
           widget.subAccountId,
         );
       } else {
@@ -2118,6 +2122,7 @@ class _MappingScreenState extends State<MappingScreen> {
           widget.tempId,
           provider.sovUploadModel?.url ?? "",
           _fields,
+          widget.subAccountName ?? "",
         );
       }
     }

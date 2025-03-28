@@ -39,6 +39,22 @@ class MyLocationListProvider extends ChangeNotifier {
     currentPage++;
     notifyListeners(); // Triggers UI update
   }
+  int locationHits = 0;
+  int certifiedLocationHits = 0;
+  Future<void> fetchLocations() async {
+    isLoading = true;
+    locationHits = 0; // Set count to 0 while loading
+    certifiedLocationHits = 0;
+    notifyListeners();
+
+    await Future.delayed(Duration(seconds: 2)); // Simulate API call
+
+    locationHits = 10; // Example count after API call
+    certifiedLocationHits = 5;
+
+    isLoading = false;
+    notifyListeners();
+  }
 
   bool get isLoading => _isLoading;
 
@@ -472,8 +488,6 @@ class MyLocationListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  int locationHits = 0;
-  int certifiedLocationHits = 0;
 
   bool isCertifiedTabAllowed() {
     return certifiedLocationHits > 0;

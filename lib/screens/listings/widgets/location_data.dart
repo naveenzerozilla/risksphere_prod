@@ -2,11 +2,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/constants/enums.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
 import 'package:RiskSphare/design_system/primitives/app_colors.dart';
 import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:RiskSphare/screens/listings/account_list.dart';
 import 'package:RiskSphare/screens/listings/widgets/duplicates_tab.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../service/language_service.dart';
@@ -19,21 +16,21 @@ import 'message_card.dart';
 import 'upload_preview_buttons.dart';
 
 class LocationDataScreen extends StatefulWidget {
- final String? subAccountName;
   final String tempId;
   final String processId;
   final String accountId;
   final String accountName;
+  final String? subAccountName;
   final String subAccountId;
 
   const LocationDataScreen({
     Key? key,
-    this.subAccountName,
     required this.tempId,
     required this.processId,
     //required this.targetHeaders,
     this.accountId = '',
     this.accountName = '',
+    this.subAccountName,
     this.subAccountId = '',
   }) : super(key: key);
 
@@ -55,11 +52,13 @@ class LocationDataScreenState extends State<LocationDataScreen>
   late ScrollController _scrollController;
   TextEditingController _textEditingController = TextEditingController();
   List<Map<String, dynamic>> selectedLocations = [];
+  String processStatus = '';
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-
+    _listenToProcessStatus();
     _scrollController = ScrollController();
     _masterTabController = TabController(length: 3, vsync: this);
 
@@ -68,11 +67,29 @@ class LocationDataScreenState extends State<LocationDataScreen>
         selectedMasterTab = _masterTabController?.index ?? 0;
       });
       if (selectedMasterTab == 0 && !_isLoading) {
-        // _getData();
+        // _listenToProcessStatus();
       }
     });
-    _getData();
+    _listenToProcessStatus();
     // Initial data fetch
+  }
+
+  void _listenToProcessStatus() {
+    final query = _db
+        .collection('processes')
+        .where('process_id', isEqualTo: widget.processId);
+
+    query.snapshots().listen((querySnapshot) {
+      if (querySnapshot.docs.isNotEmpty) {
+        final data = querySnapshot.docs.first.data();
+        setState(() {
+          processStatus = data['duplication_check_status'] ?? '';
+        });
+        print(processStatus);
+        print("processStatus");
+        _getData();
+      }
+    });
   }
 
   @override
@@ -96,6 +113,11 @@ class LocationDataScreenState extends State<LocationDataScreen>
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  Future<void> _getDataInital() async {
+    response = await Provider.of<UploadSovProvider>(context, listen: false)
+        .fetchDuplicates(context, widget.processId);
   }
 
   Future<void> _getData() async {
@@ -249,146 +271,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
     });
   }
 
-  /*void _showOptionsDialog() {
-    var typography = CustomTypography(context);
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        String _selectedOption = 'Use SOV Data';
-
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Color(0xFF1C1C1E), // Dark background color
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              title: Column(
-                children: [
-                  Text(
-                    'Just one more step before\nsubmitting the locations!',
-                    style: typography.Body1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<String>(
-                    title: Text(
-                      'Use Locations Data',
-                      style: typography.Body1,
-                    ),
-                    subtitle: Text(
-                      'Only missing data will be processed!',
-                      style: typography.Caption,
-                    ),
-                    value: "Use SOV Data",
-                    groupValue: _selectedOption,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedOption = value!;
-                      });
-                    },
-                    activeColor: Colors.blue,
-                  ),
-                  RadioListTile<String>(
-                    title: Text(
-                      'Refresh All Data',
-                      style: typography.Body1,
-                    ),
-                    value: "Refresh All Data",
-                    groupValue: _selectedOption,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedOption = value!;
-                      });
-                    },
-                    activeColor: Colors.blue,
-                  ),
-                ],
-              ),
-              actions: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _commitSelectedLocations();
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'Commit Selected Locations',
-                            style: typography.Body1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _commitAllLocations();
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[900],
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'Commit All Locations',
-                            style: typography.Body1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w300,),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }*/
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -438,7 +321,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                         color: Colors.grey),
                                     onPressed: _scrollLeft,
                                   ),*/
-                              // Scrollable TabBar
+                              // Scrollable TabBa
                               Consumer<UploadSovProvider>(
                                 builder: (context, provider, child) {
                                   return Expanded(
@@ -453,201 +336,521 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                         indicatorColor: AppColors.primaryMain,
                                         labelColor: AppColors.primaryMain,
                                         unselectedLabelColor: Colors.grey,
+                                        onTap: (index) {
+                                          setState(() {
+                                            _currentIndex = index;
+                                          });
+                                          print(_currentIndex);
+                                        },
                                         tabs: [
                                           Tab(
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Geocoding List ',
-                                                style: typography.Subtitle2
-                                                    .copyWith(
-                                                        color: AppColors
-                                                            .primaryMain),
-                                                children: [
-                                                  WidgetSpan(
-                                                    alignment:
-                                                        PlaceholderAlignment
-                                                            .middle,
-                                                    // Aligns the widget properly in RichText
-                                                    child: Container(
-                                                      width: 25,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      // padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white38,
-                                                        // Blinking background color
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                                10), // Rounded corners
+                                            child: processStatus != "completed"
+                                                ? RichText(
+                                                    text: TextSpan(
+                                                      text: 'Geocoding List ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color:
+                                                            _currentIndex == 0
+                                                                ? AppColors
+                                                                    .primaryMain
+                                                                : Colors.grey,
                                                       ),
-                                                      child: Builder(
-                                                          builder: (context) {
-                                                        return Text(
-                                                          provider.geocodingList
-                                                              .length
-                                                              .toString(),
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.white),
-                                                        );
-                                                      }),
-                                                    ), // Hides widget when count is 0
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Tab(
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Duplicates ',
-                                                style: typography.Subtitle2
-                                                    .copyWith(
-                                                        color: AppColors
-                                                            .primaryMain),
-                                                children: [
-                                                  WidgetSpan(
-                                                    alignment:
-                                                        PlaceholderAlignment
-                                                            .middle,
-                                                    // Aligns the widget properly in RichText
-                                                    child: provider
-                                                                .duplicateLocations
-                                                                .length >
-                                                            0
-                                                        ? BlinkingText(
-                                                            conflictCount: provider
-                                                                .duplicateLocations
-                                                                .length,
-                                                            style: typography
-                                                                    .Subtitle2
-                                                                .copyWith(
-                                                              color: Colors
-                                                                  .white, // Default text color
-                                                            ),
-                                                            blinkColor:
-                                                                Colors.white,
-                                                            // Blinking text color
-                                                            defaultColor: Colors
-                                                                .red, // Default background color
-                                                          )
-                                                        : Container(
-                                                            alignment: Alignment
-                                                                .center,
+                                                      children: [
+                                                        WidgetSpan(
+                                                          alignment:
+                                                              PlaceholderAlignment
+                                                                  .middle,
+                                                          child: Container(
                                                             padding: EdgeInsets
-                                                                .fromLTRB(
-                                                                    3, 0, 4, 0),
+                                                                .symmetric(
+                                                                horizontal:
+                                                                6,
+                                                                vertical:
+                                                                0),
+                                                            decoration:
+                                                            BoxDecoration(
+                                                              color: Colors
+                                                                  .white12,
+                                                              borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                  10),
+                                                            ),
+                                                            child:
+                                                                FutureBuilder(
+                                                              future: provider
+                                                                      .isInitialLoad
+                                                                  ? Future
+                                                                      .delayed(
+                                                                      Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                      () => provider
+                                                                          .geocodingList
+                                                                          .length,
+                                                                    )
+                                                                  : Future
+                                                                      .value(0),
+                                                              builder: (context,
+                                                                  snapshot) {
+                                                                return Text(
+                                                                  "0",
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                          .white),
+                                                                );
+                                                              },
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                : RichText(
+                                                    text: TextSpan(
+                                                      text: 'Geocoding List ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color: _currentIndex ==
+                                                                0
+                                                            ? AppColors
+                                                                .primaryMain
+                                                            : Colors.white60,
+                                                      ),
+                                                      children: [
+                                                        WidgetSpan(
+                                                          alignment:
+                                                              PlaceholderAlignment
+                                                                  .middle,
+                                                          child: Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        6,
+                                                                    vertical:
+                                                                        0),
                                                             decoration:
                                                                 BoxDecoration(
                                                               color: Colors
-                                                                  .white38,
-                                                              // Blinking background color
+                                                                  .white12,
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .circular(
-                                                                          10), // Rounded corners
+                                                                          10),
                                                             ),
-                                                            child: Text(
-                                                              provider
-                                                                  .duplicateLocations
-                                                                  .length
-                                                                  .toString(),
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white),
+                                                            child:
+                                                                FutureBuilder<
+                                                                    int>(
+                                                              future: provider
+                                                                      .isInitialLoad
+                                                                  ? Future.delayed(
+                                                                      Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                      () => provider
+                                                                          .geocodingList
+                                                                          .length)
+                                                                  : Future.value(
+                                                                      provider
+                                                                          .geocodingList
+                                                                          .length),
+                                                              builder: (context,
+                                                                  snapshot) {
+                                                                if (snapshot
+                                                                        .connectionState ==
+                                                                    ConnectionState
+                                                                        .waiting) {
+                                                                  return SizedBox(
+                                                                    width: 15,
+                                                                    height: 15,
+                                                                    child:
+                                                                        CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          2,
+                                                                      valueColor: AlwaysStoppedAnimation<
+                                                                              Color>(
+                                                                          Colors
+                                                                              .white),
+                                                                    ),
+                                                                  );
+                                                                } else {
+                                                                  return Padding(
+                                                                    padding: EdgeInsets.only(
+                                                                        bottom:
+                                                                            2),
+                                                                    child: Text(
+                                                                      snapshot.data
+                                                                              ?.toString() ??
+                                                                          "0",
+                                                                      textAlign:
+                                                                          TextAlign
+                                                                              .center,
+                                                                      style: TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color:
+                                                                              Colors.white),
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              },
                                                             ),
-                                                          ), // Hides widget when count is 0
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                                ],
-                                              ),
-                                            ),
                                           ),
                                           Tab(
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Conflicts ',
-                                                style: typography.Subtitle2
-                                                    .copyWith(
-                                                        color: AppColors
-                                                            .primaryMain),
-                                                children: [
-                                                  TextSpan(
-                                                    children: [
-                                                      WidgetSpan(
-                                                        alignment:
-                                                            PlaceholderAlignment
-                                                                .middle,
-                                                        // Aligns the widget properly in RichText
-                                                        child: provider
-                                                                    .conflictLocations
-                                                                    .length >
-                                                                0
-                                                            ? BlinkingText(
-                                                                conflictCount:
-                                                                    provider
-                                                                        .conflictLocations
-                                                                        .length,
-                                                                style: typography
-                                                                        .Subtitle2
-                                                                    .copyWith(
-                                                                  color: Colors
-                                                                      .white, // Default text color
+                                            child: processStatus != "completed"
+                                                ? RichText(
+                                                    text: TextSpan(
+                                                      text: 'Duplicates ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color: _currentIndex ==
+                                                                1
+                                                            ? AppColors
+                                                                .primaryMain
+                                                            : Colors.white60,
+                                                      ),
+                                                      children: [
+                                                        WidgetSpan(
+                                                          alignment:
+                                                              PlaceholderAlignment
+                                                                  .middle,
+                                                          child: provider
+                                                                      .duplicateLocations
+                                                                      .length >
+                                                                  0
+                                                              ? BlinkingText1(
+                                                                  conflictCount:
+                                                                      0,
+                                                                  style: typography
+                                                                          .Subtitle2
+                                                                      .copyWith(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                                  blinkColor:
+                                                                      Colors
+                                                                          .white,
+                                                                  defaultColor:
+                                                                      Colors
+                                                                          .red,
+                                                                )
+                                                              : Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                                horizontal:
+                                                                6,
+                                                                vertical:
+                                                                0),
+                                                            decoration:
+                                                            BoxDecoration(
+                                                                color: Colors
+                                                                    .white12,
+                                                              borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                  10),
+                                                            ),
+                                                                  // alignment:
+                                                                  //     Alignment
+                                                                  //         .center,
+                                                                  // padding: EdgeInsets
+                                                                  //     .fromLTRB(
+                                                                  //         3,
+                                                                  //         0,
+                                                                  //         4,
+                                                                  //         0),
+                                                                  // decoration:
+                                                                  //     BoxDecoration(
+                                                                  //   color: Colors
+                                                                  //       .white12,
+                                                                  //   borderRadius:
+                                                                  //       BorderRadius.circular(
+                                                                  //           10),
+                                                                  // ),
+                                                                  child: Text(
+                                                                    "0",
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .center,
+                                                                    style: TextStyle(
+                                                                        color: Colors
+                                                                            .white),
+                                                                  ),
                                                                 ),
-                                                                blinkColor: Colors
-                                                                    .orangeAccent,
-                                                                // Blinking text color
-                                                                defaultColor: Colors
-                                                                    .red, // Default background color
-                                                              )
-                                                            : Container(
-                                                                padding: EdgeInsets
-                                                                    .symmetric(
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                : RichText(
+                                                    text: TextSpan(
+                                                      text: 'Duplicates ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color: _currentIndex ==
+                                                                1
+                                                            ? AppColors
+                                                                .primaryMain
+                                                            : Colors.white60,
+                                                      ),
+                                                      children: [
+                                                        if (processStatus ==
+                                                            "completed")
+                                                          WidgetSpan(
+                                                            alignment:
+                                                                PlaceholderAlignment
+                                                                    .middle,
+                                                            child: provider
+                                                                        .duplicateLocations
+                                                                        .length >
+                                                                    0
+                                                                ?
+
+                                                            BlinkingText1(
+                                                                    conflictCount:
+                                                                        provider
+                                                                            .duplicateLocations
+                                                                            .length,
+                                                                    style: typography
+                                                                            .Subtitle2
+                                                                        .copyWith(
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                    blinkColor:
+                                                                        Colors
+                                                                            .white,
+                                                                    defaultColor:
+                                                                        Colors
+                                                                            .red,
+                                                                  )
+                                                                :  Container(
+                                                              // padding: EdgeInsets
+                                                              //     .symmetric(
+                                                              //     horizontal:
+                                                              //     6,
+                                                              //     vertical:
+                                                              //     0),
+                                                              // decoration:
+                                                              // BoxDecoration(
+                                                              //   color: Colors
+                                                              //       .white12,
+                                                              //   borderRadius:
+                                                              //   BorderRadius
+                                                              //       .circular(
+                                                              //       10),
+                                                              // ),
+                                                                    child:
+                                                                        FutureBuilder(
+                                                                      future: provider
+                                                                              .isInitialLoad
+                                                                          ? Future
+                                                                              .delayed(
+                                                                              Duration(seconds: 2),
+                                                                              () => provider.duplicateLocations.length,
+                                                                            )
+                                                                          : Future.value(provider
+                                                                              .duplicateLocations
+                                                                              .length),
+                                                                      builder:
+                                                                          (context,
+                                                                              snapshot) {
+                                                                        return Text(
+                                                                          snapshot.connectionState == ConnectionState.waiting
+                                                                              ? "0"
+                                                                              : snapshot.data.toString(),
+                                                                          textAlign:
+                                                                              TextAlign.center,
+                                                                          style:
+                                                                              TextStyle(color: Colors.white),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                          ),
+                                          Tab(
+                                            child: processStatus != "completed"
+                                                ? RichText(
+                                                    text: TextSpan(
+                                                      text: 'Conflicts ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color: _currentIndex ==
+                                                                2
+                                                            ? AppColors
+                                                                .primaryMain
+                                                            : Colors.white60,
+                                                      ),
+                                                      children: [
+                                                        WidgetSpan(
+                                                          alignment:
+                                                              PlaceholderAlignment
+                                                                  .middle,
+                                                          child: provider
+                                                                      .conflictLocations
+                                                                      .length >
+                                                                  0
+                                                              ? BlinkingText(
+                                                                  conflictCount:
+                                                                      0,
+                                                                  style: typography
+                                                                          .Subtitle2
+                                                                      .copyWith(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                                  blinkColor: Colors
+                                                                      .orangeAccent,
+                                                                  defaultColor:
+                                                                      Colors
+                                                                          .red,
+                                                                )
+                                                              : Container(
+                                                                  padding: EdgeInsets
+                                                                      .symmetric(
+                                                                          horizontal:
+                                                                              6,
+                                                                          vertical:
+                                                                              0),
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: Colors
+                                                                        .white12,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            10),
+                                                                  ),
+                                                                  child:
+                                                                      FutureBuilder(
+                                                                    future: provider
+                                                                            .isInitialLoad
+                                                                        ? Future
+                                                                            .delayed(
+                                                                            Duration(seconds: 2),
+                                                                            () =>
+                                                                                provider.conflictLocations.length,
+                                                                          )
+                                                                        : Future
+                                                                            .value(0),
+                                                                    builder:
+                                                                        (context,
+                                                                            snapshot) {
+                                                                      return Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .only(
+                                                                            bottom:
+                                                                                2.0),
+                                                                        child:
+                                                                            Text(
+                                                                          "0",
+                                                                          style:
+                                                                              TextStyle(color: Colors.white),
+                                                                        ),
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                : RichText(
+                                                    text: TextSpan(
+                                                      text: 'Conflicts ',
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        color: _currentIndex ==
+                                                                2
+                                                            ? AppColors
+                                                                .primaryMain
+                                                            : Colors.white60,
+                                                      ),
+                                                      children: [
+                                                        if (processStatus ==
+                                                            "completed")
+                                                          WidgetSpan(
+                                                            alignment:
+                                                                PlaceholderAlignment
+                                                                    .middle,
+                                                            child: provider
+                                                                        .conflictLocations
+                                                                        .length >
+                                                                    0
+                                                                ? BlinkingText(
+                                                                    conflictCount:
+                                                                        provider
+                                                                            .conflictLocations
+                                                                            .length,
+                                                                    style: typography
+                                                                            .Subtitle2
+                                                                        .copyWith(
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                    blinkColor:
+                                                                        Colors
+                                                                            .orangeAccent,
+                                                                    defaultColor:
+                                                                        Colors
+                                                                            .red,
+                                                                  )
+                                                                : Container(
+                                                                    padding: EdgeInsets.symmetric(
                                                                         horizontal:
                                                                             6,
                                                                         vertical:
                                                                             0),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .white38,
-                                                                  // Blinking background color
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              10), // Rounded corners
-                                                                ),
-                                                                child: Text(
-                                                                  provider
-                                                                      .conflictLocations
-                                                                      .length
-                                                                      .toString(),
-                                                                  style: TextStyle(
+                                                                    decoration:
+                                                                        BoxDecoration(
                                                                       color: Colors
-                                                                          .white),
-                                                                ),
-                                                              ),
-                                                      ),
-                                                    ],
+                                                                          .white12,
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              10),
+                                                                    ),
+                                                                    child:
+                                                                        FutureBuilder(
+                                                                      future: provider
+                                                                              .isInitialLoad
+                                                                          ? Future
+                                                                              .delayed(
+                                                                              Duration(seconds: 1),
+                                                                              () => provider.conflictLocations.length,
+                                                                            )
+                                                                          : Future.value(provider
+                                                                              .conflictLocations
+                                                                              .length),
+                                                                      builder:
+                                                                          (context,
+                                                                              snapshot) {
+                                                                        return Container(
+                                                                          padding:
+                                                                              EdgeInsets.only(bottom: 2),
+                                                                          child:
+                                                                              Text(
+                                                                            snapshot.connectionState == ConnectionState.waiting
+                                                                                ? "0"
+                                                                                : snapshot.data.toString(),
+                                                                            style:
+                                                                                TextStyle(color: Colors.white),
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                          ),
+                                                      ],
+                                                    ),
                                                   ),
-
-                                                  // TextSpan(
-                                                  //   text:
-                                                  //       '${provider.conflictLocations.length}',
-                                                  //   style: typography.Subtitle2.copyWith(
-                                                  //       color: provider
-                                                  //                   .conflictLocations
-                                                  //                   .length >
-                                                  //               0
-                                                  //           ? Colors.red
-                                                  //           : AppColors
-                                                  //               .primaryMain), // Change length color
-                                                  // ),
-                                                ],
-                                              ),
-                                            ),
                                           ),
                                         ],
                                       ),
@@ -656,40 +859,242 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                 },
                               ),
 
-                              //old code
-                              // Expanded(
-                              //   child: SingleChildScrollView(
-                              //     controller: _scrollController,
-                              //     scrollDirection: Axis.horizontal,
-                              //     child: TabBar(
-                              //       controller: _masterTabController,
-                              //       tabAlignment: TabAlignment.start,
-                              //       labelStyle: typography.Subtitle2,
-                              //       isScrollable: true,
-                              //       indicatorColor: AppColors.primaryMain,
-                              //       labelColor: AppColors.primaryMain,
-                              //       unselectedLabelColor: Colors.grey,
-                              //       tabs: [
-                              //         Tab(
-                              //           text: 'Geocoding List (0)',
-                              //
+                              // Consumer<UploadSovProvider>(
+                              //   builder: (context, provider, child) {
+                              //     return
+                              //         // provider.isLoading ? Center(child: CircularProgressIndicator(),):
+                              //         Expanded(
+                              //       child: SingleChildScrollView(
+                              //         controller: _scrollController,
+                              //         scrollDirection: Axis.horizontal,
+                              //         child: TabBar(
+                              //           controller: _masterTabController,
+                              //           tabAlignment: TabAlignment.start,
+                              //           labelStyle: typography.Subtitle2,
+                              //           isScrollable: true,
+                              //           indicatorColor: AppColors.primaryMain,
+                              //           labelColor: AppColors.primaryMain,
+                              //           unselectedLabelColor: Colors.grey,
+                              //           tabs: [
+                              //             Tab(
+                              //               child: RichText(
+                              //                 text: TextSpan(
+                              //                   text: 'Geocoding List ',
+                              //                   style: typography.Subtitle2
+                              //                       .copyWith(
+                              //                     color: AppColors.primaryMain,
+                              //                   ),
+                              //                   children: [
+                              //                     WidgetSpan(
+                              //                       alignment:
+                              //                           PlaceholderAlignment
+                              //                               .middle,
+                              //                       child: Container(
+                              //                           width: 25,
+                              //                           alignment:
+                              //                               Alignment.center,
+                              //                           decoration:
+                              //                               BoxDecoration(
+                              //                             color: Colors.white38,
+                              //                             // Background color
+                              //                             borderRadius:
+                              //                                 BorderRadius.circular(
+                              //                                     10), // Rounded corners
+                              //                           ),
+                              //                           child: FutureBuilder(
+                              //                             future: Future.delayed(
+                              //                                 Duration(
+                              //                                     seconds: 2),
+                              //                                 () => provider
+                              //                                     .geocodingList
+                              //                                     .length),
+                              //                             builder: (context,
+                              //                                 snapshot) {
+                              //                               return Text(
+                              //                                 snapshot.connectionState ==
+                              //                                         ConnectionState
+                              //                                             .waiting
+                              //                                     ? "0"
+                              //                                     : snapshot
+                              //                                         .data
+                              //                                         .toString(),
+                              //                                 style: TextStyle(
+                              //                                     color: Colors
+                              //                                         .white),
+                              //                               );
+                              //                             },
+                              //                           )),
+                              //                     ),
+                              //                   ],
+                              //                 ),
+                              //               ),
+                              //             ),
+                              //             Tab(
+                              //               child: RichText(
+                              //                 text: TextSpan(
+                              //                   text: 'Duplicates ',
+                              //                   style: typography.Subtitle2
+                              //                       .copyWith(
+                              //                     color: AppColors.primaryMain,
+                              //                   ),
+                              //                   children: [
+                              //                     WidgetSpan(
+                              //                       alignment:
+                              //                           PlaceholderAlignment
+                              //                               .middle,
+                              //                       child: provider
+                              //                                   .duplicateLocations
+                              //                                   .length >
+                              //                               0
+                              //                           ? BlinkingText(
+                              //                               conflictCount: provider
+                              //                                   .duplicateLocations
+                              //                                   .length,
+                              //                               style: typography
+                              //                                       .Subtitle2
+                              //                                   .copyWith(
+                              //                                 color: Colors
+                              //                                     .white, // Default text color
+                              //                               ),
+                              //                               blinkColor:
+                              //                                   Colors.white,
+                              //                               defaultColor:
+                              //                                   Colors.red,
+                              //                             )
+                              //                           : Container(
+                              //                               alignment: Alignment
+                              //                                   .center,
+                              //                               padding: EdgeInsets
+                              //                                   .fromLTRB(
+                              //                                       3, 0, 4, 0),
+                              //                               decoration:
+                              //                                   BoxDecoration(
+                              //                                 color: Colors
+                              //                                     .white38,
+                              //                                 borderRadius:
+                              //                                     BorderRadius
+                              //                                         .circular(
+                              //                                             10),
+                              //                               ),
+                              //                               child:
+                              //                                   FutureBuilder(
+                              //                                 future: Future.delayed(
+                              //                                     Duration(
+                              //                                         seconds:
+                              //                                             4),
+                              //                                     () => provider
+                              //                                         .duplicateLocations
+                              //                                         .length),
+                              //                                 builder: (context,
+                              //                                     snapshot) {
+                              //                                   return Text(
+                              //                                     snapshot.connectionState ==
+                              //                                             ConnectionState
+                              //                                                 .waiting
+                              //                                         ? "0"
+                              //                                         : snapshot
+                              //                                             .data
+                              //                                             .toString(),
+                              //                                     textAlign:
+                              //                                         TextAlign
+                              //                                             .center,
+                              //                                     style: TextStyle(
+                              //                                         color: Colors
+                              //                                             .white),
+                              //                                   );
+                              //                                 },
+                              //                               ),
+                              //                             ),
+                              //                     ),
+                              //                   ],
+                              //                 ),
+                              //               ),
+                              //             ),
+                              //             Tab(
+                              //               child: RichText(
+                              //                 text: TextSpan(
+                              //                   text: 'Conflicts ',
+                              //                   style: typography.Subtitle2
+                              //                       .copyWith(
+                              //                     color: AppColors.primaryMain,
+                              //                   ),
+                              //                   children: [
+                              //                     WidgetSpan(
+                              //                       alignment:
+                              //                           PlaceholderAlignment
+                              //                               .middle,
+                              //                       child: provider
+                              //                                   .conflictLocations
+                              //                                   .length >
+                              //                               0
+                              //                           ? BlinkingText(
+                              //                               conflictCount: provider
+                              //                                   .conflictLocations
+                              //                                   .length,
+                              //                               style: typography
+                              //                                       .Subtitle2
+                              //                                   .copyWith(
+                              //                                 color:
+                              //                                     Colors.white,
+                              //                               ),
+                              //                               blinkColor: Colors
+                              //                                   .orangeAccent,
+                              //                               defaultColor:
+                              //                                   Colors.red,
+                              //                             )
+                              //                           : Container(
+                              //                               padding: EdgeInsets
+                              //                                   .symmetric(
+                              //                                       horizontal:
+                              //                                           6,
+                              //                                       vertical:
+                              //                                           0),
+                              //                               decoration:
+                              //                                   BoxDecoration(
+                              //                                 color: Colors
+                              //                                     .white38,
+                              //                                 borderRadius:
+                              //                                     BorderRadius
+                              //                                         .circular(
+                              //                                             10),
+                              //                               ),
+                              //                               child:
+                              //                                   FutureBuilder(
+                              //                                 future: Future.delayed(
+                              //                                     Duration(
+                              //                                         seconds:
+                              //                                             4),
+                              //                                     () => provider
+                              //                                         .conflictLocations
+                              //                                         .length),
+                              //                                 builder: (context,
+                              //                                     snapshot) {
+                              //                                   return Text(
+                              //                                     snapshot.connectionState ==
+                              //                                             ConnectionState
+                              //                                                 .waiting
+                              //                                         ? "0"
+                              //                                         : snapshot
+                              //                                             .data
+                              //                                             .toString(),
+                              //                                     style: TextStyle(
+                              //                                         color: Colors
+                              //                                             .white),
+                              //                                   );
+                              //                                 },
+                              //                               ),
+                              //                             ),
+                              //                     ),
+                              //                   ],
+                              //                 ),
+                              //               ),
+                              //             ),
+                              //           ],
                               //         ),
-                              //         Tab(
-                              //           text: 'Duplicates(0)',
-                              //         ),
-                              //         Tab(
-                              //           text: 'Conflicts(0)',
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
+                              //       ),
+                              //     );
+                              //   },
                               // ),
-                              // Right arrow button
-                              /* IconButton(
-                                    icon: Icon(Icons.arrow_right,
-                                        color: Colors.grey),
-                                    onPressed: _scrollRight,
-                                  ),*/
                             ],
                           ),
                         ),
@@ -758,10 +1163,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                   );
                                 }
                                 return Expanded(
-                                    child: RefreshIndicator(
-                                        onRefresh: _getLocationData,
-                                        child: _locationListBody(
-                                            typography, context)));
+                                    child:
+                                        _locationListBody(typography, context));
                               }),
                         ],
                       ),
@@ -789,27 +1192,27 @@ class LocationDataScreenState extends State<LocationDataScreen>
               ],
             ),
           ),
-          if (isSubmitLoading)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          Consumer<UploadSovProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return Container(
-                  color: Colors.black54,
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              } else {
-                return const SizedBox.shrink();
-              }
-            },
-          ),
+          // if (isSubmitLoading)
+          //   Container(
+          //     color: Colors.black54,
+          //     child: Center(
+          //       child: CircularProgressIndicator(),
+          //     ),
+          //   ),
+          // Consumer<UploadSovProvider>(
+          //   builder: (context, provider, child) {
+          //     if (provider.isLoading) {
+          //       return Container(
+          //         color: Colors.black54,
+          //         child: Center(
+          //           child: CircularProgressIndicator(),
+          //         ),
+          //       );
+          //     } else {
+          //       return const SizedBox.shrink();
+          //     }
+          //   },
+          // ),
         ],
       ),
     );
@@ -970,17 +1373,16 @@ class LocationDataScreenState extends State<LocationDataScreen>
                     ),
                   )
                 : Expanded(
-                    child:
-                    ListView.builder(
+                    child: ListView.builder(
                       itemCount: provider.geocodingList.length,
                       itemBuilder: (context, index) {
                         final location = provider.geocodingList[index];
 
                         if (_searchQuery.isNotEmpty &&
                             !(location['formatted_address']
-                                .toString()
-                                .toLowerCase()
-                                .contains(_searchQuery.toLowerCase()) ||
+                                    .toString()
+                                    .toLowerCase()
+                                    .contains(_searchQuery.toLowerCase()) ||
                                 location['city']
                                     .toString()
                                     .toLowerCase()
@@ -989,18 +1391,22 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         }
 
                         return Container(
-                          margin: EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                          margin:
+                              EdgeInsets.only(bottom: 8, left: 16, right: 16),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IntrinsicHeight(
                             child: Row(
                               children: [
-
                                 StatefulBuilder(
                                   builder: (context, setStateLocal) {
                                     return Checkbox(
@@ -1017,11 +1423,16 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                           if (value) {
                                             selectedLocations.add(location);
                                           } else {
-                                            selectedLocations.removeWhere((item) => item['id'] == location['id']);
+                                            selectedLocations.removeWhere(
+                                                (item) =>
+                                                    item['id'] ==
+                                                    location['id']);
                                           }
 
                                           // Check if all items are selected
-                                          _selectAll = provider.geocodingList.every((item) => item['isChecked'] == true);
+                                          _selectAll = provider.geocodingList
+                                              .every((item) =>
+                                                  item['isChecked'] == true);
                                         }
                                       },
                                     );
@@ -1030,7 +1441,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       SizedBox(height: 10),
                                       Text(
@@ -1042,8 +1454,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                       SizedBox(height: 4),
                                       Text(
                                         "${location['city'] != null && location['city'].isNotEmpty ? location['city'] : ''}"
-                                            "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
-                                            "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
+                                        "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
+                                        "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
                                         style: typography.Caption,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -1057,17 +1469,24 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                       topRight: Radius.circular(12),
                                       bottomRight: Radius.circular(12),
                                     ),
-                                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerLow,
                                   ),
                                   width: 50,
                                   height: double.infinity,
                                   child: IconButton(
-                                    icon: Icon(Icons.info, color: Theme.of(context).colorScheme.primary),
+                                    icon: Icon(Icons.info,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary),
                                     onPressed: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => LocationHeadersScreen(location: location),
+                                          builder: (context) =>
+                                              LocationHeadersScreen(
+                                                  location: location),
                                         ),
                                       );
                                     },
@@ -1080,7 +1499,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                       },
                     ),
 
-              // ListView.builder(
+                    // ListView.builder(
                     //   itemCount: provider.geocodingList.length,
                     //   itemBuilder: (context, index) {
                     //     final location = provider.geocodingList[index];
@@ -1202,6 +1621,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
             UploadPreviewButtons(
               accountId: widget.accountId,
               accountName: widget.accountName,
+              subAccountName: widget.subAccountName,
               tempId: widget.tempId,
               processId: widget.processId,
               subAccountId: widget.subAccountId,
@@ -1270,18 +1690,134 @@ class _BlinkingTextState extends State<BlinkingText>
       animation: _controller,
       builder: (context, child) {
         return Container(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 1),
           decoration: BoxDecoration(
             color: _bgAnimation.value, // Blinking background color
             borderRadius: BorderRadius.circular(10), // Rounded corners
           ),
+          padding: EdgeInsets.fromLTRB(4, 1, 4, 2), // Optional padding
           child: Text(
             '${widget.conflictCount}',
+            textAlign: TextAlign.center,
             style: widget.style.copyWith(
               color: _colorAnimation.value, // Blinking text color
             ),
           ),
         );
+        //   Container(
+        //   // padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+        //   decoration: BoxDecoration(
+        //     color: _bgAnimation.value, // Blinking background color
+        //     borderRadius: BorderRadius.circular(10), // Rounded corners
+        //   ),
+        //   child: Text(
+        //     '${widget.conflictCount}',
+        //     style: widget.style.copyWith(
+        //       color: _colorAnimation.value, // Blinking text color
+        //     ),
+        //   ),
+        // );
+      },
+    );
+  }
+}
+
+
+class BlinkingText1 extends StatefulWidget {
+  final int conflictCount;
+  final TextStyle style;
+  final Color blinkColor;
+  final Color defaultColor;
+
+  const BlinkingText1({
+    Key? key,
+    required this.conflictCount,
+    required this.style,
+    required this.blinkColor,
+    required this.defaultColor,
+  }) : super(key: key);
+
+  @override
+  _BlinkingText1State createState() => _BlinkingText1State();
+}
+
+class _BlinkingText1State extends State<BlinkingText1>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Color?> _colorAnimation;
+  late Animation<Color?> _bgAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1), // Adjust speed of blinking
+    )..repeat(reverse: true); // Reverses between colors
+
+    _colorAnimation = ColorTween(
+      begin: widget.blinkColor,
+      end: widget.defaultColor,
+    ).animate(_controller);
+
+    _bgAnimation = ColorTween(
+      begin: widget.defaultColor,
+      end: widget.blinkColor,
+    ).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          padding: EdgeInsets
+              .symmetric(
+              horizontal:
+              6,
+              vertical:
+              0),
+          decoration:
+          BoxDecoration(
+            color: _bgAnimation.value,
+            borderRadius:
+            BorderRadius
+                .circular(
+                10),
+          ),
+          // decoration: BoxDecoration(
+          //   color: _bgAnimation.value, // Blinking background color
+          //   borderRadius: BorderRadius.circular(10), // Rounded corners
+          // ),
+          // padding: EdgeInsets.fromLTRB(4, 1, 4, 2), // Optional padding
+          child: Text(
+            '${widget.conflictCount}',
+            textAlign: TextAlign.center,
+            style: widget.style.copyWith(
+              color: _colorAnimation.value, // Blinking text color
+            ),
+          ),
+        );
+        //   Container(
+        //   // padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+        //   decoration: BoxDecoration(
+        //     color: _bgAnimation.value, // Blinking background color
+        //     borderRadius: BorderRadius.circular(10), // Rounded corners
+        //   ),
+        //   child: Text(
+        //     '${widget.conflictCount}',
+        //     style: widget.style.copyWith(
+        //       color: _colorAnimation.value, // Blinking text color
+        //     ),
+        //   ),
+        // );
       },
     );
   }

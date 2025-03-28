@@ -18,17 +18,18 @@ class UploadSovProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
-
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
+  bool isInitialLoad = true;
   List<Map<String, dynamic>> geocodingList = [];
 
   void toggleSelection(int index) {
-    geocodingList[index]['isChecked'] = !(geocodingList[index]['isChecked'] ?? false);
+    geocodingList[index]['isChecked'] =
+        !(geocodingList[index]['isChecked'] ?? false);
     notifyListeners(); // Notify only for this change
   }
 
@@ -37,7 +38,9 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   bool _isSubmitLoading = false;
+
   bool get isSubmitLoading => _isSubmitLoading;
+
   set isSubmitLoading(bool value) {
     _isSubmitLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -46,7 +49,9 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   SovUploadModel? _sovUploadModel;
+
   SovUploadModel? get sovUploadModel => _sovUploadModel;
+
   set sovUploadModel(SovUploadModel? value) {
     _sovUploadModel = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -56,10 +61,10 @@ class UploadSovProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> _geocodingList = [];
 
-  
-
   List<Map<String, dynamic>> _duplicateLocations = [];
+
   List<Map<String, dynamic>> get duplicateLocations => _duplicateLocations;
+
   set duplicateLocations(List<Map<String, dynamic>> value) {
     _duplicateLocations = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -68,13 +73,16 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   List<Map<String, dynamic>> _conflictLocations = [];
+
   List<Map<String, dynamic>> get conflictLocations => _conflictLocations;
+
   set conflictLocations(List<Map<String, dynamic>> value) {
     _conflictLocations = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
+
   int locationCount = 0;
   int duplicateCount = 0;
   int conflictCount = 0;
@@ -99,14 +107,16 @@ class UploadSovProvider extends ChangeNotifier {
 
   void updateDuplicate(int index, Map<String, dynamic> updatedDuplicate) {
     if (index >= 0 && index < _duplicateLocations.length) {
-      _duplicateLocations = List.from(_duplicateLocations)..[index] = updatedDuplicate;
+      _duplicateLocations = List.from(_duplicateLocations)
+        ..[index] = updatedDuplicate;
       notifyListeners();
     }
   }
 
   void updateConflict(int index, Map<String, dynamic> updatedConflict) {
     if (index >= 0 && index < _conflictLocations.length) {
-      _conflictLocations = List.from(_conflictLocations)..[index] = updatedConflict;
+      _conflictLocations = List.from(_conflictLocations)
+        ..[index] = updatedConflict;
       notifyListeners();
     }
   }
@@ -198,8 +208,12 @@ class UploadSovProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> submitSovHeadersAccounts(BuildContext context, String tempId,
-      String docUrl, List<Map<String, dynamic>> fields) async {
+  Future<void> submitSovHeadersAccounts(
+      BuildContext context,
+      String tempId,
+      String docUrl,
+      List<Map<String, dynamic>> fields,
+      String subAccountName) async {
     try {
       bool hasUnmappedFields =
           fields.any((field) => field['status'] == 'Unmapped');
@@ -241,6 +255,7 @@ class UploadSovProvider extends ChangeNotifier {
           builder: (context) => LocationDataScreen(
             processId: response['process_id'] ?? "",
             tempId: tempId,
+            subAccountName: subAccountName,
           ),
         ));
       } else {
@@ -259,12 +274,12 @@ class UploadSovProvider extends ChangeNotifier {
 
   Future<void> submitSovHeadersSubAccounts(
       BuildContext context,
-      String subAccountName,
       String tempId,
       String docUrl,
       List<Map<String, dynamic>> fields,
       String accountId,
       String accountName,
+      String subAccountName,
       String subAccountId) async {
     try {
       bool hasUnmappedFields =
@@ -308,11 +323,11 @@ class UploadSovProvider extends ChangeNotifier {
       if (response['message'] != null) {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => LocationDataScreen(
-            subAccountName: subAccountName,
             processId: response['process_id'] ?? "",
             tempId: tempId,
             accountId: accountId,
             accountName: accountName,
+            subAccountName: subAccountName,
             subAccountId: subAccountId,
           ),
         ));
@@ -334,7 +349,7 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context, String processId) async {
     try {
       isLoading = true;
-
+notifyListeners();
       ApiService apiService =
           ApiService(AppConstant.FETCH_LOCATIONS_DUPLICATION_CHECK);
       String url = '/$processId';
@@ -342,10 +357,13 @@ class UploadSovProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
       List<dynamic> data = response['result'] ?? [];
+      print("api locations length: ${data.length}");
       geocodingList = data.map((item) {
         return {
           'isChecked': false,
-          'formatted_address': item['formatted_address'] ?? 'No address available',
+          ''
+              'formatted_address':
+              item['formatted_address'] ?? 'No address available',
           'line_no': item['line_no'] ?? '',
           'city': item['property City'] ?? '',
           'location_name': item['Location Name'] ?? '',
@@ -359,9 +377,14 @@ class UploadSovProvider extends ChangeNotifier {
       }).toList();
       // **Update counts in UploadSovProvider**
 
-      locationCount = geocodingList.length;
+      // locationCount = geocodingList.length;
+
+      if (isInitialLoad) {
+        isInitialLoad = false;
+      }
 
       isLoading = false;
+      notifyListeners();
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
       print(e);
@@ -386,7 +409,7 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context, String processId) async {
     try {
       isLoading = true;
-
+ notifyListeners();
       ApiService apiService =
           ApiService(AppConstant.FETCH_LOCATION_DUPLICATIONS);
       String url = '/$processId';
@@ -398,15 +421,30 @@ class UploadSovProvider extends ChangeNotifier {
         return {
           'formatted_address': item['formatted_address'],
           'id': item['id'],
-          'top_duplicate': item['duplicates']?.isNotEmpty == true
-              ? item['duplicates'][0] // Pick the first duplicate
-              : null
+          'line_no': item['line_no'] ?? '',
+          'city': item['property City'] ?? '',
+          'location_name': item['Location Name'] ?? '',
+          'state': item['State'] ?? '',
+          'country': item['Country'] ?? '',
+          'duplicates': item['duplicates'] ?? [],
+          'is_duplicate': item['is_duplicate'] ?? false,
+          'type': item['type'] ?? '',
+          // 'duplicates':item['duplicates']?.isNotEmpty == true
+          //     ? [item['duplicates'][0]] // Pick the first duplicate
+          //     : null
         };
       }).toList();
+      print(duplicateLocations.toString());
+      print("duplicateLocations.toString()");
       // **Update duplicate count**
       duplicateCount = duplicateLocations.length;
-      locationCount = geocodingList.length;
+      // locationCount = geocodingList.length;
+      if (isInitialLoad) {
+        isInitialLoad = false;
+      }
+
       isLoading = false;
+      notifyListeners();
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
       print(e);
@@ -431,7 +469,7 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context, String processId) async {
     try {
       isLoading = true;
-
+notifyListeners();
       ApiService apiService = ApiService(AppConstant.FETCH_LOCATION_CONFLICTS);
       String url = '/$processId';
 
@@ -446,7 +484,11 @@ class UploadSovProvider extends ChangeNotifier {
         };
       }).toList();
       conflictCount = conflictLocations.length;
+      if (isInitialLoad) {
+        isInitialLoad = false;
+      }
       isLoading = false;
+      notifyListeners();
       return response ?? {};
     } on BackendException catch (e, stackTrace) {
       print(e);
@@ -486,8 +528,9 @@ class UploadSovProvider extends ChangeNotifier {
           'unique_object_id': row['id'],
           'process_id': processId,
           'is_duplicate': false,
-          'location_id': row['top_duplicate']?['location_id'] ?? "",
+          'location_id': row['duplicates'][0]?['location_id'] ?? "",
         };
+
       }).toList();
       //
       // // Log the request body for debugging
@@ -578,8 +621,8 @@ class UploadSovProvider extends ChangeNotifier {
     try {
       isLoading = true;
 
-      ApiService apiService =
-          ApiService(AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/${processId.toString()}');
+      ApiService apiService = ApiService(
+          AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/${processId.toString()}');
       String url = '';
       print(AppConstant.CANCEL_SOV_UPLOAD_PROCESS + '/${processId.toString()}');
 
@@ -606,14 +649,24 @@ class UploadSovProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> submitLocationsAccounts(BuildContext context, String tempId,
-      List<Map<String, dynamic>> locationsToSubmit, String formatType,
-
-      String accountId,String subAccountId
-      ) async {
+  Future<bool> submitLocationsAccounts(
+      BuildContext context,
+      String tempId,
+      List<Map<String, dynamic>> locationsToSubmit,
+      List<Map<String, dynamic>> duplicationToSubmit,
+      String formatType,
+      String accountId,
+      String subAccountId) async {
     try {
       isSubmitLoading = true;
       final formattedLocations = locationsToSubmit.map((location) {
+        final fields = location['fields'] as List<dynamic>;
+        final formattedFields = fields.map((field) {
+          return MapEntry(field['key'], field['value'].toString());
+        }).toList();
+        return Map.fromEntries(formattedFields);
+      }).toList();
+      final formattedDuplication = duplicationToSubmit.map((location) {
         final fields = location['fields'] as List<dynamic>;
         final formattedFields = fields.map((field) {
           return MapEntry(field['key'], field['value'].toString());
@@ -625,7 +678,9 @@ class UploadSovProvider extends ChangeNotifier {
         'data': {
           'temp_id': tempId,
           'locations': formattedLocations,
+          'duplicates': formattedDuplication,
           'formatType': formatType,
+
         }
       };
 
@@ -644,12 +699,9 @@ class UploadSovProvider extends ChangeNotifier {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) =>
-                  ProcessMonitoringScreen(
+              builder: (context) => ProcessMonitoringScreen(
                     accountId: accountId,
                     subAccountId: subAccountId,
-
-
                   )), // Navigate to AccountsScreen
         );
         return true; // Indicate success
@@ -674,9 +726,13 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context,
       String tempId,
       List<Map<String, dynamic>> locationsToSubmit,
+      List<Map<String, dynamic>> duplicationToSubmit,
       String formatType,
       String accountId,
-      String accountName) async {
+      String accountName,
+
+String subAccountId
+      ) async {
     try {
       isSubmitLoading = true;
       /* final formattedLocations = locationsToSubmit.map((location) {
@@ -689,9 +745,13 @@ class UploadSovProvider extends ChangeNotifier {
 
       final body = {
         'data': {
+          'account_id': accountId,
           'temp_id': tempId,
           'locations': locationsToSubmit,
+          'duplicates': duplicationToSubmit,
           'formatType': formatType,
+          'sub_account_id': subAccountId,
+
         }
       };
 
@@ -744,18 +804,20 @@ class UploadSovProvider extends ChangeNotifier {
       String state) async {
     try {
       if (state.toLowerCase() == 'upload') {
+        print(subAccountName);
+        print("subAccountName");
         Navigator.push(
             context,
             MaterialPageRoute(
                 builder: (_) => MappingScreen(
-                      tempId: tempProcessId,
-                      accountId: accountId,
-                      subAccountId: subAccountId,
-                      accountName: accountName,
-                  subAccountName: subAccountName
-                    )));
+                    tempId: tempProcessId,
+                    accountId: accountId,
+                    subAccountId: subAccountId,
+                    accountName: accountName,
+                    subAccountName: subAccountName)));
       } else {
-        String processId = await SharedPreferenceService.getSovUploadProcessId()??"";
+        String processId =
+            await SharedPreferenceService.getSovUploadProcessId() ?? "";
         print("Process ID: $processId");
         Navigator.push(
           context,
@@ -788,18 +850,64 @@ class UploadSovProvider extends ChangeNotifier {
     }
   }
 
-  List<Map<String, dynamic>> _getSelectedLocations() {
-    //if nothing is checked then return all locations else return only checked locations
+  // List<Map<String, dynamic>> _getSelectedLocations() {
+  //   //if nothing is checked then return all locations else return only checked locations
+  //   if (geocodingList.every((element) => element['isChecked'] == false)) {
+  //     // geocoding + duplicate + conflict
+  //     return geocodingList + duplicateLocations + conflictLocations;
+  //   } else {
+  //     return geocodingList
+  //         .where((element) => element['isChecked'] == true)
+  //         .toList();
+  //   }
+  // }
+
+  List<Map<String, dynamic>> _getSelectedDuplications() {
+    // If nothing is checked, return all duplicate locations
+    if (duplicateLocations.every((element) => element['isChecked'] == false)) {
+      return duplicateLocations;
+    } else {
+      // Return only the checked duplicate locations
+      return duplicateLocations
+          .where((element) => element['isChecked'] == true)
+          .toList();
+    }
+  }
+  List<Map<String, dynamic>> _getSelectedGeocodingLocations() {
     if (geocodingList.every((element) => element['isChecked'] == false)) {
-      // geocoding + duplicate + conflict
-      return geocodingList + duplicateLocations + conflictLocations;
+      return geocodingList;
     } else {
       return geocodingList.where((element) => element['isChecked'] == true).toList();
     }
   }
 
-  Future<void> commitSelectedLocations(BuildContext context, String accountId, String accountName, String tempId,String subAccountId) async {
-    List<Map<String, dynamic>> selectedLocations = _getSelectedLocations();
+  // List<Map<String, dynamic>> _getSelectedDuplications() {
+  //   if (duplicateLocations.every((element) => element['isChecked'] == false)) {
+  //     return duplicateLocations;
+  //   } else {
+  //     return duplicateLocations.where((element) => element['isChecked'] == true).toList();
+  //   }
+  // }
+
+  List<Map<String, dynamic>> _getSelectedConflictLocations() {
+    if (conflictLocations.every((element) => element['isChecked'] == false)) {
+      return conflictLocations;
+    } else {
+      return conflictLocations.where((element) => element['isChecked'] == true).toList();
+    }
+  }
+
+  Future<void> commitSelectedLocations(BuildContext context, String accountId,
+      String accountName, String tempId, String subAccountId) async {
+    List<Map<String, dynamic>> selectedLocations = _getSelectedGeocodingLocations();
+
+    print(selectedLocations.length.toString());
+    print(duplicateLocations.length.toString());
+    print("selectedLocations.length.toString()");
+    print(conflictLocations.length.toString());
+    print(conflictLocations.length.toString());
+
+
     /* if (selectedLocations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -808,24 +916,45 @@ class UploadSovProvider extends ChangeNotifier {
       );
       return;
     }*/
-    await _submitLocations(context, selectedLocations, "use_sov_data", tempId, accountId, accountName,subAccountId);
+    await _submitLocations(context,geocodingList,duplicateLocations, "use_sov_data", tempId,
+        accountId, accountName, subAccountId);
   }
 
-  void _commitAllLocations(BuildContext context, String accountId, String accountName, String tempId) {
-    _submitLocations(context, geocodingList + duplicateLocations + conflictLocations, "refresh_all_data", tempId, accountId, accountName,'');
+  void _commitAllLocations(BuildContext context, String accountId,
+      String accountName, String tempId) {
+    _submitLocations(
+        context,
+        geocodingList,
+         duplicateLocations ,
+        "refresh_all_data",
+        tempId,
+        accountId,
+        accountName,
+        '');
   }
 
-  Future<void> _submitLocations(BuildContext context, List<Map<String, dynamic>> locationsToSubmit, String formatType, String tempId, String accountId, String accountName,String subAccountId) async {
-
-    if(accountId.isNotEmpty) {
-      await submitLocationsSubAccounts(context, tempId, locationsToSubmit, formatType, accountId, accountName);
+  Future<void> _submitLocations(
+      BuildContext context,
+      List<Map<String, dynamic>> locationsToSubmit,
+      List<Map<String, dynamic>> duplicationToSubmit,
+      String formatType,
+      String tempId,
+      String accountId,
+      String accountName,
+      String subAccountId) async {
+    if (accountId.isNotEmpty) {
+      await submitLocationsSubAccounts(context, tempId, locationsToSubmit,duplicationToSubmit,
+          formatType, accountId, accountName,subAccountId);
       return;
     } else {
       await submitLocationsAccounts(
-        context, tempId, locationsToSubmit, formatType,
-          accountId,
+        context,
+        tempId,
+        locationsToSubmit,
+        duplicationToSubmit,
+        formatType,
+        accountId,
         subAccountId,
-
       );
     }
   }

@@ -68,7 +68,7 @@ class MyLocationList extends StatefulWidget {
     this.accountID,
     this.subAccountID,
     this.accountName = '',
-    this.subAccountName= '',
+    this.subAccountName = '',
     this.initialProcessId,
     this.initialSubProcessId,
   });
@@ -79,6 +79,7 @@ class MyLocationList extends StatefulWidget {
 
 class _MyLocationListState extends State<MyLocationList>
     with TickerProviderStateMixin {
+  Timer? _refreshTimer;
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   TabController? _masterTabController;
@@ -137,7 +138,6 @@ class _MyLocationListState extends State<MyLocationList>
   TextEditingController tagController = TextEditingController();
 
   bool isUploadInProgress = false;
-  late Timer _refreshTimer;
 
   void debounce(VoidCallback callback,
       {Duration duration = const Duration(seconds: 1)}) {
@@ -147,15 +147,13 @@ class _MyLocationListState extends State<MyLocationList>
     deBouncer = Timer(duration, callback);
   }
 
+  bool isProcessing = false;
+
   @override
   void initState() {
     super.initState();
-    // Auto refresh every 15 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (mounted) {
-        _refreshData(); // Call refresh function
-      }
-    });
+    _getData();
+    _startRefreshTimer();
     _getSovUploadStatus();
     // Initially clear all filters
     Provider.of<MyLocationListProvider>(context, listen: false)
@@ -234,7 +232,6 @@ class _MyLocationListState extends State<MyLocationList>
       }
       setState(() {});
     });
-    _getData();
 
     _getMaintainancePeriod();
   }
@@ -272,14 +269,44 @@ class _MyLocationListState extends State<MyLocationList>
             .locationHits;
       }
     });
-    _refreshTimer.cancel();
+    _refreshTimer!.cancel();
+
     super.dispose();
+  }
+
+  // void _startRefreshTimer() {
+  //   // Cancel any existing timer before starting a new one
+  //
+  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+  //     if (!mounted) {
+  //       timer.cancel();
+  //       return;
+  //     }
+  //
+  //     var provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //     if (provider.isProcessing) {
+  //       _refreshData(); // Call refresh function only if processing is ongoing
+  //     } else {
+  //       timer.cancel(); // Stop the timer if processing is not happening
+  //     }
+  //   });
+  // }
+
+  void _startRefreshTimer() {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+      if (mounted && provider.isProcessing) {
+        _refreshData();
+      }
+    });
   }
 
   Future<void> _refreshData() async {
     if (!mounted) return; // Ensure the widget is still in the tree
 
-    final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
 
     locationListProvider.certifiedPage = 1;
 
@@ -317,8 +344,6 @@ class _MyLocationListState extends State<MyLocationList>
       setState(() {}); // Trigger UI update after fetching data
     }
   }
-
-
 
   _getMaintainancePeriod() async {
     isMaintenance = (await SharedPreferenceService.getScheduleInProgress())!;
@@ -515,178 +540,148 @@ class _MyLocationListState extends State<MyLocationList>
                   },
                 ),
                 drawer: CustomDrawer(),
-                floatingActionButton: Container(
-                  margin: EdgeInsets.only(bottom: 42.0),
-                  child: SpeedDial(
-                    animatedIcon: AnimatedIcons.menu_close,
-                    animatedIconTheme: IconThemeData(size: 22.0),
-                    backgroundColor: AppColors.primaryMain,
-                    foregroundColor:
-                        themeProvider.getTheme.colorScheme.onPrimary,
-                    children: [
-                      if ((selectedMasterTab) == 0)
-                        SpeedDialChild(
-                            child: Icon(Icons.add),
-                            backgroundColor: AppColors.primaryMain,
-                            foregroundColor:
-                                themeProvider.getTheme.colorScheme.onPrimary,
-                            label: 'Add Location',
-                            labelStyle: typography.Body1,
-                            onTap: () async {
-                              final result = await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => AddLocationScreen(
-                                    accountId: widget.accountID!,
-                                    subAccountId: widget.subAccountID!,
-                                    sovId: "",
-                                    accountName: widget.accountName,
-                                    subAccountName: widget.subAccountName,
-                                  ),
-                                ),
-                              );
-
-                              // Check if result is returned from AddLocationScreen
-                              if (result != null && result == true) {
-                                _getData(); // Refresh data if needed
-
-                                // Fetch updated location list without full reload
-                                await Provider.of<MyLocationListProvider>(
-                                        context,
-                                        listen: false)
-                                    .fetchLocationList(
-                                  context,
-                                  "",
-                                  1,
-                                  40,
-                                  widget.accountID,
-                                  widget.subAccountID,
-                                  widget.initialProcessId,
-                                  widget.initialSubProcessId,
-                                );
-
-                                setState(() {}); // Update UI
-                              }
-                            }
-
-                            // onTap: () {
-                            //   Navigator.of(context)
-                            //       .push(MaterialPageRoute(
-                            //     builder: (_) => AddLocationScreen(
-                            //       accountId: widget.accountID!,
-                            //       subAccountId: widget.subAccountID!,
-                            //       sovId: "",
-                            //       accountName: widget.accountName,
-                            //       subAccountName: widget.subAccountName,
-                            //     ),
-                            //   ))
-                            //       .then((value) {
-                            //     if (value != null) {
-                            //       _getData();
-                            //       if (value) {
-                            //         Provider.of<MyLocationListProvider>(context,
-                            //                 listen: false)
-                            //             .fetchLocationList(
-                            //               context,
-                            //               "",
-                            //               1,
-                            //               40,
-                            //               widget.accountID,
-                            //               widget.subAccountID,
-                            //               widget.initialProcessId,
-                            //               widget.initialSubProcessId,
-                            //             )
-                            //             .then((value) => setState(() {}));
-                            //       }
-                            //     }
-                            //   });
-                            // },
-                            ),
-                      SpeedDialChild(
-                        child: Icon(Icons.upload),
+                floatingActionButton: Builder(
+                  builder: (context) {
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 42.0),
+                      child: SpeedDial(
+                        animatedIcon: AnimatedIcons.menu_close,
+                        animatedIconTheme: IconThemeData(size: 22.0),
                         backgroundColor: AppColors.primaryMain,
                         foregroundColor:
                             themeProvider.getTheme.colorScheme.onPrimary,
-                        label: isUploadInProgress
-                            ? 'Continue'
-                            : 'Import Locations',
-                        labelStyle: typography.Body1,
-                        onTap: () async {
-                          tagController.text = "";
-                          if (isMaintenance.toString() == 'in_progress') {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'SOV upload is disabled during maintenance period.'),
-                              ),
-                            );
-                          } else if (isUploadInProgress) {
-                            String tempProcessId = await SharedPreferenceService
-                                    .getSovUploadTempId() ??
-                                "";
-                            String state = await SharedPreferenceService
-                                    .getSovUploadState() ??
-                                "";
-                            // Call API to get get necessary data and navigate to the respective screen
-                            Provider.of<UploadSovProvider>(context,
-                                    listen: false)
-                                .fetchSovUploadData(
+                        children: [
+                          if ((selectedMasterTab) == 0)
+                            SpeedDialChild(
+                              child: Icon(Icons.add),
+                              backgroundColor: AppColors.primaryMain,
+                              foregroundColor:
+                                  themeProvider.getTheme.colorScheme.onPrimary,
+                              label: 'Add Location',
+                              labelStyle: typography.Body1,
+                              onTap: () async {
+                                final result = await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => AddLocationScreen(
+                                      accountId: widget.accountID!,
+                                      subAccountId: widget.subAccountID!,
+                                      sovId: "",
+                                      accountName: widget.accountName,
+                                      subAccountName: widget.subAccountName,
+                                    ),
+                                  ),
+                                );
+
+                                // Fetch data only if the result is valid
+                                if (result == true) {
+                                  await _getData(); // Call API when tapped
+                                  await Provider.of<MyLocationListProvider>(context,
+                                          listen: false)
+                                      .fetchLocationList(
                                     context,
-                                    widget.accountID!,
-                                    widget.accountName,
-                                    widget.subAccountName,
-                                    widget.subAccountID!,
-                                    tempProcessId,
-                                    state);
-                          } else {
-                            _showUploadBottomSheet(
-                                widget.accountID!, widget.subAccountID!, "");
-                          }
-                        },
-                      ),
-                      if ((_masterTabController?.index ?? 0) == 0)
-                        SpeedDialChild(
-                          child: Icon(Icons.download),
-                          backgroundColor: trialStatus.isNotEmpty
-                              ? Colors.grey
-                              : AppColors.primaryMain,
-                          foregroundColor:
-                              themeProvider.getTheme.colorScheme.onPrimary,
-                          label: 'Export Locations',
-                          labelStyle: typography.Body1,
-                          onTap: trialStatus.isNotEmpty
-                              ? null
-                              : () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return ExportDialog(
-                                        accountId: widget.accountID!,
-                                        subAccountId: widget.subAccountID!,
-                                        sovId: "",
-                                        locationId: selectedMainTab == 0
-                                            ? Provider.of<
-                                                        MyLocationListProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .myLocationList
-                                                .map((location) =>
-                                                    location.id ?? "")
-                                                .toList()
-                                            : Provider.of<
-                                                        MyLocationListProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .certifiedLocationList
-                                                .map((location) =>
-                                                    location.id ?? "")
-                                                .toList(),
+                                    "",
+                                    1,
+                                    40,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
+                                  );
+                                  setState(() {}); // Refresh UI
+                                }
+                              },
+                            ),
+                          SpeedDialChild(
+                            child: Icon(Icons.upload),
+                            backgroundColor: AppColors.primaryMain,
+                            foregroundColor:
+                                themeProvider.getTheme.colorScheme.onPrimary,
+                            label: isUploadInProgress
+                                ? 'Continue'
+                                : 'Import Locations',
+                            labelStyle: typography.Body1,
+                            onTap: () async {
+                              tagController.text = "";
+                              if (isMaintenance.toString() == 'in_progress') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'SOV upload is disabled during maintenance period.')),
+                                );
+                              } else if (isUploadInProgress) {
+                                String tempProcessId = await SharedPreferenceService
+                                        .getSovUploadTempId() ??
+                                    "";
+                                String state = await SharedPreferenceService
+                                        .getSovUploadState() ??
+                                    "";
+
+                                // Fetch API data when tapped
+                                await Provider.of<UploadSovProvider>(context,
+                                        listen: false)
+                                    .fetchSovUploadData(
+                                        context,
+                                        widget.accountID!,
+                                        widget.accountName,
+                                        widget.subAccountName,
+                                        widget.subAccountID!,
+                                        tempProcessId,
+                                        state);
+                              } else {
+                                _showUploadBottomSheet(
+                                    widget.accountID!, widget.subAccountID!, "");
+                              }
+                            },
+                          ),
+                          if ((_masterTabController?.index ?? 0) == 0)
+                            SpeedDialChild(
+                              child: Icon(Icons.download),
+                              backgroundColor: trialStatus.isNotEmpty
+                                  ? Colors.grey
+                                  : AppColors.primaryMain,
+                              foregroundColor:
+                                  themeProvider.getTheme.colorScheme.onPrimary,
+                              label: 'Export Locations',
+                              labelStyle: typography.Body1,
+                              onTap: trialStatus.isNotEmpty
+                                  ? null
+                                  : () async {
+                                      await _getData(); // API call only when tapped
+                                      setState(() {});
+
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return ExportDialog(
+                                            accountId: widget.accountID!,
+                                            subAccountId: widget.subAccountID!,
+                                            sovId: "",
+                                            locationId: selectedMainTab == 0
+                                                ? Provider.of<
+                                                            MyLocationListProvider>(
+                                                        context,
+                                                        listen: false)
+                                                    .myLocationList
+                                                    .map((location) =>
+                                                        location.id ?? "")
+                                                    .toList()
+                                                : Provider.of<
+                                                            MyLocationListProvider>(
+                                                        context,
+                                                        listen: false)
+                                                    .certifiedLocationList
+                                                    .map((location) =>
+                                                        location.id ?? "")
+                                                    .toList(),
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                        ),
-                    ],
-                  ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }
                 ),
                 body: Stack(
                   children: [
@@ -725,14 +720,7 @@ class _MyLocationListState extends State<MyLocationList>
                                               _getLiveUI(jobMonitoringProvider),
                                         );
                                       }),
-                                      // Consumer<JobMonitoringProvider>(
-                                      //     builder: (context,
-                                      //         jobMonitoringProvider,
-                                      //         child) {
-                                      //   return Container(
-                                      //     child:Icon(Icons.info),
-                                      //   );
-                                      // }),
+
                                       Consumer<MyLocationListProvider>(
                                         builder: (context,
                                             myLocationListProvider, child) {
@@ -1035,10 +1023,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                       text: 'SOVs',
                                                     ),
                                                     Tab(text: 'Shared'),
-                                                    // Tab(
-                                                    //     text:
-                                                    //         'Access Requests'),
-                                                    // Tab(text: 'Data'),
                                                     if (userProfileProvider
                                                             .trialInfo['status']
                                                             ?.isEmpty ??
@@ -1167,7 +1151,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       child: sovBody(typography),
                                     ),
                                     // _getComingSoonUI(),
-                                    _getComingSoonUI(),
+                                    _getSharedComingSoonUI("shared"),
                                     // DataTab(
                                     //   accountId: widget.accountID,
                                     //   subaccountId: widget.subAccountID,
@@ -1800,7 +1784,8 @@ class _MyLocationListState extends State<MyLocationList>
         SizedBox(height: CustomSpacing.two),
         Expanded(
           child: TabBarView(
-            physics: NeverScrollableScrollPhysics(), // Prevents scrolling in main TabBarView
+            physics: NeverScrollableScrollPhysics(),
+            // Prevents scrolling in main TabBarView
             controller: _mainTabController,
             children: [
               Column(
@@ -1815,13 +1800,16 @@ class _MyLocationListState extends State<MyLocationList>
                             child: InkWell(
                               onTap: () {
                                 _tabController?.animateTo(0);
+                                // _fetchTabData(0);
                               },
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Tab(
-                                    text: LanguageService.getTranslated(context,
-                                        "locationlist_app_connections_tab_all"),
+                                  Text(
+                                    LanguageService.getTranslated(
+                                      context,
+                                      "locationlist_app_connections_tab_all",
+                                    ),
                                   ),
                                   SizedBox(width: CustomSpacing.two),
                                   SizedBox(
@@ -1829,10 +1817,14 @@ class _MyLocationListState extends State<MyLocationList>
                                     child: Chip(
                                       labelPadding: EdgeInsets.all(0),
                                       materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                          MaterialTapTargetSize.shrinkWrap,
                                       label: Text(
-                                        locationListProvider.locationHits.toString(),
-                                        style: typography.BottomNavigationActiveLabel
+                                        locationListProvider.isLoading
+                                            ? "0" // Show 0 while loading
+                                            : locationListProvider.locationHits
+                                                .toString(),
+                                        style: typography
+                                                .BottomNavigationActiveLabel
                                             .copyWith(height: -0.6),
                                       ),
                                     ),
@@ -1841,33 +1833,41 @@ class _MyLocationListState extends State<MyLocationList>
                               ),
                             ),
                           ),
-                          InkWell(
-                            onTap: () {
-                              _tabController?.animateTo(1);
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Tab(
-                                  text: LanguageService.getTranslated(context,
-                                      "locationlist_app_connections_tab_certified"),
-                                ),
-                                SizedBox(width: CustomSpacing.two),
-                                SizedBox(
-                                  height: 25,
-                                  child: Chip(
-                                    labelPadding: EdgeInsets.all(0),
-                                    materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                    label: Text(
-                                      locationListProvider.certifiedLocationHits
-                                          .toString(),
-                                      style: typography.BottomNavigationActiveLabel
-                                          .copyWith(height: -0.6),
+                          Tab(
+                            child: InkWell(
+                              onTap: () {
+                                _tabController?.animateTo(1);
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    LanguageService.getTranslated(
+                                      context,
+                                      "locationlist_app_connections_tab_certified",
                                     ),
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: CustomSpacing.two),
+                                  SizedBox(
+                                    height: 25,
+                                    child: Chip(
+                                      labelPadding: EdgeInsets.all(0),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      label: Text(
+                                        locationListProvider.isLoading
+                                            ? "0" // Show 0 while loading
+                                            : locationListProvider
+                                                .certifiedLocationHits
+                                                .toString(),
+                                        style: typography
+                                                .BottomNavigationActiveLabel
+                                            .copyWith(height: -0.6),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -1878,7 +1878,8 @@ class _MyLocationListState extends State<MyLocationList>
                   Expanded(
                     child: TabBarView(
                       controller: _tabController,
-                      physics: NeverScrollableScrollPhysics(), // Prevents scrolling in nested TabBarView
+                      physics: NeverScrollableScrollPhysics(),
+                      // Prevents scrolling in nested TabBarView
                       children: [
                         _getLocationListAllUI(),
                         _getLocationListCertifiedUI(),
@@ -1887,10 +1888,13 @@ class _MyLocationListState extends State<MyLocationList>
                   ),
                 ],
               ),
+
               // Map View
               Consumer<MyLocationListProvider>(
                 builder: (context, locationListProvider, child) {
-                  return LocationTable(
+                  return locationListProvider.isLoading ? Center(child: CircularProgressIndicator(),):
+
+                    LocationTable(
                       locations: locationListProvider.myLocationList);
                 },
               ),
@@ -1901,7 +1905,6 @@ class _MyLocationListState extends State<MyLocationList>
             ],
           ),
         ),
-
       ],
     );
   }
@@ -1920,30 +1923,8 @@ class _MyLocationListState extends State<MyLocationList>
         .orderBy('created_at', descending: true)
         .limit(1)
         .snapshots()
-        .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
-
-    // if (provider.isSuperAdmin) {
-    //   processStream = FirebaseFirestore.instance
-    //       .collection('processes')
-    //       .where('process_type', isEqualTo: 'hazard')
-    //       .orderBy('created_at', descending: true)
-    //       .limit(1)
-    //       .snapshots()
-    //       .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
-    // }
-    // else if (provider.docIds.isNotEmpty) {
-    //   processStream = FirebaseFirestore.instance
-    //       .collection('processes')
-    //       .where('company_id', whereIn: provider.docIds) // Filter by company_id
-    //       .where('process_type',
-    //           isEqualTo: 'hazard') // Skip documents with heatmap
-    //       .orderBy('created_at', descending: true)
-    //       .limit(1)
-    //       .snapshots()
-    //       .asBroadcastStream();
-    // } else {
-    //   processStream = Stream.empty();
-    // }
+        .distinct()
+        .asBroadcastStream();
 
     // Cache the subaccount stream
     final subaccountStream = FirebaseFirestore.instance
@@ -1959,7 +1940,7 @@ class _MyLocationListState extends State<MyLocationList>
         Map<String, dynamic>>(
       subaccountStream,
       processStream,
-      (heatmapSnapshot, processSnapshot) {
+          (heatmapSnapshot, processSnapshot) {
         return {
           'heatmapData': heatmapSnapshot.data(),
           'processData': processSnapshot.docs.isNotEmpty
@@ -1967,8 +1948,7 @@ class _MyLocationListState extends State<MyLocationList>
               : null,
         };
       },
-    ).debounceTime(
-        const Duration(milliseconds: 500)); // Add debounce to stabilize updates
+    ).debounceTime(const Duration(milliseconds: 500));
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: combinedStream,
@@ -1990,10 +1970,39 @@ class _MyLocationListState extends State<MyLocationList>
         var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
         var processStatus = data['processData']?['status'] ?? 'completed';
 
-        print('Heatmap Status: $heatmapStatus');
+        // Extract ongoing processes and ensure it's a list
+        List<dynamic> onGoingProcesses = data['on_going_processes'] is List
+            ? data['on_going_processes']
+            : [];
 
-        var provider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
+        print('Ongoing Processes: $onGoingProcesses');
+
+        // Update Provider's isProcessing state
+        bool isCurrentlyProcessing = processStatus.toLowerCase() == 'processing';
+        String newProcessStatus = data['processData']?['status'] ?? 'completed';
+
+        // Get the provider instance
+        var jobProvider = Provider.of<JobMonitoringProvider>(context, listen: false);
+
+        // Check if status has changed
+        if (jobProvider.processStatus != newProcessStatus) {
+          jobProvider.updateProcessStatus(newProcessStatus);
+
+          // Refresh when status changes
+          // _getData();
+
+          if (isCurrentlyProcessing) {
+            _startRefreshTimer(); // Start timer when processing starts
+          } else {
+            _getData();
+            _refreshTimer?.cancel(); // Stop timer when processing stops
+          }
+        }
+
+        print('Heatmap Status: $heatmapStatus');
+        print('Process Status: $processStatus');
+
+        var provider = Provider.of<MyLocationListProvider>(context, listen: false);
         provider.isHeatMapGeneratingLive =
             heatmapStatus.toString().toLowerCase() == 'initiated';
 
@@ -2007,26 +2016,18 @@ class _MyLocationListState extends State<MyLocationList>
           duration: const Duration(milliseconds: 300),
           child: Column(
             key: ValueKey('$processStatus-$heatmapStatus'),
-            // Add key for proper animation
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (processStatus.toString().toLowerCase() == 'processing')
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ProcessMonitoringScreen(
-                                      accountId: widget.accountID,
-                                      subAccountId: widget.subAccountID,
-                                    )))
-                        // Navigator.push(MaterialPageRoute(
-                        //         builder: (_) => ProcessMonitoringScreen(
-                        //           accountId: widget.accountID,
-                        //           subAccountId: widget.subAccountID,
-                        //         ),
-                        //       ))
-
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ProcessMonitoringScreen(
+                              accountId: widget.accountID,
+                              subAccountId: widget.subAccountID,
+                            )))
                         .then((value) => _getData());
                   },
                   child: Padding(
@@ -2047,21 +2048,13 @@ class _MyLocationListState extends State<MyLocationList>
                                 const SizedBox(width: 8.0),
                                 Text(
                                   'Processing '
-                                  '${percentage.toStringAsFixed(0)}%',
+                                      '${percentage.toStringAsFixed(0)}%',
                                   style: typography.Caption.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                // Text(
-                                //   'Processing $totalCompleted/$totalProcesses',
-                                //   style: typography.Caption.copyWith(
-                                //       fontWeight: FontWeight.w500),
-                                // ),
                               ],
-                            ), /*
-                            CircularProgressIndicator(
-                              value: percentage / 100,
-                            ),*/
+                            ),
                           ],
                         ),
                       ],
@@ -2102,6 +2095,216 @@ class _MyLocationListState extends State<MyLocationList>
       },
     );
   }
+
+  // Widget _getLiveUI(JobMonitoringProvider provider) {
+  //   var typography = CustomTypography(context);
+  //
+  //   // Define the secondary stream with proper caching
+  //   Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
+  //   print('docids: ${provider.docIds}');
+  //   processStream = FirebaseFirestore.instance
+  //       .collection('processes')
+  //       .where('location_data.account_id', isEqualTo: widget.accountID)
+  //       .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
+  //       .where('process_type', isEqualTo: 'hazard')
+  //       .orderBy('created_at', descending: true)
+  //       .limit(1)
+  //       .snapshots()
+  //       .distinct()
+  //       .asBroadcastStream(); // Convert to broadcast stream to prevent multiple subscriptions
+  //
+  //   // Cache the subaccount stream
+  //   final subaccountStream = FirebaseFirestore.instance
+  //       .collection('subaccount')
+  //       .doc(widget.subAccountID)
+  //       .snapshots()
+  //       .asBroadcastStream();
+  //
+  //   // Combine streams with debounce to prevent rapid UI updates
+  //   var combinedStream = Rx.combineLatest2<
+  //       DocumentSnapshot<Map<String, dynamic>>,
+  //       QuerySnapshot<Map<String, dynamic>>,
+  //       Map<String, dynamic>>(
+  //     subaccountStream,
+  //     processStream,
+  //     (heatmapSnapshot, processSnapshot) {
+  //       return {
+  //         'heatmapData': heatmapSnapshot.data(),
+  //         'processData': processSnapshot.docs.isNotEmpty
+  //             ? processSnapshot.docs.first.data()
+  //             : null,
+  //       };
+  //     },
+  //   ).debounceTime(
+  //       const Duration(milliseconds: 500)); // Add debounce to stabilize updates
+  //
+  //   return StreamBuilder<Map<String, dynamic>>(
+  //     stream: combinedStream,
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting &&
+  //           !snapshot.hasData) {
+  //         return SizedBox(height: CustomSpacing.six);
+  //       }
+  //
+  //       if (snapshot.hasError) {
+  //         return SizedBox.shrink();
+  //       }
+  //
+  //       if (!snapshot.hasData) {
+  //         return SizedBox(height: CustomSpacing.sixteen);
+  //       }
+  //
+  //       var data = snapshot.data!;
+  //       var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+  //       var processStatus = data['processData']?['status'] ?? 'completed';
+  //
+  //       // Update Provider's isProcessing state
+  //       // Check if processing is ongoing
+  //       bool isCurrentlyProcessing =
+  //           processStatus.toLowerCase() == 'processing';
+  //       String newProcessStatus = data['processData']?['status'] ?? 'completed';
+  //
+  //       // Get the provider instance
+  //       var jobProvider =
+  //           Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //       // Check if status has changed
+  //       // if (jobProvider.processStatus != newProcessStatus) {
+  //       //   jobProvider.updateProcessStatus(newProcessStatus);
+  //       //
+  //       //
+  //       //
+  //       //   if (isCurrentlyProcessing) {
+  //       //     // Refresh when status changes
+  //       //     _getData(); // Start timer when processing starts
+  //       //     Future.microtask(() {
+  //       //       if (mounted) {
+  //       //         setState(() {
+  //       //           isUploadInProgress = false;
+  //       //         });
+  //       //       }
+  //       //     });
+  //       //   } else {
+  //       //     _refreshTimer?.cancel(); // Stop timer when processing stops
+  //       //   }
+  //       // }
+  //
+  //       // // Only update provider if status has changed
+  //       if (jobProvider.isProcessing != isCurrentlyProcessing) {
+  //         // jobProvider.setProcessing(isCurrentlyProcessing);
+  //
+  //         if (isCurrentlyProcessing) {
+  //           _startRefreshTimer();  // Start the timer when processing starts
+  //         } else {
+  //           _refreshTimer?.cancel();  // Stop the timer when processing stops
+  //         }
+  //       }
+  //
+  //       print('Heatmap Status: $heatmapStatus');
+  //       print('Heatmap Status: $processStatus');
+  //
+  //       var provider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       provider.isHeatMapGeneratingLive =
+  //           heatmapStatus.toString().toLowerCase() == 'initiated';
+  //
+  //       // Extract process count and calculate percentage
+  //       int totalCompleted =
+  //           data['processData']?['total_processes_completed'] ?? 0;
+  //       int totalProcesses = data['processData']?['total_processes'] ?? 1;
+  //       double percentage = (totalCompleted / totalProcesses) * 100;
+  //
+  //       return AnimatedSwitcher(
+  //         duration: const Duration(milliseconds: 300),
+  //         child: Column(
+  //           key: ValueKey('$processStatus-$heatmapStatus'),
+  //           // Add key for proper animation
+  //           crossAxisAlignment: CrossAxisAlignment.end,
+  //           children: [
+  //             if (processStatus.toString().toLowerCase() == 'processing')
+  //               GestureDetector(
+  //                 onTap: () {
+  //                   Navigator.push(
+  //                       context,
+  //                       MaterialPageRoute(
+  //                           builder: (context) => ProcessMonitoringScreen(
+  //                                 accountId: widget.accountID,
+  //                                 subAccountId: widget.subAccountID,
+  //                               ))).then((value) => _getData());
+  //                 },
+  //                 child: Padding(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.end,
+  //                     children: [
+  //                       Row(
+  //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                         children: [
+  //                           Row(
+  //                             children: [
+  //                               Lottie.asset(
+  //                                 'assets/lottie/loading.json',
+  //                                 width: 20,
+  //                                 height: 20,
+  //                               ),
+  //                               const SizedBox(width: 8.0),
+  //                               Text(
+  //                                 'Processing '
+  //                                 '${percentage.toStringAsFixed(0)}%',
+  //                                 style: typography.Caption.copyWith(
+  //                                   fontWeight: FontWeight.w500,
+  //                                 ),
+  //                               ),
+  //                               // Text(
+  //                               //   'Processing $totalCompleted/$totalProcesses',
+  //                               //   style: typography.Caption.copyWith(
+  //                               //       fontWeight: FontWeight.w500),
+  //                               // ),
+  //                             ],
+  //                           ), /*
+  //                           CircularProgressIndicator(
+  //                             value: percentage / 100,
+  //                           ),*/
+  //                         ],
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               )
+  //             else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+  //               Row(
+  //                 mainAxisAlignment: MainAxisAlignment.end,
+  //                 children: [
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                     child: Column(
+  //                       children: [
+  //                         Row(
+  //                           children: [
+  //                             Lottie.asset(
+  //                               'assets/lottie/loading.json',
+  //                               width: 20,
+  //                               height: 20,
+  //                             ),
+  //                             const SizedBox(width: 8.0),
+  //                             Text(
+  //                               'Generating Heatmap',
+  //                               style: typography.Caption.copyWith(
+  //                                   fontWeight: FontWeight.w500),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildProcessSummary(Map<String, dynamic>? summaryData) {
     if (summaryData == null || summaryData.isEmpty) {
@@ -2241,7 +2444,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 padding:
                                     const EdgeInsets.fromLTRB(16, 8, 16, 0),
                                 child: Text(
-                                  "Source $vendor",
+                                  "Source: $vendor",
                                   style: typography.Body2.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -2914,6 +3117,37 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
+  _getSharedComingSoonUI(String title) {
+    var typography = CustomTypography(context);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Text(
+                    title == "shared"
+                        ? 'A smarter way to track shared files-Coming Soon! '
+                        : 'A smarter way to track access requests – Coming Soon!',
+                    textAlign: TextAlign.center,
+                    style: typography.H5_Regular),
+                SizedBox(height: 10),
+                Text(
+                    LanguageService.getTranslated(
+                        context, 'coming_soon_subtitle'),
+                    textAlign: TextAlign.center,
+                    style: typography.Body1),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTabIcon(BuildContext context, String iconPath, String label,
       int tabIndex, double iconSize) {
     // Check if TabController exists and whether this tab is selected
@@ -3160,42 +3394,139 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
                         )
                       : RefreshIndicator(
+                          // onRefresh: () async {
+                          //   // Store selected item IDs before refreshing
+                          //   List<String?> selectedItemIds = locationListProvider
+                          //       .selectedLocations
+                          //       .map((item) => item.id)
+                          //       .toList();
+                          //
+                          //   // Clear existing selections before the refresh starts
+                          //   locationListProvider.selectedLocations.clear();
+                          //   locationListProvider
+                          //       .notifyListeners(); // Update UI immediately
+                          //
+                          //   // Refresh data
+                          //   locationListProvider.certifiedPage = 1;
+                          //   await locationListProvider.fetchLocationList(
+                          //     context,
+                          //     locationQuery,
+                          //     1,
+                          //     40,
+                          //     widget.accountID,
+                          //     widget.subAccountID,
+                          //     widget.initialProcessId,
+                          //     widget.initialSubProcessId,
+                          //   );
+                          //
+                          //   await locationListProvider.fetchAllLocationList(
+                          //     context,
+                          //     widget.accountID,
+                          //     widget.subAccountID,
+                          //     processId: widget.initialProcessId,
+                          //     subProcessId: widget.initialSubProcessId,
+                          //   );
+                          //
+                          //   // Restore selection after refresh
+                          //   locationListProvider.selectedLocations.addAll(
+                          //       locationListProvider.myLocationList.where(
+                          //           (item) =>
+                          //               selectedItemIds.contains(item.id)));
+                          //
+                          //   locationListProvider
+                          //       .notifyListeners(); // Ensure UI updates immediately
+                          // },
+
                           onRefresh: () async {
+                            // Store selected item IDs before refreshing
+                            List<String?> selectedItemIds = locationListProvider
+                                .selectedLocations
+                                .map((item) => item.id)
+                                .toList();
+
+                            // Clear existing selections before the refresh starts
+                            locationListProvider.selectedLocations.clear();
+                            locationListProvider.notifyListeners(); // Update UI immediately
+
+                            // Refresh data in parallel
                             locationListProvider.certifiedPage = 1;
-                            // locationListProvider.fetchCertifiedLocationList(
-                            //   context,
-                            //   "",
-                            //   locationListProvider.certifiedPage,
-                            //   40,
-                            //   widget.accountID,
-                            //   widget.subAccountID,
-                            //   widget.initialProcessId,
-                            //   widget.initialSubProcessId,
-                            // );
-                            locationListProvider.fetchLocationList(
-                              context,
-                              locationQuery,
-                              1,
-                              40,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
+                            await Future.wait([
+                              locationListProvider.fetchLocationList(
+                                context,
+                                locationQuery,
+                                1,
+                                40,
+                                widget.accountID,
+                                widget.subAccountID,
+                                widget.initialProcessId,
+                                widget.initialSubProcessId,
+                              ),
+                              locationListProvider.fetchAllLocationList(
+                                context,
+                                widget.accountID,
+                                widget.subAccountID,
+                                processId: widget.initialProcessId,
+                                subProcessId: widget.initialSubProcessId,
+                              ),
+                            ]);
+
+                            // Restore selection after refresh
+                            locationListProvider.selectedLocations.addAll(
+                              locationListProvider.myLocationList.where(
+                                  (item) => selectedItemIds.contains(item.id)),
                             );
-                            locationListProvider.fetchAllLocationList(
-                              context,
-                              widget.accountID,
-                              widget.subAccountID,
-                              processId: widget.initialProcessId,
-                              subProcessId: widget.initialSubProcessId,
-                            );
+
+                            locationListProvider
+                                .notifyListeners(); // Ensure UI updates immediately
                           },
+
+                          // onRefresh: () async {
+                          //   // Store selected item IDs before refreshing
+                          //   List<dynamic> selectedItemIds = locationListProvider
+                          //       .selectedLocations
+                          //       .map((item) => item.id)
+                          //       .toList();
+                          //
+                          //   // Refresh data
+                          //   locationListProvider.certifiedPage = 1;
+                          //   await locationListProvider.fetchLocationList(
+                          //     context,
+                          //     locationQuery,
+                          //     1,
+                          //     40,
+                          //     widget.accountID,
+                          //     widget.subAccountID,
+                          //     widget.initialProcessId,
+                          //     widget.initialSubProcessId,
+                          //   );
+                          //
+                          //   await locationListProvider.fetchAllLocationList(
+                          //     context,
+                          //     widget.accountID,
+                          //     widget.subAccountID,
+                          //     processId: widget.initialProcessId,
+                          //     subProcessId: widget.initialSubProcessId,
+                          //   );
+                          //
+                          //   // Restore selection after refresh
+                          //   locationListProvider.selectedLocations
+                          //       .clear(); // Clear existing selections
+                          //   locationListProvider.selectedLocations.addAll(
+                          //       locationListProvider.myLocationList.where(
+                          //           (item) =>
+                          //               selectedItemIds.contains(item.id)));
+                          //
+                          //   locationListProvider
+                          //       .notifyListeners(); // Notify UI update
+                          // },
                           child: ListView.builder(
                             physics: ClampingScrollPhysics(),
                             shrinkWrap: true,
                             itemCount:
                                 locationListProvider.myLocationList.length,
                             itemBuilder: (context, index) {
+                              var location =
+                                  locationListProvider.myLocationList[index];
                               if (index ==
                                   locationListProvider.myLocationList.length -
                                       1) {
@@ -3263,8 +3594,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                     .finalAddress
                                                     ?.percent ??
                                                 '0'),
-                                        geocodingScore:
-                                        locationListProvider
+                                        geocodingScore: locationListProvider
                                                 .myLocationList[index]
                                                 .finalAddress
                                                 ?.score ??
@@ -3359,6 +3689,10 @@ class _MyLocationListState extends State<MyLocationList>
                                         hazardProcess: locationListProvider
                                             .myLocationList[index]
                                             .isHazardProcess,
+                                        rented: locationListProvider
+                                            .myLocationList[index]
+                                            .finalAddress
+                                            ?.rented,
                                         getData: _getData,
                                       ),
                                       Padding(
@@ -3398,8 +3732,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 }
                               }
 
-                              return
-                                MyLocationCard(
+                              return MyLocationCard(
                                 hazards: locationListProvider
                                         .myLocationList[index].hazard ??
                                     {},
@@ -3450,8 +3783,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         ?.score ??
                                     0,
                                 riskScore: locationListProvider
-                                        .myLocationList[index]
-                                        .overallScore ??
+                                        .myLocationList[index].overallScore ??
                                     0,
 
                                 // locationListProvider
@@ -3530,8 +3862,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         .toString() ??
                                     "",
                                 overallScore: locationListProvider
-                                    .myLocationList[index]
-                                    .overallScore ??
+                                        .myLocationList[index].overallScore ??
                                     5,
 
                                 hazardProcess: locationListProvider
@@ -3899,8 +4230,7 @@ class _MyLocationListState extends State<MyLocationList>
       //   .finalAddress
       //   ?.longitude.toString() ??
       //   "",
-      overallScore:
-      (locationListProvider.myLocationList.isNotEmpty &&
+      overallScore: (locationListProvider.myLocationList.isNotEmpty &&
               index < locationListProvider.myLocationList.length)
           ? locationListProvider.myLocationList[index].overallScore
                   ?.toString() ??
@@ -3981,11 +4311,13 @@ class _MyLocationListState extends State<MyLocationList>
       //     (locationListProvider.myLocationList[index].isHazardProcess is bool)
       //         ? locationListProvider.myLocationList[index].isHazardProcess
       //         : false,
-      hazardProcess: (locationListProvider.myLocationList.isNotEmpty && index < locationListProvider.myLocationList.length)
+      hazardProcess: (locationListProvider.myLocationList.isNotEmpty &&
+              index < locationListProvider.myLocationList.length)
           ? (locationListProvider.myLocationList[index].isHazardProcess is bool
-          ? locationListProvider.myLocationList[index].isHazardProcess
-          : false)
+              ? locationListProvider.myLocationList[index].isHazardProcess
+              : false)
           : false,
+      rented: locationListProvider.myLocationList[index].finalAddress?.rented,
 
       // Provide a default boolean value // hazardProcess: locationListProvider.myLocationList[index].isHazardProcess ??"",
       getData: _getData,
@@ -4608,6 +4940,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                                                 tempId: success,
                                                                                 accountId: widget.accountID!,
                                                                                 accountName: widget.accountName ?? "",
+                                                                                subAccountName: widget.subAccountName ?? "",
                                                                                 subAccountId: widget.subAccountID!,
                                                                               )));
                                                                 }

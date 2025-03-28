@@ -234,7 +234,8 @@ Future<void> initFCM(String userId) async {
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
 
-      if (!isSubscribed) {
+      if (isSubscribed) {
+        print("TestA");
         // Call the subscription API
         bool success = await _subscribeToNotifications(userId, token);
 
@@ -242,6 +243,8 @@ Future<void> initFCM(String userId) async {
           SharedPreferenceService.saveNotificationSubscription(true);
           print('Subscribed to topic: general');
         }
+      }else{
+        print("TestB");
       }
     }
   } else {
@@ -291,6 +294,7 @@ Future<void> initFCM(String userId) async {
 
 Future<bool> _subscribeToNotifications(String userId, String token) async {
   try {
+    print("object");
     var url = Uri.parse('${AppConstant.SUBSCRIBE_NOTIFICATION}');
     var body = jsonEncode({
       'user_id': userId,
@@ -298,6 +302,7 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
       'mobile_token': token,
     });
 
+    print(body);
     var response = await http.post(
       url,
       headers: {

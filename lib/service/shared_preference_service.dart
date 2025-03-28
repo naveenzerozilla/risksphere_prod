@@ -66,6 +66,7 @@ class SharedPreferenceService {
   static const String IS_SUPER_ADMIN = 'is_cs';
   static const String IS_ADMIN = 'is_a';
   static const String IS_PG_ADMIN = 'is_sa';
+  static const String Is_Indivudual = 'indivudual';
   static const String TRIAL_PERIOD_DAYS = 'trial_period_days';
   static const String TRIAL_CREATED_AT = 'trial_created_at';
   static const String IS_TRIAL_APPLICABLE = 'is_trial_period_applicable';
@@ -143,6 +144,7 @@ class SharedPreferenceService {
     prefs.setBool(IS_PG_ADMIN, false);
     prefs.setBool(IS_ADMIN, false);
     prefs.setBool(IS_SUPER_ADMIN, false);
+    prefs.setBool(Is_Indivudual, false);
 
     claims.forEach((key, value) {
       switch (key) {
@@ -198,6 +200,7 @@ class SharedPreferenceService {
         case IS_PG_ADMIN:
         case IS_ADMIN:
         case IS_SUPER_ADMIN:
+        case Is_Indivudual:
 
           if(value.runtimeType == int) {
             if(value == 1) {
@@ -273,7 +276,8 @@ class SharedPreferenceService {
       EMPMT,
       IS_PG_ADMIN,
       IS_ADMIN,
-      IS_SUPER_ADMIN
+      IS_SUPER_ADMIN,
+      Is_Indivudual
     ];
     for (String key in staticStrings) {
       bool value = prefs.getBool(key) ?? false;

@@ -173,8 +173,11 @@ class _AccountListScreenState extends State<AccountListScreen>
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
-    int tabCount = trialStatus.isEmpty ? 3 : 4;
+    int tabCount =
+        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
+    // int tabCount = trialStatus.isEmpty ? 3 : 4;
+    // _tabController = TabController(length: tabCount, vsync: this);
     super.initState();
     _getData();
   }
@@ -308,11 +311,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-
-
                                 //
                                 SizedBox(height: CustomSpacing.two),
-
 
                                 /*     Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
@@ -339,7 +339,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   margin: EdgeInsets.symmetric(
                                       horizontal: 0, vertical: 0),
                                   child: DefaultTabController(
-                                    length: _tabController?.length ?? 3,
+                                    length: _tabController!.length,
                                     child: Column(
                                       children: <Widget>[
                                         // Container for the TabBar with arrows
@@ -373,9 +373,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     child: TabBar(
                                                       onTap: (index) {
                                                         // Prevent navigating to "Access Requested" tab
-                                                        if (index == 3) {
-                                                          _tabController?.animateTo(0); // Stay on the first tab (My Accounts)
-                                                        }
+                                                        // if (index == 3) {
+                                                        //   _tabController?.animateTo(0); // Stay on the first tab (My Accounts)
+                                                        // }
                                                       },
                                                       controller:
                                                           _tabController,
@@ -389,14 +389,14 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                       labelColor: Colors
                                                           .lightBlueAccent,
                                                       unselectedLabelColor:
-                                                          Colors.grey,
+                                                          Colors.white,
                                                       tabs: [
                                                         Tab(
                                                           child: Row(
                                                             children: [
                                                               Text(
-                                                                  'My Accounts',
-                                                                  ),
+                                                                'My Accounts',
+                                                              ),
                                                               accountListProvider
                                                                           .isLoading ||
                                                                       accountListProvider
@@ -444,7 +444,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           Tab(
                                                               text:
                                                                   'Configuration'),
-                                                        Tab(text: 'Access Requested'),
+                                                        Tab(
+                                                            text:
+                                                                'Access Requested'),
                                                       ],
                                                     ),
                                                   ),
@@ -469,12 +471,13 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     controller: _tabController,
                                     children: [
                                       _getAccountUI(),
-                                      _getComingSoonUI(),
+                                      _getComingSoonUI("shared"),
                                       if (userProfileProvider
                                               .trialInfo['status']?.isEmpty ??
-                                          true)
+                                          true) ...[
                                         ConfigurationTab(),
-                                      //_getComingSoonUI(),
+                                      ],
+                                      _getComingSoonUI("request"),
                                     ],
                                   ),
                                 ),
@@ -1869,31 +1872,38 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 _autocompleteText = value;
 
                                 // Cancel the previous debounce timer
-                                if (_debounce?.isActive ?? false) _debounce!.cancel();
+                                if (_debounce?.isActive ?? false)
+                                  _debounce!.cancel();
 
                                 // Start a new debounce timer
-                                _debounce = Timer(const Duration(milliseconds: 500), () async {
-                                  await autoCompleteAccountsSearchClient(_autocompleteText);
+                                _debounce =
+                                    Timer(const Duration(milliseconds: 500),
+                                        () async {
+                                  await autoCompleteAccountsSearchClient(
+                                      _autocompleteText);
                                 });
                               },
                               decoration: InputDecoration(
-                                suffixIcon: _textEditingController.text.isNotEmpty
-                                    ? IconButton(
-                                  icon: Icon(Icons.clear),
-                                  onPressed: () {
-                                    setState(() {
-                                      _textEditingController.clear();
-                                      _accountAlreadyExists = false;
-                                      _selectedAccount = null;
-                                      accountListProvider.clearAutoCompleteList();
-                                    });
-                                  },
-                                )
-                                    : null,
+                                suffixIcon:
+                                    _textEditingController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: Icon(Icons.clear),
+                                            onPressed: () {
+                                              setState(() {
+                                                _textEditingController.clear();
+                                                _accountAlreadyExists = false;
+                                                _selectedAccount = null;
+                                                accountListProvider
+                                                    .clearAutoCompleteList();
+                                              });
+                                            },
+                                          )
+                                        : null,
                                 labelText: LanguageService.getTranslated(
-                                    context, "account_list_app_add_account_title"),
-                                hintText: LanguageService.getTranslated(
-                                    context, "account_list_app_add_account_title"),
+                                    context,
+                                    "account_list_app_add_account_title"),
+                                hintText: LanguageService.getTranslated(context,
+                                    "account_list_app_add_account_title"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),
@@ -2087,7 +2097,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
-  _getComingSoonUI() {
+  _getComingSoonUI(String title) {
     var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -2098,8 +2108,12 @@ class _AccountListScreenState extends State<AccountListScreen>
           Center(
             child: Column(
               children: [
-                Text('A smarter way to track shared files-Coming Soon! ',
-                    textAlign: TextAlign.center, style: typography.H5_Regular),
+                Text(
+                    title == "shared"
+                        ? 'A smarter way to track shared files-Coming Soon! '
+                        : 'A smarter way to track access requests – Coming Soon!',
+                    textAlign: TextAlign.center,
+                    style: typography.H5_Regular),
                 SizedBox(height: 10),
                 Text(
                     LanguageService.getTranslated(
@@ -2207,8 +2221,7 @@ class _AccountListScreenState extends State<AccountListScreen>
         Expanded(
           child: Consumer<AccountListProvider>(
               builder: (context, accountListProvider, _) {
-            return
-              accountListProvider.isLoading
+            return accountListProvider.isLoading
                 ? Stack(
                     alignment: Alignment.center,
                     children: [
@@ -2220,8 +2233,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                       ),
                     ],
                   )
-                :
-              accountListProvider.accountList.isEmpty
+                : accountListProvider.accountList.isEmpty
                     ? Center(
                         child: Text(
                           "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",

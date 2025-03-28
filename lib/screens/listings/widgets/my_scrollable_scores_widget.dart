@@ -5,11 +5,13 @@ import '../../../design_system/primitives/custom_typography.dart';
 
 class MyScrollableScoresWidget extends StatelessWidget {
   final int geocodingScore;
-  final int riskScore;
+  final dynamic riskScore;
+  final bool? hazardProcess;
 
   MyScrollableScoresWidget({
     required this.geocodingScore,
     required this.riskScore,
+    this.hazardProcess,
   });
 
   final ScrollController _scrollController = ScrollController();
@@ -27,9 +29,9 @@ class MyScrollableScoresWidget extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _buildScoreCard(context, 'Geocoding Score', geocodingScore),
-                _buildScoreCard(context, 'Risk Score', riskScore),
-                _buildScoreCard(context, 'Data Completeness', 0),
+                _buildScoreCard(context, 'Geocoding Score', geocodingScore,true),
+                _buildScoreCard(context, 'Risk Score', riskScore,hazardProcess),
+                _buildScoreCard(context, 'Completeness', 0,true),
                 // _buildScoreCard(context, 'Construction', riskScore),
               ],
             ),
@@ -40,7 +42,7 @@ class MyScrollableScoresWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreCard(BuildContext context, String title, int score) {
+  Widget _buildScoreCard(BuildContext context, String title, int score, bool? hazardProcess) {
     List<Color> scoreColors = [
       Colors.grey[300]!,
       Colors.red[900]!,
@@ -72,6 +74,9 @@ class MyScrollableScoresWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+          if (hazardProcess == true ||
+          title == 'Geocoding' ||
+          title == 'Data Completeness') ...[
               VerticalBarIndicator(score: score),
               SizedBox(width: 4),
               CircleAvatar(
@@ -88,7 +93,12 @@ class MyScrollableScoresWidget extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
+            ]  else ...[
+          Container(child: Text("Processing"))
+    ]
+
+                ]
+
           ),
 
         ],

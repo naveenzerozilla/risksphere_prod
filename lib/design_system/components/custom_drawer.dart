@@ -344,39 +344,67 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         return
 
                           Consumer<UserProfileProvider>(
+
                           builder: (context, userProfileProvider, child) {
+                            bool isNotIndividual = !(userProfileProvider.userData.isIndividual ?? true); // Defaulting to true if null
+
                             return
                             userProfileProvider.isLoading ? Center(child: CircularProgressIndicator()) :
 
-                              bool.parse((!userProfileProvider.userData.isIndividual!).toString()) ?
-                              Container(
+                             isNotIndividual
+                                ? Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(66),
-                                color:
-                                    provider.selectedItem == "user_management"
-                                        ? AppColors.primaryMain.withOpacity(0.4)
-                                        : Colors.transparent,
+                                color: provider.selectedItem == "user_management"
+                                    ? AppColors.primaryMain.withOpacity(0.4)
+                                    : Colors.transparent,
                               ),
-                              child:
-
-                              IconButton(
-                                icon:
-                                Icon(
+                              child: IconButton(
+                                icon: Icon(
                                   Icons.person,
-                                  color:
-                                      provider.selectedItem == "user_management"
-                                          ? AppColors.primaryMain
-                                          : iconColor,
+                                  color: provider.selectedItem == "user_management"
+                                      ? AppColors.primaryMain
+                                      : iconColor,
                                 ),
                                 onPressed: () {
                                   provider.setSelectedItem("user_management");
                                   Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) => UserManagementScreen()),
+                                    MaterialPageRoute(builder: (_) => UserManagementScreen()),
                                   );
                                 },
                               ),
-                            ):Container();
+                            )
+                                : Container();
+
+                            //   bool.parse((!userProfileProvider.userData.isIndividual! ?? true).toString()) ?
+                            //   Container(
+                            //   decoration: BoxDecoration(
+                            //     borderRadius: BorderRadius.circular(66),
+                            //     color:
+                            //         provider.selectedItem == "user_management"
+                            //             ? AppColors.primaryMain.withOpacity(0.4)
+                            //             : Colors.transparent,
+                            //   ),
+                            //   child:
+                            //
+                            //   IconButton(
+                            //     icon:
+                            //     Icon(
+                            //       Icons.person,
+                            //       color:
+                            //           provider.selectedItem == "user_management"
+                            //               ? AppColors.primaryMain
+                            //               : iconColor,
+                            //     ),
+                            //     onPressed: () {
+                            //       provider.setSelectedItem("user_management");
+                            //       Navigator.of(context).push(
+                            //         MaterialPageRoute(
+                            //             builder: (_) => UserManagementScreen()),
+                            //       );
+                            //     },
+                            //   ),
+                            // ):Container();
                           },
                         );
                       },

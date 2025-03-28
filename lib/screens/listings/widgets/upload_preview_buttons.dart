@@ -8,20 +8,22 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class UploadPreviewButtons extends StatefulWidget {
-  final String? subAccountName;
+
   final String processId;
   final String accountId;
   final String accountName;
+  final String? subAccountName;
   final String tempId;
   final String subAccountId;
   final List<Map<String, dynamic>>? selectedLocations;
 
   const UploadPreviewButtons({
     Key? key,
-     this.subAccountName,
+
     required this.processId,
     required this.accountId,
     required this.accountName,
+    this.subAccountName,
     required this.tempId,
     required this.subAccountId,
     this.selectedLocations,
@@ -239,8 +241,8 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                   Row(
                     children: [
                       Text(
-                        // "$geocodingCount",
-                        widget.selectedLocations!.length.toString(),
+                        "$geocodingCount",
+                        // widget.selectedLocations!.length.toString()??",
                         style: typography.Body1.copyWith(
                           color: Colors.green,
                           fontWeight: FontWeight.bold,
@@ -354,6 +356,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                         // Proceed only if there are locations to commit
                         // Call the function to commit locations
                         _commitLocations(context);
+
                         Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(

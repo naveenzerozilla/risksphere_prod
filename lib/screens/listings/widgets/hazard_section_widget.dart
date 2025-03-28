@@ -25,72 +25,88 @@ class HazardsSection extends StatelessWidget {
         thumbVisibility: true,
         child: SingleChildScrollView(
           child: Column(
-            children: hazards.entries.map((entry) {
-              final hazardName = entry.key;
-              final hazard = entry.value;
-              final rating = hazard.rating ?? 0;
-              final color = rating >= 0 && rating < scoreColors.length
-                  ? scoreColors[rating]
-                  : Colors.grey;
-
-              return ExpansionTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      hazardName,
-                      style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+            children: hazards.entries.isEmpty
+                ? [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        rating != 0 ? rating.toString() : 'N/A',
+                        "No risk score data to show",
                         style: typography.Body2.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
-                  ],
-                ),
-                trailing: Icon(Icons.arrow_drop_down,
-                    color: Theme.of(context).colorScheme.onSurface),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
+                  ]
+                : hazards.entries.map((entry) {
+                    final hazardName = entry.key;
+                    final hazard = entry.value;
+                    final rating = hazard.rating ?? 0;
+                    final color = rating >= 0 && rating < scoreColors.length
+                        ? scoreColors[rating]
+                        : Colors.grey;
+
+                    return ExpansionTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            hazardName,
+                            style: typography.Body2.copyWith(
+                                fontWeight: FontWeight.w500),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              rating != 0 ? rating.toString() : 'N/A',
+                              style: typography.Body2.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Icon(Icons.arrow_drop_down,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            child: _buildVendorDetails(hazard, typography),
+                          ),
                         ),
                       ],
-                    ),
-                    child: SingleChildScrollView(
-                      child: _buildVendorDetails(hazard, typography),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
+                    );
+                  }).toList(),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVendorDetails(HazardDetails hazard, CustomTypography typography) {
+  Widget _buildVendorDetails(
+      HazardDetails hazard, CustomTypography typography) {
     final List<Widget> vendorWidgets = [];
 
     hazard.others?.forEach((vendorName, details) {
@@ -102,7 +118,8 @@ class HazardsSection extends StatelessWidget {
             children: [
               _buildVendorRow(
                 vendorName,
-                _getFormattedValue(vendorName, details.value), // ✅ Add unit dynamically
+                '${_getFormattedValue(vendorName, details.value)}',
+                // ✅ Add unit dynamically
                 typography,
               ),
             ],
@@ -120,28 +137,35 @@ class HazardsSection extends StatelessWidget {
   /// ✅ Function to Append Units Conditionally
   String _getFormattedValue(String vendor, dynamic value) {
     if (value == null) return "N/A";
+    // if (value == "nan/nan") return "N/A";
 
     // **Conditionally add units based on vendor type**
-    if (vendor.contains("KinetiCast") && value is num) {
-      return "$value mph"; // ✅ Wind Speed
+    if (vendor.contains("Kineticast") && value is num) {
+      return "Wind Speed ${value.toStringAsFixed(3)} mph"; // ✅ Wind Speed
     }
     if (vendor.contains("GlobalEarthquakeModel") && value is num) {
-      return "$value %g"; // ✅ PGA for Earthquake
+      return "PGA: ${value.toStringAsFixed(3)}g"; // ✅ PGA for Earthquake
     }
-    if (vendor.contains("MODIS") && value is num) {
-      return "$value K"; // ✅ Temperature in Kelvin
+    if (vendor.contains("Modis")) {
+      return value == "nan/nan"
+          ? "Temp(K) / FRP(MW) : -"
+          : " Temp(K) / FRP(MW) :  $value"; // ✅ Temperature in Kelvin
     }
     if (vendor.contains("JRCOD") && value is num) {
       return "$value ft"; // ✅ Flood Depth in feet
     }
     if (vendor.contains("MarshMcLennan") && value is num) {
-      return "$value"; // No unit needed for risk scores
+      return "Flood Score : $value"; // No unit needed for risk scores
+    }
+    if (vendor.contains("USGS") && value is num) {
+      return "Flood Score : $value"; // No unit needed for risk scores
     }
 
     return value.toString();
   }
 
-  Widget _buildVendorRow(String vendor, String value, CustomTypography typography) {
+  Widget _buildVendorRow(
+      String vendor, String value, CustomTypography typography) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Column(
@@ -149,12 +173,33 @@ class HazardsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "$vendor:",
-            style: typography.Caption.copyWith(fontWeight: FontWeight.w500),
+            value == "Not Applicable" || value == "No Rating"
+                ? "Risk Impact : -"
+                : value == "Relatively Moderate"
+                    ? "Risk Impact : R.Moderate"
+                    : value == "Very High"
+                        ? "Risk Impact : V.High"
+                        : value == "Very Low"
+                            ? "Risk Impact : V.Low"
+                            : value == "Relatively Low"
+                                ? "Risk Impact : R.Low"
+                                : value == "Relatively High"
+                                    ? "Risk Impact : R.High"
+                                    : value,
+            style: typography.Body2.copyWith(fontWeight: FontWeight.w500),
           ),
           Text(
-            value,
-            style: typography.Caption,
+            "Reported by " +
+                (vendor == "MarshMcLennan"
+                    ? "MM FRI"
+                    : vendor == "Kineticast"
+                        ? "Kinetic Cast"
+                        : vendor == "Modis"
+                            ? "MODIS"
+                            : vendor == "GlobalEarthquakeModel"
+                                ? "GEM"
+                                : vendor),
+            style: typography.Caption.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),

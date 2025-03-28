@@ -177,8 +177,11 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
-    int tabCount = trialStatus.isEmpty ? 3 : 2;
+    int tabCount =
+    (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
+    // int tabCount = trialStatus.isEmpty ? 3 : 2;
+    // _tabController = TabController(length: tabCount, vsync: this);
 
   }
 
@@ -357,7 +360,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 margin: EdgeInsets.symmetric(
                                     horizontal: 0, vertical: 0),
                                 child: DefaultTabController(
-                                  length: _tabController?.length ?? 3,
+                                  length:  _tabController!.length,
                                   child: Column(
                                     children: <Widget>[
                                       // Container for the TabBar with arrows
@@ -398,18 +401,17 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     isScrollable: true,
                                                     indicatorColor:
                                                         Colors.lightBlueAccent,
-                                                    labelColor:
-                                                        Colors.lightBlueAccent,
+                                                    labelColor: Colors
+                                                        .lightBlueAccent,
                                                     unselectedLabelColor:
-                                                        Colors.grey,
+                                                    Colors.white,
                                                     tabs: [
                                                       Tab(
                                                         child: Row(
                                                           children: [
                                                             Text(
                                                                 'My Sub Accounts',
-                                                                style: typography
-                                                                    .Subtitle2),
+                                                           ),
                                                             subAccountListProvider
                                                                         .isLoading ||
                                                                     subAccountListProvider
@@ -486,13 +488,13 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   controller: _tabController,
                                   children: [
                                     _getSubAccountUI(),
-                                    _getComingSoonUI(),
+                                    _getComingSoonUI("shared"),
                                     if (userProfileProvider
                                             .trialInfo['status']?.isEmpty ??
                                         true)
                                       ConfigurationTab(
                                           accountId: widget.accountId),
-                                    //_getComingSoonUI(),
+                                    _getComingSoonUI("request"),
                                   ],
                                 ),
                               ),
@@ -1371,7 +1373,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                             ),
                             TextField(
                               controller: _textEditingController,
-                              focusNode: FocusNode(),
+                              // focusNode: FocusNode(),
                               onChanged: (value) {
                                 setState(() {
                                   _subAccountAlreadyExists = false;
@@ -2240,32 +2242,30 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     );
   }
 
-  _getComingSoonUI() {
+  _getComingSoonUI(String title) {
     var typography = CustomTypography(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Text(
-                        LanguageService.getTranslated(
-                            context, 'coming_soon_title'),
-                        style: typography.H4),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  Text(
-                      LanguageService.getTranslated(
-                          context, 'coming_soon_subtitle'),
-                      style: typography.Body1),
-                ],
-              ),
+          Center(
+            child: Column(
+              children: [
+                Text(
+                    title == "shared"
+                        ? 'A smarter way to track shared files-Coming Soon! '
+                        : 'A smarter way to track access requests – Coming Soon!',
+                    textAlign: TextAlign.center,
+                    style: typography.H5_Regular),
+                SizedBox(height: 10),
+                Text(
+                    LanguageService.getTranslated(
+                        context, 'coming_soon_subtitle'),
+                    textAlign: TextAlign.center,
+                    style: typography.Body1),
+              ],
             ),
           ),
         ],

@@ -1164,9 +1164,157 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 return null;
               },
               builder: (FormFieldState<String> fieldState) {
-                return Column(
+                return
+                  Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    TextField(
+                      readOnly: true,
+                      controller: TextEditingController(text:""),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          builder: (BuildContext context) {
+                            return RolesBottomSheet(
+                              showCorporateSwitch: true,
+                              options: roles,
+                              selectedRoles: _selectedRoles,
+                              addChip: (role) {
+                                setState(() {
+                                  _selectedRoles.add(role);
+                                  _textEditingController.text =
+                                      _selectedRoles.map((e) => e.name!).join(', ');
+                                  fieldState.didChange(role.name);
+                                });
+                              },
+                              removeChip: (role) {
+                                setState(() {
+                                  _selectedRoles.remove(role);
+                                  _textEditingController.text = _selectedRoles.isEmpty
+                                      ? ''
+                                      : _selectedRoles.map((e) => e.name!).join(', ');
+                                  fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
+                                });
+                              },
+                              removeAllChips: () {
+                                setState(() {
+                                  _selectedRoles.clear();
+                                  _textEditingController.clear();
+                                  fieldState.didChange(null);
+                                });
+                              },
+                              selectedOption: _selectedOption ?? SignUpOptions.individual,
+                              onOptionChanged: (SignUpOptions option) {
+                                setState(() {
+                                  _selectedOption = option;
+                                });
+                              },
+                            );
+                          },
+                        );
+                      },
+                      decoration: InputDecoration(
+                        label: RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: LanguageService.getTranslated(
+                                    context, "register_non_corporate_role_field_label"),
+                              ),
+                              TextSpan(
+                                text: " *",
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                        border: const OutlineInputBorder(),
+                        errorText: fieldState.errorText,
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.arrow_drop_down),
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              useSafeArea: true,
+                              isScrollControlled: true,
+                              builder: (BuildContext context) {
+                                return RolesBottomSheet(
+                                  showCorporateSwitch: true,
+                                  options: roles,
+                                  selectedRoles: _selectedRoles,
+                                  addChip: (role) {
+                                    setState(() {
+                                      _selectedRoles.add(role);
+                                      _textEditingController.text =
+                                          _selectedRoles.map((e) => e.name!).join(', ');
+                                      fieldState.didChange(role.name);
+                                    });
+                                  },
+                                  removeChip: (role) {
+                                    setState(() {
+                                      _selectedRoles.remove(role);
+                                      _textEditingController.text = _selectedRoles.isEmpty
+                                          ? ''
+                                          : _selectedRoles.map((e) => e.name!).join(', ');
+                                      fieldState.didChange(
+                                          _selectedRoles.isEmpty ? null : role.name);
+                                    });
+                                  },
+                                  removeAllChips: () {
+                                    setState(() {
+                                      _selectedRoles.clear();
+                                      _textEditingController.clear();
+                                      fieldState.didChange(null);
+                                    });
+                                  },
+                                  selectedOption: _selectedOption ?? SignUpOptions.individual,
+                                  onOptionChanged: (SignUpOptions signUpOptions) {
+                                    setState(() {
+                                      _selectedOption = signUpOptions;
+                                    });
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        prefixIcon: _selectedRoles.isNotEmpty
+                            ? SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _selectedRoles.map((role) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 12.0,left:12),
+                                child: Chip(
+                                  label: Text(role.name!),
+                                  deleteIcon: const Icon(Icons.cancel),
+                                  onDeleted: () {
+                                    setState(() {
+                                      _selectedRoles.remove(role);
+                                      _textEditingController.text = _selectedRoles.isEmpty
+                                          ? ''
+                                          : _selectedRoles.map((e) => e.name!).join(', ');
+                                      fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
+                                    });
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        )
+                            : null,
+                      ),
+                    ),
+
+
                     // TextField(
                     //   readOnly: true,
                     //   onTap: () {
@@ -1182,26 +1330,29 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     //           addChip: (role) {
                     //             setState(() {
                     //               _selectedRoles.add(role);
-                    //               fieldState.didChange(
-                    //                   role.name); // Trigger validation update
+                    //               _textEditingController.text =
+                    //                   _selectedRoles.map((e) => e.name!).join(', ');
+                    //               fieldState.didChange(role.name);
                     //             });
                     //           },
                     //           removeChip: (role) {
                     //             setState(() {
                     //               _selectedRoles.remove(role);
-                    //               fieldState.didChange(
-                    //                   null); // Revalidate when removed
+                    //               _textEditingController.text =
+                    //               _selectedRoles.isEmpty
+                    //                   ? ''
+                    //                   : _selectedRoles.map((e) => e.name!).join(', ');
+                    //               fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
                     //             });
                     //           },
                     //           removeAllChips: () {
                     //             setState(() {
                     //               _selectedRoles.clear();
-                    //               fieldState.didChange(
-                    //                   null); // Revalidate when cleared
+                    //               _textEditingController.clear();
+                    //               fieldState.didChange(null);
                     //             });
                     //           },
-                    //           selectedOption:
-                    //               _selectedOption ?? SignUpOptions.individual,
+                    //           selectedOption: _selectedOption ?? SignUpOptions.individual,
                     //           onOptionChanged: (SignUpOptions option) {
                     //             setState(() {
                     //               _selectedOption = option;
@@ -1217,8 +1368,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     //       text: TextSpan(
                     //         children: [
                     //           TextSpan(
-                    //             text: LanguageService.getTranslated(context,
-                    //                 "register_non_corporate_role_field_label"),
+                    //             text: LanguageService.getTranslated(
+                    //                 context, "register_non_corporate_role_field_label"),
                     //           ),
                     //           TextSpan(
                     //             text: " *",
@@ -1234,7 +1385,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     //     hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
                     //     border: const OutlineInputBorder(),
                     //     errorText: fieldState.errorText,
-                    //     // Show validation error
                     //     suffixIcon: IconButton(
                     //       icon: const Icon(Icons.arrow_drop_down),
                     //       onPressed: () {
@@ -1250,25 +1400,31 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     //               addChip: (role) {
                     //                 setState(() {
                     //                   _selectedRoles.add(role);
+                    //                   _textEditingController.text =
+                    //                       _selectedRoles.map((e) => e.name!).join(', ');
                     //                   fieldState.didChange(role.name);
                     //                 });
                     //               },
                     //               removeChip: (role) {
                     //                 setState(() {
                     //                   _selectedRoles.remove(role);
-                    //                   fieldState.didChange(null);
+                    //                   _textEditingController.text =
+                    //                   _selectedRoles.isEmpty
+                    //                       ? ''
+                    //                       : _selectedRoles.map((e) => e.name!).join(', ');
+                    //                   fieldState.didChange(
+                    //                       _selectedRoles.isEmpty ? null : role.name);
                     //                 });
                     //               },
                     //               removeAllChips: () {
                     //                 setState(() {
                     //                   _selectedRoles.clear();
+                    //                   _textEditingController.clear();
                     //                   fieldState.didChange(null);
                     //                 });
                     //               },
-                    //               selectedOption: _selectedOption ??
-                    //                   SignUpOptions.individual,
-                    //               onOptionChanged:
-                    //                   (SignUpOptions signUpOptions) {
+                    //               selectedOption: _selectedOption ?? SignUpOptions.individual,
+                    //               onOptionChanged: (SignUpOptions signUpOptions) {
                     //                 setState(() {
                     //                   _selectedOption = signUpOptions;
                     //                 });
@@ -1292,20 +1448,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     //         children: _selectedRoles
                     //             .map(
                     //               (value) => Padding(
-                    //                 padding: const EdgeInsets.only(right: 8.0),
-                    //                 child: Chip(
-                    //                   label: Text(value.name!),
-                    //                   deleteIcon: const Icon(Icons.cancel),
-                    //                   onDeleted: () {
-                    //                     setState(() {
-                    //                       _selectedRoles.remove(value);
-                    //                       fieldState.didChange(
-                    //                           null); // Update validation
-                    //                     });
-                    //                   },
-                    //                 ),
-                    //               ),
-                    //             )
+                    //             padding: const EdgeInsets.only(right: 8.0),
+                    //             child: Chip(
+                    //               label: Text(value.name!),
+                    //               deleteIcon: const Icon(Icons.cancel),
+                    //               onDeleted: () {
+                    //                 setState(() {
+                    //                   _selectedRoles.remove(value);
+                    //                   _textEditingController.text =
+                    //                   _selectedRoles.isEmpty
+                    //                       ? ''
+                    //                       : _selectedRoles.map((e) => e.name!).join(', ');
+                    //                   fieldState.didChange(
+                    //                       _selectedRoles.isEmpty ? null : value.name);
+                    //                 });
+                    //               },
+                    //             ),
+                    //           ),
+                    //         )
                     //             .toList(),
                     //       ),
                     //     ),
@@ -1313,6 +1473,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     // ),
                   ],
                 );
+
               },
             ),
           ],

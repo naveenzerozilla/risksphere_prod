@@ -877,6 +877,7 @@ class _LocationListState extends State<LocationList>
             searchQuery: locationQuery,
             page: (index).toString(),
             totalPages: locationListProvider.locationHits.toString(),
+
           ),
         ))
             .then((_) {
