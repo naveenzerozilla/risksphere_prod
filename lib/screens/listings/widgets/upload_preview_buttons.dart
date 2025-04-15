@@ -8,7 +8,6 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class UploadPreviewButtons extends StatefulWidget {
-
   final String processId;
   final String accountId;
   final String accountName;
@@ -19,7 +18,6 @@ class UploadPreviewButtons extends StatefulWidget {
 
   const UploadPreviewButtons({
     Key? key,
-
     required this.processId,
     required this.accountId,
     required this.accountName,
@@ -238,66 +236,64 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // if (geocodingCount != 0) ...[
-                  Row(
-                    children: [
-                      Text(
-                        "$geocodingCount",
-                        // widget.selectedLocations!.length.toString()??",
-                        style: typography.Body1.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
+                Row(
+                  children: [
+                    Text(
+                      geocodingCount == widget.selectedLocations!.length
+                          ? geocodingCount.toString()
+                          : widget.selectedLocations!.length.toString(),
+                      style: typography.Body1.copyWith(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        "Locations will be processed!",
-                        style: typography.Body2.copyWith(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                // ],
-                //   if (duplicateCount != 0) ...[
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Text(
-                          "$duplicateCount",
-                          style: typography.Body1.copyWith(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Locations will be reused!",
-                          style:
-                              typography.Body2.copyWith(color: Colors.white70),
-                        ),
-                      ],
                     ),
-                  // ],
-                  // if (conflitCount != 0) ...[
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Text(
-                          "$conflictCount",
-                          style: typography.Body1.copyWith(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Locations will be ignored!",
-                          style:
-                              typography.Body2.copyWith(color: Colors.white70),
-                        ),
-                      ],
+                    SizedBox(width: 8),
+                    Text(
+                      "Locations will be processed!",
+                      style: typography.Body2.copyWith(color: Colors.white70),
                     ),
                   ],
+                ),
                 // ],
-
+                //   if (duplicateCount != 0) ...[
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      "$duplicateCount",
+                      style: typography.Body1.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      "Locations will be reused!",
+                      style: typography.Body2.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+                // ],
+                // if (conflitCount != 0) ...[
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      "$conflictCount",
+                      style: typography.Body1.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      "Locations will be ignored!",
+                      style: typography.Body2.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ],
+              // ],
             ),
           ),
           actions: [
@@ -341,7 +337,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
-
                       // Navigator.pop(context);
                       // Navigator.pop(context);
                       // Navigator.pop(context);
@@ -361,12 +356,13 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => MyLocationList(
-                                  accountID: widget.accountId,
-                                  subAccountID: widget.subAccountId,
-                                  accountName: widget.accountName,
-                                  subAccountName: widget.subAccountName?? "",
-                                )),
-                                (route) => false);
+                                      accountID: widget.accountId,
+                                      subAccountID: widget.subAccountId,
+                                      accountName: widget.accountName,
+                                      subAccountName:
+                                          widget.subAccountName ?? "",
+                                    )),
+                            (route) => false);
                       } else {
                         // Show a snackbar if there are no locations to commit
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -375,7 +371,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                           ),
                         );
                       }
-
                     },
                     child: Text(
                       "Yes",

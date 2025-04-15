@@ -41,6 +41,7 @@ class MyLocationListProvider extends ChangeNotifier {
   }
   int locationHits = 0;
   int certifiedLocationHits = 0;
+
   Future<void> fetchLocations() async {
     isLoading = true;
     locationHits = 0; // Set count to 0 while loading
@@ -104,7 +105,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
   set isCertifiedLoading(bool value) {
     _isCertifiedLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }

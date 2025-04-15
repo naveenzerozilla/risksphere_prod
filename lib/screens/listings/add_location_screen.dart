@@ -946,8 +946,13 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     onPressed: () async {
                                                       if (_formKey.currentState!
                                                           .validate()) {
+                                                        print("addlocation");
+
                                                         var body =
-                                                            _buildRequestBody(); // Use a helper method for the body
+                                                            _buildRequestBody();
+                                                        print("addlocation");
+                                                        print(body);
+                                                        // Use a helper method for the body
                                                         if (widget.locationId
                                                             .isEmpty) {
                                                           // Add Location
@@ -1071,33 +1076,64 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
 
     if (success.toLowerCase() == 'true' && mounted) {
-      // Navigate and clear stack
-      Navigator.pop(context);
-      Future.microtask(() {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LocationProfile(
-                  accountId: widget.accountId,
-                  subAccountId: widget.subAccountId,
-                  sovId: widget.sovId,
-                  accountName: widget.accountName,
-                  subAccountName: widget.subAccountName,
-                  sovName: widget.sovName,
-                  locationId: widget.locationId,
-                  searchQuery: widget.searchQuery,
-                  page: widget.page,
-                  totalPages: widget.totalPages,
-                ),
-              ),
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+
+        // Navigate and wait for result
+        final result = await Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LocationProfile(
+              accountId: widget.accountId,
+              subAccountId: widget.subAccountId,
+              sovId: widget.sovId,
+              accountName: widget.accountName,
+              subAccountName: widget.subAccountName,
+              sovName: widget.sovName,
+              locationId: widget.locationId,
+              searchQuery: widget.searchQuery,
+              page: widget.page,
+              totalPages: widget.totalPages,
+            ),
+          ),
               (route) => false,
-            );
-          }
-        });
+        );
+
+        // Reload the page when coming back
+        if (mounted) {
+          setState(() {});
+        }
       });
     }
+
+    // if (success.toLowerCase() == 'true' && mounted) {
+    //   // Navigate and clear stack
+    //   Navigator.pop(context);
+    //   Future.microtask(() {
+    //     WidgetsBinding.instance.addPostFrameCallback((_) {
+    //       if (mounted) {
+    //         Navigator.pushAndRemoveUntil(
+    //           context,
+    //           MaterialPageRoute(
+    //             builder: (context) => LocationProfile(
+    //               accountId: widget.accountId,
+    //               subAccountId: widget.subAccountId,
+    //               sovId: widget.sovId,
+    //               accountName: widget.accountName,
+    //               subAccountName: widget.subAccountName,
+    //               sovName: widget.sovName,
+    //               locationId: widget.locationId,
+    //               searchQuery: widget.searchQuery,
+    //               page: widget.page,
+    //               totalPages: widget.totalPages,
+    //             ),
+    //           ),
+    //           (route) => false,
+    //         );
+    //       }
+    //     });
+    //   });
+    // }
   }
 
   Widget _buildButtonChild(BuildContext context) {

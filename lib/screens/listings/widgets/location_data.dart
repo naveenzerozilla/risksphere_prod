@@ -217,57 +217,21 @@ class LocationDataScreenState extends State<LocationDataScreen>
   //   }
   // }
 
-  // void _toggleSelectAll(bool? value) {
-  //     var provider = Provider.of<UploadSovProvider>(context, listen: false);
-  //   setState(() {
-  //     _selectAll = value ?? false;
-  //
-  //     // Update all checkboxes in the list
-  //     for (var location in provider.geocodingList) {
-  //       location['isChecked'] = _selectAll;
-  //     }
-  //
-  //     // Update the selectedLocations list
-  //     if (_selectAll) {
-  //       selectedLocations = List.from(provider.geocodingList);
-  //     } else {
-  //       selectedLocations.clear();
-  //     }
-  //   });
-  // }
   void _toggleSelectAll(bool? value) {
-    var provider = Provider.of<UploadSovProvider>(context, listen: false);
-    setState(() {
-      _selectAll = value ?? false;
+    if (value == null) return;
 
-      // Update all checkboxes in the list
+    var provider = Provider.of<UploadSovProvider>(context, listen: false);
+
+    setState(() {
+      _selectAll = value;
+
+      // Set all checkboxes in the list based on _selectAll
       for (var location in provider.geocodingList) {
         location['isChecked'] = _selectAll;
       }
 
-      // Update the selectedLocations list and its count
+      // Update selectedLocations accordingly
       selectedLocations = _selectAll ? List.from(provider.geocodingList) : [];
-    });
-  }
-
-  // void _toggleSelectAll(bool? value) {
-  //   var provider = Provider.of<UploadSovProvider>(context, listen: false);
-  //   setState(() {
-  //     _selectAll = value ?? false;
-  //     for (var location in provider.geocodingList) {
-  //       location['isChecked'] = _selectAll;
-  //     }
-  //     selectedLocations.length;
-  //   });
-  // }
-
-  void _toggleCheckbox(bool? value, int index) {
-    var provider = Provider.of<UploadSovProvider>(context, listen: false);
-    setState(() {
-      provider.geocodingList[index]['isChecked'] = value!;
-      if (!value) {
-        _selectAll = false;
-      }
     });
   }
 
@@ -364,18 +328,18 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                           child: Container(
                                                             padding: EdgeInsets
                                                                 .symmetric(
-                                                                horizontal:
-                                                                6,
-                                                                vertical:
-                                                                0),
+                                                                    horizontal:
+                                                                        6,
+                                                                    vertical:
+                                                                        0),
                                                             decoration:
-                                                            BoxDecoration(
+                                                                BoxDecoration(
                                                               color: Colors
                                                                   .white12,
                                                               borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                  10),
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10),
                                                             ),
                                                             child:
                                                                 FutureBuilder(
@@ -541,21 +505,20 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                                           .red,
                                                                 )
                                                               : Container(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                6,
-                                                                vertical:
-                                                                0),
-                                                            decoration:
-                                                            BoxDecoration(
-                                                                color: Colors
-                                                                    .white12,
-                                                              borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                  10),
-                                                            ),
+                                                                  padding: EdgeInsets
+                                                                      .symmetric(
+                                                                          horizontal:
+                                                                              6,
+                                                                          vertical:
+                                                                              0),
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: Colors
+                                                                        .white12,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            10),
+                                                                  ),
                                                                   // alignment:
                                                                   //     Alignment
                                                                   //         .center,
@@ -609,9 +572,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                                         .duplicateLocations
                                                                         .length >
                                                                     0
-                                                                ?
-
-                                                            BlinkingText1(
+                                                                ? BlinkingText1(
                                                                     conflictCount:
                                                                         provider
                                                                             .duplicateLocations
@@ -629,22 +590,22 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                                         Colors
                                                                             .red,
                                                                   )
-                                                                :  Container(
-                                                              // padding: EdgeInsets
-                                                              //     .symmetric(
-                                                              //     horizontal:
-                                                              //     6,
-                                                              //     vertical:
-                                                              //     0),
-                                                              // decoration:
-                                                              // BoxDecoration(
-                                                              //   color: Colors
-                                                              //       .white12,
-                                                              //   borderRadius:
-                                                              //   BorderRadius
-                                                              //       .circular(
-                                                              //       10),
-                                                              // ),
+                                                                : Container(
+                                                                    // padding: EdgeInsets
+                                                                    //     .symmetric(
+                                                                    //     horizontal:
+                                                                    //     6,
+                                                                    //     vertical:
+                                                                    //     0),
+                                                                    // decoration:
+                                                                    // BoxDecoration(
+                                                                    //   color: Colors
+                                                                    //       .white12,
+                                                                    //   borderRadius:
+                                                                    //   BorderRadius
+                                                                    //       .circular(
+                                                                    //       10),
+                                                                    // ),
                                                                     child:
                                                                         FutureBuilder(
                                                                       future: provider
@@ -1410,32 +1371,45 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                 StatefulBuilder(
                                   builder: (context, setStateLocal) {
                                     return Checkbox(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      value: location['isChecked'] ?? false,
-                                      onChanged: (bool? value) {
-                                        if (value != null) {
-                                          setStateLocal(() {
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        value: location['isChecked'] ?? false,
+                                        onChanged: (bool? value) {
+                                          if (value == null) return;
+
+                                          setState(() {
                                             location['isChecked'] = value;
-                                          });
 
-                                          if (value) {
-                                            selectedLocations.add(location);
-                                          } else {
-                                            selectedLocations.removeWhere(
+                                            if (value) {
+                                              // Add to selectedLocations if checked
+                                              if (!selectedLocations.any(
+                                                  (item) =>
+                                                      item['id'] ==
+                                                      location['id'])) {
+                                                selectedLocations.add(location);
+                                              }
+                                            } else {
+                                              // Remove from selectedLocations if unchecked
+                                              selectedLocations.removeWhere(
+                                                  (item) =>
+                                                      item['id'] ==
+                                                      location['id']);
+
+                                              // Uncheck "Select All" if any single checkbox is unchecked
+                                              _selectAll = false;
+                                            }
+
+                                            // If ALL locations are selected, update "Select All"
+                                            if (provider.geocodingList.every(
                                                 (item) =>
-                                                    item['id'] ==
-                                                    location['id']);
-                                          }
-
-                                          // Check if all items are selected
-                                          _selectAll = provider.geocodingList
-                                              .every((item) =>
-                                                  item['isChecked'] == true);
-                                        }
-                                      },
-                                    );
+                                                    item['isChecked'] ==
+                                                    true)) {
+                                              _selectAll = true;
+                                            }
+                                          });
+                                        });
                                   },
                                 ),
                                 SizedBox(width: 8),
@@ -1721,7 +1695,6 @@ class _BlinkingTextState extends State<BlinkingText>
   }
 }
 
-
 class BlinkingText1 extends StatefulWidget {
   final int conflictCount;
   final TextStyle style;
@@ -1778,19 +1751,10 @@ class _BlinkingText1State extends State<BlinkingText1>
       animation: _controller,
       builder: (context, child) {
         return Container(
-          padding: EdgeInsets
-              .symmetric(
-              horizontal:
-              6,
-              vertical:
-              0),
-          decoration:
-          BoxDecoration(
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+          decoration: BoxDecoration(
             color: _bgAnimation.value,
-            borderRadius:
-            BorderRadius
-                .circular(
-                10),
+            borderRadius: BorderRadius.circular(10),
           ),
           // decoration: BoxDecoration(
           //   color: _bgAnimation.value, // Blinking background color

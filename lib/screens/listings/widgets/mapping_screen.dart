@@ -7,7 +7,6 @@ import '../../../service/language_service.dart';
 import '../../../providers/upload_sov_provider.dart';
 
 class MappingScreen extends StatefulWidget {
-
   final String tempId;
   final String accountId;
   final String accountName;
@@ -16,11 +15,10 @@ class MappingScreen extends StatefulWidget {
 
   const MappingScreen(
       {super.key,
-
       required this.tempId,
       this.accountId = '',
       this.accountName = '',
-        this.subAccountName,
+      this.subAccountName,
       this.subAccountId = ''});
 
   @override
@@ -165,7 +163,7 @@ class _MappingScreenState extends State<MappingScreen> {
             _pendingReverts[field['target']] == true) {
           field['spreadsheet'] =
               field['initialSpreadsheet']; // Restore old value
-          ////field['status'] = 'Unmapped'; // Change status back
+          // field['status'] = 'Unmapped'; // Change status back
         }
       }
       _pendingReverts.clear(); // Clear pending revert list after applying
@@ -196,7 +194,6 @@ class _MappingScreenState extends State<MappingScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(LanguageService.getTranslated(
@@ -297,6 +294,22 @@ class _MappingScreenState extends State<MappingScreen> {
                       onSelected: (bool selected) {
                         setState(() {
                           _hasChanges = true;
+                          _hasChanges = true;
+                          _tempfields = _tempfields.toSet().toList();
+                          _manualappedfields.addAll(_tempfields.where((item) =>
+                              !_manualappedfields.any((existing) =>
+                                  existing["spreadsheet"] ==
+                                  item["spreadsheet"])));
+                          // _manualappedfields.addAll(_tempfields);
+                          for (var i in _tempfields) {
+                            _unmappedfields.removeWhere((test) =>
+                                test["spreadsheet"] == i["spreadsheet"]);
+                            _automappedfields.removeWhere((test) =>
+                                test["spreadsheet"] == i["spreadsheet"]);
+                            _fields.removeWhere((test) =>
+                                test["spreadsheet"] == i["spreadsheet"]);
+                            _fields.add(i);
+                          }
                           _selectedFilter = 'Unmapped';
                           _applyPendingReverts(); // Apply revert when switching filter
                         });
@@ -534,16 +547,31 @@ class _MappingScreenState extends State<MappingScreen> {
                                                             }).toList() ??
                                                             [];
                                                       },
+                                                      // onChanged: (newValue) {
+                                                      // setState(() {
+                                                      //   field['spreadsheet'] =
+                                                      //       newValue!;
+                                                      //   field['status'] =
+                                                      //   'Manual Mapped';
+                                                      //   _hasChanges = true;
+                                                      // });
+
                                                       onChanged: (newValue) {
                                                         setState(() {
                                                           field['spreadsheet'] =
                                                               newValue!;
                                                           field['status'] =
                                                               'Manual Mapped';
-                                                          _hasChanges = true;
+                                                          _tempfields
+                                                              .add(field);
                                                         });
                                                         print(
+                                                            "Status: ${field['status']}");
+                                                        print(
                                                             "Selected Value: $newValue");
+
+                                                        print(
+                                                            "Selected Value1: $newValue");
                                                       },
                                                     ),
                                                   ),
@@ -554,6 +582,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                           'Manual Mapped'
                                                       ? () {
                                                           setState(() {
+                                                            // Find the original mapping
                                                             var originalField =
                                                                 _initialfields
                                                                     .firstWhereOrNull((test) =>
@@ -567,23 +596,85 @@ class _MappingScreenState extends State<MappingScreen> {
                                                               field["spreadsheet"] =
                                                                   originalField[
                                                                       "spreadsheet"];
-                                                              field['status'] =
-                                                                  originalField[
-                                                                      'status'];
+
+                                                              if (originalField[
+                                                                      'status'] ==
+                                                                  'Auto Mapped') {
+                                                                setState(() {
+                                                                  field['status'] =
+                                                                      'Auto Mapped';
+                                                                });
+                                                                _automappedfields
+                                                                    .add(field);
+                                                              } else {
+                                                                setState(() {
+                                                                  field['status'] =
+                                                                      'Unmapped';
+                                                                });
+                                                                _unmappedfields
+                                                                    .add(field);
+                                                              }
+                                                            } else {
+                                                              field["spreadsheet"] =
+                                                                  '';
                                                             }
 
+                                                            // Update field lists accordingly
                                                             _tempfields.removeWhere(
                                                                 (test) =>
                                                                     test[
                                                                         "spreadsheet"] ==
                                                                     field[
                                                                         "spreadsheet"]);
+
+                                                            _manualappedfields
+                                                                .removeWhere((test) =>
+                                                                    test[
+                                                                        "spreadsheet"] ==
+                                                                    field[
+                                                                        "spreadsheet"]);
+
                                                             _pendingReverts[field[
                                                                     'target']] =
-                                                                true;
+                                                                true; // Mark field for revert
                                                           });
                                                         }
                                                       : null,
+                                                  // TextButton(
+                                                  // onPressed: field['status'] ==
+                                                  //         'Manual Mapped'
+                                                  //     ? () {
+                                                  //         setState(() {
+                                                  //           var originalField =
+                                                  //               _initialfields
+                                                  //                   .firstWhereOrNull((test) =>
+                                                  //                       test[
+                                                  //                           "target"] ==
+                                                  //                       field[
+                                                  //                           "target"]);
+                                                  //
+                                                  //           if (originalField !=
+                                                  //               null) {
+                                                  //             field["spreadsheet"] =
+                                                  //                 originalField[
+                                                  //                     "spreadsheet"];
+                                                  //             field['status'] =
+                                                  //                 originalField[
+                                                  //                     'status'];
+                                                  //           }
+                                                  //
+                                                  //           _tempfields.removeWhere(
+                                                  //               (test) =>
+                                                  //                   test[
+                                                  //                       "spreadsheet"] ==
+                                                  //                   field[
+                                                  //                       "spreadsheet"]);
+                                                  //           _pendingReverts[field[
+                                                  //                   'target']] =
+                                                  //               true;
+                                                  //         });
+                                                  //       }
+                                                  //     : null,
                                                   child: Row(
                                                     children: [
                                                       Text(
@@ -1393,189 +1484,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                         ),
                                                       ],
                                                     ),
-
-                                                    // Row(
-                                                    //   children: [
-                                                    //     Expanded(
-                                                    //       child: Container(
-                                                    //         decoration:
-                                                    //             BoxDecoration(
-                                                    //           border: Border.all(
-                                                    //               color: Colors
-                                                    //                   .grey),
-                                                    //           borderRadius:
-                                                    //               BorderRadius
-                                                    //                   .circular(
-                                                    //                       8),
-                                                    //         ),
-                                                    //         child:
-                                                    //             DropdownButton<
-                                                    //                 String>(
-                                                    //           isExpanded: true,
-                                                    //           padding: EdgeInsets
-                                                    //               .symmetric(
-                                                    //                   horizontal:
-                                                    //                       10),
-                                                    //           menuMaxHeight:
-                                                    //               300,
-                                                    //           borderRadius:
-                                                    //               BorderRadius
-                                                    //                   .circular(
-                                                    //                       8),
-                                                    //           style: CustomTypography(
-                                                    //                   context)
-                                                    //               .Subtitle1,
-                                                    //           underline:
-                                                    //               SizedBox(),
-                                                    //           menuWidth: 250,
-                                                    //           value: field[
-                                                    //                       'spreadsheet'] !=
-                                                    //                   ''
-                                                    //               ? field[
-                                                    //                   'spreadsheet']
-                                                    //               : null,
-                                                    //           hint: Text(
-                                                    //             "Select mapping",
-                                                    //             style: CustomTypography(
-                                                    //                     context)
-                                                    //                 .Subtitle1,
-                                                    //           ),
-                                                    //           items: provider
-                                                    //               .sovUploadModel!
-                                                    //               .result!
-                                                    //               .firstWhere((res) =>
-                                                    //                   res.targetField ==
-                                                    //                   field[
-                                                    //                       'target'])
-                                                    //               .matches!
-                                                    //               .map((match) {
-                                                    //             return DropdownMenuItem<
-                                                    //                 String>(
-                                                    //               value: match
-                                                    //                   .name,
-                                                    //               child: Row(
-                                                    //                 children: [
-                                                    //                   Text(
-                                                    //                     match
-                                                    //                         .name!,
-                                                    //                     style: CustomTypography(context)
-                                                    //                         .Subtitle2,
-                                                    //                   ),
-                                                    //                   Spacer(),
-                                                    //                   Text(
-                                                    //                     '${match.percentage}% Match',
-                                                    //                     style: CustomTypography(context)
-                                                    //                         .Caption,
-                                                    //                   ),
-                                                    //                 ],
-                                                    //               ),
-                                                    //             );
-                                                    //           }).toList(),
-                                                    //           selectedItemBuilder:
-                                                    //               (context) {
-                                                    //             return _dropdownItems
-                                                    //                 .map(
-                                                    //                     (item) {
-                                                    //               return Align(
-                                                    //                 alignment:
-                                                    //                     Alignment
-                                                    //                         .centerLeft,
-                                                    //                 child: Text(
-                                                    //                   '${item['label']}',
-                                                    //                   style: CustomTypography(
-                                                    //                           context)
-                                                    //                       .Subtitle1,
-                                                    //                 ),
-                                                    //               );
-                                                    //             }).toList();
-                                                    //           },
-                                                    //           onChanged:
-                                                    //               (newValue) {
-                                                    //             setState(() {
-                                                    //               field['spreadsheet'] =
-                                                    //                   newValue!;
-                                                    //               field['status'] =
-                                                    //                   'Auto Mapped';
-                                                    //               _tempfields
-                                                    //                   .add(
-                                                    //                       field);
-                                                    //             });
-                                                    //             print(newValue);
-                                                    //           },
-                                                    //         ),
-                                                    //       ),
-                                                    //     ),
-                                                    //     SizedBox(width: 10),
-                                                    //     TextButton(
-                                                    //       onPressed: field[
-                                                    //                   'status'] ==
-                                                    //               'Manual Mapped'
-                                                    //           ? () {
-                                                    //               setState(() {
-                                                    //                 field['status'] =
-                                                    //                     'Unmapped';
-                                                    //                 _unmappedfields.add(field);
-                                                    //                 _tempfields.removeWhere((test) =>
-                                                    //                     test[
-                                                    //                         "spreadsheet"] ==
-                                                    //                     field[
-                                                    //                         "spreadsheet"]);
-                                                    //                 _manualappedfields.removeWhere((test) =>
-                                                    //                     test[
-                                                    //                         "spreadsheet"] ==
-                                                    //                     field[
-                                                    //                         "spreadsheet"]);
-                                                    //                 _pendingReverts[
-                                                    //                         field['target']] =
-                                                    //                     true; // Mark field for revert
-                                                    //               });
-                                                    //             }
-                                                    //           : null,
-                                                    //       // Disable button if not manually mapped
-                                                    //       child: Row(
-                                                    //         children: [
-                                                    //           Text(
-                                                    //             'Revert',
-                                                    //             style: TextStyle(
-                                                    //                 color: field['status'] ==
-                                                    //                         'Manual Mapped'
-                                                    //                     ? AppColors
-                                                    //                         .primaryMain
-                                                    //                     : Colors
-                                                    //                         .grey),
-                                                    //           ),
-                                                    //         ],
-                                                    //       ),
-                                                    //     ),
-                                                    //
-                                                    //     // TextButton(
-                                                    //     //   onPressed: () {
-                                                    //     //     setState(() {
-                                                    //     //       field['status'] = 'Submitted';
-                                                    //     //     });
-                                                    //     //   },
-                                                    //     //   child: Row(
-                                                    //     //     children: [
-                                                    //     //       Icon(Icons.check_circle_outline,
-                                                    //     //           color: field['status'] ==
-                                                    //     //                   'Unmapped'
-                                                    //     //               ? Colors.grey
-                                                    //     //               : AppColors.primaryMain),
-                                                    //     //       SizedBox(width: 5),
-                                                    //     //       Text(
-                                                    //     //         'Submit',
-                                                    //     //         style: TextStyle(
-                                                    //     //             color: field['status'] ==
-                                                    //     //                     'Unmapped'
-                                                    //     //                 ? Colors.grey
-                                                    //     //                 : AppColors
-                                                    //     //                     .primaryMain),
-                                                    //     //       ),
-                                                    //     //     ],
-                                                    //     //   ),
-                                                    //     // ),
-                                                    //   ],
-                                                    // ),
                                                     SizedBox(height: 8),
                                                   ],
                                                 ),
@@ -2105,7 +2013,6 @@ class _MappingScreenState extends State<MappingScreen> {
       // Proceed with the submission process if all fields are mapped
       final provider = Provider.of<UploadSovProvider>(context, listen: false);
       if (widget.accountId != '' && widget.accountName != '') {
-
         provider.submitSovHeadersSubAccounts(
           context,
           widget.tempId,
@@ -2113,7 +2020,7 @@ class _MappingScreenState extends State<MappingScreen> {
           _fields,
           widget.accountId,
           widget.accountName,
-          widget.subAccountName ??"",
+          widget.subAccountName ?? "",
           widget.subAccountId,
         );
       } else {

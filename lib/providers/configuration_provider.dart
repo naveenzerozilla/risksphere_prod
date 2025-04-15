@@ -76,8 +76,8 @@ class ConfigurationProvider extends ChangeNotifier {
       String id,
       String key,
       String level,
-      dynamic value,
-      String status,
+      bool value,
+      dynamic status,
 
       {
         String? accountId,
@@ -106,6 +106,7 @@ class ConfigurationProvider extends ChangeNotifier {
         content: Text('Configuration updated successfully!',
             style: typography.Body1),
       ));
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to update configuration: $e',

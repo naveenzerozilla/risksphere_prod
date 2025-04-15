@@ -19,7 +19,7 @@ class CustomTileProviderMainHazards implements TileProvider {
   });
 
   void updateReducer(String reducer) {
-    vendor = reducer;
+    vendor = "";
     // Trigger tile overlay refresh if needed
   }
 
@@ -31,7 +31,7 @@ class CustomTileProviderMainHazards implements TileProvider {
 
   @override
   Future<Tile> getTile(int x, int y, int? zoom) async {
-    print("getTile called with x: $x, y: $y, zoom: $zoom");
+    print("getTile called with x123: $x, y: $y, zoom: $zoom");
     print('the selected hazard is: $hazardType & vendor is $vendor');
 
     if (zoom == null || zoom < minZoom || zoom > maxZoom) {

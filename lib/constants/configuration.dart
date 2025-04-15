@@ -5,7 +5,7 @@ class Configuration {
 
   static const Map<String, String> projectIds = {
     Environment.dev: 'project-green-f4d78',
-    Environment.qa: 'project-green-dev-429104',
+    Environment.qa:'project-green-r5-1-qa', //'project-green-dev-429104',
     Environment.prod: 'prod-project-id',
   };
 

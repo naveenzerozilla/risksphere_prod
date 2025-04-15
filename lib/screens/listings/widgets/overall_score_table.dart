@@ -333,7 +333,7 @@ class _LocationTableState extends State<LocationTable> {
       var mainValue = hazardDetails.others!["Kineticast"]!.value;
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Wind Speed (mph)",
-        value: _formatNumber1(mainValue),
+        value: _formatNumber(mainValue),
         vendorName: hazardDetails.vendorName.toString()== "KinetiCast" ?"KinetiCast **":"Kineticast",
         score: score,
       ));

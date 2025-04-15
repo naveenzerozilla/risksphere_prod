@@ -8,7 +8,8 @@ import 'package:RiskSphare/providers/custom_tile_providers.dart';
 import 'package:RiskSphare/providers/custom_tile_providers_main_hazards.dart';
 import 'package:RiskSphare/screens/listings/account_list.dart';
 import 'package:RiskSphare/screens/listings/sub_account_list.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_card.dart' show GeocodingDialog;
+import 'package:RiskSphare/screens/listings/widgets/location_card.dart'
+    show GeocodingDialog;
 import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
@@ -102,8 +103,12 @@ class _LocationProfileState extends State<LocationProfile>
   final ScreenshotController _riskScoreScreenshotController =
       ScreenshotController();
   final GlobalKey _mapKey = GlobalKey();
-  int tabIndex = 0;
+  bool isLoadingAddToCampus = false;
+  bool isLoadingAddToMultiple = false;
 
+  int tabIndex = 0;
+  bool isLoading = false;
+  String? selectedLoadingType;
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   List<HazardData> mainHazards = [];
@@ -127,18 +132,26 @@ class _LocationProfileState extends State<LocationProfile>
   CustomTileProviderMainHazards? _mainHazardTileProvider;
   Map<String, CustomTileProvider> _tileProviders = {};
   bool _showPins = true;
+  PageController? _pageController;
+  int selectedIndex = 0;
+  bool isSelectionMode = false;
+  Set<String> selectedIds = {};
 
   TabController? _tabController;
   TextEditingController _nameController = TextEditingController();
   TextEditingController _addressController = TextEditingController();
   TextEditingController _campusIdController = TextEditingController();
   TextEditingController searchController = TextEditingController();
+  ScrollController? _campusScrollController;
   List<File> _images = [];
   String autoCompleteSuggestionSessionToken = Uuid().v4();
   MapType _currentMapType = MapType.satellite;
   MapType _currentMapType1 = MapType.normal;
   bool _isBottomSheetExpanded = false;
+  bool bottomsheetopened = false;
   bool _isBottomSheetFullScreen = false;
+  bool isSwitched = false;
+  bool confirmload = false;
 
   static CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(40.32434, -111.889),
@@ -150,11 +163,15 @@ class _LocationProfileState extends State<LocationProfile>
   late TextEditingController _searchController;
 
   ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     _searchController = TextEditingController();
     _tabController = TabController(length: 4, vsync: this);
     super.initState();
+    _campusScrollController = ScrollController();
+    _pageController =
+        PageController(viewportFraction: 0.9, initialPage: selectedIndex);
 
     // Execute parallel API calls
     _fetchAllData();
@@ -166,36 +183,38 @@ class _LocationProfileState extends State<LocationProfile>
     });
   }
 
-  // @override
-  // void initState() {
-  //   _searchController = TextEditingController();
-  //   _getData();
-  //   _tabController = TabController(length: 4, vsync: this);
-  //   super.initState();
-  //   _tabController!.addListener(() {
-  //     setState(() {
-  //       tabIndex = _tabController!.index;
-  //     });
-  //   });
-  //   _initializeClusterManager();
-  //   _fetchMainHazardLayers();
+  // void _fetchAllData() async {
+  //   await Future.wait([
+  //     _getData(),
+  //     _initializeClusterManager(),
+  //     _fetchMainHazardLayers(),
+  //   ]);
   // }
   void _fetchAllData() async {
-    await Future.wait([
-      _getData(),                 // API Call 1
-      _initializeClusterManager(), // API Call 2
-      _fetchMainHazardLayers(),   // API Call 3
-    ] as Iterable<Future>);
+    await Future.wait(<Future>[
+      _getData(),
+      _initializeClusterManager(),
+      _fetchMainHazardLayers(),
+    ]);
   }
+
   @override
   void dispose() {
     // TODO: implement dispose
     super.dispose();
+    _scrollController.dispose();
+
     _tabController!.dispose();
+    _pageController!.dispose();
+    _searchController.dispose();
+    _nameController.dispose();
+    _addressController.dispose();
+    _campusIdController.dispose();
+    _controller.future.then((value) => value.dispose());
+    _campusScrollController!.dispose();
   }
 
-
-  void _initializeClusterManager() {
+  Future<void> _initializeClusterManager() async {
     final allLocations =
         Provider.of<MyLocationListProvider>(context, listen: false)
             .fullLocationList;
@@ -205,12 +224,27 @@ class _LocationProfileState extends State<LocationProfile>
       _updateMarkers,
       markerBuilder: _markerBuilder,
       levels: [1, 4.25, 6.75],
-      // Optional zoom levels
       extraPercent: 0.2,
-      // Optional padding to prevent clusters from popping in/out
       stopClusteringZoom: 5.0,
     );
   }
+
+  // Future<void> _initializeClusterManager() {
+  //   final allLocations =
+  //       Provider.of<MyLocationListProvider>(context, listen: false)
+  //           .fullLocationList;
+  //
+  //   clusterManager = cluster_manager.ClusterManager<MyLocation>(
+  //     allLocations,
+  //     _updateMarkers,
+  //     markerBuilder: _markerBuilder,
+  //     levels: [1, 4.25, 6.75],
+  //     // Optional zoom levels
+  //     extraPercent: 0.2,
+  //     // Optional padding to prevent clusters from popping in/out
+  //     stopClusteringZoom: 5.0,
+  //   );
+  // }
 
   Future<Marker> _markerBuilder(
       cluster_manager.Cluster<MyLocation> cluster) async {
@@ -579,408 +613,426 @@ class _LocationProfileState extends State<LocationProfile>
               },
             ),
             drawer: CustomDrawer(),
-            body: Stack(
-              children: [
-                SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            body: LayoutBuilder(builder: (context, constraints) {
+              return Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
                           children: [
-                            // Left Column
-                            Expanded(
-                              child: Column(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10.0),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  InkWell(
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: Icon(Icons.arrow_back_ios_new,size: 20)),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4.0),
-                                    child: Row(
+                                  // Left Column
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              top: 2.0, bottom: 6),
+                                        InkWell(
+                                            onTap: () {
+                                              !bottomsheetopened
+                                                  ? Navigator.pop(context)
+                                                  : null;
+                                            },
+                                            child: Icon(
+                                                Icons.arrow_back_ios_new,
+                                                size: 20)),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4.0),
                                           child: Row(
                                             children: [
-                                              InkWell(
-                                                onTap: () {
-                                                  Navigator.pushAndRemoveUntil(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            AccountListScreen()),
-                                                    (route) =>
-                                                        false, // This removes all previous routes
-                                                  ).then((_) {
-                                                    // Optional: Add any actions to perform after navigation
-                                                  });
-                                                },
-                                                child: Text(widget.accountName,
-                                                    style:
-                                                        typography.InputLabel),
-                                              ),
-                                              Text(' > ',
-                                                  style: typography.InputLabel),
-                                              InkWell(
-                                                onTap: () {
-                                                  Navigator.pushAndRemoveUntil(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          SubAccountListScreen(
-                                                        accountId:
-                                                            widget.accountId ??
-                                                                "",
-                                                        accountName: widget
-                                                                .subAccountName ??
-                                                            "",
-                                                      ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 2.0, bottom: 6),
+                                                child: Row(
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () {
+                                                        !bottomsheetopened
+                                                            ? Navigator
+                                                                .pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                    builder:
+                                                                        (context) =>
+                                                                            AccountListScreen()),
+                                                                (route) =>
+                                                                    false, // This removes all previous routes
+                                                              ).then((_) {
+                                                                // Optional: Add any actions to perform after navigation
+                                                              })
+                                                            : null;
+                                                      },
+                                                      child: Text(
+                                                          widget.accountName,
+                                                          style: typography
+                                                              .InputLabel),
                                                     ),
-                                                    (route) =>
-                                                        false, // This removes all previous routes
-                                                  ).then((_) {
-                                                    // Optional: Add any actions to perform after navigation
-                                                  });
-                                                },
-                                                child: Text(
-                                                    widget.subAccountName,
-                                                    style:
-                                                        typography.InputLabel),
+                                                    Text(' > ',
+                                                        style: typography
+                                                            .InputLabel),
+                                                    InkWell(
+                                                      onTap: () {
+                                                        !bottomsheetopened
+                                                            ? Navigator
+                                                                .pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder:
+                                                                      (context) =>
+                                                                          SubAccountListScreen(
+                                                                    accountId:
+                                                                        widget.accountId ??
+                                                                            "",
+                                                                    accountName:
+                                                                        widget.subAccountName ??
+                                                                            "",
+                                                                  ),
+                                                                ),
+                                                                (route) =>
+                                                                    false, // This removes all previous routes
+                                                              ).then((_) {
+                                                                // Optional: Add any actions to perform after navigation
+                                                              })
+                                                            : null;
+                                                      },
+                                                      child: Text(
+                                                          widget.subAccountName,
+                                                          style: typography
+                                                              .InputLabel),
+                                                    ),
+                                                    Text(' > ',
+                                                        style: typography
+                                                            .InputLabel),
+                                                    InkWell(
+                                                      onTap: () {
+                                                        !bottomsheetopened
+                                                            ? Navigator.pop(
+                                                                context)
+                                                            : null;
+                                                      },
+                                                      child: Text(
+                                                          widget.accountName,
+                                                          style: typography
+                                                              .InputLabel),
+                                                    ),
+                                                    Text(' > ',
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors
+                                                                .white70)),
+                                                    Text("Location Profile",
+                                                        // _masterTabController!.index
+                                                        //     .toString() ==
+                                                        //     "0"
+                                                        //     ? "Location list"
+                                                        //     : _masterTabController!.index
+                                                        //     .toString() ==
+                                                        //     "1"
+                                                        //     ? "Sovs"
+                                                        //     : _masterTabController!
+                                                        //     .index
+                                                        //     .toString() ==
+                                                        //     "2"
+                                                        //     ? "Shared"
+                                                        //     : "Configure",
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                            color:
+                                                                Colors.white)),
+                                                  ],
+                                                ),
                                               ),
-                                              Text(' > ',
-                                                  style: typography.InputLabel),
-                                              InkWell(
-                                                onTap: () {
-                                                  Navigator.pop(context);
-                                                },
-                                                child: Text(widget.accountName,
-                                                    style:
-                                                        typography.InputLabel),
-                                              ),
-                                              Text(' > ',
-                                                  style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.white70)),
-                                              Text("Location Profile",
-                                                  // _masterTabController!.index
-                                                  //     .toString() ==
-                                                  //     "0"
-                                                  //     ? "Location list"
-                                                  //     : _masterTabController!.index
-                                                  //     .toString() ==
-                                                  //     "1"
-                                                  //     ? "Sovs"
-                                                  //     : _masterTabController!
-                                                  //     .index
-                                                  //     .toString() ==
-                                                  //     "2"
-                                                  //     ? "Shared"
-                                                  //     : "Configure",
-                                                  style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.white)),
+                                              // Container(
+                                              //   child: MaintenanceUI(isMaintenance: isMaintenance),
+                                              // ),
                                             ],
                                           ),
                                         ),
-                                        // Container(
-                                        //   child: MaintenanceUI(isMaintenance: isMaintenance),
-                                        // ),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(
+                                                      height:
+                                                          CustomSpacing.two),
+                                                  Text(
+                                                    locationProfileProvider
+                                                            .locationProfile
+                                                            ?.finalAddress
+                                                            ?.locationName ??
+                                                        '',
+                                                    style: typography.H6
+                                                        .copyWith(height: 1.2),
+                                                    overflow: TextOverflow
+                                                        .ellipsis, // Handle overflow
+                                                  ),
+                                                  Text(
+                                                    locationProfileProvider
+                                                            .locationProfile
+                                                            ?.finalAddress
+                                                            ?.address ??
+                                                        '',
+                                                    maxLines: 2,
+                                                    style: typography.Subtitle2
+                                                        .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          AppColors.primaryMain,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Text(_isBottomSheetFullScreen.toString()),
+                                            // Text(bottomsheetopened.toString()),
+                                            IconButton(
+                                                splashRadius: 1,
+                                                padding: EdgeInsets.zero,
+                                                icon: Icon(Icons.edit,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary),
+                                                onPressed: () {
+                                                  bottomsheetopened != true
+                                                      ? _editName(
+                                                          locationProfileProvider)
+                                                      : null;
+                                                }),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ),
-                                  Row(
+
+                                  // Right Column
+                                  Column(
                                     children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            SizedBox(height: CustomSpacing.two),
-                                            Text(
-                                              locationProfileProvider
-                                                      .locationProfile
-                                                      ?.finalAddress
-                                                      ?.locationName ??
-                                                  '',
-                                              style: typography.H6
-                                                  .copyWith(height: 1.2),
-                                              overflow: TextOverflow
-                                                  .ellipsis, // Handle overflow
-                                            ),
-                                            Text(
-                                              locationProfileProvider
-                                                      .locationProfile
-                                                      ?.finalAddress
-                                                      ?.address ??
-                                                  '',
-                                              maxLines: 2,
-                                              style:
-                                                  typography.Subtitle2.copyWith(
-                                                fontWeight: FontWeight.w500,
-                                                color: AppColors.primaryMain,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton(
-                                        splashRadius: 1,
-                                        padding: EdgeInsets.zero,
-                                        icon: Icon(Icons.edit,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary),
-                                        onPressed: () {
-                                          _editName(locationProfileProvider);
-                                        },
-                                        constraints:
-                                            BoxConstraints(), // Minimal icon space
-                                      ),
+                                      SizedBox(height: CustomSpacing.four),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
-
-                            // Right Column
-                            Column(
-                              children: [
-                                SizedBox(height: CustomSpacing.four),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                            Container(
+                              padding: EdgeInsets.only(left: 16, right: 24),
+                              child: Row(
+                                children: [
+                                  Text("Rating"),
+                                  SizedBox(width: 3),
+                                  InkWell(
+                                      onTap: () {
+                                        bottomsheetopened != true
+                                            ? showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    GeocodingDialog(
+                                                        title: 'Geocoding',
+                                                        status: true),
+                                              )
+                                            : null;
+                                      },
+                                      child: Icon(Icons.info,
+                                          color: Colors.lightBlueAccent))
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 16, right: 24),
+                              child: Row(
+                                // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  VerticalBarIndicator(
+                                      score: context
+                                              .read<MyLocationListProvider>()
+                                              .locationProfile
+                                              ?.geocodingScore ??
+                                          0),
+                                  SizedBox(width: 8),
+                                  (locationProfileProvider.locationProfile
+                                                  ?.finalAddress?.score ??
+                                              0) ==
+                                          5
+                                      ? SvgPicture.asset(
+                                          'assets/images/certified_five.svg',
+                                          width: 24,
+                                          height: 24)
+                                      : SizedBox.shrink(),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: tabIndex == 0
+                                  ? MediaQuery.of(context).size.height * 0.70
+                                  : MediaQuery.of(context).size.height * 0.80,
+                              child: DefaultTabController(
+                                length: 2, // Only two active tabs
+                                child: Column(
                                   children: [
-                                    /*    Icon(Icons.share),
-                                      SizedBox(width: CustomSpacing.six),*/
-                                    TooltipTheme(
-                                      data: TooltipThemeData(
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        textStyle: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                          fontSize: 14,
-                                        ),
-                                        padding: EdgeInsets.all(8),
-                                        verticalOffset: 20,
-                                        preferBelow: false,
-                                      ),
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 12.0),
-                                        child: Tooltip(
-                                          showDuration: Duration(seconds: 5),
-                                          triggerMode: TooltipTriggerMode.tap,
-                                          preferBelow: true,
-                                          richMessage: TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text:
-                                                    'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}\n',
-                                                style: typography.Subtitle1,
-                                              ),
-                                              TextSpan(
-                                                text:
-                                                    'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}\n',
-                                                style: typography.Subtitle1,
-                                              ),
-                                              TextSpan(
-                                                text:
-                                                    '${locationProfileProvider.locationProfile?.finalAddress?.description ?? ""}\n',
-                                                style: typography.Subtitle1,
-                                              ),
-                                            ],
-                                            style: typography.Subtitle1,
-                                          ),
-                                          child: Icon(Icons.info),
-                                        ),
+                                    TabBar(
+                                      onTap: (index) {
+                                        if (bottomsheetopened || index >= 2)
+                                          return; // Block tap if bottom sheet open or index is disabled
+                                        setState(() => tabIndex = index);
+                                      },
+                                      // onTap: (index) {
+                                      //   if (index >= 2)
+                                      //     return; // Prevent access to the disabled tab
+                                      //   setState(() => tabIndex = index);
+                                      // },
+                                      tabs: [
+                                        Tab(text: 'Geocoding'),
+                                        Tab(text: 'Risk Score'),
+                                        // Tab(
+                                        //   // Disabled Tab
+                                        //   child: Text(
+                                        //     'Completeness',
+                                        //     style: TextStyle(
+                                        //         color:
+                                        //             Colors.grey), // Visually disabled
+                                        //   ),
+                                        // ),
+                                      ],
+                                    ),
+                                    Container(
+                                      // height: MediaQuery.of(context).size.height * 0.5,
+                                      height: tabIndex == 0
+                                          ? MediaQuery.of(context).size.height *
+                                              0.65
+                                          : MediaQuery.of(context).size.height *
+                                              0.65,
+                                      child: TabBarView(
+                                        physics: NeverScrollableScrollPhysics(),
+                                        // Prevent swipe navigation
+                                        children: [
+                                          _geocodingScore(),
+                                          _riskScore(),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                      Container(
-                        padding: EdgeInsets.only(left: 16, right: 24),
-                        child: Row(
-                          children: [
-                            Text("Rating"),
-                            SizedBox(width: 3),
-                            InkWell(
-                                onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => GeocodingDialog(title: 'Geocoding'),
-                                    );
-                                },
-                                child: Icon(Icons.info, color: Colors.lightBlueAccent))
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(left: 16, right: 24),
-                        child: Row(
-                          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            VerticalBarIndicator(
-                                score: context
-                                        .read<MyLocationListProvider>()
-                                        .locationProfile
-                                        ?.geocodingScore ??
-                                    0),
-                            SizedBox(width: 8),
-                            (locationProfileProvider.locationProfile
-                                            ?.finalAddress?.score ??
-                                        0) ==
-                                    5
-                                ? SvgPicture.asset(
-                                    'assets/images/certified_five.svg',
-                                    width: 24,
-                                    height: 24)
-                                : SizedBox.shrink(),
-                          ],
-                        ),
-                      ),
-                          DefaultTabController(
-                          length: 2, // Only two active tabs
-              child: Column(
-              children: [
-              TabBar(
-              onTap: (index) {
-              if (index >= 2) return; // Prevent access to the disabled tab
-              setState(() => tabIndex = index);
-              },
-              tabs: [
-              Tab(text: 'Geocoding'),
-              Tab(text: 'Risk Score'),
-              Tab( // Disabled Tab
-              child: Text(
-              'Completeness',
-              style: TextStyle(color: Colors.grey), // Visually disabled
-              ),
-              ),
-              ],
-              ),
-              Container(
-              // height: MediaQuery.of(context).size.height * 0.5,
-                        height: tabIndex == 0
-                            ? MediaQuery.of(context).size.height * 0.55
-                            : MediaQuery.of(context).size.height *
-                                0.55,
-              child: TabBarView(
-              physics: NeverScrollableScrollPhysics(), // Prevent swipe navigation
-              children: [
-              _geocodingScore(),
-              _riskScore(),
-              ],
-              ),
-              ),
-              ],
-              ),
-              ),
-
-              // DefaultTabController(
-                      //   length: 2, // Number of tabs
-                      //   child: Column(
-                      //     children: [
-                      //       TabBar(
-                      //         onTap: (index) {
-                      //           if (index >= 1)
-                      //             return; // ✅ Prevents out-of-bounds errors
-                      //           setState(() => tabIndex = index);
-                      //         },
-                      //         tabs: [
-                      //           Tab(
-                      //             text: 'Geocoding',
-                      //           ),
-                      //           Tab(
-                      //             text: 'Risk Score',
-                      //           ),
-                      //           Tab(
-                      //             child: Text(
-                      //               'Completeness',
-                      //               style: TextStyle(
-                      //                   color:
-                      //                       Colors.grey), // Unique text color
-                      //             ),
-                      //           ),
-                      //         ],
-                      //       ),
-                      //       Container(
-                      //         height: tabIndex == 0
-                      //             ? MediaQuery.of(context).size.height * 0.6
-                      //             : MediaQuery.of(context).size.height *
-                      //                 0.55, // Height of the TabBarView
-                      //         child: TabBarView(
-                      //           physics: NeverScrollableScrollPhysics(),
-                      //           children: [
-                      //             _geocodingScore(),
-                      //             _riskScore(),
-                      //             // Container()
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                      _isBottomSheetExpanded.toString() == "true"
-                          ? BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                              // Blur intensity
-                              child: Container(
-                                color: Colors.black.withOpacity(0.2),
-                                // Dim background
-                                width: double.infinity,
-                                height: double.infinity,
                               ),
-                            )
-                          : Container(),
-                    ],
-                  ),
-                ),
-                // Show bottom sheet when tabIndex is 0
-                if (!_isBottomSheetFullScreen && tabIndex == 0)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: _buildBottomSheet(),
-                  ),
+                            ),
+                            _isBottomSheetExpanded
+                                ?
+                                //     Center(
+                                //         child: ClipRRect(
+                                //           borderRadius: BorderRadius.circular(12),
+                                //           child: BackdropFilter(
+                                //             filter: ImageFilter.blur(
+                                //                 sigmaX: 5, sigmaY: 5),
+                                //             child: Container(
+                                //               width: 300,
+                                //               height: 200,
+                                //               color: Colors.white.withOpacity(0.3),
+                                //               child: Text('Blurred Dialog'),
+                                //             ),
+                                //           ),
+                                //         ),
+                                //       )
 
-                if (_isBottomSheetFullScreen)
-                  Positioned.fill(
-                    child: _locationProfileBody(),
-                  ),
+                                // Stack(
+                                //         children: [
+                                //           Positioned.fill(
+                                //             child: RepaintBoundary(
+                                //               // Ensures Flutter renders this section
+                                //               child: ClipRect(
+                                //                 child: BackdropFilter(
+                                //                   filter: ImageFilter.blur(
+                                //                       sigmaX: 5, sigmaY: 5),
+                                //                   child: Container(
+                                //                     color: Colors.transparent,
+                                //                   ),
+                                //                 ),
+                                //               ),
+                                //             ),
+                                //           ),
+                                //         ],
+                                //       )
+                                // : SizedBox.shrink(),
 
-                if (_selectedMarker != null) _buildCustomInfoWindow(),
-                // if (_isBottomSheetFullScreen)
-                //   Positioned.fill(
-                //     child: _locationProfileBody(),
-                //   ),
-                // if (_selectedMarker != null) _buildCustomInfoWindow(),
-              ],
-            ),
+                                // _isBottomSheetExpanded == true
+                                //     ? Stack(
+                                //         children: [
+                                //           Positioned.fill(
+                                //             child: BackdropFilter(
+                                //               filter: ImageFilter.blur(
+                                //                   sigmaX: 5, sigmaY: 5),
+                                //               child: Container(
+                                //                 color: Colors.black.withOpacity(0.2),
+                                //               ),
+                                //             ),
+                                //           ),
+                                //         ],
+                                //       )
+                                SizedBox(
+                                    width: double.infinity,
+                                    height: 300,
+                                    // or MediaQuery.of(context).size.height
+                                    child: Stack(
+                                      children: [
+                                        BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                              sigmaX: 5, sigmaY: 5),
+                                          child: Container(
+                                            color:
+                                                Colors.black.withOpacity(0.2),
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Container(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Show bottom sheet when tabIndex is 0
+                  if (!_isBottomSheetFullScreen && tabIndex == 0)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: _buildBottomSheet(),
+                    ),
+
+                  if (_isBottomSheetFullScreen)
+                    Positioned.fill(
+                      child: _locationProfileBody(),
+                    ),
+
+                  if (_selectedMarker != null) _buildCustomInfoWindow(),
+                  // if (_isBottomSheetFullScreen)
+                  //   Positioned.fill(
+                  //     child: _locationProfileBody(),
+                  //   ),
+                  // if (_selectedMarker != null) _buildCustomInfoWindow(),
+                ],
+              );
+            }),
           );
         });
       }),
@@ -1078,19 +1130,20 @@ class _LocationProfileState extends State<LocationProfile>
   Widget _buildBottomSheet() {
     var typography = CustomTypography(context);
     return WillPopScope(
-    onWillPop: () async {
-      // Prevent closing when back button is pressed or tap outside
-      return false;
-    },
+      onWillPop: () async {
+        // Prevent closing when back button is pressed or tap outside
+        return false;
+      },
       child: Consumer<MyLocationListProvider>(
           builder: (context, locationProfileProvider, child) {
         return AnimatedContainer(
           duration: Duration(milliseconds: 300),
-          height: _isBottomSheetExpanded ? 540 : 100,
-          // constraints: BoxConstraints(
-          //   minHeight: 20, // Set a reasonable minimum height
-          //   maxHeight: 300, // Maximum height limit
-          // ),
+          constraints: BoxConstraints(
+            maxHeight: _isBottomSheetExpanded
+                ? MediaQuery.of(context).size.height * 0.65
+                : 100,
+          ),
+          // height: _isBottomSheetExpanded ? 600 : 100,
           decoration: BoxDecoration(
             color: Colors.black,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1115,41 +1168,51 @@ class _LocationProfileState extends State<LocationProfile>
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down),
                         onPressed: () {
+                          print("object");
                           setState(() {
                             _isBottomSheetExpanded = !_isBottomSheetExpanded;
+                            bottomsheetopened == false
+                                ? bottomsheetopened = true
+                                : bottomsheetopened = false;
                           });
+                          print(_isBottomSheetExpanded.toString());
+                          print(bottomsheetopened.toString());
                         },
                       ),
                     ),
                     !_isBottomSheetExpanded
                         ? SizedBox()
                         : Positioned(
-                      top: -25,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isBottomSheetExpanded = !_isBottomSheetExpanded;
-                            });
-                          },
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                width: 1,
+                            top: -25,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _isBottomSheetExpanded =
+                                        !_isBottomSheetExpanded;
+                                  });
+                                },
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Theme.of(context).colorScheme.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(Icons.close),
+                                ),
                               ),
                             ),
-                            child: Icon(Icons.close),
                           ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ] else ...[
@@ -1159,9 +1222,10 @@ class _LocationProfileState extends State<LocationProfile>
                     // Ensures taps register
                     onTap: () {
                       setState(() {
-                        _isBottomSheetExpanded =
-                        !_isBottomSheetExpanded;
+                        _isBottomSheetExpanded = !_isBottomSheetExpanded;
+                        bottomsheetopened = false;
                       });
+                      print(bottomsheetopened);
                     },
                     child: Container(
                       width: 25,
@@ -1170,8 +1234,7 @@ class _LocationProfileState extends State<LocationProfile>
                         color: Theme.of(context).colorScheme.surface,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color:
-                          Theme.of(context).colorScheme.onSurface,
+                          color: Theme.of(context).colorScheme.onSurface,
                           width: 1,
                         ),
                       ),
@@ -1194,61 +1257,38 @@ class _LocationProfileState extends State<LocationProfile>
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down),
                         onPressed: () {
+                          // setState(() {
+                          //   _isBottomSheetExpanded = !_isBottomSheetExpanded;
+                          // });
+                          print("object");
                           setState(() {
                             _isBottomSheetExpanded = !_isBottomSheetExpanded;
+                            bottomsheetopened == false
+                                ? bottomsheetopened = true
+                                : bottomsheetopened = false;
                           });
+                          print(_isBottomSheetExpanded.toString());
+                          print(bottomsheetopened.toString());
                         },
                       ),
                     ),
-      
-                    // !_isBottomSheetExpanded
-                    //     ? SizedBox()
-                    //     : Positioned(
-                    //         top: -20,
-                    //         left: 0,
-                    //         right: 0,
-                    //         child:
-                    //         Center(
-                    //           child: InkWell(
-                    //             // behavior: HitTestBehavior.translucent,
-                    //             // Ensures taps register
-                    //             onTap: () {
-                    //               setState(() {
-                    //                 _isBottomSheetExpanded =
-                    //                     !_isBottomSheetExpanded;
-                    //               });
-                    //             },
-                    //             child: Container(
-                    //               width: 25,
-                    //               height: 25,
-                    //               decoration: BoxDecoration(
-                    //                 color: Theme.of(context).colorScheme.surface,
-                    //                 shape: BoxShape.circle,
-                    //                 border: Border.all(
-                    //                   color:
-                    //                       Theme.of(context).colorScheme.onSurface,
-                    //                   width: 1,
-                    //                 ),
-                    //               ),
-                    //               child: Icon(Icons.info),
-                    //             ),
-                    //           ),
-                    //         ),
-                    //       ),
                   ],
                 ),
-
                 Divider(),
                 Row(
                   children: [
                     Container(
+                      width: MediaQuery.of(context).size.width / 1,
                       padding: EdgeInsets.only(left: 16),
                       child: Text(
-                        locationProfileProvider.locationProfile?.finalAddress!.address ??
-                            '',
-                        style: TextStyle(fontSize: 14,color: Colors.white)
+                        locationProfileProvider
+                                .locationProfile?.finalAddress?.address ??
+                            'N/A',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
-                    ),
+                    )
                   ],
                 ),
                 Container(
@@ -1277,8 +1317,10 @@ class _LocationProfileState extends State<LocationProfile>
                                         subAccountId: widget.subAccountId,
                                         sovId: widget.sovId,
                                         locationId: [
-                                          locationProfileProvider.locationProfile
-                                                  ?.finalAddress?.locationId ??
+                                          locationProfileProvider
+                                                  .locationProfile
+                                                  ?.finalAddress
+                                                  ?.locationId ??
                                               ''
                                         ],
                                       );
@@ -1290,262 +1332,21 @@ class _LocationProfileState extends State<LocationProfile>
                     ],
                   ),
                 ),
-      
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                //   child: Row(
-                //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //     children: [
-                //       Text(
-                //         'Address',
-                //         style: typography.H6.copyWith(height: 0.5),
-                //       ),
-                //       Row(
-                //         children: [
-                //           Consumer<UserProfileProvider>(
-                //               builder: (context, userProfileProvider, child) {
-                //             var trialStatus =
-                //                 userProfileProvider.trialInfo['status'] ?? '';
-                //             return IconButton(
-                //               icon: Icon(Icons.download),
-                //               onPressed: trialStatus.isNotEmpty
-                //                   ? null
-                //                   : () {
-                //                       showDialog(
-                //                         context: context,
-                //                         builder: (BuildContext context) {
-                //                           return ExportDialog(
-                //                             accountId: widget.accountId,
-                //                             subAccountId: widget.subAccountId,
-                //                             sovId: widget.sovId,
-                //                             locationId: [
-                //                               locationProfileProvider
-                //                                       .locationProfile
-                //                                       ?.finalAddress
-                //                                       ?.locationId ??
-                //                                   ''
-                //                             ],
-                //                           );
-                //                         },
-                //                       );
-                //                     },
-                //             );
-                //           }),
-                //           (locationProfileProvider.locationProfile?.finalAddress
-                //                           ?.score ??
-                //                       0) ==
-                //                   5
-                //               ? SizedBox.shrink()
-                //               : IconButton(
-                //                   icon: Icon(Icons.edit),
-                //                   tooltip: 'Edit Address',
-                //                   onPressed: () async {
-                //                     var userProfileProvider =
-                //                         Provider.of<UserProfileProvider>(
-                //                             context,
-                //                             listen: false);
-                //                     final trialStatus = userProfileProvider
-                //                             .trialInfo['status'] ??
-                //                         '';
-                //                     final trialSubdestinations =
-                //                         userProfileProvider
-                //                                 .trialInfo['subDestinations'] ??
-                //                             0;
-                //                     if (trialStatus != '' &&
-                //                         trialSubdestinations < 1) {
-                //                       showDialog(
-                //                         barrierColor: Theme.of(context)
-                //                             .colorScheme
-                //                             .surfaceContainerLowest,
-                //                         context: context,
-                //                         builder: (BuildContext context) {
-                //                           return Column(
-                //                             mainAxisAlignment:
-                //                                 MainAxisAlignment.center,
-                //                             children: [
-                //                               Row(
-                //                                 mainAxisAlignment:
-                //                                     MainAxisAlignment.end,
-                //                                 children: [
-                //                                   IconButton(
-                //                                     icon: Icon(Icons.close),
-                //                                     onPressed: () {
-                //                                       Navigator.of(context)
-                //                                           .pop();
-                //                                     },
-                //                                   ),
-                //                                 ],
-                //                               ),
-                //                               MessageCard(
-                //                                 isUpgrade: true,
-                //                                 messageTextSpans: [
-                //                                   TextSpan(
-                //                                     text:
-                //                                         'You\'ve reached your limit for ',
-                //                                     style: CustomTypography(
-                //                                             context)
-                //                                         .Body1,
-                //                                   ),
-                //                                   TextSpan(
-                //                                     text: '“editing locations”',
-                //                                     style: CustomTypography(
-                //                                             context)
-                //                                         .Body1
-                //                                         .copyWith(
-                //                                           color:
-                //                                               AppColors.warning,
-                //                                         ),
-                //                                   ),
-                //                                   TextSpan(
-                //                                     text:
-                //                                         '.  Consider upgrading your account to unlock more possibilities!',
-                //                                     style: CustomTypography(
-                //                                             context)
-                //                                         .Body1,
-                //                                   ),
-                //                                 ],
-                //                               ),
-                //                             ],
-                //                           );
-                //                         },
-                //                       );
-                //                       return;
-                //                     }
-                //                     // Store the necessary navigation data before pushing
-                //                     final navigationData = {
-                //                       'accountId': widget.accountId,
-                //                       'subAccountId': widget.subAccountId,
-                //                       'sovId': widget.sovId,
-                //                       'accountName': widget.accountName,
-                //                       'subAccountName': widget.subAccountName,
-                //                       'sovName': widget.sovName,
-                //                       'locationId': locationProfileProvider
-                //                               .locationProfile?.id ??
-                //                           "",
-                //                       'searchQuery': widget.searchQuery,
-                //                       'page': widget.page,
-                //                       'totalPages': widget.totalPages,
-                //                     };
-                //                     var value =
-                //                         await Navigator.of(context).push(
-                //                       MaterialPageRoute(
-                //                         builder: (_) => AddLocationScreen(
-                //                           accountId: widget.accountId,
-                //                           subAccountId: widget.subAccountId,
-                //                           sovId: widget.sovId,
-                //                           accountName: widget.accountName,
-                //                           subAccountName: widget.subAccountName,
-                //                           sovName: widget.sovName,
-                //                           locationId: locationProfileProvider
-                //                                   .locationProfile?.id ??
-                //                               "",
-                //                           locationName: locationProfileProvider
-                //                                   .locationProfile
-                //                                   ?.finalAddress
-                //                                   ?.locationName ??
-                //                               "",
-                //                           locationIdForRef:
-                //                               locationProfileProvider
-                //                                       ?.locationProfile
-                //                                       ?.finalAddress
-                //                                       ?.locationIdForRef ??
-                //                                   "",
-                //                           searchQuery: widget.searchQuery ?? "",
-                //                           page: widget.page,
-                //                           totalPages:
-                //                               widget.locationId.isNotEmpty
-                //                                   ? (locationProfileProvider
-                //                                               .resetTotalPage -
-                //                                           1)
-                //                                       .toString()
-                //                                   : widget.totalPages,
-                //                         ),
-                //                       ),
-                //                     );
-                //
-                //                     /*if(value == true) {
-                //                     if (mounted) {
-                //                       Navigator.pushAndRemoveUntil(
-                //                         context,
-                //                         MaterialPageRoute(
-                //                           builder: (context) =>
-                //                               LocationProfile(
-                //                                 accountId: navigationData['accountId'] ??
-                //                                     "",
-                //                                 subAccountId: navigationData['subAccountId'] ??
-                //                                     "",
-                //                                 sovId: navigationData['sovId'] ??
-                //                                     "",
-                //                                 accountName: navigationData['accountName'] ??
-                //                                     "",
-                //                                 subAccountName: navigationData['subAccountName'] ??
-                //                                     "",
-                //                                 sovName: navigationData['sovName'] ??
-                //                                     "",
-                //                                 locationId: navigationData['locationId'] ??
-                //                                     "",
-                //                                 searchQuery: navigationData['searchQuery'] ??
-                //                                     "",
-                //                                 page: navigationData['page'] ??
-                //                                     "1",
-                //                                 totalPages: navigationData['totalPages'] ??
-                //                                     "1",
-                //                               ),
-                //                         ),
-                //
-                //                             (route) => false,
-                //                       );
-                //                     }
-                //                   }*/
-                //                   }),
-                //           // Todo: implement history feature
-                //           /* IconButton(
-                //               icon: Icon(Icons.history),
-                //               onPressed: () {
-                //                 ScaffoldMessenger.of(context).showSnackBar(
-                //                   SnackBar(
-                //                     content: Text('Coming Soon',
-                //                         style: typography.Body1),
-                //                   ),
-                //                 );
-                //               },
-                //             ),*/
-                //         ],
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                // ListTile(
-                //   title: Text(
-                //     locationProfileProvider
-                //             .locationProfile?.finalAddress?.address ??
-                //         '',
-                //     style: typography.Body1,
-                //   ),
-                //   contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                // ),
-                // Divider(),
                 DefaultTabController(
                   length: 2, // Number of tabs
                   child: Column(
                     children: [
                       TabBar(
                         onTap: (index) {
-                          if (index >= 2)
-                            return; // ✅ Prevents out-of-bounds errors
-                          setState(() => tabIndex = index);
+                          if (!mounted) return;
+                          if (index == 0) {
+                            setState(() => tabIndex = 0);
+                            Provider.of<MyLocationListProvider>(context,
+                                    listen: false)
+                                .fetchLocations();
+                          }
+                          // Do nothing if index == 1
                         },
-                        // onTap: (index) {
-                        //   // Prevent navigation when "Data Completeness" (index 2) is tapped
-                        //   if (index == 2) return;
-                        //
-                        //   setState(() {
-                        //     tabIndex = index;
-                        //     _add();
-                        //   });
-                        //   print("$index welcome $tabIndex");
-                        // },
-      
                         tabs: [
                           Tab(
                             text: 'Campus',
@@ -1556,9 +1357,14 @@ class _LocationProfileState extends State<LocationProfile>
                         ],
                       ),
                       Container(
+                        // height:
+                        // constraints.maxHeight * 0.5,
                         constraints: BoxConstraints(
                           minHeight: 10,
-                          maxHeight: 290,
+                          maxHeight: Platform.isAndroid
+                              ? MediaQuery.of(context).size.height * 0.36
+                              : MediaQuery.of(context).size.height * 0.30,
+                          //430,
                         ),
                         child: TabBarView(
                           physics: NeverScrollableScrollPhysics(),
@@ -1568,22 +1374,6 @@ class _LocationProfileState extends State<LocationProfile>
                           ],
                         ),
                       ),
-      
-                      // Container(
-                      //   constraints: BoxConstraints(
-                      //   minHeight: 10,
-                      //   maxHeight: 200
-                      //   ),
-                      //
-                      //   child: TabBarView(
-                      //     physics: NeverScrollableScrollPhysics(),
-                      //     children: [
-                      //       _campusWidget(),
-                      //       _mediaGalleryWidget(),
-                      //       // Container()
-                      //     ],
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
@@ -1600,31 +1390,38 @@ class _LocationProfileState extends State<LocationProfile>
     return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
       return Builder(builder: (context) {
-        double latitude =
-            locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
-        double longitude =
-            locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
+        List<Subdestination> filteredSubdestinations =
+            (locationProfileProvider.locationProfile?.subdestinations ?? [])
+                .where((sub) {
+          final status = (sub.status ?? '').toLowerCase();
+          return isSwitched ? status == 'added' : status != 'added';
+        }).toList();
+        List<Subdestination> allSubdestinations =
+            locationProfileProvider.locationProfile?.subdestinations ?? [];
+
+        int addedCount = allSubdestinations
+            .where((sub) => (sub.status ?? '').toLowerCase() == 'added')
+            .length;
+
+        int notAddedCount = allSubdestinations
+            .where((sub) => (sub.status ?? '').toLowerCase() != 'added')
+            .length;
+
+        // List<Subdestination> filteredSubdestinations = allSubdestinations
+        //     .where((sub) {
+        //   final status = (sub.status ?? '').toLowerCase();
+        //   return isSwitched ? status == 'added' : status != 'added';
+        // }).toList();
+
         return Stack(
           children: [
             if (_isBottomSheetExpanded)
               Scrollbar(
+                controller: _campusScrollController,
                 thumbVisibility: true,
                 child: ListView(
+                  controller: _campusScrollController,
                   children: [
-                    /*ListTile(
-                      title: Text(
-                        locationProfileProvider.locationProfile?.finalAddress?.address ?? '',
-                        style: typography.Body1,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                      trailing: IconButton(
-                        icon: Icon(Icons.edit,
-                            color: Theme.of(context).colorScheme.primary),
-                        onPressed: () =>
-                            _editAddress(locationProfileProvider),
-                      ),
-                    ),*/
-
                     // Campus Id, if present editable
                     if (locationProfileProvider
                                 .locationProfile?.finalAddress?.campusId !=
@@ -1641,8 +1438,7 @@ class _LocationProfileState extends State<LocationProfile>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Campus',
-                                    style:
-                                        typography.H6.copyWith(height: 1.2)),
+                                    style: typography.H6.copyWith(height: 1.2)),
                                 SizedBox(height: 4),
                                 Text(
                                     locationProfileProvider.locationProfile
@@ -1660,104 +1456,257 @@ class _LocationProfileState extends State<LocationProfile>
                           ],
                         ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Campus List',
-                              style: typography.H6.copyWith(height: 1.2),
-                            ),
-                          ),
-                          locationProfileProvider.locationProfile
-                                          ?.finalAddress?.score !=
-                                      5 &&
-                                  (locationProfileProvider.locationProfile
-                                          ?.finalAddress?.placeTypes
-                                          ?.any((placeType) =>
-                                              [
-                                                "premise",
-                                                "subpremise",
-                                                "rooftop",
-                                              ].contains(
-                                                  placeType.toLowerCase()) !=
-                                              true) ??
-                                      false)
-                              ? SizedBox()
-                              : IconButton(
-                                  icon: Icon(Icons.add_location_alt),
-                                  onPressed: _handleSubDestinationTap,
+                    (locationProfileProvider.locationProfile?.subdestinations ??
+                                [])
+                            .isEmpty
+                        ? Container()
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.only(left: 10),
+                                child: Text(
+                                  addedCount == 0
+                                      ? 'Campus'
+                                      : isSwitched
+                                          ? 'Added Campus'
+                                          : 'Not Added Campus',
+                                  // 'Added Campus',
+                                  style: typography.H6.copyWith(height: 1.2),
                                 ),
-                        ],
-                      ),
-                    ),
-                    (locationProfileProvider
-                                    .locationProfile?.subdestinations ??
+                              ),
+                              addedCount == 0
+                                  ? Container()
+                                  : Container(
+                                      padding: EdgeInsets.only(right: 8),
+                                      child: Switch(
+                                        value: isSwitched,
+                                        onChanged: (value) {
+                                          if (!mounted) return;
+                                          setState(() {
+                                            isSwitched = value;
+                                            isSelectionMode = false;
+                                            selectedIds.clear();
+                                            // status= value ? "added" : "not added";
+                                          });
+                                        },
+                                        activeColor: Colors.blue,
+                                        inactiveThumbColor: Colors.grey,
+                                        inactiveTrackColor: Colors.grey[300],
+                                      ),
+                                    ),
+                            ],
+                          ),
+                    (locationProfileProvider.locationProfile?.subdestinations ??
                                 [])
                             .isEmpty
                         ? Center(
                             child: Text('No Campus', style: typography.Body1))
-                        : Container(
-                            // height: 240,
-                            constraints: BoxConstraints(
-                                minHeight: 200, maxHeight: 210),
-                            child: PageView.builder(
-                              controller:
-                                  PageController(viewportFraction: 0.9),
-                              itemCount: (locationProfileProvider
-                                          .locationProfile?.subdestinations ??
-                                      [])
-                                  .length,
-                              itemBuilder: (context, index) {
-                                var subdestination = locationProfileProvider
-                                    .locationProfile?.subdestinations![index];
-                                return GestureDetector(
-                                  onTap: () =>
-                                      _focusOnSubdestination(subdestination!),
-                                  child: Card(
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 8, horizontal: 16),
-                                    child: StatefulBuilder(
-                                      builder: (context, setState) {
-                                        String occupancy =
-                                            (subdestination?.rented ?? false)
-                                                ? 'Rented/Leased'
-                                                : 'Owned';
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (isSelectionMode)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 8.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${selectedIds.length} selected',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium!
+                                            .copyWith(
+                                                fontWeight: FontWeight.bold),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          if (!mounted) return;
+                                          setState(() {
+                                            isSelectionMode = false;
+                                            selectedIds.clear();
+                                          });
+                                        },
+                                        child: Text('Clear Selection'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              Container(
+                                constraints: BoxConstraints(
+                                    minHeight: 50,
+                                    maxHeight: isSwitched ? 230 : 145),
+                                child: PageView.builder(
+                                  key: const ValueKey('campus_page_view'),
+                                  controller: _pageController,
+                                  itemCount: filteredSubdestinations.length,
+                                  itemBuilder: (context, index) {
+                                    int totalItems =
+                                        filteredSubdestinations.length;
 
-                                        return Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            ListTile(
-                                              title: Text(
-                                                  subdestination?.name ?? ''),
-                                              subtitle: Text(
-                                                  subdestination?.address ??
-                                                      ''),
-                                              trailing: IconButton(
-                                                icon: Icon(Icons.map),
-                                                onPressed: () =>
-                                                    _focusOnSubdestination(
-                                                        subdestination!),
-                                              ),
-                                            ),
-                                            if ((subdestination?.status ?? "")
-                                                    .toLowerCase() ==
-                                                'added')
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  // SizedBox(height: 3),
+                                    int addedSelectedCount =
+                                        filteredSubdestinations.where((item) {
+                                      final id = item.id ?? '';
+                                      final status =
+                                          (item?.status ?? '').toLowerCase();
+                                      final isSelected =
+                                          selectedIds.contains(id);
+                                      return isSelected && status == 'added';
+                                    }).length;
+
+                                    var subdestination =
+                                        filteredSubdestinations[index];
+                                    final id = subdestination.id ?? '';
+                                    final status =
+                                        (subdestination?.status ?? '')
+                                            .toLowerCase();
+                                    final isSelected = selectedIds.contains(id);
+                                    final canSelect = status != 'added';
+                                    return
+                                        // status == 'added'?
+                                        GestureDetector(
+                                      onTap: () {
+                                        if (isSelectionMode && canSelect) {
+                                          setState(() {
+                                            if (isSelected) {
+                                              selectedIds.remove(id);
+                                            } else {
+                                              selectedIds.add(id);
+                                            }
+                                            if (selectedIds.isEmpty) {
+                                              isSelectionMode = false;
+                                            }
+                                          });
+                                        } else {
+                                          _focusOnSubdestination(
+                                              subdestination!);
+                                        }
+                                      },
+                                      onLongPress: () {
+                                        if (canSelect) {
+                                          setState(() {
+                                            isSelectionMode = true;
+                                            if (isSelected) {
+                                              selectedIds.remove(id);
+                                            } else {
+                                              selectedIds.add(id);
+                                            }
+                                            if (selectedIds.isEmpty) {
+                                              isSelectionMode = false;
+                                            }
+                                          });
+                                        }
+                                      },
+                                      onDoubleTap: () {
+                                        setState(() {
+                                          selectedIndex = index;
+                                        });
+                                      },
+                                      child: Card(
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                            color: isSelected && canSelect
+                                                ? Colors.blue
+                                                : Colors.transparent,
+                                            width: 2,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        margin: EdgeInsets.symmetric(
+                                            vertical: 10, horizontal: 16),
+                                        child: Builder(
+                                          builder: (context) {
+                                            // child: Builder(
+                                            //   builder: (context, setState) {
+                                            String occupancy =
+                                                (subdestination?.rented ??
+                                                        false)
+                                                    ? 'Rented/Leased'
+                                                    : 'Owned';
+
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                SizedBox(height: 3),
+                                                ListTile(
+                                                  // leading: isSelectionMode &&
+                                                  //         canSelect
+                                                  leading: canSelect
+                                                      ? Checkbox(
+                                                          value: isSelected,
+                                                          onChanged:
+                                                              (bool? checked) {
+                                                            setState(() {
+                                                              if (checked ==
+                                                                  true) {
+                                                                selectedIds
+                                                                    .add(id);
+                                                              } else {
+                                                                selectedIds
+                                                                    .remove(id);
+                                                              }
+                                                              isSelectionMode =
+                                                                  selectedIds
+                                                                      .isNotEmpty;
+                                                            });
+                                                          },
+                                                        )
+                                                      : null,
+                                                  title: Text(
+                                                    subdestination?.name ?? '',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  subtitle: Text(
+                                                    subdestination?.address ??
+                                                        '',
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  // trailing: IconButton(
+                                                  //   icon: Icon(Icons.map),
+                                                  //   onPressed: () =>
+                                                  //       _focusOnSubdestination(
+                                                  //           subdestination!),
+                                                  // ),
+                                                ),
+                                                if (status == 'added') ...[
                                                   Padding(
                                                     padding: const EdgeInsets
                                                         .symmetric(
                                                         horizontal: 16.0),
-                                                    child: Text(
-                                                      "Occupancy Type",
-                                                      style: typography.Body1,
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Text("Occupancy Type",
+                                                            style: typography
+                                                                .Body1),
+                                                        Chip(
+                                                          padding:
+                                                              EdgeInsets.all(
+                                                                  12),
+                                                          label: Text(
+                                                            subdestination
+                                                                    ?.status ??
+                                                                "Not Added",
+                                                            style: typography
+                                                                .Body1,
+                                                          ),
+                                                          backgroundColor:
+                                                              Colors.green,
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                   Row(
@@ -1765,210 +1714,471 @@ class _LocationProfileState extends State<LocationProfile>
                                                       Radio<String>(
                                                         value: "Owned",
                                                         groupValue: occupancy,
-                                                        onChanged:
-                                                            (value) async {
-                                                          var provider = Provider
-                                                              .of<MyLocationListProvider>(
+                                                        onChanged: isLoading
+                                                            ? null
+                                                            : (value) async {
+                                                                if (value ==
+                                                                    null)
+                                                                  return;
+                                                                if (!mounted)
+                                                                  return;
+                                                                setState(() {
+                                                                  occupancy =
+                                                                      value;
+                                                                  subdestination
+                                                                          ?.rented =
+                                                                      false;
+                                                                  isLoading =
+                                                                      true;
+                                                                  selectedLoadingType =
+                                                                      value;
+                                                                });
+
+                                                                var provider =
+                                                                    Provider.of<
+                                                                            MyLocationListProvider>(
+                                                                        context,
+                                                                        listen:
+                                                                            false);
+                                                                bool result =
+                                                                    await provider
+                                                                        .changeOccupancy(
                                                                   context,
-                                                                  listen:
-                                                                      false);
-                                                          bool result =
-                                                              await provider
-                                                                  .changeOccupancy(
-                                                            context,
-                                                            subdestination
-                                                                    ?.locationId ??
-                                                                "",
-                                                            false,
-                                                            provider
-                                                                    .locationProfile
-                                                                    ?.finalAddress
-                                                                    ?.locationId ??
-                                                                "",
-                                                          );
-                                                          print(
-                                                              'Result: $result');
-                                                          if (result) {
-                                                            setState(() {
-                                                              occupancy =
-                                                                  value!;
-                                                            });
-                                                          } else {
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                    'Failed to change occupancy',
-                                                                    style: typography
-                                                                        .Body1),
-                                                              ),
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
-                                                      Text("Owned"),
-                                                      Radio<String>(
-                                                        value:
-                                                            "Rented/Leased",
-                                                        groupValue: occupancy,
-                                                        onChanged:
-                                                            (value) async {
-                                                          var provider = Provider
-                                                              .of<MyLocationListProvider>(
-                                                                  context,
-                                                                  listen:
-                                                                      false);
-                                                          bool result =
-                                                              await provider
-                                                                  .changeOccupancy(
-                                                            context,
-                                                            subdestination
-                                                                    ?.locationId ??
-                                                                "",
-                                                            true,
-                                                            provider
-                                                                    .locationProfile
-                                                                    ?.finalAddress
-                                                                    ?.locationId ??
-                                                                "",
-                                                          );
-                                                          print(
-                                                              'Result: $result');
-                                                          if (result) {
-                                                            setState(() {
-                                                              occupancy =
-                                                                  value!;
-                                                            });
-                                                          } else {
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                    'Failed to change occupancy',
-                                                                    style: typography
-                                                                        .Body1),
-                                                              ),
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
-                                                      Text("Rented/Leased"),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            Spacer(),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceEvenly,
-                                              children: [
-                                                Chip(
-                                                  padding: EdgeInsets.all(12),
-                                                  label: Text(
-                                                    subdestination?.status ??
-                                                        "Not Added",
-                                                    style: typography.Body1,
-                                                  ),
-                                                  backgroundColor:
-                                                      (subdestination?.status ??
-                                                                      "")
-                                                                  .toLowerCase() ==
-                                                              'added'
-                                                          ? Colors.green
-                                                          : Theme.of(context)
-                                                              .colorScheme
-                                                              .surface,
-                                                ),
-                                                locationProfileProvider
-                                                        .isLoading
-                                                    ? CircularProgressIndicator()
-                                                    : (subdestination?.status ??
-                                                                    "")
-                                                                .toLowerCase() ==
-                                                            'added'
-                                                        ? CustomButton(
-                                                            type: ButtonType
-                                                                .elevated,
-                                                            onPressed: () =>
-                                                                _removeFromSOV(
-                                                                    subdestination
-                                                                            ?.id ??
-                                                                        ""),
-                                                            child: Text(
-                                                              'Remove Campus',
-                                                              style:
-                                                                  typography
-                                                                      .Body1,
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                            ),
-                                                          )
-                                                        : CustomButton(
-                                                            type: ButtonType
-                                                                .elevated,
-                                                            onPressed: () {
-                                                              var provider =
-                                                                  Provider.of<
-                                                                          MyLocationListProvider>(
-                                                                      context,
-                                                                      listen:
-                                                                          false);
-                                                              if (provider
-                                                                          .locationProfile
-                                                                          ?.finalAddress
-                                                                          ?.campusId ==
-                                                                      null ||
+                                                                  subdestination
+                                                                          ?.locationId ??
+                                                                      "",
+                                                                  false,
                                                                   provider
                                                                           .locationProfile
                                                                           ?.finalAddress
-                                                                          ?.campusId ==
-                                                                      '') {
-                                                                _showAddToSOVDialog(
-                                                                    subdestination
-                                                                            ?.id ??
-                                                                        "",
-                                                                    occupancy);
-                                                              } else {
-                                                                _addToSOV(
-                                                                  subdestination
-                                                                          ?.id ??
-                                                                      "",
-                                                                  occupancy:
-                                                                      occupancy,
-                                                                  campusName: provider
-                                                                          .locationProfile
-                                                                          ?.finalAddress
-                                                                          ?.campusId ??
+                                                                          ?.locationId ??
                                                                       "",
                                                                 );
-                                                              }
-                                                            },
-                                                            child: Text(
-                                                                'Add to Campus',
-                                                                style:
-                                                                    typography
-                                                                        .Body1),
-                                                          ),
+                                                                if (!mounted)
+                                                                  return;
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                  selectedLoadingType =
+                                                                      null;
+                                                                });
+
+                                                                if (!result) {
+                                                                  _showErrorSnackBar();
+                                                                  if (!mounted)
+                                                                    return;
+                                                                  setState(() {
+                                                                    occupancy =
+                                                                        "Rented/Leased";
+                                                                    subdestination
+                                                                            ?.rented =
+                                                                        true;
+                                                                  });
+                                                                }
+                                                              },
+                                                      ),
+                                                      Text("Owned"),
+                                                      if (isLoading &&
+                                                          selectedLoadingType ==
+                                                              "Owned")
+                                                        SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      2),
+                                                        ),
+                                                      Radio<String>(
+                                                        value: "Rented/Leased",
+                                                        groupValue: occupancy,
+                                                        onChanged: isLoading
+                                                            ? null
+                                                            : (value) async {
+                                                                if (value ==
+                                                                    null)
+                                                                  return;
+                                                                if (!mounted)
+                                                                  return;
+                                                                setState(() {
+                                                                  occupancy =
+                                                                      value;
+                                                                  subdestination
+                                                                          ?.rented =
+                                                                      true;
+                                                                  isLoading =
+                                                                      true;
+                                                                  selectedLoadingType =
+                                                                      value;
+                                                                });
+
+                                                                var provider =
+                                                                    Provider.of<
+                                                                            MyLocationListProvider>(
+                                                                        context,
+                                                                        listen:
+                                                                            false);
+                                                                bool result =
+                                                                    await provider
+                                                                        .changeOccupancy(
+                                                                  context,
+                                                                  subdestination
+                                                                          ?.locationId ??
+                                                                      "",
+                                                                  true,
+                                                                  provider
+                                                                          .locationProfile
+                                                                          ?.finalAddress
+                                                                          ?.locationId ??
+                                                                      "",
+                                                                );
+                                                                if (!mounted)
+                                                                  return;
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                  selectedLoadingType =
+                                                                      null;
+                                                                });
+
+                                                                if (!result) {
+                                                                  _showErrorSnackBar();
+                                                                  if (!mounted)
+                                                                    return;
+                                                                  setState(() {
+                                                                    occupancy =
+                                                                        "Owned";
+                                                                    subdestination
+                                                                            ?.rented =
+                                                                        false;
+                                                                  });
+                                                                }
+                                                              },
+                                                      ),
+                                                      Text("Rented/Leased"),
+                                                      if (isLoading &&
+                                                          selectedLoadingType ==
+                                                              "Rented/Leased")
+                                                        SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      2),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ],
+                                                SizedBox(height: 8),
                                               ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                    // :Container();
+                                  },
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      selectedIndex = index;
+                                    });
+                                    // var subdestination = locationProfileProvider.subdestinations[index];
+                                    // _focusOnSubdestination(subdestination);
+                                    var subdestination = locationProfileProvider
+                                        .subdestinations[index];
+                                    _focusOnSubdestination(subdestination);
+                                  },
+                                ),
+                              ),
+                              if (isSelectionMode &&
+                                  // selectedIds.length > 1 &&
+                                  !isSwitched)
+                                Container(
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: CustomButton(
+                                    type: ButtonType.elevated,
+                                    onPressed: () async {
+                                      Set<String> tempSelectedIds =
+                                          Set.from(selectedIds);
+
+                                      await showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          bool confirmload =
+                                              false; // moved inside dialog
+
+                                          return StatefulBuilder(
+                                            builder: (context, setStateDialog) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                    "Confirm Add to Campus"),
+                                                content: SizedBox(
+                                                  width: double.maxFinite,
+                                                  height: 180,
+                                                  child: ListView.separated(
+                                                    itemCount:
+                                                        tempSelectedIds.length,
+                                                    separatorBuilder: (context,
+                                                            index) =>
+                                                        SizedBox(height: 12),
+                                                    itemBuilder:
+                                                        (context, index) {
+                                                      final selectedId =
+                                                          tempSelectedIds
+                                                              .toList()[index];
+                                                      final item =
+                                                          filteredSubdestinations
+                                                              .firstWhere(
+                                                                  (element) =>
+                                                                      element
+                                                                          .id ==
+                                                                      selectedId);
+
+                                                      return Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Checkbox(
+                                                            value: tempSelectedIds
+                                                                .contains(
+                                                                    selectedId),
+                                                            onChanged:
+                                                                (bool? value) {
+                                                              setStateDialog(
+                                                                  () {
+                                                                if (value ==
+                                                                    true) {
+                                                                  tempSelectedIds
+                                                                      .add(
+                                                                          selectedId);
+                                                                } else {
+                                                                  tempSelectedIds
+                                                                      .remove(
+                                                                          selectedId);
+                                                                }
+                                                              });
+                                                            },
+                                                          ),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              children: [
+                                                                Text(item
+                                                                        .name ??
+                                                                    "Unnamed Location"),
+                                                                if (item.address !=
+                                                                    null)
+                                                                  Text(
+                                                                    item.address!,
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            12,
+                                                                        color: Colors
+                                                                            .grey),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(context)
+                                                            .pop(),
+                                                    child: Text("Cancel"),
+                                                  ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .zero),
+                                                    ),
+                                                    onPressed: confirmload
+                                                        ? null
+                                                        : () async {
+                                                            setStateDialog(() {
+                                                              confirmload =
+                                                                  true;
+                                                            });
+
+                                                            var provider = Provider
+                                                                .of<MyLocationListProvider>(
+                                                                    context,
+                                                                    listen:
+                                                                        false);
+                                                            final campusId = provider
+                                                                    .locationProfile
+                                                                    ?.finalAddress
+                                                                    ?.campusId ??
+                                                                "";
+
+                                                            for (String id
+                                                                in tempSelectedIds) {
+                                                              final subdestination =
+                                                                  filteredSubdestinations
+                                                                      .firstWhere((item) =>
+                                                                          item.id ==
+                                                                          id);
+                                                              String occupancy =
+                                                                  (subdestination
+                                                                              .rented ??
+                                                                          false)
+                                                                      ? 'Rented/Leased'
+                                                                      : 'Owned';
+
+                                                              await _addToSOV(
+                                                                subdestination
+                                                                        .id ??
+                                                                    "",
+                                                                occupancy:
+                                                                    occupancy,
+                                                                campusName:
+                                                                    campusId,
+                                                              );
+                                                            }
+
+                                                            setState(() {
+                                                              selectedIds
+                                                                  .clear(); // Or tempSelectedIds.clear(), based on your logic
+                                                              isLoadingAddToCampus =
+                                                                  false;
+                                                              isSelectionMode =
+                                                                  false;
+                                                            });
+
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                          },
+                                                    child: confirmload
+                                                        ? SizedBox(
+                                                            width: 20,
+                                                            height: 20,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          )
+                                                        : Text("Confirm"),
+                                                  ),
+
+                                                  // ElevatedButton(
+                                                  //   style: ElevatedButton
+                                                  //       .styleFrom(
+                                                  //     shape:
+                                                  //         RoundedRectangleBorder(
+                                                  //             borderRadius:
+                                                  //                 BorderRadius
+                                                  //                     .zero),
+                                                  //   ),
+                                                  //   onPressed: confirmload
+                                                  //       ? null
+                                                  //       : () async {
+                                                  //           setStateDialog(() {
+                                                  //             confirmload =
+                                                  //                 true;
+                                                  //           });
+                                                  //
+                                                  //           var provider = Provider
+                                                  //               .of<MyLocationListProvider>(
+                                                  //                   context,
+                                                  //                   listen:
+                                                  //                       false);
+                                                  //           // 🔒 Capture campusId once before the loop
+                                                  //           final campusId = provider.locationProfile?.finalAddress?.campusId ?? "";
+                                                  //
+                                                  //           for (String id
+                                                  //               in tempSelectedIds) {
+                                                  //             final subdestination =
+                                                  //                 filteredSubdestinations
+                                                  //                     .firstWhere((item) =>
+                                                  //                         item.id ==
+                                                  //                         id);
+                                                  //             String occupancy =
+                                                  //                 (subdestination
+                                                  //                             .rented ??
+                                                  //                         false)
+                                                  //                     ? 'Rented/Leased'
+                                                  //                     : 'Owned';
+                                                  //
+                                                  //             await _addToSOV(
+                                                  //               subdestination
+                                                  //                       .id ??
+                                                  //                   "",
+                                                  //               occupancy:
+                                                  //                   occupancy,
+                                                  //               campusName: campusId
+                                                  //             );
+                                                  //           }
+                                                  //
+                                                  //           setState(() {
+                                                  //             selectedIds =
+                                                  //                 tempSelectedIds;
+                                                  //             isLoadingAddToCampus =
+                                                  //                 false;
+                                                  //             isSelectionMode =
+                                                  //                 selectedIds
+                                                  //                     .isNotEmpty;
+                                                  //             selectedIds
+                                                  //                 .clear();
+                                                  //             isSelectionMode =
+                                                  //                 false;
+                                                  //           });
+                                                  //
+                                                  //           Navigator.of(
+                                                  //                   context)
+                                                  //               .pop(); // ✅ only after success
+                                                  //         },
+                                                  //   child: confirmload
+                                                  //       ? SizedBox(
+                                                  //           width: 20,
+                                                  //           height: 20,
+                                                  //           child:
+                                                  //               CircularProgressIndicator(
+                                                  //             strokeWidth: 2,
+                                                  //             color:
+                                                  //                 Colors.white,
+                                                  //           ),
+                                                  //         )
+                                                  //       : Text("Confirm"),
+                                                  // ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: isLoadingAddToCampus
+                                        ? SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
                                             ),
-                                            SizedBox(height: 8),
-                                          ],
-                                        );
-                                      },
-                                    ),
+                                          )
+                                        : Text('Add Location to Campus',
+                                            style: typography.Body1),
                                   ),
-                                );
-                              },
-                              onPageChanged: (index) {
-                                var subdestination = locationProfileProvider
-                                    .subdestinations[index];
-                                _focusOnSubdestination(subdestination);
-                              },
-                            ),
+                                ),
+                            ],
                           ),
                   ],
                 ),
@@ -1977,6 +2187,14 @@ class _LocationProfileState extends State<LocationProfile>
         );
       });
     });
+  }
+
+  void _showErrorSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to change occupancy'),
+      ),
+    );
   }
 
   Widget _mediaGalleryWidget() {
@@ -2018,13 +2236,12 @@ class _LocationProfileState extends State<LocationProfile>
                                   Container(
                                     height: 200,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surface,
+                                      color:
+                                          Theme.of(context).colorScheme.surface,
                                     ),
                                     child: PageView.builder(
-                                      controller: PageController(
-                                          viewportFraction: 0.9),
+                                      controller:
+                                          PageController(viewportFraction: 0.9),
                                       itemCount: _images.length +
                                           (locationProfileProvider
                                                   .locationProfile
@@ -2073,8 +2290,7 @@ class _LocationProfileState extends State<LocationProfile>
                                           return GestureDetector(
                                             onTap: () =>
                                                 _showImagePreviewFromUrl(
-                                                    screenshot?.imageUrl ??
-                                                        ''),
+                                                    screenshot?.imageUrl ?? ''),
                                             child: Image.network(
                                               screenshot?.imageUrl ?? '',
                                               fit: BoxFit.cover,
@@ -2089,8 +2305,8 @@ class _LocationProfileState extends State<LocationProfile>
                                 ],
                               )
                             : Center(
-                                child: Text('No Images',
-                                    style: typography.Body1)),
+                                child:
+                                    Text('No Images', style: typography.Body1)),
                     SizedBox(height: 24),
                     Container(
                       margin: EdgeInsets.symmetric(horizontal: 16),
@@ -2514,22 +2730,7 @@ class _LocationProfileState extends State<LocationProfile>
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
                   ),
-                  /*ListTile(
-                    title: Text(
-                      locationProfileProvider
-                              .locationProfile?.finalAddress?.address ??
-                          '',
-                      style: typography.Body1,
-                    ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                    trailing: IconButton(
-                      icon: Padding(
-                        padding: const EdgeInsets.only(left: 5.0),
-                        child: Icon(Icons.edit, color: AppColors.primaryMain),
-                      ),
-                      onPressed: () => _editAddress(locationProfileProvider),
-                    ),
-                  ),*/
+
                   Divider(),
                   // Campus Id, if present editable
                   if (locationProfileProvider
@@ -2571,11 +2772,9 @@ class _LocationProfileState extends State<LocationProfile>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Flexible(
-                          child: Text(
-                            'Campus List',
-                            style: typography.H6.copyWith(height: 1.2),
-                          ),
+                        Text(
+                          'Campus List',
+                          style: typography.H6.copyWith(height: 1.2),
                         ),
                         locationProfileProvider
                                         .locationProfile?.finalAddress?.score !=
@@ -2647,21 +2846,6 @@ class _LocationProfileState extends State<LocationProfile>
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
                                         children: [
-                                          Chip(
-                                            padding: EdgeInsets.all(12),
-                                            label: Text(
-                                                subdestination.status ??
-                                                    "Not Added",
-                                                style: typography.Body1),
-                                            backgroundColor:
-                                                (subdestination.status ?? "")
-                                                            .toLowerCase() ==
-                                                        'added'
-                                                    ? Colors.green
-                                                    : Theme.of(context)
-                                                        .colorScheme
-                                                        .surface,
-                                          ),
                                           locationProfileProvider.isLoading
                                               ? CircularProgressIndicator()
                                               : (subdestination.status ?? "")
@@ -3311,112 +3495,20 @@ class _LocationProfileState extends State<LocationProfile>
   Widget _geocodingScore() {
     return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
-          double latitude = locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
-          double longitude = locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
+      double latitude =
+          locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
+      double longitude =
+          locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
 
-          return locationProfileProvider.isLoading
-              ? Center(child: CircularProgressIndicator())
-              : Stack(
-            children: [
-              Container(
-                margin: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Screenshot(
-                    controller: _geocodingScreenshotController,
-                    child: GoogleMap(
-                      key: UniqueKey(),
-                      mapType: _currentMapType,
-                      markers: Set<Marker>.of(markers.values),
-                      zoomControlsEnabled: true,
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(latitude, longitude),
-                        zoom: 18,
-                      ),
-                      onMapCreated: (GoogleMapController controller) {
-                        if (!_controller.isCompleted) {
-                          _controller.complete(controller);
-                        }
-                      },
-                      gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                        Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
-                      },
-                      onTap: _isAddingMarker ? _handleMapTap : null,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Left navigation button
-              if ((int.tryParse(widget.page) ?? 1) > 1 &&
-                  (widget.locationId.isNotEmpty
-                      ? locationProfileProvider.resetTotalPage - 1
-                      : int.tryParse(widget.totalPages) ?? 0) > 0)
-                Positioned(
-                  left: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: FloatingActionButton(
-                      shape: CircleBorder(),
-                      mini: true,
-                      backgroundColor: Theme.of(context).brightness == Brightness.light
-                          ? AppColors.paperElavation25Light
-                          : AppColors.paperElavation25,
-                      onPressed: _navigateLeft,
-                      child: Icon(Icons.chevron_left, size: 30),
-                    ),
-                  ),
-                ),
-
-              // Right navigation button
-              if ((int.tryParse(widget.page) ?? 1) <
-                  (widget.locationId.isNotEmpty
-                      ? locationProfileProvider.resetTotalPage - 1
-                      : (int.tryParse(widget.totalPages) ?? 1)))
-                Positioned(
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: FloatingActionButton(
-                      mini: true,
-                      shape: CircleBorder(),
-                      backgroundColor: Theme.of(context).brightness == Brightness.light
-                          ? AppColors.paperElavation25Light
-                          : AppColors.paperElavation25,
-                      onPressed: _isLoading ? null : _navigateRight,
-                      child: _isLoading
-                          ? CircularProgressIndicator(color: Colors.white)
-                          : Icon(Icons.chevron_right, size: 30),
-                    ),
-                  ),
-                ),
-
-              // Floating Action Buttons (Map Type & Screenshot)
-              Positioned(
-                bottom: 105,
-                left: 16,
-                child: Container(
-                  margin: EdgeInsets.all(12),
+      return locationProfileProvider.isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                Container(
+                  margin: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.brightness == Brightness.light
-                        ? AppColors.paperElevation2Light
-                        : AppColors.paperElevation2,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
@@ -3425,92 +3517,207 @@ class _LocationProfileState extends State<LocationProfile>
                       ),
                     ],
                   ),
-                  child: Row(
-                    children: [
-                      FloatingActionButton.small(
-                        elevation: 0,
-                        backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
-                            ? AppColors.paperElevation2Light
-                            : AppColors.paperElevation2,
-                        onPressed: () {
-                          setState(() {
-                            _currentMapType = _currentMapType == MapType.normal
-                                ? MapType.satellite
-                                : MapType.normal;
-                          });
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Screenshot(
+                      controller: _geocodingScreenshotController,
+                      child: GoogleMap(
+                        key: UniqueKey(),
+                        mapType: _currentMapType,
+                        markers: Set<Marker>.of(markers.values),
+                        zoomControlsEnabled: true,
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(latitude, longitude),
+                          zoom: 18,
+                        ),
+                        onMapCreated: (GoogleMapController controller) {
+                          if (!_controller.isCompleted) {
+                            _controller.complete(controller);
+                          }
                         },
-                        child: Icon(Icons.layers, color: Theme.of(context).colorScheme.onSurface),
-                        tooltip: 'Change Map Type',
+                        gestureRecognizers: <Factory<
+                            OneSequenceGestureRecognizer>>{
+                          Factory<OneSequenceGestureRecognizer>(
+                              () => EagerGestureRecognizer()),
+                        },
+                        onTap: _isAddingMarker ? _handleMapTap : null,
                       ),
-                      SizedBox(width: 8),
-                    ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Screenshot & Add Location Button
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  margin: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.brightness == Brightness.light
-                        ? AppColors.paperElevation2Light
-                        : AppColors.paperElevation2,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, 5),
+                // Left navigation button
+                if ((int.tryParse(widget.page) ?? 1) > 1 &&
+                    (widget.locationId.isNotEmpty
+                            ? locationProfileProvider.resetTotalPage - 1
+                            : int.tryParse(widget.totalPages) ?? 0) >
+                        0)
+                  Positioned(
+                    left: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FloatingActionButton(
+                        shape: CircleBorder(),
+                        mini: true,
+                        backgroundColor:
+                            Theme.of(context).brightness == Brightness.light
+                                ? AppColors.paperElavation25Light
+                                : AppColors.paperElavation25,
+                        onPressed: _navigateLeft,
+                        child: Icon(Icons.chevron_left, size: 30),
                       ),
-                    ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      FloatingActionButton.small(
-                        elevation: 0,
-                        onPressed: () async {
-                          setState(() => _isLoading = true);
-                          await _captureAndUploadMapScreenshot();
-                          setState(() => _isLoading = false);
-                        },
-                        backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
-                            ? AppColors.paperElevation2Light
-                            : AppColors.paperElevation2,
+
+                // Right navigation button
+                if ((int.tryParse(widget.page) ?? 1) <
+                    (widget.locationId.isNotEmpty
+                        ? locationProfileProvider.resetTotalPage - 1
+                        : (int.tryParse(widget.totalPages) ?? 1)))
+                  Positioned(
+                    right: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FloatingActionButton(
+                        mini: true,
+                        shape: CircleBorder(),
+                        backgroundColor:
+                            Theme.of(context).brightness == Brightness.light
+                                ? AppColors.paperElavation25Light
+                                : AppColors.paperElavation25,
+                        onPressed: _isLoading ? null : _navigateRight,
                         child: _isLoading
-                            ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            strokeWidth: 2.0,
-                          ),
-                        )
-                            : Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.onSurface),
-                        tooltip: 'Capture and Upload Screenshot',
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Icon(Icons.chevron_right, size: 30),
                       ),
-                      SizedBox(width: 8),
-                      if (locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.contains('premise') == true)
+                    ),
+                  ),
+
+                // Floating Action Buttons (Map Type & Screenshot)
+                Positioned(
+                  bottom: 105,
+                  left: 16,
+                  child: Container(
+                    margin: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.brightness ==
+                              Brightness.light
+                          ? AppColors.paperElevation2Light
+                          : AppColors.paperElevation2,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
                         FloatingActionButton.small(
                           elevation: 0,
-                          backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
-                              ? AppColors.paperElevation2Light
-                              : AppColors.paperElevation2,
-                          onPressed: _handleSubDestinationTap,
-                          child: Icon(Icons.add_location_alt, color: Colors.white),
-                          tooltip: 'Add Campus',
+                          backgroundColor:
+                              Theme.of(context).colorScheme.brightness ==
+                                      Brightness.light
+                                  ? AppColors.paperElevation2Light
+                                  : AppColors.paperElevation2,
+                          onPressed: () {
+                            setState(() {
+                              _currentMapType =
+                                  _currentMapType == MapType.normal
+                                      ? MapType.satellite
+                                      : MapType.normal;
+                            });
+                          },
+                          child: Icon(Icons.layers,
+                              color: Theme.of(context).colorScheme.onSurface),
+                          tooltip: 'Change Map Type',
                         ),
-                    ],
+                        SizedBox(width: 8),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        });
-  }
 
+                // Screenshot & Add Location Button
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    margin: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.brightness ==
+                              Brightness.light
+                          ? AppColors.paperElevation2Light
+                          : AppColors.paperElevation2,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        FloatingActionButton.small(
+                          elevation: 0,
+                          onPressed: () async {
+                            setState(() => _isLoading = true);
+                            await _captureAndUploadMapScreenshot();
+                            setState(() => _isLoading = false);
+                          },
+                          backgroundColor:
+                              Theme.of(context).colorScheme.brightness ==
+                                      Brightness.light
+                                  ? AppColors.paperElevation2Light
+                                  : AppColors.paperElevation2,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    strokeWidth: 2.0,
+                                  ),
+                                )
+                              : Icon(Icons.camera_alt,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
+                          tooltip: 'Capture and Upload Screenshot',
+                        ),
+                        SizedBox(width: 8),
+                        if (locationProfileProvider
+                                .locationProfile?.finalAddress?.placeTypes
+                                ?.contains('premise') ==
+                            true)
+                          FloatingActionButton.small(
+                            elevation: 0,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.brightness ==
+                                        Brightness.light
+                                    ? AppColors.paperElevation2Light
+                                    : AppColors.paperElevation2,
+                            onPressed: _handleSubDestinationTap,
+                            child: Icon(Icons.add_location_alt,
+                                color: Colors.white),
+                            tooltip: 'Add Campus',
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+    });
+  }
 
   Widget _riskScore() {
     var typography = CustomTypography(context);
@@ -3565,11 +3772,11 @@ class _LocationProfileState extends State<LocationProfile>
             ),
 
             // Map Type Selector (Top Right)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: _buildMapTypeSelector(),
-            ),
+            // Positioned(
+            //   top: 16,
+            //   right: 16,
+            //   child: _buildMapTypeSelector(),
+            // ),
 
             // Left Navigation Button
             if ((int.tryParse(widget.page) ?? 1) > 1)
@@ -4788,6 +4995,9 @@ class _LocationProfileState extends State<LocationProfile>
                 );
 
                 await _getData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Campus created Successfully')),
+                );
                 Navigator.of(dialogContext).pop();
               } catch (error) {
                 print('Error creating subdestination: $error');
@@ -5050,7 +5260,7 @@ class _LocationProfileState extends State<LocationProfile>
           style: ElevatedButton.styleFrom(
             backgroundColor: isAdded ? Colors.green : Colors.blue,
           ),
-          child: Text(isAdded ? 'Added' : 'Add to SOV2'),
+          child: Text(isAdded ? 'Added' : 'Add to SOV'),
         ),
       ),
     );
@@ -5305,6 +5515,7 @@ class _LocationProfileState extends State<LocationProfile>
                   Navigator.of(context).pop(); // Close the dialog
                   _addToSOV(subdestinationId,
                       occupancy: occupancy, campusName: campusName);
+                  _getData();
                 } else {
                   // Show a message if the campus name is empty
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -5325,8 +5536,7 @@ class _LocationProfileState extends State<LocationProfile>
     var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     var user = FirebaseAuth.instance.currentUser;
     print('User ID: ${user?.uid}');
-    await provider
-        .addSubdestinationToSOV(
+    await provider.addSubdestinationToSOV(
       context: context,
       accountId: widget.accountId,
       subAccountId: widget.subAccountId,
@@ -5337,10 +5547,20 @@ class _LocationProfileState extends State<LocationProfile>
       occupancy: occupancy,
       accountName: widget.accountName,
       subAccountName: widget.subAccountName,
-    )
-        .then((value) {
-      _getData();
-    });
+    );
+
+    // ✅ Instead of _getData(), manually update the local model
+    final updatedSub = provider.locationProfile?.subdestinations?.firstWhere(
+      (sub) => sub.id == subdestinationId,
+    );
+
+    if (updatedSub != null) {
+      updatedSub.status = 'added';
+      provider.notifyListeners(); // 🔔 Trigger UI update
+    }
+    //     .then((value) {
+    //   _getData();
+    // });
   }
 
   Future<void> _removeFromSOV(String subdestinationId) async {
@@ -5627,8 +5847,7 @@ class _LocationProfileState extends State<LocationProfile>
       Navigator.of(context)
           .pushReplacement(
         MaterialPageRoute(
-          builder: (context) =>
-              LocationProfile(
+          builder: (context) => LocationProfile(
             accountId: widget.accountId,
             subAccountId: widget.subAccountId,
             sovId: widget.sovId,

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:io';
 
 // import 'package:country_list_picker/country_list_picker.dart';
+import 'package:RiskSphare/screens/listings/widgets/data_tab.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -174,7 +175,8 @@ class _AccountListScreenState extends State<AccountListScreen>
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     // Determine the number of tabs based on trial status
     int tabCount =
-        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
+        // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
+    (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
     // int tabCount = trialStatus.isEmpty ? 3 : 4;
     // _tabController = TabController(length: tabCount, vsync: this);
@@ -314,18 +316,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 //
                                 SizedBox(height: CustomSpacing.two),
 
-                                /*     Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              RolesDropdown(),
-                                            ],
-                                          ),
-                                        ],
-                                      ),*/
                                 SizedBox(height: CustomSpacing.two),
                                 Container(
                                   height: 50,
@@ -447,6 +437,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         Tab(
                                                             text:
                                                                 'Access Requested'),
+                                                        // Tab(
+                                                        //     text:
+                                                        //         'Data'),
                                                       ],
                                                     ),
                                                   ),
@@ -478,6 +471,25 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         ConfigurationTab(),
                                       ],
                                       _getComingSoonUI("request"),
+                                      // Consumer<AccountListProvider>(
+                                      //   builder: (context, accountListProvider, _) {
+                                      //     final accountId = accountListProvider.accountList.isNotEmpty
+                                      //         ? accountListProvider.accountList[0].accountId ?? ""
+                                      //         : "";
+                                      //     return DataTab(
+                                      //       accountName: accountListProvider.accountList[0].accountName ?? "",
+                                      //       accountId: accountId,
+                                      //       subaccountId: null,
+                                      //     );
+                                      //   },
+                                      // ),
+                                      // DataTab(
+                                      //   accountId:"",
+                                      //   // userProfileProvider.accountList.isNotEmpty
+                                      //   //     ? userProfileProvider.accountList[0].accountId ?? ""
+                                      //   //     : "",
+                                      //   subaccountId: null,
+                                      // ),
                                     ],
                                   ),
                                 ),

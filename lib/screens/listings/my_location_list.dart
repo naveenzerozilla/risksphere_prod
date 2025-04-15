@@ -1014,7 +1014,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                   labelColor:
                                                       Colors.lightBlueAccent,
                                                   unselectedLabelColor:
-                                                      Colors.grey,
+                                                      Colors.white,
                                                   tabs: [
                                                     Tab(
                                                       text: 'Locations',
@@ -1113,6 +1113,17 @@ class _MyLocationListState extends State<MyLocationList>
                                                 widget.initialProcessId,
                                                 widget.initialSubProcessId,
                                               );
+                                              myLocationListProvider
+                                                  .fetchLocationList(
+                                                context,
+                                                "",
+                                                1,
+                                                40,
+                                                widget.accountID,
+                                                widget.subAccountID,
+                                                widget.initialProcessId,
+                                                widget.initialSubProcessId,
+                                              );
                                             } else if (_selectedScreen ==
                                                 Screens.certifiedLocationList) {
                                               myLocationListProvider
@@ -1162,6 +1173,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       ConfigurationTab(
                                         accountId: widget.accountID,
                                         subaccountId: widget.subAccountID,
+                                        updateallflag: "false",
                                       ),
                                   ],
                                 ),
@@ -1396,22 +1408,78 @@ class _MyLocationListState extends State<MyLocationList>
                         },
                         icon: Icon(Symbols.note_stack_add),
                         tooltip: 'Add Tag'),
-                    IconButton(
-                      onPressed: trialStatus.isNotEmpty
-                          ? null
-                          : () {
-                              // Implement bulk add to SOV
-                              locationListProvider.addSelectedToSOV(
-                                  context,
-                                  widget.accountID!,
-                                  widget.subAccountID!,
-                                  widget.accountName,
-                                  widget.subAccountName,
-                                  _masterTabController);
-                            },
-                      icon: Icon(Symbols.list_alt_add),
-                      tooltip: 'Add to SOV',
+                    Consumer<SOVListProvider>(
+                      builder: (context, provider, child) {
+                        return provider.isLoading
+                            ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                            : IconButton(
+                          onPressed: trialStatus.isNotEmpty
+                              ? null
+                              : () {
+                            // provider.setLoading(true); // Start loading
+
+                            locationListProvider
+                                .addSelectedToSOV(
+                              context,
+                              widget.accountID!,
+                              widget.subAccountID!,
+                              widget.accountName,
+                              widget.subAccountName,
+                              _masterTabController,
+                            )
+                                .then((value) {
+                              provider.fetchSovList(
+                                context,
+                                widget.accountID!,
+                                widget.subAccountID!,
+                                "",
+                                1,
+                                10,
+                              );
+                            })
+                                .whenComplete(() {
+                            // Stop loading after API call
+                            });
+                          },
+                          icon: Icon(Symbols.list_alt_add),
+                          tooltip: 'Add to SOV',
+                        );
+                      },
                     ),
+                    // IconButton(
+                    //   onPressed: trialStatus.isNotEmpty
+                    //       ? null
+                    //       : () {
+                    //     var provider = Provider.of<SOVListProvider>(context, listen: false);
+                    //           // Implement bulk add to SOV
+                    //           locationListProvider.addSelectedToSOV(
+                    //               context,
+                    //               widget.accountID!,
+                    //               widget.subAccountID!,
+                    //               widget.accountName,
+                    //               widget.subAccountName,
+                    //               _masterTabController)  .then((value) {
+                    //             provider.fetchSovList(
+                    //               context,
+                    //               widget.accountID!,
+                    //               widget.subAccountID!,
+                    //               "",
+                    //               1,
+                    //               10,
+                    //             );
+                    //           });
+                    //
+                    //
+                    //
+                    //
+                    //   },
+                    //   icon: Icon(Symbols.list_alt_add),
+                    //   tooltip: 'Add to SOV',
+                    // ),
                     IconButton(
                       onPressed: () {
                         // Show delete confirmation dialog

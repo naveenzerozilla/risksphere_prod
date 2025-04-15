@@ -119,7 +119,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
     // final image = widget.imageUrl;
     return GestureDetector(
       onTap: () {
-        var locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
+        var locationListProvider =
+            Provider.of<MyLocationListProvider>(context, listen: false);
 
         // In selection mode, toggle the selection if its last selection getting unselected we remove the selection mode
         if (selectionMode) {
@@ -470,7 +471,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         );
                       },
                       child: Icon(Icons.info)),
-                ],
+                ] else ...[
+                  Icon(Icons.info, color: Colors.transparent),
+                ]
               ],
             ),
           ),
@@ -698,11 +701,9 @@ class CustomPopupMenuButton extends StatelessWidget {
 
 class GeocodingDialog extends StatefulWidget {
   final String? title;
+  final bool? status;
 
-  GeocodingDialog({
-    super.key,
-    this.title,
-  });
+  GeocodingDialog({super.key, this.title, this.status});
 
   @override
   State<GeocodingDialog> createState() => _GeocodingDialogState();
@@ -714,87 +715,146 @@ class _GeocodingDialogState extends State<GeocodingDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.black,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white12,
-                // Keep background transparent if needed
-                shadowColor: Colors.white12,
-                // Remove button shadow
-                minimumSize: Size(double.infinity, 40),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                // Define button action here
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                // To ensure minimal button width
-                children: [
-                  widget.title == 'Geocoding'
-                      ? SvgPicture.asset('assets/images/geocoding_icon.svg',
-                          width: 24, height: 24)
-                      : SvgPicture.asset('assets/images/hazard_icon.svg',
-                          width: 24, height: 24),
-                  SizedBox(width: 8),
-                  Text(
-                    widget.title == 'Geocoding'
-                        ? "Geocoding Rating"
-                        : "Hazard Rating",
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+      child: Consumer<MyLocationListProvider>(
+          builder: (context, locationProfileProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.status == true) ...[
+                Text(
+                  'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '${locationProfileProvider.locationProfile?.finalAddress?.description ?? ""}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+              ] else ...[
+                SizedBox(height: 10),
+              ],
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white12,
+                  // Keep background transparent if needed
+                  shadowColor: Colors.white12,
+                  // Remove button shadow
+                  minimumSize: Size(double.infinity, 35),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Define button action here
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  // To ensure minimal button width
+                  children: [
+                    widget.title == 'Geocoding'
+                        ? SvgPicture.asset('assets/images/geocoding_icon.svg',
+                            width: 24, height: 24)
+                        : SvgPicture.asset('assets/images/hazard_icon.svg',
+                            width: 24, height: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      widget.title == 'Geocoding'
+                          ? "Geocoding Rating"
+                          : "Hazard Rating",
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 12),
-            _buildRatingItem(
-                5,
-                "Exact Match: Indicates pinpoint precision, accurately identifying a specific building.",
-                ""),
-            Divider(),
-            _buildRatingItem(
-                4,
-                "Geometric Center: Represents the center of a complex of buildings or small area and is less precise than a specific building address.",
-                ""),
-            Divider(),
-            _buildRatingItem(
-                3,
-                "Range Interpolated: Represents an address located along a street. Lacking to pinpoint a single building.",
-                ""),
-            Divider(),
-            _buildRatingItem(
-                2,
-                "Sub Locality: The location is located in a sub locality like a small town or neighborhood and difficult to specify the building.",
-                ""),
-            Divider(),
-            _buildRatingItem(
-                1,
-                "Approximate: The location is located within a large region like a country, state or locality.",
-                ""),
-            SizedBox(height: 12),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                minimumSize: Size(double.infinity, 40),
+              Container(
+                constraints: BoxConstraints(
+                    maxHeight: widget.status == true ? 350 : 500),
+                // Set max height
+                child: Scrollbar(
+                  // Add scrollbar
+                  thumbVisibility: true,
+                  // Always show the scrollbar
+                  trackVisibility: true,
+                  // Show the scrollbar track
+                  thickness: widget.status == true ? 1 : 0,
+                  // Adjust scrollbar thickness
+                  radius: Radius.circular(10),
+                  // Optional: Round scrollbar edges
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 10),
+                        _buildRatingItem(
+                          5,
+                          "Exact Match: Indicates pinpoint precision, accurately identifying a specific building.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          4,
+                          "Geometric Center: Represents the center of a complex of buildings or small area and is less precise than a specific building address.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          3,
+                          "Range Interpolated: Represents an address located along a street. Lacking to pinpoint a single building.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          2,
+                          "Sub Locality: The location is located in a sub locality like a small town or neighborhood and difficult to specify the building.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          1,
+                          "Approximate: The location is located within a large region like a country, state or locality.",
+                          "",
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Understood! Take me back.",
-                style: TextStyle(fontSize: 14, color: Colors.black),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  minimumSize: Size(double.infinity, 40),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Understood! Take me back.",
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -836,7 +896,7 @@ class _GeocodingDialogState extends State<GeocodingDialog> {
                         fontSize: 12),
                   ),
                 ),
-          SizedBox(width: 8),
+          SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,

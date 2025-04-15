@@ -30,6 +30,7 @@ import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../providers/configuration_provider.dart';
+import '../../providers/connectivity_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
@@ -296,6 +297,7 @@ print("results.toString()");
 
   @override
   Widget build(BuildContext context) {
+    // final isOnline = Provider.of<ConnectivityProvider>(context).isOnline;
     var typography = CustomTypography(context);
     return SafeArea(
       child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
@@ -320,7 +322,6 @@ print("results.toString()");
             onRefresh: _handleRefresh,
             child: Stack(
               children: [
-                // Background image
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/mesh.png',

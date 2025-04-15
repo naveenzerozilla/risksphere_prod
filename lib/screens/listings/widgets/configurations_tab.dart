@@ -9,11 +9,13 @@ import '../../../service/shared_preference_service.dart';
 class ConfigurationTab extends StatefulWidget {
   final String? accountId;
   final String? subaccountId;
+  final String? updateallflag;
 
   const ConfigurationTab({
     Key? key,
     this.accountId,
     this.subaccountId,
+    this.updateallflag,
   }) : super(key: key);
 
   @override
@@ -180,7 +182,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       _buildServiceCheckbox(
                         capitalize(key),
                         services[key]['description'],
-                        services[key]['enabled'],
+                        // services[key]['enabled'],
+                        services[key]['enabled'] == true ||
+                            services[key]['enabled'] == 'true',
                         typography,
                         mainId,
                         level,
@@ -342,6 +346,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     String mainId,
     String level,
   ) {
+    final provider = Provider.of<ConfigurationProvider>(context, listen: false);
     bool isGeocoding = title.toLowerCase() == 'geocoding';
     bool additionParam = title.toLowerCase() == 'additional_parameters';
     bool isSelected = selectedServices.contains(title);
@@ -369,10 +374,30 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 ? null // Disable checkbox if not an admin
                 : (bool? value) {
                     print('Toggling $title to $value');
-
+                    var key = generateServiceKey(
+                        title.toLowerCase().replaceAll(' ', '_'));
                     // Show dialog to save changes
-                    _showSaveDialog(
-                        title, description, typography, value!, mainId, level);
+                    if (widget.updateallflag == "false") {
+                      provider
+                          .updateConfiguration(
+                        context,
+                        mainId,
+                        key,
+                        "sub_account",
+                        value!,
+                        false,
+                        accountId: widget.accountId,
+                        subAccountId: widget.subaccountId,
+                      )
+                          .then((_) {
+                        loadConfiguration(); // Call only after update is successful
+                      }).catchError((error) {
+                        print("Failed to update configuration: $error");
+                      });
+                    } else {
+                      _showSaveDialog(title, description, typography, value!,
+                          mainId, level);
+                    }
                   },
             activeColor: AppColors.primaryMain,
           ),
@@ -892,7 +917,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                               ),
                             )
                           : Text(
-                              'Save',
+                              'Yes',
                               style: typography.Body1.copyWith(
                                   color: Colors.white),
                             ),
@@ -1600,28 +1625,68 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     final provider = Provider.of<ConfigurationProvider>(context,
                         listen: false);
 
-                    // Show confirmation dialog before proceeding
-                    bool shouldSave = await _showSaveDialogForStar(
-                      int.parse(title),
-                      description,
-                      typography,
-                      value,
-                      mainId,
-                      level,
-                    );
-
-                    if (shouldSave) {
-                      // Fetch updated configuration after the dialog
-                      await provider.getConfiguration(
-                        accountId: widget.accountId,
-                        subAccountId: widget.subaccountId,
+                    if (widget.updateallflag != "false") {
+                      // Show confirmation dialog before proceeding
+                      bool shouldSave = await _showSaveDialogForStar(
+                        int.parse(title),
+                        description,
+                        typography,
+                        value,
+                        mainId,
+                        level,
                       );
-                      await provider.getVendors();
 
-                      if (mounted) {
-                        loadConfiguration();
+                      if (shouldSave) {
+                        // Fetch updated configuration after the dialog
+                        await provider.getConfiguration(
+                          accountId: widget.accountId,
+                          subAccountId: widget.subaccountId,
+                        );
+                        await provider.getVendors();
+
+                        if (mounted) {
+                          loadConfiguration();
+                        }
                       }
+                    } else {
+                      // Directly update without confirmation
+                      await provider
+                          .updateConfiguration(
+                        context,
+                        mainId,
+                        generateRatingKey(title),
+                        level,
+                        value,
+                        "true",
+                      )
+                          .then((_) {
+                        loadConfiguration(); // Call only after update is successful
+                      }).catchError((error) {
+                        print("Failed to update configuration: $error");
+                      });
                     }
+                    // // Show confirmation dialog before proceeding
+                    // bool shouldSave = await _showSaveDialogForStar(
+                    //   int.parse(title),
+                    //   description,
+                    //   typography,
+                    //   value,
+                    //   mainId,
+                    //   level,
+                    // );
+
+                    // if (shouldSave) {
+                    //   // Fetch updated configuration after the dialog
+                    //   await provider.getConfiguration(
+                    //     accountId: widget.accountId,
+                    //     subAccountId: widget.subaccountId,
+                    //   );
+                    //   await provider.getVendors();
+                    //
+                    //   if (mounted) {
+                    //     loadConfiguration();
+                    //   }
+                    // }
                   },
             activeColor: AppColors.primaryMain,
           ),
@@ -1858,7 +1923,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   ),
                 ),
                 child: Text(
-                  isSubscribed ? 'Unsubscribe' : 'Subscribe Now',
+                  isSubscribed ? 'Unsubscribe' : 'Subscribe ',
                   style: typography.Body1.copyWith(
                     color: Colors.black,
                   ),

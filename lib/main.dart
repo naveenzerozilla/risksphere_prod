@@ -46,7 +46,7 @@ import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin();
 void initializeNotifications() {
   const AndroidInitializationSettings initializationSettingsAndroid =
   AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -126,7 +126,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void checkForInitialMessage() async {
   print('Checking for initial message');
   RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
+  await FirebaseMessaging.instance.getInitialMessage();
   print('Initial message: $initialMessage');
 
   if (initialMessage != null) {
@@ -148,7 +148,7 @@ void checkForInitialMessage() async {
 }
 
 // Clean up the Firebase message handlers
- setupFirebaseMessaging() {
+setupFirebaseMessaging() {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print('Got a message whilst in the foreground!');
 
@@ -232,7 +232,7 @@ Future<void> initFCM(String userId) async {
     if (token != null) {
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
-          await SharedPreferenceService.getNotificationSubscription();
+      await SharedPreferenceService.getNotificationSubscription();
 
       if (isSubscribed) {
         print("TestA");
@@ -400,7 +400,7 @@ Future<void> showNotification(
   // Ensure the channel is created
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+      AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
   await flutterLocalNotificationsPlugin.show(
@@ -437,7 +437,7 @@ void main() async {
   checkForInitialMessage();
 
   final themeProvider =
-      ThemeProvider(AppThemes.darkTheme); // Default to dark theme
+  ThemeProvider(AppThemes.darkTheme); // Default to dark theme
   await themeProvider.loadTheme(); // Load the saved theme
 
   runApp(
@@ -491,7 +491,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   static final GlobalKey<NavigatorState> navigatorKey =
-      GlobalKey<NavigatorState>();
+  GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {

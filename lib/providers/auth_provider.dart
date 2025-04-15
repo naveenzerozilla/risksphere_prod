@@ -296,6 +296,11 @@ class AuthNotifier extends ChangeNotifier {
           await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
+
+
+
+
+
       );
       _user = userCredential.user;
 

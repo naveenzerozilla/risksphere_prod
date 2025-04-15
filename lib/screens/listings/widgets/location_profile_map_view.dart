@@ -916,6 +916,7 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
                   child: Stack(
                     children: [
                       GoogleMap(
+                        mapType:  _selectedTabIndex ==1 ?MapType.satellite: MapType.normal,
                         initialCameraPosition: CameraPosition(
                           target: LatLng(38.7946, 106.5348),
                           zoom: 0,
@@ -956,98 +957,6 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
                         onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
                         onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
                       ),
-
-                      // GoogleMap(
-                      //   initialCameraPosition: CameraPosition(
-                      //       target: LatLng(38.7946, 106.5348), zoom: 0),
-                      //   markers: _markers,
-                      //  /* minMaxZoomPreference: _isHeatmapOn
-                      //       ? MinMaxZoomPreference(0, 5)
-                      //       : MinMaxZoomPreference.unbounded,*/
-                      //   onMapCreated: (GoogleMapController controller) {
-                      //     mapController = controller;
-                      //     clusterManager.setMapId(controller.mapId); // Set map ID for ClusterManager
-                      //     mapController.setMapStyle(_mapStyle);
-                      //   },
-                      //   tileOverlays:
-                      //
-                      //   _selectedHazard != null &&
-                      //           _tileProviders.containsKey(_selectedHazard)
-                      //   && _mainHazardTileProvider != null
-                      //   && selectedHazardId != null
-                      //   && selectedVendor != null
-                      //       ? {
-                      //     TileOverlay(
-                      //       tileOverlayId: TileOverlayId(selectedHazardId!),
-                      //       tileProvider: _mainHazardTileProvider!,
-                      //     ),
-                      //           TileOverlay(
-                      //               tileOverlayId: TileOverlayId(_selectedHazard!),
-                      //               tileProvider: _tileProviders[_selectedHazard!]!),
-                      //
-                      //         }
-                      //       :
-                      //   _mainHazardTileProvider != null
-                      //   && selectedHazardId != null
-                      //   && selectedVendor != null
-                      //       ? {
-                      //     TileOverlay(
-                      //       tileOverlayId: TileOverlayId(selectedHazardId!),
-                      //       tileProvider: _mainHazardTileProvider!,
-                      //     ),
-                      //   }
-                      //       : {},
-                      //   onCameraMove: clusterManager.onCameraMove, // Update clusters on camera move
-                      //   onCameraIdle: clusterManager.updateMap, // Update clusters when camera stops
-                      // ),
-                      /*// Positioned widget for the hazard filter at the bottom-left
-                      _selectedTabIndex == 1 && _tileProviders.isNotEmpty && _isHeatmapOn?Positioned(
-                        bottom: 16,
-                        left: 16,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.light
-                                ? AppColors.paperElavation25Light
-                                : AppColors.paperElavation25,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              selectedItemBuilder: (context) {
-                                return _tileProviders.keys.map((hazard) {
-                                  return Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(maxWidth: 80), // Set the maximum width here
-                                      child: Text(
-                                        hazard,
-                                        style: typography.InputLabel,
-                                        overflow: TextOverflow.ellipsis, // Add ellipsis for long text
-                                      ),
-                                    ),
-                                  );
-                                }).toList();
-                              },
-
-                              menuMaxHeight: 200,
-                              menuWidth: 400,
-                              borderRadius: BorderRadius.circular(16),
-                              value: _tileProviders.keys.contains(_selectedHazard) ? _selectedHazard : null,
-                              items: _tileProviders.keys.map((hazard) {
-                                return DropdownMenuItem<String>(
-                                  value: hazard,
-                                  child: Text(hazard, style: typography.InputLabel),
-                                );
-                              }).toList(),
-                              onChanged: (hazard) => _changeHazardLayer(hazard!),
-                              isDense: true,
-                              icon: SizedBox.shrink(), // Remove the dropdown icon
-                              dropdownColor: Theme.of(context).colorScheme.surface,
-                            ),
-                          ),
-                        ),
-                      ):SizedBox(),*/
                       _buildHazardControls(),
                       // Positioned widget for the heatmap toggle and reducer selection
                       Positioned(
