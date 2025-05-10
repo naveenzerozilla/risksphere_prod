@@ -1,4 +1,50 @@
-// import 'dart:async'; // Add this import for StreamSubscription
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+class ConnectivityProvider with ChangeNotifier {
+  bool _isOnline = true;
+  bool get isOnline => _isOnline;
+
+  late final StreamSubscription _subscription;
+
+  final StreamController<bool> _statusStreamController =
+  StreamController<bool>.broadcast();
+  Stream<bool> get statusStream => _statusStreamController.stream;
+
+  ConnectivityProvider() {
+    _checkInitialConnection();
+    _subscription = Connectivity().onConnectivityChanged.listen(_updateStatus);
+  }
+
+  void _checkInitialConnection() async {
+    final result = await Connectivity().checkConnectivity();
+    _updateStatus(result);
+  }
+  void _updateStatus(ConnectivityResult result) async {
+    final currentResult = await Connectivity().checkConnectivity();
+
+    bool previousStatus = _isOnline;
+    _isOnline = currentResult != ConnectivityResult.none;
+
+    _statusStreamController.add(_isOnline); // ✅ Always emit for SnackBar
+
+    if (_isOnline != previousStatus) {
+      notifyListeners(); // ✅ Only notify UI if status changed
+    }
+  }
+
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    _statusStreamController.close();
+    super.dispose();
+  }
+}
+
+
+// import 'dart:async';
 // import 'package:flutter/material.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 //
@@ -6,47 +52,33 @@
 //   bool _isOnline = true;
 //   bool get isOnline => _isOnline;
 //
-//   final Connectivity _connectivity = Connectivity();
-//   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+//   late final StreamSubscription _subscription;
 //
 //   ConnectivityProvider() {
-//     _initializeConnectivity();
+//     _checkInitialConnection();
+//     _subscription = Connectivity().onConnectivityChanged.listen(_updateStatus);
 //   }
 //
-//   Future<void> _initializeConnectivity() async {
-//     try {
-//       // Check initial connectivity
-//       final result = await _connectivity.checkConnectivity();
-//       await _updateStatus(result);
+//   void _checkInitialConnection() async {
+//     final result = await Connectivity().checkConnectivity();
+//     _updateStatus(result);
+//   }
 //
-//       // Listen to connectivity changes
-//       _connectivitySubscription = _connectivity.onConnectivityChanged.listen((results) {
-//         _updateStatus(results);
-//       });
-//     } catch (e) {
-//       debugPrint('Error initializing connectivity: $e');
-//       _isOnline = false;
+//   void _updateStatus(ConnectivityResult result) async {
+//     final currentResult = await Connectivity().checkConnectivity();
+//
+//     bool previousStatus = _isOnline;
+//     _isOnline = currentResult != ConnectivityResult.none;
+//
+//     if (_isOnline != previousStatus) {
 //       notifyListeners();
 //     }
 //   }
 //
-//   Future<void> _updateStatus(List<ConnectivityResult> results) async {
-//     try {
-//       final previousStatus = _isOnline;
-//       // Consider connected if any of the results is not none
-//       _isOnline = results.isNotEmpty && results.any((result) => result != ConnectivityResult.none);
-//
-//       if (previousStatus != _isOnline) {
-//         notifyListeners();
-//       }
-//     } catch (e) {
-//       debugPrint('Error updating connectivity status: $e');
-//     }
-//   }
 //
 //   @override
 //   void dispose() {
-//     _connectivitySubscription?.cancel();
+//     _subscription.cancel();
 //     super.dispose();
 //   }
 // }

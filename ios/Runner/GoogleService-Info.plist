@@ -3,23 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>781106067514-vg3tqt2m694h0qd3enl4toff2eug19cp.apps.googleusercontent.com</string>
+	<string>160035685335-phveajbvmridomq1v4bj8h510ggr799f.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.781106067514-vg3tqt2m694h0qd3enl4toff2eug19cp</string>
-	<key>ANDROID_CLIENT_ID</key>
-	<string>781106067514-cr2tvf2i0952rfnpnaleb25l449qa59r.apps.googleusercontent.com</string>
+	<string>com.googleusercontent.apps.160035685335-phveajbvmridomq1v4bj8h510ggr799f</string>
 	<key>API_KEY</key>
-	<string>AIzaSyBG-dUbaXycqAOpPZzQSaQ3mkSLXyhadE0</string>
+	<string>AIzaSyCstV5UDSN8huvSrp738E9shu6gkltdYN8</string>
 	<key>GCM_SENDER_ID</key>
-	<string>781106067514</string>
+	<string>160035685335</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.zerozilla.green</string>
 	<key>PROJECT_ID</key>
-	<string>project-green-dev-429104</string>
+	<string>project-green-r5-1-dev</string>
 	<key>STORAGE_BUCKET</key>
-	<string>project-green-dev-429104.appspot.com</string>
+	<string>project-green-r5-1-dev.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,8 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:781106067514:ios:d988e7e8e0e1d6c0009d03</string>
-	<key>DATABASE_URL</key>
-	<string>https://project-green-dev-429104-default-rtdb.firebaseio.com</string>
+	<string>1:160035685335:ios:9aec62c3a48fbf16a74192</string>
 </dict>
 </plist>

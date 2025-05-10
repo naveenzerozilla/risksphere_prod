@@ -41,6 +41,7 @@ class MyLocationListProvider extends ChangeNotifier {
   }
   int locationHits = 0;
   int certifiedLocationHits = 0;
+  bool isConflict =false;
 
   Future<void> fetchLocations() async {
     isLoading = true;
@@ -337,9 +338,9 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  int _totalPages = 1;
+  int? _totalPages;
 
-  int get totalPages => _totalPages;
+  int get totalPages => _totalPages!;
 
   set totalPages(int value) {
     _totalPages = value;
@@ -644,7 +645,7 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  int resetTotalPage = 0;
+  int ?resetTotalPage;
 
   // Delete selected locations
   Future<void> deleteSelectedLocations(
@@ -1023,6 +1024,7 @@ class MyLocationListProvider extends ChangeNotifier {
             MyLocationModel.fromJson(jsonResponse);
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
+        isConflict = locationListModel.isConflict!;
         totalPages = locationHits ~/ pageSize;
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
@@ -1149,6 +1151,8 @@ class MyLocationListProvider extends ChangeNotifier {
             MyLocationModel.fromJson(jsonResponse);
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationListModel.totalRecords ?? 1;
+
+        print(totalPages.toString());
         //summaryList = locationListModel.summaryList ?? [];
         if (page == 1) {
           certifiedLocationList = locationListModel.results ?? [];
@@ -2112,19 +2116,31 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        print(locationListModel.page.toString());
+        print(locationListModel.pageSize.toString());
+        print("totalPages");
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
+
+        if (locationListModel.totalRecords != null) {
+          // Assuming you are using a fixed page size (e.g., 1 from your URL)
+          _totalPages = (locationListModel.totalRecords! / 1).ceil();
+          notifyListeners();
+        }
         if (locationId != null && locationId.isNotEmpty) {
+
           locationProfile = locationListModel.filterByLocationResult?.first;
           resetTotalPage = locationListModel.totalRecords ?? 1;
+
         } else {
           locationProfile = locationListModel.results?.first;
         }
 
+        log(resetTotalPage.toString() ?? "");
         log(locationProfile?.toString() ?? "");
-        print("totalPages: $totalPages");
+        print("totalcount: ${locationListModel.totalRecords}");
+        print("totalPages1: $totalPages");
         log(page.toString());
       } else {
         print(json.decode(response.body)?["error"] ?? "");
@@ -2144,12 +2160,12 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          "Error fetching data",
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     "Error fetching data",
+      //     style: typography.Body1,
+      //   ),
+      // ));
     }
   }
 

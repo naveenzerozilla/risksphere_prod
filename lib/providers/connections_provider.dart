@@ -210,8 +210,8 @@ class ConnectionsProvider with ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
       if (!context.mounted) return [];
-      CustomToast.error(
-          context, 'Error fetching connections. Please try again later.');
+      // CustomToast.error(
+      //     context, 'Error fetching connections. Please try again later.');
       return [];
     }
   }
@@ -271,7 +271,7 @@ class ConnectionsProvider with ChangeNotifier {
         errorMessage = e;
       }
       if (!context.mounted) return [];
-      CustomToast.error(context, errorMessage);
+      // CustomToast.error(context, errorMessage);
       isRequestLoading = false;
       return []; // Return an empty list in case of error
     }
@@ -374,7 +374,7 @@ class ConnectionsProvider with ChangeNotifier {
       }
       isNetworkLoading = false;
       if (!context.mounted) return [];
-      CustomToast.error(context, errorMessage);
+      // CustomToast.error(context, errorMessage);
       return []; // Return an empty list in case of error
     }
   }
@@ -418,7 +418,7 @@ class ConnectionsProvider with ChangeNotifier {
         errorMessage = e;
       }
       if (!context.mounted) return false;
-      CustomToast.error(context, errorMessage);
+      // CustomToast.error(context, errorMessage);
       isConnectLoading = false;
       return false;
     }

@@ -32,7 +32,7 @@ class UploadPreviewButtons extends StatefulWidget {
 }
 
 class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
-  bool _isCancelLoading = false;
+  late bool _isCancelLoading = false;
   bool _isSubmitLoading = false;
 
   @override
@@ -239,14 +239,26 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                 Row(
                   children: [
                     Text(
-                      geocodingCount == widget.selectedLocations!.length
+                      widget.selectedLocations == null
+                          ? '0'
+                          : (geocodingCount == widget.selectedLocations!.length
                           ? geocodingCount.toString()
-                          : widget.selectedLocations!.length.toString(),
+                          : widget.selectedLocations!.length.toString()),
                       style: typography.Body1.copyWith(
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
+                    // Text(
+                    //   geocodingCount == widget.selectedLocations!.length
+                    //       ? geocodingCount.toString()
+                    //       : widget.selectedLocations!.length.toString(),
+                    //   style: typography.Body1.copyWith(
+                    //     color: Colors.green,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
                     SizedBox(width: 8),
                     Text(
                       "Locations will be processed!",
@@ -260,7 +272,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                 Row(
                   children: [
                     Text(
-                      "$duplicateCount",
+                      duplicateCount.toString(),
                       style: typography.Body1.copyWith(
                         color: Colors.orange,
                         fontWeight: FontWeight.bold,

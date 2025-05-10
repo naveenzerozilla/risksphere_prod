@@ -164,8 +164,12 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                                 ?.cast<String, dynamic>() ??
                             {};
 
-                        return _buildProcessCard(
-                          processId: processId,
+                        return
+
+                          _buildProcessCard(
+                          processId: (processData["process_name"] is Map)
+                              ? processData["process_name"]["filename"].toString()
+                              : processData["process_name"]?.toString() ?? processId,
                           companyName: companyName,
                           ownerName: ownerName,
                           totalLocations: totalLocations,
@@ -373,10 +377,8 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
               }
 
               var locationSetData = entry.value as Map<String, dynamic>;
-
               String locationSetName = locationSetData['sub_process_name'] ??
                   'Location Set ${(totalLocations == 1) ? 1 : count}';
-
               var assetUploadStatus =
                   (locationSetData['asset_upload_status'] ?? false)
                       ? 'completed'
@@ -405,8 +407,10 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       ?["score"]?["status"] ??
                   "Pending";
 
-              return _buildLocationSetCard(
-                locationSetId: locationSetId,
+              return
+
+                _buildLocationSetCard(
+                locationSetId: locationSetName,
                 locationSetName: locationSetName,
                 assetUploadStatus: assetUploadStatus,
                 geocodingStatus: geocodingStatus,

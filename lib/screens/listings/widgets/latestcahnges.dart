@@ -294,7 +294,7 @@
 //                                             : Colors.transparent,
 //                                         shape: RoundedRectangleBorder(
 //                                           borderRadius:
-//                                               BorderRadius.circular(8),
+//                                           BorderRadius.circular(8),
 //                                         ),
 //                                         onTap: () {
 //                                           setState(() {
@@ -318,12 +318,12 @@
 //                                 onTap: () {
 //                                   setState(() {
 //                                     showMissingDataDropdown =
-//                                         !showMissingDataDropdown;
+//                                     !showMissingDataDropdown;
 //                                   });
 //                                 },
 //                                 child: Container(
 //                                   padding:
-//                                       const EdgeInsets.symmetric(vertical: 10),
+//                                   const EdgeInsets.symmetric(vertical: 10),
 //                                   decoration: BoxDecoration(
 //                                     color: const Color(0xFF2E3A59),
 //                                     borderRadius: BorderRadius.circular(10),
@@ -331,33 +331,33 @@
 //                                   ),
 //                                   child: Row(
 //                                     mainAxisAlignment:
-//                                         MainAxisAlignment.spaceEvenly,
+//                                     MainAxisAlignment.spaceEvenly,
 //                                     crossAxisAlignment:
-//                                         CrossAxisAlignment.center,
+//                                     CrossAxisAlignment.center,
 //                                     children: [
 //                                       SizedBox(width: 40),
 //                                       Text('All Parameters',
 //                                           style:
-//                                               TextStyle(color: Colors.white)),
+//                                           TextStyle(color: Colors.white)),
 //                                       SizedBox(width: 30),
 //                                       Container(
 //                                         child: Row(
 //                                           children: [
 //                                             Container(
 //                                               padding:
-//                                                   const EdgeInsets.symmetric(
-//                                                       horizontal: 8,
-//                                                       vertical: 4),
+//                                               const EdgeInsets.symmetric(
+//                                                   horizontal: 8,
+//                                                   vertical: 4),
 //                                               decoration: BoxDecoration(
 //                                                 color: Colors.red,
 //                                                 borderRadius:
-//                                                     BorderRadius.circular(12),
+//                                                 BorderRadius.circular(12),
 //                                               ),
 //                                               child: const Text('15',
 //                                                   style: TextStyle(
 //                                                       color: Colors.white,
 //                                                       fontWeight:
-//                                                           FontWeight.bold)),
+//                                                       FontWeight.bold)),
 //                                             ),
 //                                             Icon(Icons.arrow_drop_down_sharp)
 //                                           ],
@@ -373,7 +373,7 @@
 //                                 onTap: () {
 //                                   setState(() {
 //                                     showMissingDataDropdown1 =
-//                                         !showMissingDataDropdown1;
+//                                     !showMissingDataDropdown1;
 //                                   });
 //                                 },
 //                                 child: Container(
@@ -411,17 +411,17 @@
 //                                     ListView.builder(
 //                                       shrinkWrap: true,
 //                                       physics:
-//                                           const NeverScrollableScrollPhysics(),
+//                                       const NeverScrollableScrollPhysics(),
 //                                       itemCount: groupedResults.length,
 //                                       itemBuilder: (context, index) {
 //                                         final impactType = groupedResults.keys
 //                                             .elementAt(index);
 //                                         final resultsForImpactType =
-//                                             groupedResults[impactType]!;
+//                                         groupedResults[impactType]!;
 //
 //                                         return Column(
 //                                           crossAxisAlignment:
-//                                               CrossAxisAlignment.start,
+//                                           CrossAxisAlignment.start,
 //                                           children: [
 //                                             Text(
 //                                               impactType.toUpperCase(),
@@ -429,8 +429,8 @@
 //                                                 color: impactType == "medium"
 //                                                     ? Colors.purple
 //                                                     : impactType == "high"
-//                                                         ? Colors.green
-//                                                         : Colors.white,
+//                                                     ? Colors.green
+//                                                     : Colors.white,
 //                                                 fontWeight: FontWeight.bold,
 //                                               ),
 //                                             ),
@@ -466,20 +466,20 @@
 //                                       child: ElevatedButton(
 //                                         style: ElevatedButton.styleFrom(
 //                                           backgroundColor:
-//                                               Colors.lightBlue[200],
+//                                           Colors.lightBlue[200],
 //                                           foregroundColor: Colors.black,
 //                                           padding: const EdgeInsets.symmetric(
 //                                               vertical: 14),
 //                                           shape: RoundedRectangleBorder(
 //                                             borderRadius:
-//                                                 BorderRadius.circular(10),
+//                                             BorderRadius.circular(10),
 //                                           ),
 //                                         ),
 //                                         onPressed: () {
 //                                           print(
 //                                               "Selected peril: $selectedPeril");
 //                                           setState(() =>
-//                                               showMissingDataDropdown = false);
+//                                           showMissingDataDropdown = false);
 //                                         },
 //                                         child: const Text("Submit"),
 //                                       ),
@@ -508,14 +508,14 @@
 //                                     decoration: InputDecoration(
 //                                       hintText: 'Search parameters',
 //                                       hintStyle:
-//                                           TextStyle(color: Colors.white60),
+//                                       TextStyle(color: Colors.white60),
 //                                       prefixIcon: Icon(Icons.search,
 //                                           color: Colors.white60),
 //                                       filled: true,
 //                                       fillColor: Colors.black,
 //                                       border: OutlineInputBorder(
 //                                           borderRadius:
-//                                               BorderRadius.circular(8)),
+//                                           BorderRadius.circular(8)),
 //                                     ),
 //                                   ),
 //                                   const SizedBox(height: 12),
@@ -550,12 +550,12 @@
 //                                             vertical: 14),
 //                                         shape: RoundedRectangleBorder(
 //                                             borderRadius:
-//                                                 BorderRadius.circular(10)),
+//                                             BorderRadius.circular(10)),
 //                                       ),
 //                                       onPressed: () {
 //                                         print("Selected peril: $selectedPeril");
 //                                         setState(() =>
-//                                             showMissingDataDropdown1 = false);
+//                                         showMissingDataDropdown1 = false);
 //                                       },
 //                                       child: const Text("Submit"),
 //                                     ),
@@ -693,7 +693,7 @@
 //                                     Text(
 //                                       'data',
 //                                       style:
-//                                           TextStyle(color: Colors.blueAccent),
+//                                       TextStyle(color: Colors.blueAccent),
 //                                     ),
 //                                     SizedBox(height: 4),
 //                                     Icon(Icons.arrow_drop_down_outlined,
@@ -710,7 +710,7 @@
 //                                     child: Text(
 //                                       value,
 //                                       style:
-//                                           const TextStyle(color: Colors.blue),
+//                                       const TextStyle(color: Colors.blue),
 //                                     ),
 //                                   );
 //                                 }).toList(),
@@ -749,10 +749,10 @@
 //
 //                                   final dataElements = resultsForImpactType
 //                                       .where((e) =>
-//                                           e.name != null &&
-//                                           e.name!.isNotEmpty &&
-//                                           e.parameterType != null &&
-//                                           e.user != null)
+//                                   e.name != null &&
+//                                       e.name!.isNotEmpty &&
+//                                       e.parameterType != null &&
+//                                       e.user != null)
 //                                       .toList();
 //
 //                                   final weightage =
@@ -797,22 +797,22 @@
 //                         itemCount: groupedResults.length,
 //                         itemBuilder: (context, index) {
 //                           final impactType =
-//                               groupedResults.keys.elementAt(index);
+//                           groupedResults.keys.elementAt(index);
 //                           final resultsForImpactType =
-//                               groupedResults[impactType]!;
+//                           groupedResults[impactType]!;
 //                           final dataElements = resultsForImpactType
 //                               .where((e) =>
-//                                   e.name != null &&
-//                                   e.name!.isNotEmpty &&
-//                                   e.parameterType != null &&
-//                                   e.user != null)
+//                           e.name != null &&
+//                               e.name!.isNotEmpty &&
+//                               e.parameterType != null &&
+//                               e.user != null)
 //                               .map((e) => ImpactDataElement(
-//                                     name: e.name!,
-//                                     user: e.user!,
-//                                     result: e,
-//                                     parameterType:
-//                                         e.parameterType!, // <-- Fix here
-//                                   ))
+//                             name: e.name!,
+//                             user: e.user!,
+//                             result: e,
+//                             parameterType:
+//                             e.parameterType!, // <-- Fix here
+//                           ))
 //                               .toList();
 //                           return ImpactDataCard(
 //                             subAccountId: widget.subaccountId,
@@ -820,8 +820,8 @@
 //                             titleColor: impactType == "medium"
 //                                 ? Colors.purple
 //                                 : impactType == "high"
-//                                     ? Colors.green
-//                                     : Colors.white,
+//                                 ? Colors.green
+//                                 : Colors.white,
 //                             dataElements: dataElements,
 //                           );
 //                         },
@@ -918,7 +918,7 @@
 //       chips.add(
 //         Chip(
 //           label:
-//               Text('Campuses: ${provider.selectedCampusIds.length} selected'),
+//           Text('Campuses: ${provider.selectedCampusIds.length} selected'),
 //           onDeleted: () {
 //             // provider.selectedCampusIds = [];
 //             // provider.fetchLocationList(context, "", 1, 40, widget.accountId,
@@ -1013,7 +1013,7 @@
 //                       child: InkWell(
 //                         onTap: () async {
 //                           FilePickerResult? result =
-//                               await FilePicker.platform.pickFiles(
+//                           await FilePicker.platform.pickFiles(
 //                             allowMultiple: true,
 //                             type: FileType.any,
 //                           );
@@ -1067,27 +1067,27 @@
 //                               Row(
 //                                 children: [
 //                                   file.path.toLowerCase().endsWith('.jpg') ||
-//                                           file.path
-//                                               .toLowerCase()
-//                                               .endsWith('.jpeg') ||
-//                                           file.path
-//                                               .toLowerCase()
-//                                               .endsWith('.png') ||
-//                                           file.path
-//                                               .toLowerCase()
-//                                               .endsWith('.gif')
+//                                       file.path
+//                                           .toLowerCase()
+//                                           .endsWith('.jpeg') ||
+//                                       file.path
+//                                           .toLowerCase()
+//                                           .endsWith('.png') ||
+//                                       file.path
+//                                           .toLowerCase()
+//                                           .endsWith('.gif')
 //                                       ? ClipRRect(
-//                                           borderRadius:
-//                                               BorderRadius.circular(4),
-//                                           child: Image.file(
-//                                             file,
-//                                             width: 40,
-//                                             height: 40,
-//                                             fit: BoxFit.cover,
-//                                           ),
-//                                         )
+//                                     borderRadius:
+//                                     BorderRadius.circular(4),
+//                                     child: Image.file(
+//                                       file,
+//                                       width: 40,
+//                                       height: 40,
+//                                       fit: BoxFit.cover,
+//                                     ),
+//                                   )
 //                                       : Icon(Icons.insert_drive_file,
-//                                           color: Colors.blue, size: 40),
+//                                       color: Colors.blue, size: 40),
 //                                   SizedBox(width: 8),
 //                                   Expanded(
 //                                       child: Text(file.path.split('/').last)),
@@ -1109,14 +1109,14 @@
 //                                   final tags = value.trim().split(' ');
 //                                   setModalState(() {
 //                                     fileTags[file]!.addAll(tags.where((tag) =>
-//                                         tag.isNotEmpty &&
+//                                     tag.isNotEmpty &&
 //                                         !fileTags[file]!.contains(tag)));
 //                                     tagControllers[file]!.clear();
 //                                   });
 //                                 },
 //                                 decoration: InputDecoration(
 //                                   hintText:
-//                                       "Enter tags for this file (space-separated)",
+//                                   "Enter tags for this file (space-separated)",
 //                                   border: OutlineInputBorder(),
 //                                 ),
 //                               ),
@@ -1151,123 +1151,123 @@
 //                           onPressed: isUploading
 //                               ? null
 //                               : () async {
-//                                   List<String> existingUrls = [];
+//                             List<String> existingUrls = [];
 //
-//                                   final refs =
-//                                       widget.result.parameterValue?.reference;
+//                             final refs =
+//                                 widget.result.parameterValue?.reference;
 //
-//                                   if (refs != null && refs.isNotEmpty) {
-//                                     for (var ref in refs) {
-//                                       if (ref.url != null &&
-//                                           ref.url!.isNotEmpty) {
-//                                         existingUrls.addAll(List<String>.from(
-//                                             ref.url!)); // ✅ fix applied here
-//                                       }
-//                                     }
-//                                   }
+//                             if (refs != null && refs.isNotEmpty) {
+//                               for (var ref in refs) {
+//                                 if (ref.url != null &&
+//                                     ref.url!.isNotEmpty) {
+//                                   existingUrls.addAll(List<String>.from(
+//                                       ref.url!)); // ✅ fix applied here
+//                                 }
+//                               }
+//                             }
 //
-//                                   if (selectedImages.isEmpty &&
-//                                       existingUrls.isEmpty) {
-//                                     Fluttertoast.showToast(
-//                                       msg:
-//                                           "Please select file(s) or provide an existing image URL",
-//                                     );
-//                                     return;
-//                                   }
+//                             if (selectedImages.isEmpty &&
+//                                 existingUrls.isEmpty) {
+//                               Fluttertoast.showToast(
+//                                 msg:
+//                                 "Please select file(s) or provide an existing image URL",
+//                               );
+//                               return;
+//                             }
 //
-//                                   setModalState(() => isUploading = true);
+//                             setModalState(() => isUploading = true);
 //
-//                                   try {
-//                                     List<String> downloadUrls = [];
+//                             try {
+//                               List<String> downloadUrls = [];
 //
-//                                     // Upload newly selected images
-//                                     for (File file in selectedImages) {
-//                                       final fileName =
-//                                           file.path.split('/').last;
-//                                       final storageRef =
-//                                           FirebaseStorage.instance.ref().child(
-//                                               'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName');
+//                               // Upload newly selected images
+//                               for (File file in selectedImages) {
+//                                 final fileName =
+//                                     file.path.split('/').last;
+//                                 final storageRef =
+//                                 FirebaseStorage.instance.ref().child(
+//                                     'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName');
 //
-//                                       final uploadTask =
-//                                           storageRef.putFile(file);
-//                                       final snapshot = await uploadTask;
-//                                       final downloadUrl =
-//                                           await snapshot.ref.getDownloadURL();
-//                                       downloadUrls.add(downloadUrl);
-//                                     }
+//                                 final uploadTask =
+//                                 storageRef.putFile(file);
+//                                 final snapshot = await uploadTask;
+//                                 final downloadUrl =
+//                                 await snapshot.ref.getDownloadURL();
+//                                 downloadUrls.add(downloadUrl);
+//                               }
 //
-//                                     final List<Map<String, dynamic>>
-//                                         references = [];
+//                               final List<Map<String, dynamic>>
+//                               references = [];
 //
-//                                     // Add existing images
-//                                     if (existingUrls.isNotEmpty) {
-//                                       for (var url in existingUrls) {
-//                                         references.add({
-//                                           "url": [url],
-//                                           "tags": [],
-//                                           "name": "existing_image",
-//                                         });
-//                                       }
-//                                     }
+//                               // Add existing images
+//                               if (existingUrls.isNotEmpty) {
+//                                 for (var url in existingUrls) {
+//                                   references.add({
+//                                     "url": [url],
+//                                     "tags": [],
+//                                     "name": "existing_image",
+//                                   });
+//                                 }
+//                               }
 //
-//                                     // Add newly uploaded images
-//                                     for (int i = 0;
-//                                         i < selectedImages.length;
-//                                         i++) {
-//                                       final file = selectedImages[i];
-//                                       references.add({
-//                                         "url": [downloadUrls[i]],
-//                                         "tags": fileTags[file] ?? [],
-//                                         "name": file.path.split('/').last,
-//                                       });
-//                                     }
+//                               // Add newly uploaded images
+//                               for (int i = 0;
+//                               i < selectedImages.length;
+//                               i++) {
+//                                 final file = selectedImages[i];
+//                                 references.add({
+//                                   "url": [downloadUrls[i]],
+//                                   "tags": fileTags[file] ?? [],
+//                                   "name": file.path.split('/').last,
+//                                 });
+//                               }
 //
-//                                     final updatedFields = {
-//                                       "value": "",
-//                                       "param_type": "Files",
-//                                       "reference": references,
-//                                     };
+//                               final updatedFields = {
+//                                 "value": "",
+//                                 "param_type": "Files",
+//                                 "reference": references,
+//                               };
 //
-//                                     final provider = Provider.of<
-//                                         SubaccountParameterProvider>(
-//                                       context,
-//                                       listen: false,
-//                                     );
+//                               final provider = Provider.of<
+//                                   SubaccountParameterProvider>(
+//                                 context,
+//                                 listen: false,
+//                               );
 //
-//                                     await provider.submitParameterUpdate(
-//                                       context: context,
-//                                       subaccountId: widget.subAccountId,
-//                                       parameterId:
-//                                           widget.result.dataCategoryId!,
-//                                       updatedFields: updatedFields,
-//                                     );
+//                               await provider.submitParameterUpdate(
+//                                 context: context,
+//                                 subaccountId: widget.subAccountId,
+//                                 parameterId:
+//                                 widget.result.dataCategoryId!,
+//                                 updatedFields: updatedFields,
+//                               );
 //
-//                                     if (context.mounted) {
-//                                       WidgetsBinding.instance
-//                                           .addPostFrameCallback((_) {
-//                                         Provider.of<
-//                                             SubaccountParameterProvider>(
-//                                           context,
-//                                           listen: false,
-//                                         ).fetchSubaccountParameters(
-//                                             context, widget.subAccountId);
-//                                       });
-//                                       Navigator.pop(context);
-//                                     }
-//                                   } catch (e) {
-//                                     if (context.mounted) {
-//                                       ScaffoldMessenger.of(context)
-//                                           .showSnackBar(
-//                                         SnackBar(
-//                                             content: Text("Upload failed: $e")),
-//                                       );
-//                                     }
-//                                   } finally {
-//                                     if (context.mounted) {
-//                                       setModalState(() => isUploading = false);
-//                                     }
-//                                   }
-//                                 },
+//                               if (context.mounted) {
+//                                 WidgetsBinding.instance
+//                                     .addPostFrameCallback((_) {
+//                                   Provider.of<
+//                                       SubaccountParameterProvider>(
+//                                     context,
+//                                     listen: false,
+//                                   ).fetchSubaccountParameters(
+//                                       context, widget.subAccountId);
+//                                 });
+//                                 Navigator.pop(context);
+//                               }
+//                             } catch (e) {
+//                               if (context.mounted) {
+//                                 ScaffoldMessenger.of(context)
+//                                     .showSnackBar(
+//                                   SnackBar(
+//                                       content: Text("Upload failed: $e")),
+//                                 );
+//                               }
+//                             } finally {
+//                               if (context.mounted) {
+//                                 setModalState(() => isUploading = false);
+//                               }
+//                             }
+//                           },
 //
 //                           // onPressed: isUploading
 //                           //     ? null
@@ -1384,10 +1384,10 @@
 //                           //       },
 //                           child: isUploading
 //                               ? SizedBox(
-//                                   width: 20,
-//                                   height: 20,
-//                                   child: CircularProgressIndicator(
-//                                       color: Colors.white, strokeWidth: 2))
+//                               width: 20,
+//                               height: 20,
+//                               child: CircularProgressIndicator(
+//                                   color: Colors.white, strokeWidth: 2))
 //                               : Text("Submit"),
 //                         ),
 //                       ],
@@ -1522,279 +1522,265 @@
 //             references == null || references!.isEmpty
 //                 ? Container()
 //                 : Builder(
-//                     builder: (context) {
-//                       // 🔒 Safe pre-computation of flattenedImages outside the builder
-//                       final flattenedImages = references!
-//                           .asMap()
-//                           .entries
-//                           .expand((entry) {
-//                             final index = entry.key;
-//                             final urls = entry.value.url ?? [];
-//                             return List.generate(
-//                               urls.length,
-//                               (j) => {
-//                                 'url': urls[j],
-//                                 'refIndex': index,
-//                                 'imgIndex': j,
-//                               },
-//                             );
-//                           })
-//                           .where((img) =>
-//                               selectedImageData == null ||
-//                               selectedImageData!['url'] != img['url'])
-//                           .toList();
+//               builder: (context) {
+//                 // 🔒 Safe pre-computation of flattenedImages outside the builder
+//                 final flattenedImages = references!
+//                     .asMap()
+//                     .entries
+//                     .expand((entry) {
+//                   final index = entry.key;
+//                   final urls = entry.value.url ?? [];
+//                   return List.generate(
+//                     urls.length,
+//                         (j) => {
+//                       'url': urls[j],
+//                       'refIndex': index,
+//                       'imgIndex': j,
+//                     },
+//                   );
+//                 })
+//                     .where((img) =>
+//                 selectedImageData == null ||
+//                     selectedImageData!['url'] != img['url'])
+//                     .toList();
 //
-//                       return Column(
-//                         crossAxisAlignment: CrossAxisAlignment.start,
-//                         children: [
-//                           Card(
-//                             color: Colors.blueGrey[800],
-//                             shape: RoundedRectangleBorder(
-//                               borderRadius: BorderRadius.circular(8),
-//                             ),
-//                             margin: EdgeInsets.symmetric(vertical: 10),
-//                             child: Padding(
-//                               padding: const EdgeInsets.all(12.0),
-//                               child: Row(
-//                                 children: [
-//                                   Stack(
-//                                     children: [
-//                                       selectedImageData != null &&
-//                                               selectedImageData!['url'] != null
-//                                           ? ClipRRect(
-//                                               borderRadius:
-//                                                   BorderRadius.circular(12),
-//                                               child: CachedNetworkImage(
-//                                                 imageUrl:
-//                                                     selectedImageData!['url'],
-//                                                 width: 70,
-//                                                 height: 70,
-//                                                 fit: BoxFit.cover,
-//                                                 placeholder: (context, url) =>
-//                                                     CircularProgressIndicator(),
-//                                                 errorWidget:
-//                                                     (context, url, error) =>
-//                                                         SvgPicture.asset(
-//                                                   'assets/images/files.svg',
-//                                                   color: Colors.white54,
-//                                                   width: 20,
-//                                                   height: 20,
-//                                                 ),
-//                                               ),
-//                                             )
-//                                           : Container(
-//                                               width: 90,
-//                                               height: 90,
-//                                               decoration: BoxDecoration(
-//                                                 color: Color(0xFF1E1E1E),
-//                                                 borderRadius:
-//                                                     BorderRadius.circular(12),
-//                                               ),
-//                                               child: Icon(
-//                                                 Icons.insert_drive_file,
-//                                                 size: 48,
-//                                                 color: Colors.grey[400],
-//                                               ),
-//                                             ),
-//                                       if (selectedImageData != null)
-//                                         Positioned(
-//                                           top: 4,
-//                                           right: 4,
-//                                           child: GestureDetector(
-//                                             onTap: () {
-//                                               setState(() {
-//                                                 selectedImageData = null;
-//                                               });
-//                                             },
-//                                             child: Container(
-//                                               height: 24,
-//                                               width: 24,
-//                                               decoration: BoxDecoration(
-//                                                 color: Colors.red,
-//                                                 shape: BoxShape.circle,
-//                                               ),
-//                                               child: Icon(
-//                                                 Icons.close,
-//                                                 size: 16,
-//                                                 color: Colors.white,
-//                                               ),
-//                                             ),
-//                                           ),
+//                 return Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Card(
+//                       color: Colors.blueGrey[800],
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(8),
+//                       ),
+//                       margin: EdgeInsets.symmetric(vertical: 10),
+//                       child: Padding(
+//                         padding: const EdgeInsets.all(12.0),
+//                         child: Row(
+//                           children: [
+//                             Stack(
+//                               children: [
+//                                 selectedImageData != null &&
+//                                     selectedImageData!['url'] != null
+//                                     ? ClipRRect(
+//                                   borderRadius:
+//                                   BorderRadius.circular(12),
+//                                   child: CachedNetworkImage(
+//                                     imageUrl:
+//                                     selectedImageData!['url'],
+//                                     width: 70,
+//                                     height: 70,
+//                                     fit: BoxFit.cover,
+//                                     placeholder: (context, url) =>
+//                                         CircularProgressIndicator(),
+//                                     errorWidget:
+//                                         (context, url, error) =>
+//                                         SvgPicture.asset(
+//                                           'assets/images/files.svg',
+//                                           color: Colors.white54,
+//                                           width: 20,
+//                                           height: 20,
 //                                         ),
-//                                     ],
 //                                   ),
-//                                   SizedBox(width: 16),
-//                                   Expanded(
-//                                     child: selectedImageData != null
-//                                         ? Column(
-//                                             crossAxisAlignment:
-//                                                 CrossAxisAlignment.start,
-//                                             children: [
-//                                               Text("Uploaded by",
-//                                                   style: TextStyle(
-//                                                       fontWeight:
-//                                                           FontWeight.bold)),
-//                                               Text(selectedImageData![
-//                                                   'uploadedBy']),
-//                                               SizedBox(height: 6),
-//                                               Text("Date & Time",
-//                                                   style: TextStyle(
-//                                                       fontWeight:
-//                                                           FontWeight.bold)),
-//                                               Text(
-//                                                   selectedImageData!['dateTime']
-//                                                       .toString()),
-//                                             ],
-//                                           )
-//                                         : SizedBox.shrink(),
+//                                 )
+//                                     : Container(
+//                                   width: 90,
+//                                   height: 90,
+//                                   decoration: BoxDecoration(
+//                                     color: Color(0xFF1E1E1E),
+//                                     borderRadius:
+//                                     BorderRadius.circular(12),
 //                                   ),
-//                                 ],
-//                               ),
-//                             ),
-//                           ),
-//                           GridView.builder(
-//                             shrinkWrap: true,
-//                             physics: NeverScrollableScrollPhysics(),
-//                             itemCount: flattenedImages.length,
-//                             gridDelegate:
-//                                 SliverGridDelegateWithFixedCrossAxisCount(
-//                               crossAxisCount: 3,
-//                               crossAxisSpacing: 6,
-//                               mainAxisSpacing: 4,
-//                               childAspectRatio: 1,
-//                             ),
-//                             itemBuilder: (context, i) {
-//                               final imgData = flattenedImages[i];
-//                               final refIndex = imgData['refIndex'] as int;
-//                               final imgIndex = imgData['imgIndex'] as int;
-//                               final url = imgData['url'] as String;
-//
-//                               final isImage =
-//                                   url.toLowerCase().contains(".jpg") ||
-//                                       url.toLowerCase().contains(".jpeg") ||
-//                                       url.toLowerCase().contains(".png");
-//
-//                               return Stack(
-//                                 children: [
-//                                   GestureDetector(
-//                                     onTap: () {
-//                                       final int? timestamp = widget.result
-//                                           .parameterValue!.updatedAt!.iSeconds;
-//                                       final dateTime =
-//                                           DateTime.fromMillisecondsSinceEpoch(
-//                                               timestamp! * 1000);
-//                                       final formattedDate =
-//                                           DateFormat('dd/MM/yyyy HH:mm:ss')
-//                                               .format(dateTime);
-//                                       setState(() {
-//                                         selectedImageUrl = url;
-//                                         expandedCardsWithImage[0] = imgIndex;
-//                                         selectedImageData = {
-//                                           'url': url,
-//                                           'uploadedBy':
-//                                               references![refIndex].name ??
-//                                                   "Unknown",
-//                                           'dateTime': formattedDate
-//                                         };
-//                                       });
-//                                     },
-//                                     child: ClipRRect(
-//                                       borderRadius: BorderRadius.circular(8),
-//                                       child: isImage
-//                                           ? CachedNetworkImage(
-//                                               imageUrl: url,
-//                                               width: 100,
-//                                               height: 200,
-//                                               fit: BoxFit.cover,
-//                                               placeholder: (context, url) =>
-//                                                   CircularProgressIndicator(),
-//                                               errorWidget:
-//                                                   (context, url, error) =>
-//                                                       Icon(Icons.broken_image),
-//                                             )
-//                                           : Container(
-//                                               color: Colors.grey.shade900,
-//                                               width: double.infinity,
-//                                               padding: const EdgeInsets.all(8),
-//                                               child: Column(
-//                                                 mainAxisAlignment:
-//                                                     MainAxisAlignment.center,
-//                                                 children: [
-//                                                   SvgPicture.asset(
-//                                                     'assets/images/files.svg',
-//                                                     color: Colors.white54,
-//                                                     width: 30,
-//                                                     height: 30,
-//                                                   ),
-//                                                   const SizedBox(height: 8),
-//                                                   Text(
-//                                                     getFileNameFromUrl(url),
-//                                                     maxLines: 1,
-//                                                     overflow:
-//                                                         TextOverflow.ellipsis,
-//                                                     textAlign: TextAlign.center,
-//                                                     style: const TextStyle(
-//                                                       color: Colors.white70,
-//                                                       fontSize: 14,
-//                                                     ),
-//                                                   ),
-//                                                 ],
-//                                               ),
-//                                             ),
-//                                     ),
+//                                   child: Icon(
+//                                     Icons.insert_drive_file,
+//                                     size: 48,
+//                                     color: Colors.grey[400],
 //                                   ),
+//                                 ),
+//                                 if (selectedImageData != null)
 //                                   Positioned(
 //                                     top: 4,
 //                                     right: 4,
 //                                     child: GestureDetector(
 //                                       onTap: () {
-//                                         print("Deleter");
 //                                         setState(() {
-//                                           references![refIndex]
-//                                               .url
-//                                               ?.removeAt(imgIndex);
-//                                           if (refIndex == 0 &&
-//                                               expandedCardsWithImage[0] !=
-//                                                   null &&
-//                                               imgIndex <
-//                                                   expandedCardsWithImage[0]!) {
-//                                             expandedCardsWithImage[0] =
-//                                                 expandedCardsWithImage[0]! - 1;
-//                                           }
-//                                         });
-//                                         WidgetsBinding.instance
-//                                             .addPostFrameCallback((_) {
-//                                           Provider.of<SubaccountParameterProvider>(
-//                                                   context,
-//                                                   listen: false)
-//                                               .fetchSubaccountParameters(
-//                                                   context, widget.subAccountId);
+//                                           selectedImageData = null;
 //                                         });
 //                                       },
 //                                       child: Container(
+//                                         height: 24,
+//                                         width: 24,
 //                                         decoration: BoxDecoration(
+//                                           color: Colors.red,
 //                                           shape: BoxShape.circle,
-//                                           color: Colors.white,
-//                                           boxShadow: [
-//                                             BoxShadow(
-//                                                 color: Colors.black26,
-//                                                 blurRadius: 2),
-//                                           ],
 //                                         ),
-//                                         padding: EdgeInsets.all(4),
-//                                         child: Icon(Icons.close,
-//                                             size: 16, color: Colors.red),
+//                                         child: Icon(
+//                                           Icons.close,
+//                                           size: 16,
+//                                           color: Colors.white,
+//                                         ),
 //                                       ),
 //                                     ),
 //                                   ),
+//                               ],
+//                             ),
+//                             SizedBox(width: 16),
+//                             Expanded(
+//                               child: selectedImageData != null
+//                                   ? Column(
+//                                 crossAxisAlignment:
+//                                 CrossAxisAlignment.start,
+//                                 children: [
+//                                   Text("Uploaded by",
+//                                       style: TextStyle(
+//                                           fontWeight:
+//                                           FontWeight.bold)),
+//                                   Text(selectedImageData![
+//                                   'uploadedBy']),
+//                                   SizedBox(height: 6),
+//                                   Text("Date & Time",
+//                                       style: TextStyle(
+//                                           fontWeight:
+//                                           FontWeight.bold)),
+//                                   Text(selectedImageData![
+//                                   'dateTime'].toString()),
 //                                 ],
-//                               );
-//                             },
-//                           ),
-//                         ],
-//                       );
-//                     },
-//                   ),
+//                               )
+//                                   : SizedBox.shrink(),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                     GridView.builder(
+//                       shrinkWrap: true,
+//                       physics: NeverScrollableScrollPhysics(),
+//                       itemCount: flattenedImages.length,
+//                       gridDelegate:
+//                       SliverGridDelegateWithFixedCrossAxisCount(
+//                         crossAxisCount: 3,
+//                         crossAxisSpacing: 6,
+//                         mainAxisSpacing: 4,
+//                         childAspectRatio: 1,
+//                       ),
+//                       itemBuilder: (context, i) {
+//                         final imgData = flattenedImages[i];
+//                         final refIndex = imgData['refIndex'] as int;
+//                         final imgIndex = imgData['imgIndex'] as int;
+//                         final url = imgData['url'] as String;
+//
+//                         final isImage =
+//                             url.toLowerCase().contains(".jpg") ||
+//                                 url.toLowerCase().contains(".jpeg") ||
+//                                 url.toLowerCase().contains(".png");
+//
+//                         return Stack(
+//                           children: [
+//                             GestureDetector(
+//                               onTap: () {
+//                                 final int? timestamp = widget.result.parameterValue!.updatedAt!.iSeconds;
+//                                 final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp! * 1000);
+//                                 final formattedDate = DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
+//                                 setState(() {
+//                                   selectedImageUrl = url;
+//                                   expandedCardsWithImage[0] = imgIndex;
+//                                   selectedImageData = {
+//                                     'url': url,
+//                                     'uploadedBy':
+//                                     references![refIndex].name ??
+//                                         "Unknown",
+//                                     'dateTime':
+//                                     formattedDate
+//                                   };
+//                                 });
+//                               },
+//                               child: ClipRRect(
+//                                 borderRadius: BorderRadius.circular(8),
+//                                 child: isImage
+//                                     ? CachedNetworkImage(
+//                                   imageUrl: url,
+//                                   width: 100,
+//                                   height: 200,
+//                                   fit: BoxFit.cover,
+//                                   placeholder: (context, url) =>
+//                                       CircularProgressIndicator(),
+//                                   errorWidget:
+//                                       (context, url, error) =>
+//                                       Icon(Icons.broken_image),
+//                                 )
+//                                     : Container(
+//                                   color: Colors.grey.shade900,
+//                                   width: double.infinity,
+//                                   padding: const EdgeInsets.all(8),
+//                                   child: Column(
+//                                     mainAxisAlignment:
+//                                     MainAxisAlignment.center,
+//                                     children: [
+//                                       SvgPicture.asset(
+//                                         'assets/images/files.svg',
+//                                         color: Colors.white54,
+//                                         width: 30,
+//                                         height: 30,
+//                                       ),
+//                                       const SizedBox(height: 8),
+//                                       Text(
+//                                         getFileNameFromUrl(url),
+//                                         maxLines: 1,
+//                                         overflow:
+//                                         TextOverflow.ellipsis,
+//                                         textAlign: TextAlign.center,
+//                                         style: const TextStyle(
+//                                           color: Colors.white70,
+//                                           fontSize: 14,
+//                                         ),
+//                                       ),
+//                                     ],
+//                                   ),
+//                                 ),
+//                               ),
+//                             ),
+//                             Positioned(
+//                               top: 4,
+//                               right: 4,
+//                               child: GestureDetector(
+//                                 onTap: () {
+//                                   setState(() {
+//                                     references![refIndex]
+//                                         .url
+//                                         ?.removeAt(imgIndex);
+//                                     if (refIndex == 0 &&
+//                                         expandedCardsWithImage[0] !=
+//                                             null &&
+//                                         imgIndex <
+//                                             expandedCardsWithImage[0]!) {
+//                                       expandedCardsWithImage[0] =
+//                                           expandedCardsWithImage[0]! - 1;
+//                                     }
+//                                   });
+//                                 },
+//                                 child: Container(
+//                                   decoration: BoxDecoration(
+//                                     shape: BoxShape.circle,
+//                                     color: Colors.white,
+//                                     boxShadow: [
+//                                       BoxShadow(
+//                                           color: Colors.black26,
+//                                           blurRadius: 2),
+//                                     ],
+//                                   ),
+//                                   padding: EdgeInsets.all(4),
+//                                   child: Icon(Icons.close,
+//                                       size: 16, color: Colors.red),
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         );
+//                       },
+//                     ),
+//                   ],
+//                 );
+//               },
+//             ),
 //
 //             SizedBox(height: 10),
 //             GestureDetector(
@@ -1912,7 +1898,7 @@
 //     final parameterType = widget.parametertype!.name!.toLowerCase();
 //     final isJson = parameterType == 'json';
 //     jsonController.text =
-//         isJson ? (widget.result.parameterValue?.value ?? '') : '';
+//     isJson ? (widget.result.parameterValue?.value ?? '') : '';
 //
 //     return TextFormField(
 //       controller: isJson ? jsonController : config.controller,
@@ -1926,47 +1912,47 @@
 //       ),
 //       onTap: config.isDateField
 //           ? () async {
-//               final now = DateTime.now();
-//               final pickedDate = await showDatePicker(
-//                 context: context,
-//                 initialDate: now,
-//                 firstDate: DateTime(2000),
-//                 lastDate: DateTime(2100),
+//         final now = DateTime.now();
+//         final pickedDate = await showDatePicker(
+//           context: context,
+//           initialDate: now,
+//           firstDate: DateTime(2000),
+//           lastDate: DateTime(2100),
+//         );
+//
+//         if (pickedDate != null) {
+//           if (parameterType == 'timestamp') {
+//             final pickedTime = await showTimePicker(
+//               context: context,
+//               initialTime: TimeOfDay.fromDateTime(now),
+//             );
+//
+//             if (pickedTime != null) {
+//               final fullDateTime = DateTime(
+//                 pickedDate.year,
+//                 pickedDate.month,
+//                 pickedDate.day,
+//                 pickedTime.hour,
+//                 pickedTime.minute,
 //               );
 //
-//               if (pickedDate != null) {
-//                 if (parameterType == 'timestamp') {
-//                   final pickedTime = await showTimePicker(
-//                     context: context,
-//                     initialTime: TimeOfDay.fromDateTime(now),
-//                   );
+//               setState(() {
+//                 _selectedDate = fullDateTime;
+//               });
 //
-//                   if (pickedTime != null) {
-//                     final fullDateTime = DateTime(
-//                       pickedDate.year,
-//                       pickedDate.month,
-//                       pickedDate.day,
-//                       pickedTime.hour,
-//                       pickedTime.minute,
-//                     );
-//
-//                     setState(() {
-//                       _selectedDate = fullDateTime;
-//                     });
-//
-//                     config.controller.text =
-//                         '${fullDateTime.toLocal()}'.split('.').first;
-//                   }
-//                 } else {
-//                   setState(() {
-//                     _selectedDate = pickedDate;
-//                   });
-//
-//                   config.controller.text =
-//                       '${pickedDate.toLocal()}'.split(' ')[0];
-//                 }
-//               }
+//               config.controller.text =
+//                   '${fullDateTime.toLocal()}'.split('.').first;
 //             }
+//           } else {
+//             setState(() {
+//               _selectedDate = pickedDate;
+//             });
+//
+//             config.controller.text =
+//             '${pickedDate.toLocal()}'.split(' ')[0];
+//           }
+//         }
+//       }
 //           : null,
 //     );
 //   }
@@ -1979,17 +1965,17 @@
 //           onPressed: isLoading ? null : _handleSubmit,
 //           child: isLoading
 //               ? SizedBox(
-//                   height: 20,
-//                   width: 20,
-//                   child: CircularProgressIndicator(
-//                     color: AppColors.black,
-//                     strokeWidth: 2.5,
-//                   ),
-//                 )
+//             height: 20,
+//             width: 20,
+//             child: CircularProgressIndicator(
+//               color: AppColors.black,
+//               strokeWidth: 2.5,
+//             ),
+//           )
 //               : Text(
-//                   'Submit',
-//                   style: typography.Body1.copyWith(color: AppColors.black),
-//                 ),
+//             'Submit',
+//             style: typography.Body1.copyWith(color: AppColors.black),
+//           ),
 //           type: ButtonType.elevated,
 //         ),
 //       ],
@@ -2011,7 +1997,7 @@
 //         value = _selectedDate!.toIso8601String();
 //       } else if (parameterType == 'json') {
 //         final jsonText =
-//             paramAController.text.trim(); // or whatever controller you're using
+//         paramAController.text.trim(); // or whatever controller you're using
 //         if (jsonText.isEmpty) {
 //           _showError('Please enter a JSON value');
 //           return;
@@ -2258,9 +2244,9 @@
 //
 //   ImpactDataElement(
 //       {required this.name,
-//       required this.user,
-//       required this.result,
-//       required this.parameterType});
+//         required this.user,
+//         required this.result,
+//         required this.parameterType});
 // }
 //
 // class DataCompletenessCard extends StatelessWidget {
@@ -2304,7 +2290,7 @@
 //               color: Colors.black,
 //               shape: BoxShape.rectangle,
 //               borderRadius:
-//                   BorderRadius.circular(8), // or 0 for a perfect square
+//               BorderRadius.circular(8), // or 0 for a perfect square
 //             ),
 //             child: Center(
 //               child: SvgPicture.asset(

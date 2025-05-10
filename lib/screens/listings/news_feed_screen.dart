@@ -368,7 +368,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     if (picked != null) {
       Provider.of<NewsFeedProvider>(context, listen: false)
           .updateDateRange(picked.start, picked.end);
-      Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed();
+      // Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed();
     }
   }
 

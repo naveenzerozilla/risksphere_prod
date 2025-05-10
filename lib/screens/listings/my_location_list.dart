@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:RiskSphare/screens/listings/account_list.dart';
 import 'package:RiskSphare/screens/listings/sub_account_list.dart';
+import 'package:RiskSphare/utils/debouncer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
@@ -46,6 +47,8 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../models/sov_list_model.dart';
 import '../../models/transfer_autocomplete_model.dart';
+import '../../providers/configuration_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/sov_list_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -54,6 +57,7 @@ import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
+import 'addlocation.dart';
 
 class MyLocationList extends StatefulWidget {
   final String? accountID;
@@ -80,10 +84,11 @@ class MyLocationList extends StatefulWidget {
 class _MyLocationListState extends State<MyLocationList>
     with TickerProviderStateMixin {
   Timer? _refreshTimer;
+  static bool _hasActiveTimer = false;
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   TabController? _masterTabController;
-  TabController? _tabController;
+  late TabController _tabController;
   String selectedProcessId = "";
 
   String isMaintenance = "";
@@ -94,6 +99,7 @@ class _MyLocationListState extends State<MyLocationList>
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   int requestActionIndex = 0;
+  bool _isLoading = false;
 
   List<roleModel.Roles> filterRoleList = [];
 
@@ -129,7 +135,13 @@ class _MyLocationListState extends State<MyLocationList>
   String _sovQuery = "";
   bool showCheckbox = false;
   TextEditingController _sovEditNameController = TextEditingController();
-
+  bool showNonCorporateManagementTab = true;
+  bool showCorporateManagementTab = true;
+  bool showEmployeeManagementTab = true;
+  bool showCorporateList = true;
+  bool showCorporateUserListDropdown = true;
+  bool showCorporateVerificationTab = true;
+  bool showCorporateProfile = true;
   bool addToSOVCheck = false;
   bool isLoading = false;
 
@@ -152,124 +164,274 @@ class _MyLocationListState extends State<MyLocationList>
   @override
   void initState() {
     super.initState();
-    _getData();
-    _startRefreshTimer();
-    _getSovUploadStatus();
-    // Initially clear all filters
-    Provider.of<MyLocationListProvider>(context, listen: false)
-        .clearAllFilters();
-    Provider.of<LocationListProvider>(context, listen: false)
-        .fetchLocationSummary(
-            widget.accountID!, widget.subAccountID!, "widget.sovId!");
 
-    var userProfileProvider =
-        Provider.of<UserProfileProvider>(context, listen: false);
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    // Determine the number of tabs based on trial status
-    int tabCount = trialStatus.isEmpty ? 6 : 5;
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
       setState(() {
         selectedMainTab = _mainTabController?.index ?? 0;
-      }); // This ensures that the widget rebuilds when the tab changes
+      });
     });
+
+    var userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+    int tabCount = trialStatus.isEmpty ? 6 : 5;
     _masterTabController = TabController(length: tabCount, vsync: this);
     _masterTabController?.addListener(() {
       setState(() {
         selectedMasterTab = _masterTabController?.index ?? 0;
       });
     });
+
     _tabController = TabController(length: 2, vsync: this);
-    _tabController?.addListener(() {
-      setState(() {
-        selectedTab = _tabController?.index ?? 0;
-      });
-      if (_tabController?.index == 0) {
-        _selectedScreen = Screens.locationList;
-        var locationListProvider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 1;
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .fetchLocationList(
-              context,
-              "",
-              1,
-              40,
-              widget.accountID,
-              widget.subAccountID,
-              widget.initialProcessId,
-              widget.initialSubProcessId,
-            )
-            .then((value) => setState(() {}));
-      } else {
-        _selectedScreen = Screens.certifiedLocationList;
-        var locationListProvider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
-        locationListProvider.page = 1;
-        locationListProvider.clearRatingsFilter();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .fetchCertifiedLocationList(
-              context,
-              "",
-              1,
-              40,
-              widget.accountID,
-              widget.subAccountID,
-              widget.initialProcessId,
-              widget.initialSubProcessId,
-            )
-            .then((value) => setState(() {}));
-        /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
-        Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
-          context,
-          "widget.accountId",
-          "widget.subAccountId",
-          "widget.sovId",
-          locationQuery,
-          0,
-          40,
-        );*/
-      }
-      setState(() {});
+    _tabController?.addListener(_onTabChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData(); // Load all data after first render
+    });
+  }
+
+  void _initializeData() {
+    _setClaims();
+    _getData();
+    _startRefreshTimer();
+    _getSovUploadStatus();
+    _getMaintainancePeriod();
+
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    locationListProvider.clearAllFilters();
+    locationListProvider.page = 1;
+
+    Provider.of<LocationListProvider>(context, listen: false)
+        .fetchLocationSummary(
+      widget.accountID!,
+      widget.subAccountID!,
+      "widget.sovId!",
+    );
+
+    _fetchTabData(0); // Load default tab data
+  }
+
+  void _onTabChanged() {
+    setState(() {
+      selectedTab = _tabController?.index ?? 0;
     });
 
-    _getMaintainancePeriod();
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    locationListProvider.page = 1;
+
+    if (_tabController?.index == 0) {
+      _selectedScreen = Screens.locationList;
+      locationListProvider.fetchLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      );
+    } else {
+      _selectedScreen = Screens.certifiedLocationList;
+      locationListProvider.clearRatingsFilter();
+      locationListProvider.fetchCertifiedLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      );
+    }
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _setClaims();
+  //   _getData();
+  //   _startRefreshTimer();
+  //   _getSovUploadStatus();
+  //   // Initially clear all filters
+  //   Provider.of<MyLocationListProvider>(context, listen: false)
+  //       .clearAllFilters();
+  //   Provider.of<LocationListProvider>(context, listen: false)
+  //       .fetchLocationSummary(
+  //           widget.accountID!, widget.subAccountID!, "widget.sovId!");
+  //
+  //   var userProfileProvider =
+  //       Provider.of<UserProfileProvider>(context, listen: false);
+  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+  //   // Determine the number of tabs based on trial status
+  //   int tabCount = trialStatus.isEmpty ? 6 : 5;
+  //   _mainTabController = TabController(length: 3, vsync: this);
+  //   _mainTabController?.addListener(() {
+  //     setState(() {
+  //       selectedMainTab = _mainTabController?.index ?? 0;
+  //     }); // This ensures that the widget rebuilds when the tab changes
+  //   });
+  //   _masterTabController = TabController(length: tabCount, vsync: this);
+  //   _masterTabController?.addListener(() {
+  //     setState(() {
+  //       selectedMasterTab = _masterTabController?.index ?? 0;
+  //     });
+  //   });
+  //   _tabController = TabController(length: 2, vsync: this);
+  //   _tabController?.addListener(() {
+  //     setState(() {
+  //       selectedTab = _tabController?.index ?? 0;
+  //     });
+  //     if (_tabController?.index == 0) {
+  //       _selectedScreen = Screens.locationList;
+  //       var locationListProvider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       locationListProvider.page = 1;
+  //       Provider.of<MyLocationListProvider>(context, listen: false)
+  //           .fetchLocationList(
+  //             context,
+  //             "",
+  //             1,
+  //             40,
+  //             widget.accountID,
+  //             widget.subAccountID,
+  //             widget.initialProcessId,
+  //             widget.initialSubProcessId,
+  //           )
+  //           .then((value) => setState(() {}));
+  //     } else {
+  //       _selectedScreen = Screens.certifiedLocationList;
+  //       var locationListProvider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       locationListProvider.page = 1;
+  //       locationListProvider.clearRatingsFilter();
+  //       Provider.of<MyLocationListProvider>(context, listen: false)
+  //           .fetchCertifiedLocationList(
+  //             context,
+  //             "",
+  //             1,
+  //             40,
+  //             widget.accountID,
+  //             widget.subAccountID,
+  //             widget.initialProcessId,
+  //             widget.initialSubProcessId,
+  //           )
+  //           .then((value) => setState(() {}));
+  //       /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
+  //       Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
+  //         context,
+  //         "widget.accountId",
+  //         "widget.subAccountId",
+  //         "widget.sovId",
+  //         locationQuery,
+  //         0,
+  //         40,
+  //       );*/
+  //     }
+  //     setState(() {});
+  //   });
+  //
+  //   _getMaintainancePeriod();
+  // }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+
+    print(results.toString());
+
+    print("results.toString()");
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+
+    _getData1();
+    _getMaintainancePeriod();
+    setState(() {});
+  }
+
+  Future<void> _getData1() async {
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
+    final userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final configurationProvider =
+        Provider.of<ConfigurationProvider>(context, listen: false);
+
+    try {
+      final results = await Future.wait([
+        dashboardProvider.getDashboardData(context),
+        userProfileProvider.getAllUserData(context, "", ""),
+        configurationProvider.getConfiguration(
+            accountId: null, subAccountId: null),
+        configurationProvider.getVendors(),
+      ]);
+
+      userProfileProvider.fetchTrialInfo();
+
+      var config = configurationProvider.configurations['result'] ?? {};
+      // subscriptions = config['subscribe'] ?? {};
+
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            // vendorList = configurationProvider.vendors['result'] ?? [];
+          });
+        });
+      }
+    } catch (error) {
+      print("Error fetching data: $error");
+    }
+  }
+
+  Future<void> _getMaintainancePeriod() async {
+    isMaintenance =
+        await SharedPreferenceService.getScheduleInProgress() ?? "false";
+  }
+
+  bool _isDisposed = false;
 
   @override
   void dispose() {
-    // Dispose of all controllers to prevent ticker leaks
     _mainTabController?.dispose();
     _masterTabController?.dispose();
     _tabController?.dispose();
+    // _refreshTimer?.cancel();
+    _isDisposed = true;
+    _refreshTimer?.cancel();
+    _hasActiveTimer = false;
+    super.dispose();
+    deBouncer?.cancel();
 
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .clearAllFilters();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .clearSelection();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .clearRatingsFilter();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .myLocationList
-            .clear();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .certifiedLocationList
-            .clear();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .selectedLocations
-            .clear();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .summaryList
-            .clear();
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .certifiedLocationHits;
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .locationHits;
-      }
-    });
-    _refreshTimer!.cancel();
+    final myLocationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    myLocationProvider.clearAllFilters();
+    myLocationProvider.clearSelection();
+    myLocationProvider.clearRatingsFilter();
+    myLocationProvider.myLocationList.clear();
+    myLocationProvider.certifiedLocationList.clear();
+    myLocationProvider.selectedLocations.clear();
+    myLocationProvider.summaryList.clear();
 
     super.dispose();
   }
@@ -294,13 +456,36 @@ class _MyLocationListState extends State<MyLocationList>
   // }
 
   void _startRefreshTimer() {
+    if (_refreshTimer != null && _refreshTimer!.isActive) return;
+    if (_hasActiveTimer) return;
+
+    _hasActiveTimer = true;
+
     _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+      final provider =
+          Provider.of<JobMonitoringProvider>(context, listen: false);
       if (mounted && provider.isProcessing) {
         _refreshData();
+      } else {
+        _refreshTimer?.cancel();
+        _hasActiveTimer = false;
       }
     });
   }
+
+  // void _startRefreshTimer() {
+  //   if (_refreshTimer != null && _refreshTimer!.isActive) return;
+  //
+  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+  //     final provider =
+  //     Provider.of<JobMonitoringProvider>(context, listen: false);
+  //     if (mounted && provider.isProcessing) {
+  //       _refreshData();
+  //     } else {
+  //       _refreshTimer?.cancel(); // Stop timer if no longer processing
+  //     }
+  //   });
+  // }
 
   Future<void> _refreshData() async {
     if (!mounted) return; // Ensure the widget is still in the tree
@@ -343,10 +528,6 @@ class _MyLocationListState extends State<MyLocationList>
     if (mounted) {
       setState(() {}); // Trigger UI update after fetching data
     }
-  }
-
-  _getMaintainancePeriod() async {
-    isMaintenance = (await SharedPreferenceService.getScheduleInProgress())!;
   }
 
   Future<void> _getData() async {
@@ -540,29 +721,57 @@ class _MyLocationListState extends State<MyLocationList>
                   },
                 ),
                 drawer: CustomDrawer(),
-                floatingActionButton: Builder(
-                  builder: (context) {
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 42.0),
-                      child: SpeedDial(
-                        animatedIcon: AnimatedIcons.menu_close,
-                        animatedIconTheme: IconThemeData(size: 22.0),
-                        backgroundColor: AppColors.primaryMain,
-                        foregroundColor:
-                            themeProvider.getTheme.colorScheme.onPrimary,
-                        children: [
-                          if ((selectedMasterTab) == 0)
-                            SpeedDialChild(
-                              child: Icon(Icons.add),
+                floatingActionButton: Builder(builder: (context) {
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 42.0),
+                    child: SpeedDial(
+                      animatedIcon: AnimatedIcons.menu_close,
+                      animatedIconTheme: IconThemeData(size: 22.0),
+                      backgroundColor: AppColors.primaryMain,
+                      foregroundColor:
+                          themeProvider.getTheme.colorScheme.onPrimary,
+                      children: [
+                        if ((selectedMasterTab) == 0)
+                          // Add this to your state
+
+                          SpeedDialChild(
+                              child: _isLoading
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          themeProvider
+                                              .getTheme.colorScheme.onPrimary,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(Icons.add),
                               backgroundColor: AppColors.primaryMain,
                               foregroundColor:
                                   themeProvider.getTheme.colorScheme.onPrimary,
                               label: 'Add Location',
                               labelStyle: typography.Body1,
                               onTap: () async {
+                                setState(() {
+                                  _isLoading = true;
+                                });
+
+                                await _setClaims();
+                                await Future.delayed(Duration(seconds: 1));
+
+                                // Cancel timers and debounce before navigating
+                                _isDisposed = true;
+                                _refreshTimer?.cancel();
+                                deBouncer?.cancel();
+
                                 final result = await Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => AddLocationScreen(
+                                    builder: (_) =>
+                                        // StaticDropdownExample()
+                                        AddLocationScreen(
                                       accountId: widget.accountID!,
                                       subAccountId: widget.subAccountID!,
                                       sovId: "",
@@ -572,10 +781,17 @@ class _MyLocationListState extends State<MyLocationList>
                                   ),
                                 );
 
-                                // Fetch data only if the result is valid
+                                // ✅ Restore after coming back
+                                _isDisposed = false;
+                                _startRefreshTimer(); // recreate timer
+                                // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
+                                _getSovUploadStatus();
+                                setState(() => _isLoading = false);
+
                                 if (result == true) {
-                                  await _getData(); // Call API when tapped
-                                  await Provider.of<MyLocationListProvider>(context,
+                                  await _getData();
+                                  await Provider.of<MyLocationListProvider>(
+                                          context,
                                           listen: false)
                                       .fetchLocationList(
                                     context,
@@ -587,102 +803,240 @@ class _MyLocationListState extends State<MyLocationList>
                                     widget.initialProcessId,
                                     widget.initialSubProcessId,
                                   );
-                                  setState(() {}); // Refresh UI
+                                  setState(() {});
                                 }
-                              },
-                            ),
+                              }
+
+                              // onTap: () async {
+                              //   setState(() {
+                              //     _isLoading = true;
+                              //   });
+                              //   // setState(() => _isLoading = true);
+                              //
+                              //   await _setClaims(); // Step 1
+                              //   // deBouncer!.cancel();
+                              //
+                              //
+                              //   await Future.delayed(
+                              //       Duration(seconds: 1)); // Step 2
+                              //   _isDisposed = true;
+                              //   _refreshTimer?.cancel();
+                              //   deBouncer?.cancel();
+                              //   final result = await Navigator.of(context).push(
+                              //     MaterialPageRoute(
+                              //       builder: (_) =>
+                              //           StaticDropdownExample(),
+                              //       //     AddLocationScreen(
+                              //       //   accountId: widget.accountID!,
+                              //       //   subAccountId: widget.subAccountID!,
+                              //       //   sovId: "",
+                              //       //   accountName: widget.accountName,
+                              //       //   subAccountName: widget.subAccountName,
+                              //       // ),
+                              //     ),
+                              //   );
+                              //
+                              //   setState(
+                              //       () => _isLoading = false); // Reset loading
+                              //
+                              //   if (result == true) {
+                              //     await _getData();
+                              //     await Provider.of<MyLocationListProvider>(
+                              //             context,
+                              //             listen: false)
+                              //         .fetchLocationList(
+                              //       context,
+                              //       "",
+                              //       1,
+                              //       40,
+                              //       widget.accountID,
+                              //       widget.subAccountID,
+                              //       widget.initialProcessId,
+                              //       widget.initialSubProcessId,
+                              //     );
+                              //     setState(() {});
+                              //   }
+                              // },
+                              ),
+
+                        // SpeedDialChild(
+                        //   child: Icon(Icons.add),
+                        //   backgroundColor: AppColors.primaryMain,
+                        //   foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
+                        //   label: 'Add Location',
+                        //   labelStyle: typography.Body1,
+                        //     onTap: () async {
+                        //       await _setClaims(); // Step 1: Run your setup method
+                        //
+                        //       // Step 2: Wait for 2 seconds before showing the loader
+                        //       await Future.delayed(Duration(seconds: 1));
+                        //
+                        //       // Step 3: Show loader
+                        //       showDialog(
+                        //         context: context,
+                        //         barrierDismissible: false,
+                        //         builder: (_) => Center(
+                        //           child: CircularProgressIndicator(),
+                        //         ),
+                        //       );
+                        //
+                        //       // Step 4: Navigate to AddLocationScreen
+                        //       final result = await Navigator.of(context).push(
+                        //         MaterialPageRoute(
+                        //           builder: (_) => AddLocationScreen(
+                        //             accountId: widget.accountID!,
+                        //             subAccountId: widget.subAccountID!,
+                        //             sovId: "",
+                        //             accountName: widget.accountName,
+                        //             subAccountName: widget.subAccountName,
+                        //           ),
+                        //         ),
+                        //       );
+                        //
+                        //       // Step 5: Dismiss loader
+                        //       Navigator.of(context, rootNavigator: true).pop();
+                        //
+                        //       if (result == true) {
+                        //         await _getData();
+                        //         await Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
+                        //           context,
+                        //           "",
+                        //           1,
+                        //           40,
+                        //           widget.accountID,
+                        //           widget.subAccountID,
+                        //           widget.initialProcessId,
+                        //           widget.initialSubProcessId,
+                        //         );
+                        //         setState(() {});
+                        //       }
+                        //     }
+                        //
+                        //   // onTap: () {
+                        //     //   _setClaims().then((_) async {
+                        //     //     final result = await Navigator.of(context).push(
+                        //     //       MaterialPageRoute(
+                        //     //         builder: (_) => AddLocationScreen(
+                        //     //           accountId: widget.accountID!,
+                        //     //           subAccountId: widget.subAccountID!,
+                        //     //           sovId: "",
+                        //     //           accountName: widget.accountName,
+                        //     //           subAccountName: widget.subAccountName,
+                        //     //         ),
+                        //     //       ),
+                        //     //     );
+                        //     //
+                        //     //     if (result == true) {
+                        //     //       await _getData();
+                        //     //       await Provider.of<MyLocationListProvider>(context, listen: false)
+                        //     //           .fetchLocationList(
+                        //     //         context,
+                        //     //         "",
+                        //     //         1,
+                        //     //         40,
+                        //     //         widget.accountID,
+                        //     //         widget.subAccountID,
+                        //     //         widget.initialProcessId,
+                        //     //         widget.initialSubProcessId,
+                        //     //       );
+                        //     //       setState(() {});
+                        //     //     }
+                        //     //   });
+                        //     // }
+                        //
+                        // ),
+                        SpeedDialChild(
+                          child: Icon(Icons.upload),
+                          backgroundColor: AppColors.primaryMain,
+                          foregroundColor:
+                              themeProvider.getTheme.colorScheme.onPrimary,
+                          label: isUploadInProgress
+                              ? 'Continue'
+                              : 'Import Locations',
+                          labelStyle: typography.Body1,
+                          onTap: () async {
+                            tagController.text = "";
+                            if (isMaintenance.toString() == 'in_progress') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'SOV upload is disabled during maintenance period.')),
+                              );
+                            } else if (isUploadInProgress) {
+                              String tempProcessId =
+                                  await SharedPreferenceService
+                                          .getSovUploadTempId() ??
+                                      "";
+                              String state = await SharedPreferenceService
+                                      .getSovUploadState() ??
+                                  "";
+
+                              // Fetch API data when tapped
+                              await Provider.of<UploadSovProvider>(context,
+                                      listen: false)
+                                  .fetchSovUploadData(
+                                      context,
+                                      widget.accountID!,
+                                      widget.accountName,
+                                      widget.subAccountName,
+                                      widget.subAccountID!,
+                                      tempProcessId,
+                                      state);
+                            } else {
+                              _showUploadBottomSheet(
+                                  widget.accountID!, widget.subAccountID!, "");
+                            }
+                          },
+                        ),
+                        if ((_masterTabController?.index ?? 0) == 0)
                           SpeedDialChild(
-                            child: Icon(Icons.upload),
-                            backgroundColor: AppColors.primaryMain,
+                            child: Icon(Icons.download),
+                            backgroundColor: trialStatus.isNotEmpty
+                                ? Colors.grey
+                                : AppColors.primaryMain,
                             foregroundColor:
                                 themeProvider.getTheme.colorScheme.onPrimary,
-                            label: isUploadInProgress
-                                ? 'Continue'
-                                : 'Import Locations',
+                            label: 'Export Locations',
                             labelStyle: typography.Body1,
-                            onTap: () async {
-                              tagController.text = "";
-                              if (isMaintenance.toString() == 'in_progress') {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'SOV upload is disabled during maintenance period.')),
-                                );
-                              } else if (isUploadInProgress) {
-                                String tempProcessId = await SharedPreferenceService
-                                        .getSovUploadTempId() ??
-                                    "";
-                                String state = await SharedPreferenceService
-                                        .getSovUploadState() ??
-                                    "";
+                            onTap: trialStatus.isNotEmpty
+                                ? null
+                                : () async {
+                                    await _getData(); // API call only when tapped
+                                    setState(() {});
 
-                                // Fetch API data when tapped
-                                await Provider.of<UploadSovProvider>(context,
-                                        listen: false)
-                                    .fetchSovUploadData(
-                                        context,
-                                        widget.accountID!,
-                                        widget.accountName,
-                                        widget.subAccountName,
-                                        widget.subAccountID!,
-                                        tempProcessId,
-                                        state);
-                              } else {
-                                _showUploadBottomSheet(
-                                    widget.accountID!, widget.subAccountID!, "");
-                              }
-                            },
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return ExportDialog(
+                                          accountId: widget.accountID!,
+                                          subAccountId: widget.subAccountID!,
+                                          sovId: "",
+                                          locationId: selectedMainTab == 0
+                                              ? Provider.of<
+                                                          MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .myLocationList
+                                                  .map((location) =>
+                                                      location.id ?? "")
+                                                  .toList()
+                                              : Provider.of<
+                                                          MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .certifiedLocationList
+                                                  .map((location) =>
+                                                      location.id ?? "")
+                                                  .toList(),
+                                        );
+                                      },
+                                    );
+                                  },
                           ),
-                          if ((_masterTabController?.index ?? 0) == 0)
-                            SpeedDialChild(
-                              child: Icon(Icons.download),
-                              backgroundColor: trialStatus.isNotEmpty
-                                  ? Colors.grey
-                                  : AppColors.primaryMain,
-                              foregroundColor:
-                                  themeProvider.getTheme.colorScheme.onPrimary,
-                              label: 'Export Locations',
-                              labelStyle: typography.Body1,
-                              onTap: trialStatus.isNotEmpty
-                                  ? null
-                                  : () async {
-                                      await _getData(); // API call only when tapped
-                                      setState(() {});
-
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return ExportDialog(
-                                            accountId: widget.accountID!,
-                                            subAccountId: widget.subAccountID!,
-                                            sovId: "",
-                                            locationId: selectedMainTab == 0
-                                                ? Provider.of<
-                                                            MyLocationListProvider>(
-                                                        context,
-                                                        listen: false)
-                                                    .myLocationList
-                                                    .map((location) =>
-                                                        location.id ?? "")
-                                                    .toList()
-                                                : Provider.of<
-                                                            MyLocationListProvider>(
-                                                        context,
-                                                        listen: false)
-                                                    .certifiedLocationList
-                                                    .map((location) =>
-                                                        location.id ?? "")
-                                                    .toList(),
-                                          );
-                                        },
-                                      );
-                                    },
-                            ),
-                        ],
-                      ),
-                    );
-                  }
-                ),
+                      ],
+                    ),
+                  );
+                }),
                 body: Stack(
                   children: [
                     /*  Positioned.fill(
@@ -1412,42 +1766,42 @@ class _MyLocationListState extends State<MyLocationList>
                       builder: (context, provider, child) {
                         return provider.isLoading
                             ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                                height: 24,
+                                width: 24,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
                             : IconButton(
-                          onPressed: trialStatus.isNotEmpty
-                              ? null
-                              : () {
-                            // provider.setLoading(true); // Start loading
+                                onPressed: trialStatus.isNotEmpty
+                                    ? null
+                                    : () {
+                                        // provider.setLoading(true); // Start loading
 
-                            locationListProvider
-                                .addSelectedToSOV(
-                              context,
-                              widget.accountID!,
-                              widget.subAccountID!,
-                              widget.accountName,
-                              widget.subAccountName,
-                              _masterTabController,
-                            )
-                                .then((value) {
-                              provider.fetchSovList(
-                                context,
-                                widget.accountID!,
-                                widget.subAccountID!,
-                                "",
-                                1,
-                                10,
+                                        locationListProvider
+                                            .addSelectedToSOV(
+                                          context,
+                                          widget.accountID!,
+                                          widget.subAccountID!,
+                                          widget.accountName,
+                                          widget.subAccountName,
+                                          _masterTabController,
+                                        )
+                                            .then((value) {
+                                          provider.fetchSovList(
+                                            context,
+                                            widget.accountID!,
+                                            widget.subAccountID!,
+                                            "",
+                                            1,
+                                            10,
+                                          );
+                                        }).whenComplete(() {
+                                          // Stop loading after API call
+                                        });
+                                      },
+                                icon: Icon(Symbols.list_alt_add),
+                                tooltip: 'Add to SOV',
                               );
-                            })
-                                .whenComplete(() {
-                            // Stop loading after API call
-                            });
-                          },
-                          icon: Icon(Symbols.list_alt_add),
-                          tooltip: 'Add to SOV',
-                        );
                       },
                     ),
                     // IconButton(
@@ -1868,6 +2222,7 @@ class _MyLocationListState extends State<MyLocationList>
                             child: InkWell(
                               onTap: () {
                                 _tabController?.animateTo(0);
+                                _fetchTabData(0);
                                 // _fetchTabData(0);
                               },
                               child: Row(
@@ -1905,6 +2260,7 @@ class _MyLocationListState extends State<MyLocationList>
                             child: InkWell(
                               onTap: () {
                                 _tabController?.animateTo(1);
+                                _fetchTabData(1);
                               },
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1960,10 +2316,12 @@ class _MyLocationListState extends State<MyLocationList>
               // Map View
               Consumer<MyLocationListProvider>(
                 builder: (context, locationListProvider, child) {
-                  return locationListProvider.isLoading ? Center(child: CircularProgressIndicator(),):
-
-                    LocationTable(
-                      locations: locationListProvider.myLocationList);
+                  return locationListProvider.isLoading
+                      ? Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : LocationTable(
+                          locations: locationListProvider.myLocationList);
                 },
               ),
               LocationListMapView(
@@ -1975,6 +2333,41 @@ class _MyLocationListState extends State<MyLocationList>
         ),
       ],
     );
+  }
+
+  void _fetchTabData(int index) {
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    locationListProvider.page = 1;
+
+    if (index == 0) {
+      // Fetch All locations
+      _selectedScreen = Screens.locationList;
+      locationListProvider.fetchLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      );
+    } else {
+      // Fetch Certified locations
+      _selectedScreen = Screens.certifiedLocationList;
+      locationListProvider.clearRatingsFilter();
+      locationListProvider.fetchCertifiedLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      );
+    }
   }
 
   Widget _getLiveUI(JobMonitoringProvider provider) {
@@ -2008,7 +2401,7 @@ class _MyLocationListState extends State<MyLocationList>
         Map<String, dynamic>>(
       subaccountStream,
       processStream,
-          (heatmapSnapshot, processSnapshot) {
+      (heatmapSnapshot, processSnapshot) {
         return {
           'heatmapData': heatmapSnapshot.data(),
           'processData': processSnapshot.docs.isNotEmpty
@@ -2046,38 +2439,52 @@ class _MyLocationListState extends State<MyLocationList>
         print('Ongoing Processes: $onGoingProcesses');
 
         // Update Provider's isProcessing state
-        bool isCurrentlyProcessing = processStatus.toLowerCase() == 'processing';
+        bool isCurrentlyProcessing =
+            processStatus.toLowerCase() == 'processing';
         String newProcessStatus = data['processData']?['status'] ?? 'completed';
 
         // Get the provider instance
-        var jobProvider = Provider.of<JobMonitoringProvider>(context, listen: false);
+        var jobProvider =
+            Provider.of<JobMonitoringProvider>(context, listen: false);
 
         // Check if status has changed
-        if (jobProvider.processStatus != newProcessStatus) {
+        if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
           jobProvider.updateProcessStatus(newProcessStatus);
 
-          // Refresh when status changes
-          // _getData();
-
           if (isCurrentlyProcessing) {
-            _startRefreshTimer(); // Start timer when processing starts
+            _startRefreshTimer();
           } else {
+            _refreshTimer?.cancel();
             _getData();
-            _refreshTimer?.cancel(); // Stop timer when processing stops
           }
         }
+
+        // if (jobProvider.processStatus != newProcessStatus) {
+        //   jobProvider.updateProcessStatus(newProcessStatus);
+        //
+        //   // Refresh when status changes
+        //   // _getData();
+        //
+        //   if (isCurrentlyProcessing) {
+        //     _startRefreshTimer(); // Start timer when processing starts
+        //   } else {
+        //     _getData();
+        //     _refreshTimer?.cancel(); // Stop timer when processing stops
+        //   }
+        // }
 
         print('Heatmap Status: $heatmapStatus');
         print('Process Status: $processStatus');
 
-        var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+        var provider =
+            Provider.of<MyLocationListProvider>(context, listen: false);
         provider.isHeatMapGeneratingLive =
             heatmapStatus.toString().toLowerCase() == 'initiated';
 
         // Extract process count and calculate percentage
         int totalCompleted =
             data['processData']?['total_processes_completed'] ?? 0;
-        int totalProcesses = data['processData']?['total_processes'] ?? 1;
+        var totalProcesses = data['processData']?['total_processes'] ?? 1;
         double percentage = (totalCompleted / totalProcesses) * 100;
 
         return AnimatedSwitcher(
@@ -2093,10 +2500,9 @@ class _MyLocationListState extends State<MyLocationList>
                         context,
                         MaterialPageRoute(
                             builder: (context) => ProcessMonitoringScreen(
-                              accountId: widget.accountID,
-                              subAccountId: widget.subAccountID,
-                            )))
-                        .then((value) => _getData());
+                                  accountId: widget.accountID,
+                                  subAccountId: widget.subAccountID,
+                                ))).then((value) => _getData());
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -2116,7 +2522,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 const SizedBox(width: 8.0),
                                 Text(
                                   'Processing '
-                                      '${percentage.toStringAsFixed(0)}%',
+                                  '${percentage.toStringAsFixed(0)}%',
                                   style: typography.Caption.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -3438,6 +3844,67 @@ class _MyLocationListState extends State<MyLocationList>
                 ],
               ),
             ),
+            if (locationListProvider.myLocationList.length > 1) ...[
+              if (locationListProvider!.isConflict == true) ...[
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        MessageCard(
+                          messageTextSpans: [
+                            TextSpan(
+                              text:
+                                  "We've found several potential matches for some of the provided location. Please review them and select the correct match to ",
+                              style: typography.Body2,
+                            ),
+                            TextSpan(
+                              text: "resolve the conflict",
+                              style: typography.Body2.copyWith(
+                                color: AppColors.primaryMain,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()..onTap = () {},
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        MessageCard1(
+                          messageTextSpans: [
+                            TextSpan(
+                              text:
+                                  "Great news, there are no conflicts to resolve!, Click here to ",
+                              style: typography.Body2,
+                            ),
+                            TextSpan(
+                              text: "Update Hazard scores",
+                              style: typography.Body2.copyWith(
+                                color: AppColors.primaryMain,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()..onTap = () {},
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
             Expanded(
               child: locationListProvider.isLoading
                   ? Column(
@@ -3514,7 +3981,8 @@ class _MyLocationListState extends State<MyLocationList>
 
                             // Clear existing selections before the refresh starts
                             locationListProvider.selectedLocations.clear();
-                            locationListProvider.notifyListeners(); // Update UI immediately
+                            locationListProvider
+                                .notifyListeners(); // Update UI immediately
 
                             // Refresh data in parallel
                             locationListProvider.certifiedPage = 1;
@@ -3616,164 +4084,175 @@ class _MyLocationListState extends State<MyLocationList>
                                       "location list: ${locationListProvider.myLocationList}");*/
                                   return Column(
                                     children: [
-                                      MyLocationCard(
-                                        hazards: locationListProvider
-                                            .myLocationList[index].hazard,
-                                        imageUrl: (locationListProvider
-                                                    .myLocationList[index]
-                                                    .screenshots
-                                                    ?.isNotEmpty ??
-                                                false)
-                                            ? locationListProvider
-                                                    .myLocationList[index]
-                                                    .screenshots![0]
-                                                    .imageUrl ??
-                                                ''
-                                            : '',
-                                        index: index,
-                                        campusId: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.campusId ??
-                                            '',
-                                        accountId: widget.accountID,
-                                        subAccountId: widget.subAccountID,
-                                        subAccountName: widget.subAccountName,
-                                        locationId: locationListProvider
-                                                .myLocationList[index].id ??
-                                            '',
-                                        accountName: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.accountName ??
-                                            '',
-                                        ownerName: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.ownerName ??
-                                            '',
-                                        address: locationListProvider
-                                                .myLocationList[index]
-                                                .geocodedAddress ??
-                                            '',
-                                        percentage: double.parse(
-                                            locationListProvider
-                                                    .myLocationList[index]
-                                                    .finalAddress
-                                                    ?.percent ??
-                                                '0'),
-                                        geocodingScore: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.score ??
-                                            0,
-                                        riskScore: locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore ??
-                                            5,
-                                        dataCompletenessScore: 0,
-                                        isAutoCertified: true,
-                                        tags: (locationListProvider
-                                                .myLocationList[index]?.tags ??
-                                            []),
-                                        onDelete: (locationId) {
-                                          // Show delete confirmation dialog
-                                          showDeleteConfirmationDialog(
-                                            context,
-                                            () async {
-                                              print(
-                                                  "Deleting location $locationId");
-                                              // Delete the location
-                                              await Provider.of<
-                                                          MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .deleteLocations(
-                                                      context,
-                                                      widget.accountID!,
-                                                      widget.subAccountID!,
-                                                      "",
-                                                      [locationId]);
-
-                                              // Refresh the list after deletion
-                                              Provider.of<MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .fetchLocationList(
-                                                context,
-                                                locationQuery,
-                                                1,
-                                                40,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                              );
-
-                                              Navigator.of(context).pop();
-                                            },
-                                            [locationId],
-                                          );
-                                        },
-                                        onAddToSOV: (locationId) {
-                                          // Show add to SOV dialog
-                                          // Implement bulk add to SOV
-                                          locationListProvider.addSelectedToSOV(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!,
-                                              widget.accountName,
-                                              widget.subAccountName,
-                                              _masterTabController,
-                                              locationId);
-                                        },
-                                        onAddTag: (locationId) {
-                                          // Show add tag dialog
-                                          // Implement bulk add tag
-                                          locationListProvider
-                                              .addTagsToSelectedLocations(
-                                                  context,
-                                                  widget.accountID!,
-                                                  widget.subAccountID!,
-                                                  locationId);
-                                        },
-                                        lat: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.latitude
-                                                .toString() ??
-                                            "",
-                                        long: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.longitude
-                                                .toString() ??
-                                            "",
-                                        overallScore: locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore
-                                                ?.toString() ??
-                                            "0",
-                                        hazardProcess: locationListProvider
-                                            .myLocationList[index]
-                                            .isHazardProcess,
-                                        rented: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.rented,
-                                        getData: _getData,
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Center(
-                                          child: Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "location_list_end_of_list"),
-                                            style: typography.Body1,
-                                          ),
-                                        ),
-                                      ),
+                                      Text("data"),
+                                      // MyLocationCard(
+                                      //   hazards: locationListProvider
+                                      //       .myLocationList[index].hazard,
+                                      //   imageUrl: (locationListProvider
+                                      //               .myLocationList[index]
+                                      //               .screenshots
+                                      //               ?.isNotEmpty ??
+                                      //           false)
+                                      //       ? locationListProvider
+                                      //               .myLocationList[index]
+                                      //               .screenshots![0]
+                                      //               .imageUrl ??
+                                      //           ''
+                                      //       : '',
+                                      //   index: index,
+                                      //   campusId: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.campusId ??
+                                      //       '',
+                                      //   accountId: widget.accountID,
+                                      //   subAccountId: widget.subAccountID,
+                                      //   subAccountName: widget.subAccountName,
+                                      //   locationId: locationListProvider
+                                      //           .myLocationList[index].id ??
+                                      //       '',
+                                      //   accountName: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.accountName ??
+                                      //       '',
+                                      //   ownerName: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.ownerName ??
+                                      //       '',
+                                      //   address: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .geocodedAddress ??
+                                      //       '',
+                                      //   percentage: double.parse(
+                                      //       locationListProvider
+                                      //               .myLocationList[index]
+                                      //               .finalAddress
+                                      //               ?.percent ??
+                                      //           '0'),
+                                      //   geocodingScore: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.score ??
+                                      //       0,
+                                      //   riskScore: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .overallScore ??
+                                      //       5,
+                                      //   dataCompletenessScore: 0,
+                                      //   isAutoCertified: true,
+                                      //   tags: (locationListProvider
+                                      //           .myLocationList[index]?.tags ??
+                                      //       []),
+                                      //   onDelete: (locationId) {
+                                      //     // Show delete confirmation dialog
+                                      //     showDeleteConfirmationDialog(
+                                      //       context,
+                                      //       () async {
+                                      //         print(
+                                      //             "Deleting location $locationId");
+                                      //         // Delete the location
+                                      //         await Provider.of<
+                                      //                     MyLocationListProvider>(
+                                      //                 context,
+                                      //                 listen: false)
+                                      //             .deleteLocations(
+                                      //                 context,
+                                      //                 widget.accountID!,
+                                      //                 widget.subAccountID!,
+                                      //                 "",
+                                      //                 [locationId]);
+                                      //
+                                      //         // Refresh the list after deletion
+                                      //         Provider.of<MyLocationListProvider>(
+                                      //                 context,
+                                      //                 listen: false)
+                                      //             .fetchLocationList(
+                                      //           context,
+                                      //           locationQuery,
+                                      //           1,
+                                      //           40,
+                                      //           widget.accountID,
+                                      //           widget.subAccountID,
+                                      //           widget.initialProcessId,
+                                      //           widget.initialSubProcessId,
+                                      //         );
+                                      //
+                                      //         Navigator.of(context).pop();
+                                      //       },
+                                      //       [locationId],
+                                      //     );
+                                      //   },
+                                      //   onAddToSOV: (locationId) {
+                                      //     // Show add to SOV dialog
+                                      //     // Implement bulk add to SOV
+                                      //     locationListProvider.addSelectedToSOV(
+                                      //         context,
+                                      //         widget.accountID!,
+                                      //         widget.subAccountID!,
+                                      //         widget.accountName,
+                                      //         widget.subAccountName,
+                                      //         _masterTabController,
+                                      //         locationId);
+                                      //   },
+                                      //   onAddTag: (locationId) {
+                                      //     // Show add tag dialog
+                                      //     // Implement bulk add tag
+                                      //     locationListProvider
+                                      //         .addTagsToSelectedLocations(
+                                      //             context,
+                                      //             widget.accountID!,
+                                      //             widget.subAccountID!,
+                                      //             locationId);
+                                      //   },
+                                      //   lat: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.latitude
+                                      //           .toString() ??
+                                      //       "",
+                                      //   long: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .finalAddress
+                                      //           ?.longitude
+                                      //           .toString() ??
+                                      //       "",
+                                      //   overallScore: locationListProvider
+                                      //           .myLocationList[index]
+                                      //           .overallScore
+                                      //           ?.toString() ??
+                                      //       "0",
+                                      //   hazardProcess: locationListProvider
+                                      //       .myLocationList[index]
+                                      //       .isHazardProcess,
+                                      //   rented: locationListProvider
+                                      //       .myLocationList[index]
+                                      //       .finalAddress
+                                      //       ?.rented,
+                                      //   getData: _getData,
+                                      //   onNavigateStart: () {
+                                      //     _isDisposed = true;
+                                      //     _refreshTimer?.cancel();
+                                      //     deBouncer?.cancel();
+                                      //   },
+                                      //   onNavigateBack: () {
+                                      //     _isDisposed = false;
+                                      //     _startRefreshTimer();
+                                      //      // Restore new instance
+                                      //   },
+                                      // ),
+                                      // Padding(
+                                      //   padding: const EdgeInsets.all(8.0),
+                                      //   child: Center(
+                                      //     child: Text(
+                                      //       LanguageService.getTranslated(
+                                      //           context,
+                                      //           "location_list_end_of_list"),
+                                      //       style: typography.Body1,
+                                      //     ),
+                                      //   ),
+                                      // ),
                                     ],
                                   );
                                 } else {
@@ -3804,6 +4283,12 @@ class _MyLocationListState extends State<MyLocationList>
                                 hazards: locationListProvider
                                         .myLocationList[index].hazard ??
                                     {},
+                                isConflict: locationListProvider
+                                    .myLocationList[index].isConflict,
+
+                                conflict: locationListProvider
+                                    .myLocationList[index].conflicts,
+
                                 imageUrl: locationListProvider
                                             .myLocationList[index]
                                             .screenshots
@@ -3936,6 +4421,16 @@ class _MyLocationListState extends State<MyLocationList>
                                 hazardProcess: locationListProvider
                                     .myLocationList[index].isHazardProcess,
                                 getData: _getData,
+                                onNavigateStart: () {
+                                  _isDisposed = true;
+                                  _refreshTimer?.cancel();
+                                  deBouncer?.cancel();
+                                },
+                                onNavigateBack: () {
+                                  _isDisposed = false;
+                                  _startRefreshTimer();
+                                  // deBouncer = deBouncer.isActive; // Restore new instance
+                                },
                               );
                             },
                           ),
@@ -4389,6 +4884,17 @@ class _MyLocationListState extends State<MyLocationList>
 
       // Provide a default boolean value // hazardProcess: locationListProvider.myLocationList[index].isHazardProcess ??"",
       getData: _getData,
+      onNavigateStart: () {
+        _isDisposed = true;
+        _refreshTimer?.cancel();
+        deBouncer?.cancel();
+      },
+
+      onNavigateBack: () {
+        _isDisposed = false;
+        _startRefreshTimer();
+        // Restore new instance
+      },
     );
   }
 

@@ -195,9 +195,9 @@ class CompanyProvider with ChangeNotifier {
       isLoading = false;
       isNextPageLoading = false;
 
-      if (context.mounted) {
-        CustomToast.error(context, 'Error fetching companies. Please try again later.');
-      }
+      // if (context.mounted) {
+      //   CustomToast.error(context, 'Error fetching companies. Please try again later.');
+      // }
       return [];
     }
   }
@@ -235,7 +235,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user for type BackendException text
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isStatusLoading = false;
       return false; // Return false in case of error
     }
@@ -271,7 +271,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isDeleteLoading = false;
       return false; // Return false in case of error
     }
@@ -307,7 +307,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
@@ -342,7 +342,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
@@ -377,7 +377,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
@@ -414,7 +414,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return Companies(); // Return empty list in case of error
     }
@@ -441,7 +441,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isImageUploadLoading = false;
       return ''; // Return false in case of error
     }
@@ -477,7 +477,7 @@ class CompanyProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return []; // Return an empty list in case of error
     }

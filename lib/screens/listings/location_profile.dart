@@ -7,18 +7,22 @@ import 'package:RiskSphare/models/hazard_data.dart';
 import 'package:RiskSphare/providers/custom_tile_providers.dart';
 import 'package:RiskSphare/providers/custom_tile_providers_main_hazards.dart';
 import 'package:RiskSphare/screens/listings/account_list.dart';
+import 'package:RiskSphare/screens/listings/hazard_proto.dart'
+    hide CustomTileProvider;
 import 'package:RiskSphare/screens/listings/sub_account_list.dart';
 import 'package:RiskSphare/screens/listings/widgets/location_card.dart'
     show GeocodingDialog;
 import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
+import 'package:easy_localization/easy_localization.dart' show DateFormat;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -48,10 +52,12 @@ import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart
 import '../../design_system/components/custom_button.dart';
 import '../../models/location_profile_model.dart';
 import '../../models/my_location_list_model.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
+import 'mapscreen.dart';
 import 'widgets/location_list_map_view.dart';
 
 class LocationProfile extends StatefulWidget {
@@ -69,6 +75,7 @@ class LocationProfile extends StatefulWidget {
     this.locationId = '',
     this.reset = false,
     this.hazardProcess,
+    this.onConfirmCallback,
   });
 
   final String accountId;
@@ -78,11 +85,12 @@ class LocationProfile extends StatefulWidget {
   final String sovId;
   final String sovName;
   final String page;
-  final String totalPages;
+  final String? totalPages;
   final String searchQuery;
   final String locationId;
   final bool reset;
   final bool? hazardProcess;
+  final VoidCallback? onConfirmCallback;
 
   @override
   State<LocationProfile> createState() => _LocationProfileState();
@@ -90,13 +98,8 @@ class LocationProfile extends StatefulWidget {
 
 class _LocationProfileState extends State<LocationProfile>
     with SingleTickerProviderStateMixin {
+  bool _isInitialized = false;
   late cluster_manager.ClusterManager<MyLocation> clusterManager;
-
-  // App Bar
-
-  Uint8List? _mapImage;
-
-  // final ScreenshotController screenshotController = ScreenshotController();
 
   final ScreenshotController _geocodingScreenshotController =
       ScreenshotController();
@@ -117,6 +120,7 @@ class _LocationProfileState extends State<LocationProfile>
   Set<ClusterManager> _clusterManagers = {};
 
   // Google Maps
+  bool _mapIsReady = false;
   UniqueKey _googleMapKey = UniqueKey();
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
@@ -159,38 +163,48 @@ class _LocationProfileState extends State<LocationProfile>
   );
 
   MarkerId? _selectedMarker;
+  late String _totalPages;
 
   late TextEditingController _searchController;
 
   ScrollController _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    _searchController = TextEditingController();
-    _tabController = TabController(length: 4, vsync: this);
-    super.initState();
-    _campusScrollController = ScrollController();
-    _pageController =
-        PageController(viewportFraction: 0.9, initialPage: selectedIndex);
-
-    // Execute parallel API calls
-    _fetchAllData();
-
-    _tabController!.addListener(() {
-      setState(() {
-        tabIndex = _tabController!.index;
-      });
-    });
+  String _formatDate(int secondsSinceEpoch) {
+    try {
+      final date =
+          DateTime.fromMillisecondsSinceEpoch(secondsSinceEpoch * 1000);
+      return DateFormat('yyyy-MM-dd HH:mm').format(date);
+    } catch (e) {
+      return '';
+    }
   }
 
-  // void _fetchAllData() async {
-  //   await Future.wait([
-  //     _getData(),
-  //     _initializeClusterManager(),
-  //     _fetchMainHazardLayers(),
-  //   ]);
-  // }
-  void _fetchAllData() async {
+  @override
+  void initState() {
+    if (!_isInitialized) {
+      // Only run if not initialized
+      _searchController = TextEditingController();
+      _tabController = TabController(length: 4, vsync: this);
+      super.initState();
+      _totalPages = widget.totalPages!;
+      _campusScrollController = ScrollController();
+      _pageController =
+          PageController(viewportFraction: 0.9, initialPage: selectedIndex);
+
+      // Execute parallel API calls
+      _fetchAllData();
+
+      _isInitialized = true; // Mark as initialized
+
+      _tabController!.addListener(() {
+        setState(() {
+          tabIndex = _tabController!.index;
+        });
+      });
+    }
+  }
+
+  _fetchAllData() async {
     await Future.wait(<Future>[
       _getData(),
       _initializeClusterManager(),
@@ -198,20 +212,119 @@ class _LocationProfileState extends State<LocationProfile>
     ]);
   }
 
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    _scrollController.dispose();
+  Future<void> _navigateRight() async {
+    if (_isLoading) return;
 
-    _tabController!.dispose();
-    _pageController!.dispose();
-    _searchController.dispose();
-    _nameController.dispose();
-    _addressController.dispose();
-    _campusIdController.dispose();
-    _controller.future.then((value) => value.dispose());
-    _campusScrollController!.dispose();
+    setState(() {
+      _isLoading = true;
+    });
+
+    print('Navigating from page ${widget.page} of ${widget.totalPages}');
+
+    final locationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+
+    int currentPage = int.tryParse(widget.page) ?? 1;
+    int? totalPages = widget.locationId.isNotEmpty
+        ? int.parse(locationProvider.totalPages.toString())
+        : int.tryParse(widget.totalPages!) ==
+                int.parse(locationProvider.totalPages.toString())
+            ? int.tryParse(widget.totalPages!)
+            : int.parse(locationProvider.totalPages.toString());
+
+    if (currentPage >= totalPages!) {
+      print('Already on the last page.');
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    int pageToNavigate = currentPage + 1;
+    print('Navigating to page: $pageToNavigate');
+
+    bool alreadyExists = false;
+    Navigator.popUntil(context, (route) {
+      if (route.settings.name == 'LocationProfile$pageToNavigate') {
+        alreadyExists = true;
+      }
+      return true;
+    });
+
+    if (alreadyExists) {
+      print('Page $pageToNavigate already exists. Not pushing a new one.');
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // Execute navigation in a separate microtask to ensure UI updates first
+    Future.microtask(() {
+      print("testsuccess");
+      Navigator.of(context)
+          .pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => LocationProfile(
+            accountId: widget.accountId,
+            subAccountId: widget.subAccountId,
+            sovId: widget.sovId,
+            accountName: widget.accountName,
+            subAccountName: widget.subAccountName,
+            sovName: widget.sovName,
+            searchQuery: widget.searchQuery,
+            page: pageToNavigate.toString(),
+            totalPages: totalPages.toString(),
+          ),
+        ),
+      )
+          .then((_) {
+        setState(() {
+          _isLoading = false;
+        });
+      });
+    });
+  }
+
+  void _navigateLeft() {
+    int currentPage = int.tryParse(widget.page) ?? 1;
+
+    // Prevent navigation beyond first page
+    if (currentPage <= 1) {
+      print('Already on the first page.');
+      return;
+    }
+
+    int pageToNavigate = currentPage - 1;
+    print('Navigating to page: $pageToNavigate');
+
+    final locationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    int? totalPages = widget.locationId.isNotEmpty
+        ? int.parse(locationProvider.totalPages.toString())
+        : int.tryParse(widget.totalPages!) ==
+                int.parse(locationProvider.totalPages.toString())
+            ? int.tryParse(widget.totalPages!)
+            : int.parse(locationProvider.totalPages.toString());
+    // int? totalPages = widget.locationId.isNotEmpty
+    //     ? locationProvider.resetTotalPage
+    //     : (int.tryParse(widget.totalPages!) ?? 1);
+    Navigator.of(context).replace(
+      oldRoute: ModalRoute.of(context)!,
+      newRoute: MaterialPageRoute(
+        builder: (context) => LocationProfile(
+          accountId: widget.accountId,
+          subAccountId: widget.subAccountId,
+          sovId: widget.sovId,
+          accountName: widget.accountName,
+          subAccountName: widget.subAccountName,
+          sovName: widget.sovName,
+          searchQuery: widget.searchQuery,
+          page: pageToNavigate.toString(),
+          totalPages: totalPages.toString(),
+        ),
+      ),
+    );
   }
 
   Future<void> _initializeClusterManager() async {
@@ -228,23 +341,6 @@ class _LocationProfileState extends State<LocationProfile>
       stopClusteringZoom: 5.0,
     );
   }
-
-  // Future<void> _initializeClusterManager() {
-  //   final allLocations =
-  //       Provider.of<MyLocationListProvider>(context, listen: false)
-  //           .fullLocationList;
-  //
-  //   clusterManager = cluster_manager.ClusterManager<MyLocation>(
-  //     allLocations,
-  //     _updateMarkers,
-  //     markerBuilder: _markerBuilder,
-  //     levels: [1, 4.25, 6.75],
-  //     // Optional zoom levels
-  //     extraPercent: 0.2,
-  //     // Optional padding to prevent clusters from popping in/out
-  //     stopClusteringZoom: 5.0,
-  //   );
-  // }
 
   Future<Marker> _markerBuilder(
       cluster_manager.Cluster<MyLocation> cluster) async {
@@ -328,18 +424,18 @@ class _LocationProfileState extends State<LocationProfile>
 
   Future<void> _getData() async {
     // Make API call to get the data
+    // await Provider.of<DashboardProvider>(context, listen: false).getDashboardData(context);
     await Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchLocationListProfile(
       context,
       "",
       int.parse(widget.page),
-      int.parse(widget.totalPages),
+      int.parse(widget.totalPages!),
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
       widget.locationId,
     );
-
     _addSubdestinationMarkers();
     _add();
   }
@@ -504,87 +600,36 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-  Future<void> _captureAndUploadMapScreenshot() async {
-    var typography = CustomTypography(context);
-    PermissionStatus status;
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _scrollController.dispose();
 
-    // Request storage permission for Android, not needed for iOS temporary storage
-    if (Platform.isAndroid) {
-      if (await Permission.photos.isGranted) {
-        status = PermissionStatus.granted;
-      } else {
-        status = await Permission.photos.request();
-      }
-    } else {
-      status = PermissionStatus.granted;
-    }
+    _tabController!.dispose();
+    _pageController!.dispose();
+    _searchController.dispose();
+    _nameController.dispose();
+    _addressController.dispose();
+    _campusIdController.dispose();
+    _controller.future.then((value) => value.dispose());
+    _campusScrollController!.dispose();
+  } // Refresh method
 
-    print('After request, permission status: $status');
+  Future<void> _refreshData() async {
+    final provider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    setState(() => _isLoading = true);
+    try {
+      await _fetchAllData();
+      widget.onConfirmCallback?.call();
 
-    if (status.isGranted) {
-      final GoogleMapController controller = await _controller.future;
-
-      // ✅ Take a snapshot using Google Maps' built-in method
-      Uint8List? screenshot = await controller.takeSnapshot();
-
-      if (screenshot != null) {
-        final Directory tempDir = await getTemporaryDirectory();
-        final String filePath =
-            '${tempDir.path}/map_screenshot${Random().nextInt(10000000)}.png';
-        final File file = File(filePath);
-        await file.writeAsBytes(screenshot);
-
-        setState(() {
-          _images.add(file);
-        });
-
-        // ✅ Upload the image using your provider
-        var provider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
-        await provider.uploadImage(
-          context,
-          filePath,
-          widget.accountId,
-          widget.subAccountId,
-          widget.sovId,
-          provider.locationProfile?.finalAddress?.locationId ?? "",
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to capture map screenshot',
-              style: typography.Body1,
-            ),
-          ),
-        );
-      }
-    } else if (status.isDenied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            Platform.isIOS
-                ? 'Photo library permission denied'
-                : 'Storage permission denied',
-            style: typography.Body1,
-          ),
-        ),
-      );
-    } else if (status.isPermanentlyDenied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Permission permanently denied',
-            style: typography.Body1,
-          ),
-          action: SnackBarAction(
-            label: 'Settings',
-            onPressed: () {
-              openAppSettings();
-            },
-          ),
-        ),
-      );
+      setState(() {
+        _totalPages = provider.totalPages.toString(); // update state
+      });
+      print("TotalPage" + _totalPages.toString());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -616,396 +661,407 @@ class _LocationProfileState extends State<LocationProfile>
             body: LayoutBuilder(builder: (context, constraints) {
               return Stack(
                 children: [
-                  SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(minHeight: constraints.maxHeight),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 10.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Left Column
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        InkWell(
-                                            onTap: () {
-                                              !bottomsheetopened
-                                                  ? Navigator.pop(context)
-                                                  : null;
-                                            },
-                                            child: Icon(
-                                                Icons.arrow_back_ios_new,
-                                                size: 20)),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 4.0),
-                                          child: Row(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 2.0, bottom: 6),
-                                                child: Row(
-                                                  children: [
-                                                    InkWell(
-                                                      onTap: () {
-                                                        !bottomsheetopened
-                                                            ? Navigator
-                                                                .pushAndRemoveUntil(
-                                                                context,
-                                                                MaterialPageRoute(
+                  RefreshIndicator(
+                    onRefresh: _refreshData,
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints:
+                            BoxConstraints(minHeight: constraints.maxHeight),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Left Column
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          InkWell(
+                                              onTap: () {
+                                                !bottomsheetopened
+                                                    ? Navigator.pop(context)
+                                                    : null;
+                                              },
+                                              child: Icon(
+                                                  Icons.arrow_back_ios_new,
+                                                  size: 20)),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4.0),
+                                            child: Row(
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 2.0, bottom: 6),
+                                                  child: Row(
+                                                    children: [
+                                                      InkWell(
+                                                        onTap: () {
+                                                          !bottomsheetopened
+                                                              ? Navigator
+                                                                  .pushAndRemoveUntil(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                      builder:
+                                                                          (context) =>
+                                                                              AccountListScreen()),
+                                                                  (route) =>
+                                                                      false, // This removes all previous routes
+                                                                ).then((_) {
+                                                                  // Optional: Add any actions to perform after navigation
+                                                                })
+                                                              : null;
+                                                        },
+                                                        child: Text(
+                                                            widget.accountName,
+                                                            style: typography
+                                                                .InputLabel),
+                                                      ),
+                                                      Text(' > ',
+                                                          style: typography
+                                                              .InputLabel),
+                                                      InkWell(
+                                                        onTap: () {
+                                                          !bottomsheetopened
+                                                              ? Navigator
+                                                                  .pushAndRemoveUntil(
+                                                                  context,
+                                                                  MaterialPageRoute(
                                                                     builder:
                                                                         (context) =>
-                                                                            AccountListScreen()),
-                                                                (route) =>
-                                                                    false, // This removes all previous routes
-                                                              ).then((_) {
-                                                                // Optional: Add any actions to perform after navigation
-                                                              })
-                                                            : null;
-                                                      },
-                                                      child: Text(
-                                                          widget.accountName,
-                                                          style: typography
-                                                              .InputLabel),
-                                                    ),
-                                                    Text(' > ',
-                                                        style: typography
-                                                            .InputLabel),
-                                                    InkWell(
-                                                      onTap: () {
-                                                        !bottomsheetopened
-                                                            ? Navigator
-                                                                .pushAndRemoveUntil(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder:
-                                                                      (context) =>
-                                                                          SubAccountListScreen(
-                                                                    accountId:
-                                                                        widget.accountId ??
-                                                                            "",
-                                                                    accountName:
-                                                                        widget.subAccountName ??
-                                                                            "",
+                                                                            SubAccountListScreen(
+                                                                      accountId:
+                                                                          widget.accountId ??
+                                                                              "",
+                                                                      accountName:
+                                                                          widget.subAccountName ??
+                                                                              "",
+                                                                    ),
                                                                   ),
-                                                                ),
-                                                                (route) =>
-                                                                    false, // This removes all previous routes
-                                                              ).then((_) {
-                                                                // Optional: Add any actions to perform after navigation
-                                                              })
-                                                            : null;
-                                                      },
-                                                      child: Text(
-                                                          widget.subAccountName,
+                                                                  (route) =>
+                                                                      false, // This removes all previous routes
+                                                                ).then((_) {
+                                                                  // Optional: Add any actions to perform after navigation
+                                                                })
+                                                              : null;
+                                                        },
+                                                        child: Text(
+                                                            widget
+                                                                .subAccountName,
+                                                            style: typography
+                                                                .InputLabel),
+                                                      ),
+                                                      Text(' > ',
                                                           style: typography
                                                               .InputLabel),
+                                                      InkWell(
+                                                        onTap: () {
+                                                          !bottomsheetopened
+                                                              ? Navigator.pop(
+                                                                  context)
+                                                              : null;
+                                                        },
+                                                        child: Text(
+                                                            widget.accountName,
+                                                            style: typography
+                                                                .InputLabel),
+                                                      ),
+                                                      Text(' > ',
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors
+                                                                  .white70)),
+                                                      Text("Location Profile",
+                                                          // _masterTabController!.index
+                                                          //     .toString() ==
+                                                          //     "0"
+                                                          //     ? "Location list"
+                                                          //     : _masterTabController!.index
+                                                          //     .toString() ==
+                                                          //     "1"
+                                                          //     ? "Sovs"
+                                                          //     : _masterTabController!
+                                                          //     .index
+                                                          //     .toString() ==
+                                                          //     "2"
+                                                          //     ? "Shared"
+                                                          //     : "Configure",
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors
+                                                                  .white)),
+                                                    ],
+                                                  ),
+                                                ),
+                                                // Container(
+                                                //   child: MaintenanceUI(isMaintenance: isMaintenance),
+                                                // ),
+                                              ],
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    SizedBox(
+                                                        height:
+                                                            CustomSpacing.two),
+                                                    Text(
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.locationName ??
+                                                          '',
+                                                      style: typography.H6
+                                                          .copyWith(
+                                                              height: 1.2),
+                                                      overflow: TextOverflow
+                                                          .ellipsis, // Handle overflow
                                                     ),
-                                                    Text(' > ',
-                                                        style: typography
-                                                            .InputLabel),
-                                                    InkWell(
-                                                      onTap: () {
-                                                        !bottomsheetopened
-                                                            ? Navigator.pop(
-                                                                context)
-                                                            : null;
-                                                      },
-                                                      child: Text(
-                                                          widget.accountName,
-                                                          style: typography
-                                                              .InputLabel),
+                                                    Text(
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.address ??
+                                                          '',
+                                                      maxLines: 2,
+                                                      style: typography
+                                                          .Subtitle2.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: AppColors
+                                                            .primaryMain,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
-                                                    Text(' > ',
-                                                        style: TextStyle(
-                                                            fontSize: 12,
-                                                            color: Colors
-                                                                .white70)),
-                                                    Text("Location Profile",
-                                                        // _masterTabController!.index
-                                                        //     .toString() ==
-                                                        //     "0"
-                                                        //     ? "Location list"
-                                                        //     : _masterTabController!.index
-                                                        //     .toString() ==
-                                                        //     "1"
-                                                        //     ? "Sovs"
-                                                        //     : _masterTabController!
-                                                        //     .index
-                                                        //     .toString() ==
-                                                        //     "2"
-                                                        //     ? "Shared"
-                                                        //     : "Configure",
-                                                        style: TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                Colors.white)),
                                                   ],
                                                 ),
                                               ),
-                                              // Container(
-                                              //   child: MaintenanceUI(isMaintenance: isMaintenance),
-                                              // ),
+                                              // Text(_isBottomSheetFullScreen.toString()),
+                                              // Text(bottomsheetopened.toString()),
+                                              IconButton(
+                                                  splashRadius: 1,
+                                                  padding: EdgeInsets.zero,
+                                                  icon: Icon(Icons.edit,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary),
+                                                  onPressed: () {
+                                                    bottomsheetopened != true
+                                                        ? _editName(
+                                                            locationProfileProvider)
+                                                        : null;
+                                                  }),
                                             ],
                                           ),
-                                        ),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  SizedBox(
-                                                      height:
-                                                          CustomSpacing.two),
-                                                  Text(
-                                                    locationProfileProvider
-                                                            .locationProfile
-                                                            ?.finalAddress
-                                                            ?.locationName ??
-                                                        '',
-                                                    style: typography.H6
-                                                        .copyWith(height: 1.2),
-                                                    overflow: TextOverflow
-                                                        .ellipsis, // Handle overflow
-                                                  ),
-                                                  Text(
-                                                    locationProfileProvider
-                                                            .locationProfile
-                                                            ?.finalAddress
-                                                            ?.address ??
-                                                        '',
-                                                    maxLines: 2,
-                                                    style: typography.Subtitle2
-                                                        .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color:
-                                                          AppColors.primaryMain,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            // Text(_isBottomSheetFullScreen.toString()),
-                                            // Text(bottomsheetopened.toString()),
-                                            IconButton(
-                                                splashRadius: 1,
-                                                padding: EdgeInsets.zero,
-                                                icon: Icon(Icons.edit,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .primary),
-                                                onPressed: () {
-                                                  bottomsheetopened != true
-                                                      ? _editName(
-                                                          locationProfileProvider)
-                                                      : null;
-                                                }),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Right Column
-                                  Column(
-                                    children: [
-                                      SizedBox(height: CustomSpacing.four),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              height: CustomSpacing.two,
-                            ),
-                            Container(
-                              padding: EdgeInsets.only(left: 16, right: 24),
-                              child: Row(
-                                children: [
-                                  Text("Rating"),
-                                  SizedBox(width: 3),
-                                  InkWell(
-                                      onTap: () {
-                                        bottomsheetopened != true
-                                            ? showDialog(
-                                                context: context,
-                                                builder: (context) =>
-                                                    GeocodingDialog(
-                                                        title: 'Geocoding',
-                                                        status: true),
-                                              )
-                                            : null;
-                                      },
-                                      child: Icon(Icons.info,
-                                          color: Colors.lightBlueAccent))
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(left: 16, right: 24),
-                              child: Row(
-                                // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  VerticalBarIndicator(
-                                      score: context
-                                              .read<MyLocationListProvider>()
-                                              .locationProfile
-                                              ?.geocodingScore ??
-                                          0),
-                                  SizedBox(width: 8),
-                                  (locationProfileProvider.locationProfile
-                                                  ?.finalAddress?.score ??
-                                              0) ==
-                                          5
-                                      ? SvgPicture.asset(
-                                          'assets/images/certified_five.svg',
-                                          width: 24,
-                                          height: 24)
-                                      : SizedBox.shrink(),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              height: tabIndex == 0
-                                  ? MediaQuery.of(context).size.height * 0.70
-                                  : MediaQuery.of(context).size.height * 0.80,
-                              child: DefaultTabController(
-                                length: 2, // Only two active tabs
-                                child: Column(
-                                  children: [
-                                    TabBar(
-                                      onTap: (index) {
-                                        if (bottomsheetopened || index >= 2)
-                                          return; // Block tap if bottom sheet open or index is disabled
-                                        setState(() => tabIndex = index);
-                                      },
-                                      // onTap: (index) {
-                                      //   if (index >= 2)
-                                      //     return; // Prevent access to the disabled tab
-                                      //   setState(() => tabIndex = index);
-                                      // },
-                                      tabs: [
-                                        Tab(text: 'Geocoding'),
-                                        Tab(text: 'Risk Score'),
-                                        // Tab(
-                                        //   // Disabled Tab
-                                        //   child: Text(
-                                        //     'Completeness',
-                                        //     style: TextStyle(
-                                        //         color:
-                                        //             Colors.grey), // Visually disabled
-                                        //   ),
-                                        // ),
-                                      ],
-                                    ),
-                                    Container(
-                                      // height: MediaQuery.of(context).size.height * 0.5,
-                                      height: tabIndex == 0
-                                          ? MediaQuery.of(context).size.height *
-                                              0.65
-                                          : MediaQuery.of(context).size.height *
-                                              0.65,
-                                      child: TabBarView(
-                                        physics: NeverScrollableScrollPhysics(),
-                                        // Prevent swipe navigation
-                                        children: [
-                                          _geocodingScore(),
-                                          _riskScore(),
                                         ],
                                       ),
+                                    ),
+
+                                    // Right Column
+                                    Column(
+                                      children: [
+                                        SizedBox(height: CustomSpacing.four),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            _isBottomSheetExpanded
-                                ?
-                                //     Center(
-                                //         child: ClipRRect(
-                                //           borderRadius: BorderRadius.circular(12),
-                                //           child: BackdropFilter(
-                                //             filter: ImageFilter.blur(
-                                //                 sigmaX: 5, sigmaY: 5),
-                                //             child: Container(
-                                //               width: 300,
-                                //               height: 200,
-                                //               color: Colors.white.withOpacity(0.3),
-                                //               child: Text('Blurred Dialog'),
-                                //             ),
-                                //           ),
-                                //         ),
-                                //       )
-
-                                // Stack(
-                                //         children: [
-                                //           Positioned.fill(
-                                //             child: RepaintBoundary(
-                                //               // Ensures Flutter renders this section
-                                //               child: ClipRect(
-                                //                 child: BackdropFilter(
-                                //                   filter: ImageFilter.blur(
-                                //                       sigmaX: 5, sigmaY: 5),
-                                //                   child: Container(
-                                //                     color: Colors.transparent,
-                                //                   ),
-                                //                 ),
-                                //               ),
-                                //             ),
-                                //           ),
-                                //         ],
-                                //       )
-                                // : SizedBox.shrink(),
-
-                                // _isBottomSheetExpanded == true
-                                //     ? Stack(
-                                //         children: [
-                                //           Positioned.fill(
-                                //             child: BackdropFilter(
-                                //               filter: ImageFilter.blur(
-                                //                   sigmaX: 5, sigmaY: 5),
-                                //               child: Container(
-                                //                 color: Colors.black.withOpacity(0.2),
-                                //               ),
-                                //             ),
-                                //           ),
-                                //         ],
-                                //       )
-                                SizedBox(
-                                    width: double.infinity,
-                                    height: 300,
-                                    // or MediaQuery.of(context).size.height
-                                    child: Stack(
-                                      children: [
-                                        BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                              sigmaX: 5, sigmaY: 5),
-                                          child: Container(
-                                            color:
-                                                Colors.black.withOpacity(0.2),
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                          ),
+                              SizedBox(
+                                height: CustomSpacing.two,
+                              ),
+                              Container(
+                                padding: EdgeInsets.only(left: 16, right: 24),
+                                child: Row(
+                                  children: [
+                                    Text("Rating"),
+                                    SizedBox(width: 3),
+                                    InkWell(
+                                        onTap: () {
+                                          bottomsheetopened != true
+                                              ? showDialog(
+                                                  context: context,
+                                                  builder: (context) =>
+                                                      GeocodingDialog(
+                                                          title: 'Geocoding',
+                                                          status: true),
+                                                )
+                                              : null;
+                                        },
+                                        child: Icon(Icons.info,
+                                            color: Colors.lightBlueAccent))
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(left: 16, right: 24),
+                                child: Row(
+                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    VerticalBarIndicator(
+                                        score: context
+                                                .read<MyLocationListProvider>()
+                                                .locationProfile
+                                                ?.geocodingScore ??
+                                            0),
+                                    SizedBox(width: 8),
+                                    (locationProfileProvider.locationProfile
+                                                    ?.finalAddress?.score ??
+                                                0) ==
+                                            5
+                                        ? SvgPicture.asset(
+                                            'assets/images/certified_five.svg',
+                                            width: 24,
+                                            height: 24)
+                                        : SizedBox.shrink(),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(
+                                height: tabIndex == 0
+                                    ? MediaQuery.of(context).size.height * 0.70
+                                    : MediaQuery.of(context).size.height * 0.80,
+                                child: DefaultTabController(
+                                  length: 2, // Only two active tabs
+                                  child: Column(
+                                    children: [
+                                      TabBar(
+                                        onTap: (index) {
+                                          if (bottomsheetopened || index >= 2)
+                                            return; // Block tap if bottom sheet open or index is disabled
+                                          setState(() => tabIndex = index);
+                                        },
+                                        // onTap: (index) {
+                                        //   if (index >= 2)
+                                        //     return; // Prevent access to the disabled tab
+                                        //   setState(() => tabIndex = index);
+                                        // },
+                                        tabs: [
+                                          Tab(text: 'Geocoding'),
+                                          Tab(text: 'Risk Score'),
+                                          // Tab(
+                                          //   // Disabled Tab
+                                          //   child: Text(
+                                          //     'Completeness',
+                                          //     style: TextStyle(
+                                          //         color:
+                                          //             Colors.grey), // Visually disabled
+                                          //   ),
+                                          // ),
+                                        ],
+                                      ),
+                                      Container(
+                                        // height: MediaQuery.of(context).size.height * 0.5,
+                                        height: tabIndex == 0
+                                            ? MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.58
+                                            : MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.55,
+                                        child: TabBarView(
+                                          physics:
+                                              NeverScrollableScrollPhysics(),
+                                          // Prevent swipe navigation
+                                          children: [
+                                            _geocodingScore(),
+                                            _riskScore(),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                  )
-                                : Container(),
-                          ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              _isBottomSheetExpanded
+                                  ?
+                                  //     Center(
+                                  //         child: ClipRRect(
+                                  //           borderRadius: BorderRadius.circular(12),
+                                  //           child: BackdropFilter(
+                                  //             filter: ImageFilter.blur(
+                                  //                 sigmaX: 5, sigmaY: 5),
+                                  //             child: Container(
+                                  //               width: 300,
+                                  //               height: 200,
+                                  //               color: Colors.white.withOpacity(0.3),
+                                  //               child: Text('Blurred Dialog'),
+                                  //             ),
+                                  //           ),
+                                  //         ),
+                                  //       )
+
+                                  // Stack(
+                                  //         children: [
+                                  //           Positioned.fill(
+                                  //             child: RepaintBoundary(
+                                  //               // Ensures Flutter renders this section
+                                  //               child: ClipRect(
+                                  //                 child: BackdropFilter(
+                                  //                   filter: ImageFilter.blur(
+                                  //                       sigmaX: 5, sigmaY: 5),
+                                  //                   child: Container(
+                                  //                     color: Colors.transparent,
+                                  //                   ),
+                                  //                 ),
+                                  //               ),
+                                  //             ),
+                                  //           ),
+                                  //         ],
+                                  //       )
+                                  // : SizedBox.shrink(),
+
+                                  // _isBottomSheetExpanded == true
+                                  //     ? Stack(
+                                  //         children: [
+                                  //           Positioned.fill(
+                                  //             child: BackdropFilter(
+                                  //               filter: ImageFilter.blur(
+                                  //                   sigmaX: 5, sigmaY: 5),
+                                  //               child: Container(
+                                  //                 color: Colors.black.withOpacity(0.2),
+                                  //               ),
+                                  //             ),
+                                  //           ),
+                                  //         ],
+                                  //       )
+                                  SizedBox(
+                                      width: double.infinity,
+                                      height: 300,
+                                      // or MediaQuery.of(context).size.height
+                                      child: Stack(
+                                        children: [
+                                          BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                                sigmaX: 5, sigmaY: 5),
+                                            child: Container(
+                                              color:
+                                                  Colors.black.withOpacity(0.2),
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : Container(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -1140,7 +1196,7 @@ class _LocationProfileState extends State<LocationProfile>
           duration: Duration(milliseconds: 300),
           constraints: BoxConstraints(
             maxHeight: _isBottomSheetExpanded
-                ? MediaQuery.of(context).size.height * 0.65
+                ? MediaQuery.of(context).size.height * 0.67
                 : 100,
           ),
           // height: _isBottomSheetExpanded ? 600 : 100,
@@ -1158,7 +1214,7 @@ class _LocationProfileState extends State<LocationProfile>
                     SizedBox(height: 20),
                     ListTile(
                       title: Text(
-                        '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages) ?? 1))}',
+                        '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages!) ?? 1))}',
                         style: typography.Subtitle1.copyWith(
                             fontWeight: FontWeight.w500),
                       ),
@@ -1247,7 +1303,7 @@ class _LocationProfileState extends State<LocationProfile>
                   children: [
                     ListTile(
                       title: Text(
-                        '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages) ?? 1))}',
+                        '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages!) ?? 1))}',
                         style: typography.Subtitle1.copyWith(
                             fontWeight: FontWeight.w500),
                       ),
@@ -1362,8 +1418,8 @@ class _LocationProfileState extends State<LocationProfile>
                         constraints: BoxConstraints(
                           minHeight: 10,
                           maxHeight: Platform.isAndroid
-                              ? MediaQuery.of(context).size.height * 0.36
-                              : MediaQuery.of(context).size.height * 0.30,
+                              ? MediaQuery.of(context).size.height * 0.30
+                              : MediaQuery.of(context).size.height * 0.37,
                           //430,
                         ),
                         child: TabBarView(
@@ -1501,7 +1557,11 @@ class _LocationProfileState extends State<LocationProfile>
                                 [])
                             .isEmpty
                         ? Center(
-                            child: Text('No Campus', style: typography.Body1))
+                            child: Container(
+                                alignment: Alignment.center,
+                                height: 230,
+                                child:
+                                    Text('No Campus', style: typography.Body1)))
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1996,94 +2056,14 @@ class _LocationProfileState extends State<LocationProfile>
                                                             .pop(),
                                                     child: Text("Cancel"),
                                                   ),
-                                                  ElevatedButton(
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .zero),
-                                                    ),
-                                                    onPressed: confirmload
-                                                        ? null
-                                                        : () async {
-                                                            setStateDialog(() {
-                                                              confirmload =
-                                                                  true;
-                                                            });
-
-                                                            var provider = Provider
-                                                                .of<MyLocationListProvider>(
-                                                                    context,
-                                                                    listen:
-                                                                        false);
-                                                            final campusId = provider
-                                                                    .locationProfile
-                                                                    ?.finalAddress
-                                                                    ?.campusId ??
-                                                                "";
-
-                                                            for (String id
-                                                                in tempSelectedIds) {
-                                                              final subdestination =
-                                                                  filteredSubdestinations
-                                                                      .firstWhere((item) =>
-                                                                          item.id ==
-                                                                          id);
-                                                              String occupancy =
-                                                                  (subdestination
-                                                                              .rented ??
-                                                                          false)
-                                                                      ? 'Rented/Leased'
-                                                                      : 'Owned';
-
-                                                              await _addToSOV(
-                                                                subdestination
-                                                                        .id ??
-                                                                    "",
-                                                                occupancy:
-                                                                    occupancy,
-                                                                campusName:
-                                                                    campusId,
-                                                              );
-                                                            }
-
-                                                            setState(() {
-                                                              selectedIds
-                                                                  .clear(); // Or tempSelectedIds.clear(), based on your logic
-                                                              isLoadingAddToCampus =
-                                                                  false;
-                                                              isSelectionMode =
-                                                                  false;
-                                                            });
-
-                                                            Navigator.of(
-                                                                    context)
-                                                                .pop();
-                                                          },
-                                                    child: confirmload
-                                                        ? SizedBox(
-                                                            width: 20,
-                                                            height: 20,
-                                                            child:
-                                                                CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                          )
-                                                        : Text("Confirm"),
-                                                  ),
-
                                                   // ElevatedButton(
                                                   //   style: ElevatedButton
                                                   //       .styleFrom(
                                                   //     shape:
                                                   //         RoundedRectangleBorder(
-                                                  //             borderRadius:
-                                                  //                 BorderRadius
-                                                  //                     .zero),
+                                                  //       borderRadius:
+                                                  //           BorderRadius.zero,
+                                                  //     ),
                                                   //   ),
                                                   //   onPressed: confirmload
                                                   //       ? null
@@ -2098,8 +2078,11 @@ class _LocationProfileState extends State<LocationProfile>
                                                   //                   context,
                                                   //                   listen:
                                                   //                       false);
-                                                  //           // 🔒 Capture campusId once before the loop
-                                                  //           final campusId = provider.locationProfile?.finalAddress?.campusId ?? "";
+                                                  //           final campusId = provider
+                                                  //                   .locationProfile
+                                                  //                   ?.finalAddress
+                                                  //                   ?.campusId ??
+                                                  //               "";
                                                   //
                                                   //           for (String id
                                                   //               in tempSelectedIds) {
@@ -2121,41 +2104,171 @@ class _LocationProfileState extends State<LocationProfile>
                                                   //                   "",
                                                   //               occupancy:
                                                   //                   occupancy,
-                                                  //               campusName: campusId
+                                                  //               campusName:
+                                                  //                   campusId,
                                                   //             );
                                                   //           }
                                                   //
                                                   //           setState(() {
-                                                  //             selectedIds =
-                                                  //                 tempSelectedIds;
-                                                  //             isLoadingAddToCampus =
-                                                  //                 false;
-                                                  //             isSelectionMode =
-                                                  //                 selectedIds
-                                                  //                     .isNotEmpty;
                                                   //             selectedIds
                                                   //                 .clear();
+                                                  //             isLoadingAddToCampus =
+                                                  //                 false;
                                                   //             isSelectionMode =
                                                   //                 false;
                                                   //           });
                                                   //
-                                                  //           Navigator.of(
-                                                  //                   context)
-                                                  //               .pop(); // ✅ only after success
+                                                  //           await _fetchAllData();
+                                                  //           if (context
+                                                  //               .mounted) {
+                                                  //             widget
+                                                  //                 .onConfirmCallback
+                                                  //                 ?.call();
+                                                  //             _getData();
+                                                  //
+                                                  //             _initializeClusterManager();
+                                                  //
+                                                  //             _navigateLeft();
+                                                  //
+                                                  //             Navigator.of(
+                                                  //                     context)
+                                                  //                 .pop(true);
+                                                  //
+                                                  //             print("Welcome to locationcount" +
+                                                  //                 widget.totalPages!);
+                                                  //           }
                                                   //         },
-                                                  //   child: confirmload
-                                                  //       ? SizedBox(
-                                                  //           width: 20,
-                                                  //           height: 20,
-                                                  //           child:
-                                                  //               CircularProgressIndicator(
-                                                  //             strokeWidth: 2,
-                                                  //             color:
-                                                  //                 Colors.white,
-                                                  //           ),
-                                                  //         )
-                                                  //       : Text("Confirm"),
-                                                  // ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.zero,
+                                                      ),
+                                                    ),
+                                                    onPressed: confirmload
+                                                        ? null
+                                                        : () async {
+                                                            setStateDialog(() {
+                                                              confirmload =
+                                                                  true;
+                                                            });
+
+                                                            try {
+                                                              var provider =
+                                                                  Provider.of<
+                                                                          MyLocationListProvider>(
+                                                                      context,
+                                                                      listen:
+                                                                          false);
+                                                              final campusId = provider
+                                                                      .locationProfile
+                                                                      ?.finalAddress
+                                                                      ?.campusId ??
+                                                                  "";
+
+                                                              for (String id
+                                                                  in tempSelectedIds) {
+                                                                final subdestination =
+                                                                    filteredSubdestinations.firstWhere(
+                                                                        (item) =>
+                                                                            item.id ==
+                                                                            id);
+                                                                String
+                                                                    occupancy =
+                                                                    (subdestination.rented ??
+                                                                            false)
+                                                                        ? 'Rented/Leased'
+                                                                        : 'Owned';
+
+                                                                await _addToSOV(
+                                                                  subdestination
+                                                                          .id ??
+                                                                      "",
+                                                                  occupancy:
+                                                                      occupancy,
+                                                                  campusName:
+                                                                      campusId,
+                                                                );
+                                                              }
+
+                                                              setState(() {
+                                                                selectedIds
+                                                                    .clear();
+                                                                isLoadingAddToCampus =
+                                                                    false;
+                                                                isSelectionMode =
+                                                                    false;
+
+                                                                /// Corrected _totalPages logic
+                                                                // int locationPages =
+                                                                //     int.tryParse(widget.totalPages ??
+                                                                //             '') ??
+                                                                //         0;
+                                                                // int providerPages =
+                                                                //     int.tryParse(provider
+                                                                //             .totalPages
+                                                                //             .toString()) ??
+                                                                //         0;
+                                                                // _totalPages = (widget
+                                                                //             .locationId
+                                                                //             .isNotEmpty
+                                                                //         ? int.parse(provider
+                                                                //             .totalPages
+                                                                //             .toString())
+                                                                //         : (int.tryParse(widget.totalPages!) ==
+                                                                //                 int.parse(provider.totalPages.toString())
+                                                                //             ? int.tryParse(widget.totalPages!)
+                                                                //             : int.parse(provider.totalPages.toString())))
+                                                                //     .toString(); // ✅ Proper int to String conversion
+                                                              });
+                                                              print(
+                                                                  _totalPages);
+                                                              await _fetchAllData();
+
+                                                              if (context
+                                                                  .mounted) {
+                                                                widget
+                                                                    .onConfirmCallback
+                                                                    ?.call();
+                                                                _getData();
+                                                                _initializeClusterManager();
+                                                                await _refreshData();
+                                                                Navigator.of(
+                                                                        context)
+                                                                    .pop(true);
+                                                                print(
+                                                                    "Welcome to locationcount ${widget.totalPages!}");
+                                                                print(
+                                                                    "Welcome to locationcount ${_totalPages}");
+                                                              }
+                                                            } catch (e) {
+                                                              print(
+                                                                  "Error: $e");
+                                                            } finally {
+                                                              if (context
+                                                                  .mounted) {
+                                                                setState(() {
+                                                                  confirmload =
+                                                                      false; // ✅ Ensure loading is stopped even on error
+                                                                });
+                                                              }
+                                                            }
+                                                          },
+                                                    child: confirmload
+                                                        ? SizedBox(
+                                                            width: 20,
+                                                            height: 20,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          )
+                                                        : Text("Confirm"),
+                                                  )
                                                 ],
                                               );
                                             },
@@ -2226,7 +2339,11 @@ class _LocationProfileState extends State<LocationProfile>
                       ),
                     ),
                     locationProfileProvider.isUploadingImage
-                        ? Center(child: CircularProgressIndicator())
+                        ? Center(
+                            child: Container(
+                                height: 200,
+                                alignment: Alignment.center,
+                                child: CircularProgressIndicator()))
                         : _images.isNotEmpty ||
                                 locationProfileProvider.locationProfile
                                         ?.screenshots?.isNotEmpty ==
@@ -2234,12 +2351,19 @@ class _LocationProfileState extends State<LocationProfile>
                             ? Column(
                                 children: [
                                   Container(
-                                    height: 200,
+                                    height: 240,
                                     decoration: BoxDecoration(
                                       color:
                                           Theme.of(context).colorScheme.surface,
                                     ),
                                     child: PageView.builder(
+                                      key: ValueKey(_images.length +
+                                          (locationProfileProvider
+                                                  .locationProfile
+                                                  ?.screenshots
+                                                  ?.length ??
+                                              0)),
+                                      // 🔥 Important to force rebuild
                                       controller:
                                           PageController(viewportFraction: 0.9),
                                       itemCount: _images.length +
@@ -2251,35 +2375,6 @@ class _LocationProfileState extends State<LocationProfile>
                                       itemBuilder: (BuildContext context,
                                           int itemIndex) {
                                         if (itemIndex < _images.length) {
-                                          return GestureDetector(
-                                            onTap: () => _showImagePreview(
-                                                _images[itemIndex]),
-                                            child: Stack(
-                                              children: [
-                                                Center(
-                                                  child: Image.file(
-                                                    _images[itemIndex],
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                                Positioned(
-                                                  top: 8,
-                                                  right: 8,
-                                                  child: IconButton(
-                                                    icon: Icon(Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _images.removeAt(
-                                                            itemIndex);
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        } else {
                                           final screenshotIndex =
                                               itemIndex - _images.length;
                                           final screenshot =
@@ -2287,34 +2382,266 @@ class _LocationProfileState extends State<LocationProfile>
                                                       .locationProfile
                                                       ?.screenshots?[
                                                   screenshotIndex];
-                                          return GestureDetector(
-                                            onTap: () =>
-                                                _showImagePreviewFromUrl(
-                                                    screenshot?.imageUrl ?? ''),
-                                            child: Image.network(
-                                              screenshot?.imageUrl ?? '',
-                                              fit: BoxFit.cover,
-                                              width: 150,
+                                          // For local images (_images)
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  _showImagePreviewFromUrl(
+                                                      screenshot?.imageUrl ??
+                                                          ''),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: Stack(
+                                                      children: [
+                                                        Center(
+                                                          child: ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        16),
+                                                            child:
+                                                                Image.network(
+                                                              screenshot
+                                                                      ?.imageUrl ??
+                                                                  '',
+                                                              width: double
+                                                                  .infinity,
+                                                              height: double
+                                                                  .infinity,
+                                                              fit: BoxFit.cover,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          top: 8,
+                                                          right: 8,
+                                                          child: IconButton(
+                                                            icon: Icon(
+                                                                Icons.delete,
+                                                                color:
+                                                                    Colors.red),
+                                                            onPressed: () {
+                                                              setState(() {
+                                                                locationProfileProvider
+                                                                    .locationProfile
+                                                                    ?.screenshots
+                                                                    ?.removeAt(
+                                                                        screenshotIndex);
+                                                              });
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 10.0),
+                                                    child: Text(
+                                                      '${screenshot?.name ?? ''} (@)',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium,
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 10.0),
+                                                    child: Text(
+                                                      '${screenshot?.createdAt!.iSeconds ?? ''} (@)',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           );
+                                        } else {
+                                          // For network images (screenshots)
+                                          final screenshotIndex =
+                                              itemIndex - _images.length;
+                                          final screenshot =
+                                              locationProfileProvider
+                                                      .locationProfile
+                                                      ?.screenshots?[
+                                                  screenshotIndex];
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  _showImagePreviewFromUrl(
+                                                      screenshot?.imageUrl ??
+                                                          ''),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Stack(
+                                                    children: [
+                                                      Center(
+                                                        child: ClipRRect(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(16),
+                                                          child: Image.network(
+                                                            screenshot
+                                                                    ?.imageUrl ??
+                                                                '',
+                                                            width:
+                                                                double.infinity,
+                                                            height: 180,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Positioned(
+                                                        top: 8,
+                                                        right: 8,
+                                                        child: IconButton(
+                                                          icon: Icon(
+                                                              Icons.delete,
+                                                              color:
+                                                                  Colors.red),
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              locationProfileProvider
+                                                                  .locationProfile
+                                                                  ?.screenshots
+                                                                  ?.removeAt(
+                                                                      itemIndex -
+                                                                          _images
+                                                                              .length);
+                                                            });
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 20.0),
+                                                    child: Text(
+                                                      '${screenshot?.name ?? ''} (@)',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 0),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 10.0),
+                                                    child: Text(
+                                                      (screenshot?.createdAt
+                                                                  ?.iSeconds !=
+                                                              null)
+                                                          ? _formatDate(
+                                                              screenshot!
+                                                                  .createdAt!
+                                                                  .iNanoseconds!)
+                                                          : '',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium,
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            ),
+                                          );
+
+                                          // return Padding(
+                                          //   padding: const EdgeInsets.symmetric(
+                                          //       horizontal: 8.0),
+                                          //   child: GestureDetector(
+                                          //     onTap: () =>
+                                          //         _showImagePreviewFromUrl(
+                                          //             screenshot?.imageUrl ??
+                                          //                 ''),
+                                          //     child: Stack(
+                                          //       children: [
+                                          //         Center(
+                                          //           child: ClipRRect(
+                                          //             borderRadius:
+                                          //                 BorderRadius.circular(
+                                          //                     16),
+                                          //             child: Image.network(
+                                          //               screenshot?.imageUrl ??
+                                          //                   '',
+                                          //               width: double.infinity,
+                                          //               height: 200,
+                                          //               fit: BoxFit.cover,
+                                          //             ),
+                                          //           ),
+                                          //         ),
+                                          //         Positioned(
+                                          //           top: 8,
+                                          //           right: 8,
+                                          //           child: IconButton(
+                                          //             icon: Icon(Icons.delete,
+                                          //                 color: Colors.red),
+                                          //             onPressed: () {
+                                          //               setState(() {
+                                          //                 _images.removeAt(
+                                          //                     itemIndex);
+                                          //               });
+                                          //             },
+                                          //           ),
+                                          //         ),
+                                          //       ],
+                                          //     ),
+                                          //   ),
+                                          // );
                                         }
                                       },
                                     ),
                                   ),
-                                  SizedBox(height: 16),
+                                  SizedBox(height: 8),
                                 ],
                               )
                             : Center(
-                                child:
-                                    Text('No Images', style: typography.Body1)),
-                    SizedBox(height: 24),
+                                child: Container(
+                                    height: 200,
+                                    alignment: Alignment.center,
+                                    child: Text('No Images',
+                                        style: typography.Body1))),
+                    SizedBox(height: 5),
                     Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      margin: EdgeInsets.symmetric(horizontal: 30),
                       child: CustomButton(
                         type: ButtonType.elevated,
                         onPressed: _pickImage,
-                        child: Text('Upload relevant image(s)',
-                            style: typography.Body1),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.upload_sharp,
+                                color: Colors.black, size: 20),
+                            SizedBox(width: 5),
+                            InkWell(
+                              onTap: _pickImage,
+                              child: Text('Upload relevant image(s)',
+                                  style: TextStyle(
+                                      color: Colors.black, fontSize: 16)
+                                  // typography.Body1
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(height: 16),
@@ -2370,7 +2697,7 @@ class _LocationProfileState extends State<LocationProfile>
           children: [
             ListTile(
               title: Text(
-                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages) ?? 1))}',
+                '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages!) ?? 1))}',
                 style: typography.H6.copyWith(height: 1.2),
               ),
               trailing: IconButton(
@@ -2661,10 +2988,10 @@ class _LocationProfileState extends State<LocationProfile>
                                             totalPages: widget
                                                     .locationId.isNotEmpty
                                                 ? (locationProfileProvider
-                                                            .resetTotalPage -
+                                                            .resetTotalPage! -
                                                         1)
                                                     .toString()
-                                                : widget.totalPages,
+                                                : widget.totalPages!,
                                           ),
                                         ),
                                       );
@@ -2802,7 +3129,11 @@ class _LocationProfileState extends State<LocationProfile>
                               [])
                           .isEmpty
                       ? Center(
-                          child: Text('No Campus', style: typography.Body1))
+                          child: Container(
+                              alignment: Alignment.center,
+                              height: 200,
+                              child:
+                                  Text('No Campus', style: typography.Body1)))
                       : Container(
                           height: 200,
                           child: PageView.builder(
@@ -3035,463 +3366,8 @@ class _LocationProfileState extends State<LocationProfile>
     });
   }
 
-  // Widget _geocodingScore() {
-  //   var typography = CustomTypography(context);
-  //
-  //   return Consumer<MyLocationListProvider>(
-  //     builder: (context, locationProfileProvider, child) {
-  //       double latitude = locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
-  //       double longitude = locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
-  //
-  //       return Stack(
-  //         children: [
-  //           // Map Container
-  //           Container(
-  //             margin: EdgeInsets.all(16),
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.circular(20),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: Colors.black.withOpacity(0.1),
-  //                   blurRadius: 10,
-  //                   offset: Offset(0, 5),
-  //                 ),
-  //               ],
-  //             ),
-  //             child: ClipRRect(
-  //               borderRadius: BorderRadius.circular(20),
-  //               child: Screenshot(
-  //                 controller: screenshotController,
-  //                 child: GoogleMap(
-  //                   key: _googleMapKey,
-  //                   mapType: _currentMapType,
-  //                   markers: _markers,
-  //                   zoomControlsEnabled: true,
-  //                   initialCameraPosition: CameraPosition(
-  //                     target: LatLng(latitude, longitude),
-  //                     zoom: 18,
-  //                   ),
-  //                   onMapCreated: (GoogleMapController controller) {
-  //                     if (!_controller.isCompleted) {
-  //                       _controller.complete(controller);
-  //                     }
-  //                   },
-  //                   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-  //                     Factory<OneSequenceGestureRecognizer>(
-  //                           () => EagerGestureRecognizer(),
-  //                     ),
-  //                   },
-  //                   onTap: _isAddingMarker ? _handleMapTap : null,
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //
-  //           // Left Navigation Button
-  //           if ((int.tryParse(widget.page) ?? 1) > 1)
-  //             Positioned(
-  //               left: 16,
-  //               top: 0,
-  //               bottom: 0,
-  //               child: Align(
-  //                 alignment: Alignment.centerLeft,
-  //                 child: FloatingActionButton(
-  //                   shape: CircleBorder(),
-  //                   mini: true,
-  //                   backgroundColor: Theme.of(context).brightness == Brightness.light
-  //                       ? AppColors.paperElavation25Light
-  //                       : AppColors.paperElavation25,
-  //                   onPressed: _navigateLeft,
-  //                   child: Icon(Icons.chevron_left, size: 30),
-  //                 ),
-  //               ),
-  //             ),
-  //
-  //           // Right Navigation Button
-  //           if ((int.tryParse(widget.page) ?? 1) <
-  //               (widget.locationId.isNotEmpty
-  //                   ? locationProfileProvider.resetTotalPage - 1
-  //                   : (int.tryParse(widget.totalPages) ?? 1)))
-  //             Positioned(
-  //               right: 16,
-  //               top: 0,
-  //               bottom: 0,
-  //               child: Align(
-  //                 alignment: Alignment.centerRight,
-  //                 child: FloatingActionButton(
-  //                   mini: true,
-  //                   shape: CircleBorder(),
-  //                   backgroundColor: Theme.of(context).brightness == Brightness.light
-  //                       ? AppColors.paperElavation25Light
-  //                       : AppColors.paperElavation25,
-  //                   onPressed: _navigateRight,
-  //                   child: Icon(Icons.chevron_right, size: 30),
-  //                 ),
-  //               ),
-  //             ),
-  //
-  //           // Map Type Toggle Button
-  //           Positioned(
-  //             bottom: 16,
-  //             left: 16,
-  //             child: FloatingActionButton.small(
-  //               elevation: 0,
-  //               backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
-  //                   ? AppColors.paperElevation2Light
-  //                   : AppColors.paperElevation2,
-  //               onPressed: () {
-  //                 setState(() {
-  //                   _currentMapType = _currentMapType == MapType.normal
-  //                       ? MapType.satellite
-  //                       : MapType.normal;
-  //                 });
-  //               },
-  //               child: Icon(Icons.layers, color: Theme.of(context).colorScheme.onSurface),
-  //               tooltip: 'Change Map Type',
-  //             ),
-  //           ),
-  //
-  //           // Screenshot Capture Button
-  //           Positioned(
-  //             top: 16,
-  //             right: 16,
-  //             child: FloatingActionButton.small(
-  //               elevation: 0,
-  //               onPressed: () async {
-  //                 setState(() => _isLoading = true);
-  //                 await _captureAndUploadMapScreenshot();
-  //                 setState(() => _isLoading = false);
-  //               },
-  //               backgroundColor: Theme.of(context).colorScheme.brightness == Brightness.light
-  //                   ? AppColors.paperElevation2Light
-  //                   : AppColors.paperElevation2,
-  //               child: _isLoading
-  //                   ? SizedBox(
-  //                 width: 20,
-  //                 height: 20,
-  //                 child: CircularProgressIndicator(
-  //                   color: Theme.of(context).colorScheme.onSurface,
-  //                   strokeWidth: 2.0,
-  //                 ),
-  //               )
-  //                   : Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.onSurface),
-  //               tooltip: 'Capture and Upload Screenshot',
-  //             ),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
+  GoogleMapController? _mapController;
 
-  // Widget _geocodingScore() {
-  //   var typography = CustomTypography(context);
-  //   return Consumer<MyLocationListProvider>(
-  //       builder: (context, locationProfileProvider, child) {
-  //     return Builder(builder: (context) {
-  //       double latitude =
-  //           locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
-  //       double longitude =
-  //           locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
-  //       return
-  //         locationProfileProvider.isLoading ?Center(child: CircularProgressIndicator(),):
-  //         Stack(
-  //         children: [
-  //           Container(
-  //             margin: EdgeInsets.all(16),
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.circular(20),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: Colors.black.withOpacity(0.1),
-  //                   blurRadius: 10,
-  //                   offset: Offset(0, 5),
-  //                 ),
-  //               ],
-  //             ),
-  //             child: ClipRRect(
-  //               borderRadius: BorderRadius.circular(20),
-  //               child: Screenshot(
-  //                 controller: _geocodingScreenshotController,
-  //                 child: Stack(
-  //                   children: [
-  //                     GoogleMap(
-  //                       // key: _googleMapKey,
-  //                       key: UniqueKey(),
-  //                       mapType: _currentMapType,
-  //                       // markers: _markers,
-  //                       markers: Set<Marker>.of(markers.values),
-  //                       zoomControlsEnabled: true,
-  //                       initialCameraPosition: CameraPosition(
-  //                         target: LatLng(latitude, longitude
-  //                             // locationProfileProvider.locationProfile?.location.latitude ?? 0.0,
-  //                             // locationProfileProvider.locationProfile?.location.longitude ?? 0.0,
-  //                             ),
-  //                         zoom: 18,
-  //                       ),
-  //                       onMapCreated: (GoogleMapController controller) {
-  //                         if (!_controller.isCompleted) {
-  //                           _controller.complete(controller);
-  //                         }
-  //                       },
-  //                       gestureRecognizers: <Factory<
-  //                           OneSequenceGestureRecognizer>>{
-  //                         Factory<OneSequenceGestureRecognizer>(
-  //                           () => EagerGestureRecognizer(),
-  //                         ),
-  //                       },
-  //                       onTap: _isAddingMarker ? _handleMapTap : null,
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //
-  //           // Left navigation button
-  //           Consumer<MyLocationListProvider>(
-  //               builder: (context, locationProfileProvider, child) {
-  //             return ((int.tryParse(widget.page) ?? 1) <= 1 ||
-  //                     (widget.locationId.isNotEmpty
-  //                             ? locationProfileProvider.resetTotalPage - 1
-  //                             : int.tryParse(widget.totalPages)) ==
-  //                         0)
-  //                 ? SizedBox.shrink()
-  //                 : Positioned(
-  //                     left: 16,
-  //                     top: 0,
-  //                     bottom: 0,
-  //                     child: Align(
-  //                       alignment: Alignment.centerLeft,
-  //                       child: FloatingActionButton(
-  //                         shape: CircleBorder(),
-  //                         mini: true,
-  //                         backgroundColor:
-  //                             Theme.of(context).brightness == Brightness.light
-  //                                 ? AppColors.paperElavation25Light
-  //                                 : AppColors.paperElavation25,
-  //                         onPressed: _navigateLeft,
-  //                         child: Icon(
-  //                           Icons.chevron_left,
-  //                           size: 30,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   );
-  //           }),
-  //           // Right navigation button
-  //           ((int.tryParse(widget.page) ?? 1) >=
-  //                       (widget.locationId.isNotEmpty
-  //                           ? locationProfileProvider.resetTotalPage - 1
-  //                           : (int.tryParse(widget.totalPages) ?? 1)) ||
-  //                   (widget.locationId.isNotEmpty
-  //                           ? locationProfileProvider.resetTotalPage - 1
-  //                           : int.tryParse(widget.totalPages)) ==
-  //                       0)
-  //               ? SizedBox.shrink()
-  //               : Positioned(
-  //                   right: 16,
-  //                   top: 0,
-  //                   bottom: 0,
-  //                   child: Align(
-  //                     alignment: Alignment.centerRight,
-  //                     child: FloatingActionButton(
-  //                       mini: true,
-  //                       shape: CircleBorder(),
-  //                       backgroundColor:
-  //                           Theme.of(context).brightness == Brightness.light
-  //                               ? AppColors.paperElavation25Light
-  //                               : AppColors.paperElavation25,
-  //                       onPressed: _isLoading ? null : _navigateRight,
-  //                       child: _isLoading
-  //                           ? CircularProgressIndicator(color: Colors.white)
-  //                           : Icon(Icons.chevron_right, size: 30),
-  //                       // shape: CircleBorder(),
-  //                       // backgroundColor:
-  //                       //     Theme.of(context).brightness == Brightness.light
-  //                       //         ? AppColors.paperElavation25Light
-  //                       //         : AppColors.paperElavation25,
-  //                       // onPressed: _navigateRight,
-  //                       // child: Icon(
-  //                       //   Icons.chevron_right,
-  //                       //   size: 30,
-  //                       // ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //           Consumer<MyLocationListProvider>(
-  //               builder: (context, locationProfileProvider, child) {
-  //             print(
-  //                 'Subdestinations: ${locationProfileProvider.locationProfile?.subdestinations}');
-  //             print('Show icon: ${(locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) == 5} && ${([
-  //                   locationProfileProvider
-  //                       .locationProfile?.finalAddress?.locationType!
-  //                 ].any((placeType) => [
-  //                       "premise",
-  //                       "subpremise",
-  //                       "rooftop"
-  //                     ].contains(placeType?.toLowerCase())) ?? false)}, place types are: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes}');
-  //             return Positioned(
-  //               bottom: 105,
-  //               left: 16,
-  //               child: Container(
-  //                 margin: EdgeInsets.all(12),
-  //                 decoration: BoxDecoration(
-  //                   color: Theme.of(context).colorScheme.brightness ==
-  //                           Brightness.light
-  //                       ? AppColors.paperElevation2Light
-  //                       : AppColors.paperElevation2,
-  //                   borderRadius: BorderRadius.circular(12),
-  //                   boxShadow: [
-  //                     BoxShadow(
-  //                       color: Colors.black.withOpacity(0.1),
-  //                       blurRadius: 10,
-  //                       offset: Offset(0, 5),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 child: Row(
-  //                   children: [
-  //                     // Add this at the top of your widget
-  //
-  //                     FloatingActionButton.small(
-  //                       elevation: 0,
-  //                       backgroundColor:
-  //                           Theme.of(context).colorScheme.brightness ==
-  //                                   Brightness.light
-  //                               ? AppColors.paperElevation2Light
-  //                               : AppColors.paperElevation2,
-  //                       onPressed: () {
-  //                         setState(() {
-  //                           _currentMapType = _currentMapType == MapType.normal
-  //                               ? MapType.satellite
-  //                               : MapType.normal;
-  //                         });
-  //                       },
-  //                       child: Icon(Icons.layers,
-  //                           color: Theme.of(context).colorScheme.onSurface),
-  //                       tooltip: 'Change Map Type',
-  //                     ),
-  //                     SizedBox(height: 20),
-  //                   ],
-  //                 ),
-  //               ),
-  //             );
-  //           }),
-  //
-  //           Consumer<MyLocationListProvider>(
-  //               builder: (context, locationProfileProvider, child) {
-  //             print(
-  //                 'Subdestinations: ${locationProfileProvider.locationProfile?.subdestinations}');
-  //             print('Show icon: ${(locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) == 5} && ${([
-  //                   locationProfileProvider
-  //                       .locationProfile?.finalAddress?.locationType!
-  //                 ].any((placeType) => [
-  //                       "premise",
-  //                       "subpremise",
-  //                       "rooftop"
-  //                     ].contains(placeType?.toLowerCase())) ?? false)}, place types are: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes}');
-  //             return Positioned(
-  //               top: 16,
-  //               right: 16,
-  //               child: Container(
-  //                 margin: EdgeInsets.all(12),
-  //                 decoration: BoxDecoration(
-  //                   color: Theme.of(context).colorScheme.brightness ==
-  //                           Brightness.light
-  //                       ? AppColors.paperElevation2Light
-  //                       : AppColors.paperElevation2,
-  //                   borderRadius: BorderRadius.circular(12),
-  //                   boxShadow: [
-  //                     BoxShadow(
-  //                       color: Colors.black.withOpacity(0.1),
-  //                       blurRadius: 10,
-  //                       offset: Offset(0, 5),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 child: Row(
-  //                   children: [
-  //                     // Add this at the top of your widget
-  //
-  //                     FloatingActionButton.small(
-  //                       elevation: 0,
-  //                       onPressed: () async {
-  //                         setState(() {
-  //                           _isLoading = true; // Show loader
-  //                         });
-  //
-  //                         await _captureAndUploadMapScreenshot(); // Wait for the function to complete
-  //
-  //                         setState(() {
-  //                           _isLoading = false; // Hide loader
-  //                         });
-  //                       },
-  //                       backgroundColor:
-  //                           Theme.of(context).colorScheme.brightness ==
-  //                                   Brightness.light
-  //                               ? AppColors.paperElevation2Light
-  //                               : AppColors.paperElevation2,
-  //                       child: _isLoading
-  //                           ? SizedBox(
-  //                               width: 20,
-  //                               height: 20,
-  //                               child: CircularProgressIndicator(
-  //                                 color:
-  //                                     Theme.of(context).colorScheme.onSurface,
-  //                                 strokeWidth: 2.0,
-  //                               ),
-  //                             )
-  //                           : Icon(Icons.camera_alt,
-  //                               color: Theme.of(context).colorScheme.onSurface),
-  //                       tooltip: 'Capture and Upload Screenshot',
-  //                     ),
-  //
-  //                     SizedBox(height: 8),
-  //
-  //                     // FloatingActionButton.small(
-  //                     //   elevation: 0,
-  //                     //   backgroundColor:
-  //                     //       Theme.of(context).colorScheme.brightness ==
-  //                     //               Brightness.light
-  //                     //           ? AppColors.paperElevation2Light
-  //                     //           : AppColors.paperElevation2,
-  //                     //   onPressed: () {},
-  //                     //   //_handleSubDestinationTap,
-  //                     //   child: Icon(Icons.add_location_alt, color: Colors.grey),
-  //                     //   // Theme.of(context).colorScheme.onSurface),
-  //                     //   tooltip: 'Add Campus',
-  //                     // ),
-  //                     if (locationProfileProvider
-  //                             .locationProfile?.finalAddress?.placeTypes
-  //                             ?.contains('premise') ==
-  //                         true)
-  //                       FloatingActionButton.small(
-  //                         elevation: 0,
-  //                         backgroundColor:
-  //                             Theme.of(context).colorScheme.brightness ==
-  //                                     Brightness.light
-  //                                 ? AppColors.paperElevation2Light
-  //                                 : AppColors.paperElevation2,
-  //                         onPressed: _handleSubDestinationTap,
-  //                         child:
-  //                             Icon(Icons.add_location_alt, color: Colors.white),
-  //                         // Theme.of(context).colorScheme.onSurface),
-  //                         tooltip: 'Add Campus',
-  //                       )
-  //                     // : SizedBox.shrink(),
-  //                   ],
-  //                 ),
-  //               ),
-  //             );
-  //           }),
-  //         ],
-  //       );
-  //     });
-  //   });
-  // }
   Widget _geocodingScore() {
     return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
@@ -3521,26 +3397,35 @@ class _LocationProfileState extends State<LocationProfile>
                     borderRadius: BorderRadius.circular(20),
                     child: Screenshot(
                       controller: _geocodingScreenshotController,
-                      child: GoogleMap(
-                        key: UniqueKey(),
-                        mapType: _currentMapType,
-                        markers: Set<Marker>.of(markers.values),
-                        zoomControlsEnabled: true,
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(latitude, longitude),
-                          zoom: 18,
+                      child: RepaintBoundary(
+                        key: _mapKey,
+                        child: GoogleMap(
+                          key: UniqueKey(),
+                          mapType: _currentMapType,
+                          onCameraIdle: () {
+                            _mapIsReady =
+                                true; // Set the flag when map is fully ready
+                          },
+                          markers: Set<Marker>.of(markers.values),
+                          zoomControlsEnabled: true,
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(latitude, longitude),
+                            zoom: 18,
+                          ),
+                          onMapCreated: (GoogleMapController controller) {
+                            // onMapCreated: (controller) {
+                            _mapController = controller;
+                            // },  // if (!_controller.isCompleted) {
+                            //   _controller.complete(controller);
+                            // }
+                          },
+                          gestureRecognizers: <Factory<
+                              OneSequenceGestureRecognizer>>{
+                            Factory<OneSequenceGestureRecognizer>(
+                                () => EagerGestureRecognizer()),
+                          },
+                          onTap: _isAddingMarker ? _handleMapTap : null,
                         ),
-                        onMapCreated: (GoogleMapController controller) {
-                          if (!_controller.isCompleted) {
-                            _controller.complete(controller);
-                          }
-                        },
-                        gestureRecognizers: <Factory<
-                            OneSequenceGestureRecognizer>>{
-                          Factory<OneSequenceGestureRecognizer>(
-                              () => EagerGestureRecognizer()),
-                        },
-                        onTap: _isAddingMarker ? _handleMapTap : null,
                       ),
                     ),
                   ),
@@ -3549,8 +3434,8 @@ class _LocationProfileState extends State<LocationProfile>
                 // Left navigation button
                 if ((int.tryParse(widget.page) ?? 1) > 1 &&
                     (widget.locationId.isNotEmpty
-                            ? locationProfileProvider.resetTotalPage - 1
-                            : int.tryParse(widget.totalPages) ?? 0) >
+                            ? locationProfileProvider.resetTotalPage! - 1
+                            : int.tryParse(widget.totalPages!) ?? 0) >
                         0)
                   Positioned(
                     left: 16,
@@ -3574,8 +3459,8 @@ class _LocationProfileState extends State<LocationProfile>
                 // Right navigation button
                 if ((int.tryParse(widget.page) ?? 1) <
                     (widget.locationId.isNotEmpty
-                        ? locationProfileProvider.resetTotalPage - 1
-                        : (int.tryParse(widget.totalPages) ?? 1)))
+                        ? locationProfileProvider.resetTotalPage! - 1
+                        : (int.tryParse(widget.totalPages!) ?? 1)))
                   Positioned(
                     right: 16,
                     top: 0,
@@ -3590,9 +3475,7 @@ class _LocationProfileState extends State<LocationProfile>
                                 ? AppColors.paperElavation25Light
                                 : AppColors.paperElavation25,
                         onPressed: _isLoading ? null : _navigateRight,
-                        child: _isLoading
-                            ? CircularProgressIndicator(color: Colors.white)
-                            : Icon(Icons.chevron_right, size: 30),
+                        child: Icon(Icons.chevron_right, size: 30),
                       ),
                     ),
                   ),
@@ -3669,10 +3552,25 @@ class _LocationProfileState extends State<LocationProfile>
                         FloatingActionButton.small(
                           elevation: 0,
                           onPressed: () async {
-                            setState(() => _isLoading = true);
-                            await _captureAndUploadMapScreenshot();
-                            setState(() => _isLoading = false);
+                            if (_isLoading) return;
+
+                            try {
+                              if (mounted) {
+                                setState(() => _isLoading = true);
+                              }
+
+                              await _captureAndUploadMapScreenshot();
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
                           },
+                          // onPressed: () async {
+                          //   setState(() => _isLoading = true); // Start loading
+                          //   await _captureAndUploadMapScreenshot(); // IMPORTANT: await it properly
+                          //   setState(() => _isLoading = false); // Stop loading
+                          // },
                           backgroundColor:
                               Theme.of(context).colorScheme.brightness ==
                                       Brightness.light
@@ -3719,6 +3617,132 @@ class _LocationProfileState extends State<LocationProfile>
     });
   }
 
+  Future<void> _captureAndUploadMapScreenshot() async {
+    // Early exit if conditions aren't met
+    if (!_mapIsReady || _mapController == null || !mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Map is not ready yet. Please wait.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      // Double check mounted status
+      if (!mounted) return;
+
+      // Ensure the app is in the foreground
+      final lifecycleState = WidgetsBinding.instance.lifecycleState;
+      if (lifecycleState != AppLifecycleState.resumed) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Please bring the app to foreground to capture screenshot')),
+          );
+        }
+        return;
+      }
+
+      // Wait for the next frame to ensure everything is rendered
+      await SchedulerBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Capture the screenshot
+      final imageBytes = await _mapController!.takeSnapshot();
+      if (imageBytes == null) {
+        throw Exception('Failed to capture screenshot - null bytes returned');
+      }
+
+      // Save to temporary file
+      final Directory tempDir = await getTemporaryDirectory();
+      final String filePath =
+          '${tempDir.path}/map_screenshot_${DateTime.now().millisecondsSinceEpoch}.png';
+      final File file = File(filePath);
+      await file.writeAsBytes(imageBytes);
+
+      // Update UI with new image
+      if (mounted) {
+        setState(() {
+          _images.add(file);
+        });
+      }
+
+      // Upload the image
+      final provider =
+          Provider.of<MyLocationListProvider>(context, listen: false);
+      await provider.uploadImage(
+        context,
+        filePath,
+        widget.accountId,
+        widget.subAccountId,
+        widget.sovId,
+        provider.locationProfile?.finalAddress?.locationId ?? "",
+      );
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Screenshot uploaded successfully!')),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('Error capturing/uploading screenshot: $e');
+      print('Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to capture screenshot: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  // Future<void> _captureAndUploadMapScreenshot() async {
+  //   if (!_mapIsReady) {
+  //     print('Map is not ready yet.');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Please wait for the map to finish loading')),
+  //     );
+  //     return;
+  //   }
+  //
+  //   try {
+  //     final imageBytes = await _mapController?.takeSnapshot();
+  //
+  //     if (imageBytes != null) {
+  //       final Directory tempDir = await getTemporaryDirectory();
+  //       final String filePath =
+  //           '${tempDir.path}/map_screenshot${Random().nextInt(10000000)}.png';
+  //       final File file = File(filePath);
+  //       await file.writeAsBytes(imageBytes);
+  //
+  //       setState(() {
+  //         _images.add(file);
+  //       });
+  //
+  //       var provider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       await provider.uploadImage(
+  //         context,
+  //         filePath,
+  //         widget.accountId,
+  //         widget.subAccountId,
+  //         widget.sovId,
+  //         provider.locationProfile?.finalAddress?.locationId ?? "",
+  //       );
+  //
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Screenshot uploaded successfully')),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     print('Error capturing map screenshot: $e');
+  //   }
+  // }
+
   Widget _riskScore() {
     var typography = CustomTypography(context);
 
@@ -3740,7 +3764,8 @@ class _LocationProfileState extends State<LocationProfile>
                   controller: _riskScoreScreenshotController,
                   child: GoogleMap(
                     // key: _googleMapKey,
-                    mapType: _currentMapType1,
+                    mapType: MapType.normal,
+                    // mapType: _currentMapType1,
                     zoomControlsEnabled: true,
                     markers: Set<Marker>.of(markers.values),
                     initialCameraPosition: CameraPosition(
@@ -3790,8 +3815,8 @@ class _LocationProfileState extends State<LocationProfile>
             // Right Navigation Button
             if ((int.tryParse(widget.page) ?? 1) <
                 (widget.locationId.isNotEmpty
-                    ? locationProfileProvider.resetTotalPage - 1
-                    : (int.tryParse(widget.totalPages) ?? 1)))
+                    ? locationProfileProvider.resetTotalPage! - 1
+                    : (int.tryParse(widget.totalPages!) ?? 1)))
               _buildNavigationButton(
                 alignment: Alignment.centerRight,
                 right: 16,
@@ -4098,461 +4123,6 @@ class _LocationProfileState extends State<LocationProfile>
     });
   }
 
-  // Widget _riskScore() {
-  //   var typography = CustomTypography(context);
-  //   return Consumer<MyLocationListProvider>(
-  //       builder: (context, locationProfileProvider, child) {
-  //     return Expanded(
-  //       child: Stack(
-  //         children: [
-  //           Container(
-  //             margin: EdgeInsets.all(16),
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.circular(20),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: Colors.black.withOpacity(0.1),
-  //                   blurRadius: 10,
-  //                   offset: Offset(0, 5),
-  //                 ),
-  //               ],
-  //             ),
-  //             child: ClipRRect(
-  //               borderRadius: BorderRadius.circular(20),
-  //               child: Screenshot(
-  //                 controller: screenshotController,
-  //                 child: GoogleMap(
-  //                   key: _googleMapKey,
-  //                   mapType: _currentMapType1,
-  //                   zoomControlsEnabled: true,
-  //                   markers: Set<Marker>.of(markers.values),
-  //                   initialCameraPosition: _kGooglePlex,
-  //                   onMapCreated: (GoogleMapController controller) {
-  //                     if (!_controller.isCompleted) {
-  //                       _controller.complete(controller);
-  //                     }
-  //                   },
-  //                   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-  //                     Factory<OneSequenceGestureRecognizer>(
-  //                       () => EagerGestureRecognizer(),
-  //                     ),
-  //                   },
-  //                   onTap: _isAddingMarker ? _handleMapTap : null,
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //           _buildHazardControls(),
-  //
-  //           Consumer<MyLocationListProvider>(
-  //               builder: (context, locationProfileProvider, child) {
-  //             return ((int.tryParse(widget.page) ?? 1) <= 1 ||
-  //                     (widget.locationId.isNotEmpty
-  //                             ? locationProfileProvider.resetTotalPage - 1
-  //                             : int.tryParse(widget.totalPages)) ==
-  //                         0)
-  //                 ? SizedBox.shrink()
-  //                 : Positioned(
-  //                     left: 16,
-  //                     top: 0,
-  //                     bottom: 0,
-  //                     child: Align(
-  //                       alignment: Alignment.centerLeft,
-  //                       child: FloatingActionButton(
-  //                         shape: CircleBorder(),
-  //                         mini: true,
-  //                         backgroundColor:
-  //                             Theme.of(context).brightness == Brightness.light
-  //                                 ? AppColors.paperElavation25Light
-  //                                 : AppColors.paperElavation25,
-  //                         onPressed: _navigateLeft,
-  //                         child: Icon(
-  //                           Icons.chevron_left,
-  //                           size: 30,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   );
-  //           }),
-  //           // Right navigation button
-  //           ((int.tryParse(widget.page) ?? 1) >=
-  //                       (widget.locationId.isNotEmpty
-  //                           ? locationProfileProvider.resetTotalPage - 1
-  //                           : (int.tryParse(widget.totalPages) ?? 1)) ||
-  //                   (widget.locationId.isNotEmpty
-  //                           ? locationProfileProvider.resetTotalPage - 1
-  //                           : int.tryParse(widget.totalPages)) ==
-  //                       0)
-  //               ? SizedBox.shrink()
-  //               : Positioned(
-  //                   right: 16,
-  //                   top: 0,
-  //                   bottom: 0,
-  //                   child: Align(
-  //                     alignment: Alignment.centerRight,
-  //                     child: FloatingActionButton(
-  //                       mini: true,
-  //                       shape: CircleBorder(),
-  //                       backgroundColor:
-  //                           Theme.of(context).brightness == Brightness.light
-  //                               ? AppColors.paperElavation25Light
-  //                               : AppColors.paperElavation25,
-  //                       onPressed: _navigateRight,
-  //                       child: Icon(
-  //                         Icons.chevron_right,
-  //                         size: 30,
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //
-  //           // Consumer<MyLocationListProvider>(
-  //           //     builder: (context, locationProfileProvider, child) {
-  //           //   print(
-  //           //       'Subdestinations: ${locationProfileProvider.locationProfile?.subdestinations}');
-  //           //   print('Show icon: ${(locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) == 5} && ${([
-  //           //         locationProfileProvider
-  //           //             .locationProfile?.finalAddress?.locationType!
-  //           //       ].any((placeType) => [
-  //           //             "premise",
-  //           //             "subpremise",
-  //           //             "rooftop"
-  //           //           ].contains(placeType?.toLowerCase())) ?? false)}, place types are: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes}');
-  //           //   return Positioned(
-  //           //     bottom: 16,
-  //           //     left: 16,
-  //           //     child: Container(
-  //           //       margin: EdgeInsets.all(12),
-  //           //       decoration: BoxDecoration(
-  //           //         color: Theme.of(context).colorScheme.brightness ==
-  //           //                 Brightness.light
-  //           //             ? AppColors.paperElevation2Light
-  //           //             : AppColors.paperElevation2,
-  //           //         borderRadius: BorderRadius.circular(12),
-  //           //         boxShadow: [
-  //           //           BoxShadow(
-  //           //             color: Colors.black.withOpacity(0.1),
-  //           //             blurRadius: 10,
-  //           //             offset: Offset(0, 5),
-  //           //           ),
-  //           //         ],
-  //           //       ),
-  //           //       child: Row(
-  //           //         children: [
-  //           //           // Add this at the top of your widget
-  //           //
-  //           //           FloatingActionButton.small(
-  //           //             elevation: 0,
-  //           //             backgroundColor:
-  //           //                 Theme.of(context).colorScheme.brightness ==
-  //           //                         Brightness.light
-  //           //                     ? AppColors.paperElevation2Light
-  //           //                     : AppColors.paperElevation2,
-  //           //             onPressed: () {
-  //           //               setState(() {
-  //           //                 _currentMapType = _currentMapType == MapType.normal
-  //           //                     ? MapType.satellite
-  //           //                     : MapType.normal;
-  //           //               });
-  //           //             },
-  //           //             child: Icon(Icons.layers,
-  //           //                 color: Theme.of(context).colorScheme.onSurface),
-  //           //             tooltip: 'Change Map Type',
-  //           //           ),
-  //           //           SizedBox(height: 8),
-  //           //
-  //           //
-  //           //         ],
-  //           //       ),
-  //           //     ),
-  //           //   );
-  //           // }),
-  //
-  //           Consumer<MyLocationListProvider>(
-  //               builder: (context, locationProfileProvider, child) {
-  //             print(
-  //                 'Subdestinations: ${locationProfileProvider.locationProfile?.subdestinations}');
-  //             print('Show icon: ${(locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) == 5} && ${([
-  //                   locationProfileProvider
-  //                       .locationProfile?.finalAddress?.locationType!
-  //                 ].any((placeType) => [
-  //                       "premise",
-  //                       "subpremise",
-  //                       "rooftop"
-  //                     ].contains(placeType?.toLowerCase())) ?? false)}, place types are: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes}');
-  //             return Positioned(
-  //               top: 16,
-  //               right: 16,
-  //               child: Container(
-  //                 margin: EdgeInsets.all(12),
-  //                 decoration: BoxDecoration(
-  //                   color: Theme.of(context).colorScheme.brightness ==
-  //                           Brightness.light
-  //                       ? AppColors.paperElevation2Light
-  //                       : AppColors.paperElevation2,
-  //                   borderRadius: BorderRadius.circular(12),
-  //                   boxShadow: [
-  //                     BoxShadow(
-  //                       color: Colors.black.withOpacity(0.1),
-  //                       blurRadius: 10,
-  //                       offset: Offset(0, 5),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 child: Row(
-  //                   children: [
-  //                     // Add this at the top of your widget
-  //
-  //                     SizedBox(height: 8),
-  //
-  //                     IntrinsicWidth(
-  //                       child: Container(
-  //                         // Optional padding
-  //                         child: PopupMenuButton<MapType>(
-  //                           onSelected: (MapType selectedType) {
-  //                             setState(() {
-  //                               _currentMapType1 = selectedType;
-  //                             });
-  //                           },
-  //                           itemBuilder: (BuildContext context) =>
-  //                               <PopupMenuEntry<MapType>>[
-  //                             PopupMenuItem<MapType>(
-  //                               value: MapType.normal,
-  //                               child: Text('Map'),
-  //                             ),
-  //                             PopupMenuItem<MapType>(
-  //                               value: MapType.satellite,
-  //                               child: Text('Satellite'),
-  //                             ),
-  //                           ],
-  //                           child: Material(
-  //                             elevation: 0,
-  //                             color: Theme.of(context).colorScheme.brightness ==
-  //                                     Brightness.light
-  //                                 ? AppColors.paperElevation2Light
-  //                                 : AppColors.paperElevation2,
-  //                             shape: RoundedRectangleBorder(
-  //                               borderRadius: BorderRadius.circular(30),
-  //                             ),
-  //                             child: Padding(
-  //                               padding: EdgeInsets.symmetric(
-  //                                   horizontal: 16, vertical: 8),
-  //                               child: Row(
-  //                                 mainAxisSize: MainAxisSize.min,
-  //                                 children: [
-  //                                   Text(
-  //                                     _currentMapType1 == MapType.normal
-  //                                         ? 'Map'
-  //                                         : 'Satellite',
-  //                                     style: TextStyle(color: Colors.grey),
-  //                                   ),
-  //                                   SizedBox(width: 4),
-  //                                   Icon(Icons.arrow_drop_down,
-  //                                       color: Colors.grey),
-  //                                 ],
-  //                               ),
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ),
-  //
-  //                     // : SizedBox.shrink(),
-  //                     /*
-  //                                     Add Marker
-  //                                     (locationProfileProvider.locationProfile?.finalAddress?.score ?? 0) ==
-  //                                                 1 ||
-  //                                             (locationProfileProvider
-  //                                                         .locationProfile?.finalAddress?.score ??
-  //                                                     0) ==
-  //                                                 2
-  //                                         ? FloatingActionButton.small(
-  //                                       elevation: 0,
-  //                                             backgroundColor:
-  //                                             Theme.of(context).colorScheme.brightness ==
-  //                                                 Brightness.light
-  //                                                 ? AppColors.paperElevation2Light
-  //                                                 : AppColors.paperElevation2,
-  //                                             onPressed: _toggleAddMarkerMode,
-  //                                             child: _isAddingMarker
-  //                                                 ? const Icon(Icons.cancel)
-  //                                                 : const Icon(Icons.add_location),
-  //                                             tooltip: 'Add Marker',
-  //                                           )
-  //                                         : SizedBox.shrink(),*/
-  //                   ],
-  //                 ),
-  //               ),
-  //             );
-  //           }),
-  //         ],
-  //       ),
-  //     );
-  //   });
-  // }
-  //
-  // Widget _buildHazardControls() {
-  //   var typography = CustomTypography(context);
-  //
-  //   // Show loading spinner if the main hazards are loading
-  //   // if (isLoadingMainHazards) {
-  //   //   return Positioned(
-  //   //     bottom: 16,
-  //   //     left: 16,
-  //   //     child: Container(
-  //   //       width: 45,
-  //   //       height: 45,
-  //   //       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-  //   //       decoration: BoxDecoration(
-  //   //         color: Theme.of(context).brightness == Brightness.light
-  //   //             ? AppColors.paperElavation25Light
-  //   //             : AppColors.paperElavation25,
-  //   //         borderRadius: BorderRadius.circular(16),
-  //   //       ),
-  //   //       child: Center(
-  //   //         child: CircularProgressIndicator(),
-  //   //       ),
-  //   //     ),
-  //   //   );
-  //   // }
-  //
-  //   // If heatmap is off, use the existing menu with mainHazards and vendors
-  //   // if (!_isHeatmapOn || _isLoading) {
-  //   // if (!(_selectedTabIndex ==2  || _selectedTabIndex == 1) || mainHazards.isEmpty) {
-  //   //   return SizedBox();
-  //   // }
-  //
-  //   return Positioned(
-  //     bottom: 16,
-  //     left: 16,
-  //     child: Container(
-  //       padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-  //       decoration: BoxDecoration(
-  //         color: Theme.of(context).brightness == Brightness.light
-  //             ? AppColors.paperElavation25Light
-  //             : AppColors.paperElavation25,
-  //         borderRadius: BorderRadius.circular(16),
-  //       ),
-  //       child: MenuAnchor(
-  //         builder: (context, controller, child) {
-  //           return IconButton(
-  //             onPressed: () {
-  //               if (controller.isOpen) {
-  //                 controller.close();
-  //               } else {
-  //                 controller.open();
-  //               }
-  //             },
-  //             icon: SvgPicture.asset(
-  //               'assets/images/hazardLayerIcon.svg',
-  //               color: Theme.of(context).colorScheme.onSurface,
-  //             ),
-  //           );
-  //         },
-  //         menuChildren: [
-  //           ConstrainedBox(
-  //             constraints: BoxConstraints(maxHeight: 200),
-  //             // Limit height of the menu
-  //             child: SingleChildScrollView(
-  //               child: Column(
-  //                 children: mainHazards.map((hazard) {
-  //                   return SubmenuButton(
-  //                     child: Text(hazard.name, style: typography.InputLabel),
-  //                     menuChildren: hazard.vendors.map((vendor) {
-  //                       return MenuItemButton(
-  //                         child:
-  //                             Text(vendor.name, style: typography.InputLabel),
-  //                         onPressed: () {
-  //                           // Change hazard and vendor selection
-  //                           _changeHazardLayer(hazard.id!);
-  //                           _changeVendor(vendor.name);
-  //                         },
-  //                       );
-  //                     }).toList(),
-  //                   );
-  //                 }).toList(),
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  //   // }
-  //
-  //   // If heatmap is on and not loading, generate the menu using tileProviders
-  //   // return Positioned(
-  //   //   bottom: 16,
-  //   //   left: 16,
-  //   //   child: Container(
-  //   //     padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-  //   //     decoration: BoxDecoration(
-  //   //       color: Theme.of(context).brightness == Brightness.light
-  //   //           ? AppColors.paperElavation25Light
-  //   //           : AppColors.paperElavation25,
-  //   //       borderRadius: BorderRadius.circular(16),
-  //   //     ),
-  //   //     child: MenuAnchor(
-  //   //       builder: (context, controller, child) {
-  //   //         return IconButton(
-  //   //           onPressed: () {
-  //   //             if (controller.isOpen) {
-  //   //               controller.close();
-  //   //             } else {
-  //   //               controller.open();
-  //   //             }
-  //   //           },
-  //   //           icon: SvgPicture.asset(
-  //   //             'assets/images/hazardLayerIcon.svg',
-  //   //             color: Theme.of(context).colorScheme.onSurface,
-  //   //           ),
-  //   //         );
-  //   //       },
-  //   //       menuChildren: [
-  //   //         ConstrainedBox(
-  //   //           constraints: BoxConstraints(maxHeight: 200), // Limit height of the menu
-  //   //           child: SingleChildScrollView(
-  //   //             child: Column(
-  //   //               children: _tileProviders.keys.map((hazard) {
-  //   //                 return MenuItemButton(
-  //   //                   child: Text(hazard, style: typography.InputLabel),
-  //   //                   onPressed: () {
-  //   //                     // Update the selected hazard
-  //   //                     setState(() {
-  //   //                       _selectedHazard = hazard;
-  //   //                       print("Selected Hazard changed to: $_selectedHazard");
-  //   //                     });
-  //   //                   },
-  //   //                 );
-  //   //               }).toList(),
-  //   //             ),
-  //   //           ),
-  //   //         ),
-  //   //       ],
-  //   //     ),
-  //   //   ),
-  //   // );
-  // }
-  //
-  // void _changeHazardLayer(String hazardId) {
-  //   setState(() {
-  //     // if heatmap is on, let the current hazard be the main hazard and we will change the heatmap wrt hazard selected from the tile provider
-  //     if (_isHeatmapOn) {
-  //       _selectedHazard = hazardId;
-  //     } else {
-  //       selectedHazardId = hazardId;
-  //       final hazard = mainHazards.firstWhere((h) => h.id == hazardId);
-  //       if (hazard.vendors.isNotEmpty) {
-  //         selectedVendor = hazard.vendors.first.name;
-  //       } else {
-  //         selectedVendor = null;
-  //       }
-  //     }
-  //   });
-  // }
-
-  // New function to handle vendor selection
   void _changeVendor(String? vendorName) {
     if (!_isHeatmapOn) {
       setState(() {
@@ -4813,18 +4383,6 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-  void _toggleAddMarkerMode() {
-    setState(() {
-      _isAddingMarker = !_isAddingMarker;
-    });
-  }
-
-  void _toggleTagSubDestinationMode() {
-    setState(() {
-      _isTaggingSubDestination = !_isTaggingSubDestination;
-    });
-  }
-
   Future<Uint8List> createMarkerBitmap(Color color,
       {bool isSelected = false}) async {
     final PictureRecorder pictureRecorder = PictureRecorder();
@@ -5030,19 +4588,18 @@ class _LocationProfileState extends State<LocationProfile>
                         'Do you want to get campus for this location?',
                         style: typography.Body1,
                       ),
-                      if (isLoading) ...[
-                        const SizedBox(height: 16),
-                        Center(
-                          // Center the loader
-                          child: Container(
-                            width: 24, // Explicit size for visibility
-                            height: 24,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2.5, // Make it more visible
-                            ),
-                          ),
-                        ),
-                      ],
+
+                      // const SizedBox(height: 16),
+                      // Center(
+                      //   // Center the loader
+                      //   child: Container(
+                      //     width: 24, // Explicit size for visibility
+                      //     height: 24,
+                      //     child: const CircularProgressIndicator(
+                      //       strokeWidth: 2.5, // Make it more visible
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -5060,12 +4617,20 @@ class _LocationProfileState extends State<LocationProfile>
                   ),
                   TextButton(
                     onPressed: isLoading ? null : handleCreate,
-                    child: Text(
-                      'Add',
-                      style: typography.Body1.copyWith(
-                        color: isLoading ? Colors.grey : null,
-                      ),
-                    ),
+                    child: isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            'Add',
+                            style: typography.Body1.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -5291,202 +4856,6 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  Widget _customInfoWindow(String title, String address, bool isAdded,
-      Function() onAddToSOV, Function() onRemoveFromSOV) {
-    var typography = CustomTypography(context);
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: typography.H7.copyWith(
-                color: Colors.white, fontWeight: FontWeight.bold, height: 1.2),
-          ),
-          SizedBox(height: 16),
-          Text(
-            address,
-            style: typography.Body1.copyWith(color: Colors.white),
-          ),
-          SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (isAdded)
-                ElevatedButton.icon(
-                  onPressed: onRemoveFromSOV,
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  label: Text('Remove',
-                      style: typography.Body1.copyWith(color: Colors.red)),
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                ),
-              if (!isAdded)
-                ElevatedButton.icon(
-                  onPressed: onAddToSOV,
-                  icon: Icon(Icons.add, color: Colors.blue),
-                  label: Text('Add to SOV',
-                      style: typography.Body1.copyWith(color: Colors.blue)),
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoogleSearchBar(BuildContext context) {
-    var typography = CustomTypography(context);
-    return Container(
-      padding: EdgeInsets.only(right: 16, top: 16),
-      margin: EdgeInsets.only(right: 16),
-      child: TypeAheadField<Suggestion>(
-        builder: (context, controller, focusNode) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                  hintText: 'Search location',
-                  hintStyle: typography.Body1,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  suffixIcon: Icon(Icons.search),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          "assets/images/googleLogo.svg",
-                          width: 20,
-                          height: 20,
-                        )),
-                  ),
-                  prefixIconConstraints: BoxConstraints(
-                    maxHeight: 40,
-                    maxWidth: 40,
-                  )),
-            ),
-          );
-        },
-        suggestionsCallback: (pattern) async {
-          print('Pattern: $pattern');
-          var apiProvider =
-              PlaceApiProvider(autoCompleteSuggestionSessionToken);
-          return await apiProvider.fetchSuggestions(pattern, 'en');
-        },
-        itemBuilder: (context, suggestion) {
-          print('Suggestion: ${suggestion.description}');
-          return ListTile(
-            title: Text(suggestion.description, style: typography.Body1),
-          );
-        },
-        onSelected: (suggestion) async {
-          final GoogleMapController controller = await _controller.future;
-
-          var placeApiProvider = PlaceApiProvider(Uuid().v4());
-          // Get full place details
-          final placeDetails =
-              await placeApiProvider.getPlaceDetails(suggestion.placeId);
-          final geometry = placeDetails['geometry']['location'];
-
-          // Create a temporary marker
-          final MarkerId markerId = MarkerId("temporary_marker");
-          final Marker marker = Marker(
-            markerId: markerId,
-            position: LatLng(geometry['lat'], geometry['lng']),
-            infoWindow: InfoWindow(
-              title: placeDetails['name'],
-              snippet: placeDetails['formatted_address'],
-            ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor
-                .hueOrange), // Change the color to orange for temporary markers
-          );
-
-          setState(() {
-            markers[markerId] = marker;
-          });
-
-          // Move the camera to the selected location
-          controller.animateCamera(CameraUpdate.newLatLng(
-            LatLng(geometry['lat'], geometry['lng']),
-          ));
-
-          // Show confirmation bottom sheet
-          showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return _buildConfirmationBottomSheet(
-                context,
-                placeDetails,
-                geometry['lat'],
-                geometry['lng'],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  void _addSelectedToSOV() async {
-    var typography = CustomTypography(context);
-    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
-    var checkedSubdestinations =
-        provider.subdestinations.where((sd) => sd.isChecked).toList();
-    // Check for selections
-    if (checkedSubdestinations.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Please select at least one subdestination',
-                style: typography.Body1)),
-      );
-      return;
-    }
-
-    await provider.addSelectedSubdestinationToSOV(
-      context,
-      widget.accountId,
-      widget.subAccountId,
-      widget.sovId,
-      provider.locationProfile?.finalAddress?.locationId ?? '',
-      checkedSubdestinations.map((sd) => sd.id!).toList(),
-    );
-
-    // Optionally, you can refresh the data or show a success message here
-    _getData();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('Selected subdestinations added to SOV',
-              style: typography.Body1)),
-    );
-  }
-
   void _showAddToSOVDialog(String subdestinationId, String occupancy) {
     TextEditingController campusNameController = TextEditingController();
 
@@ -5650,313 +5019,6 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-  Widget _buildConfirmationBottomSheet(BuildContext context,
-      Map<String, dynamic> placeDetails, double lat, double lng) {
-    var typography = CustomTypography(context);
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 16),
-          Text(
-            placeDetails['name'] ?? 'Selected Location',
-            style: typography.H6,
-          ),
-          SizedBox(height: 8),
-          Text(
-            placeDetails['formatted_address'] ?? 'No address available',
-            style: typography.Body1,
-          ),
-          SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the bottom sheet
-
-                  // Remove the temporary marker
-                  setState(() {
-                    markers.remove(MarkerId("temporary_marker"));
-                  });
-                  _goToTheInitialPin();
-                },
-                child: Text('Cancel', style: typography.Body1),
-              ),
-              SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the bottom sheet
-
-                  // Remove the temporary marker and add a permanent one
-                  setState(() {
-                    markers.remove(MarkerId("temporary_marker"));
-
-                    // Add permanent marker
-                    final MarkerId permanentMarkerId =
-                        MarkerId(placeDetails['place_id']);
-                    final Marker permanentMarker = Marker(
-                      markerId: permanentMarkerId,
-                      position: LatLng(lat, lng),
-                      infoWindow: InfoWindow(
-                        title: placeDetails['name'],
-                        snippet: placeDetails['formatted_address'],
-                      ),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor
-                              .hueRed), // Change to a permanent color
-                    );
-
-                    markers[permanentMarkerId] = permanentMarker;
-                  });
-
-                  // Continue with existing functionality
-                  _confirmLocationSelection(placeDetails, lat, lng);
-                },
-                child: Text('OK', style: typography.Body1),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmLocationSelection(
-      Map<String, dynamic> placeDetails, double lat, double lng) async {
-    var typography = CustomTypography(context);
-    // Continue with the existing functionality to handle the selected location
-    // This could include updating the state, making API calls, etc.
-
-    // Example:
-    print('Confirmed Location: ${placeDetails['name']} at ($lat, $lng)');
-
-    final geometry = placeDetails['geometry']['location'];
-    final addressComponents = placeDetails['address_components'];
-
-    // Extract required fields from address components
-    String city = '';
-    String state = '';
-    String zip = '';
-    String country = '';
-
-    for (var component in addressComponents) {
-      print('Component: $component');
-      final types = component['types'];
-      if (types.contains('locality')) {
-        city = component['long_name'];
-      } else if (types.contains('administrative_area_level_1')) {
-        state = component['short_name'];
-      } else if (types.contains('postal_code')) {
-        zip = component['long_name'];
-      } else if (types.contains('country')) {
-        country = component['long_name'];
-      }
-    }
-
-    // Create data payload
-
-    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
-    final data = {
-      "data": {
-        "location_name": placeDetails['name'],
-        "location_type": placeDetails['types'],
-        "description": "",
-        "address": placeDetails['formatted_address'],
-        "city": city,
-        "state": state,
-        "zip": zip,
-        "country": country,
-        "latitude": geometry['lat'],
-        "longitude": geometry['lng'],
-        "by_search": true,
-        "location_id": provider.locationProfile?.finalAddress?.locationId ?? "",
-        "place_id": placeDetails['place_id'],
-      }
-    };
-    String result = await provider.updateLocationDetails(
-        context,
-        widget.accountId,
-        widget.subAccountId,
-        widget.sovId,
-        provider.locationProfile?.finalAddress?.locationId ?? '',
-        data);
-    if (result.toLowerCase() == 'true') {
-      _getData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text('Failed to update location details', style: typography.Body1),
-      ));
-    }
-  }
-
-  Future<void> _navigateRight() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    print('Navigating from page ${widget.page} of ${widget.totalPages}');
-
-    final locationProvider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-
-    int currentPage = int.tryParse(widget.page) ?? 1;
-    int totalPages = widget.locationId.isNotEmpty
-        ? locationProvider.resetTotalPage
-        : (int.tryParse(widget.totalPages) ?? 1);
-
-    if (currentPage >= totalPages) {
-      print('Already on the last page.');
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    int pageToNavigate = currentPage + 1;
-    print('Navigating to page: $pageToNavigate');
-
-    bool alreadyExists = false;
-    Navigator.popUntil(context, (route) {
-      if (route.settings.name == 'LocationProfile$pageToNavigate') {
-        alreadyExists = true;
-      }
-      return true;
-    });
-
-    if (alreadyExists) {
-      print('Page $pageToNavigate already exists. Not pushing a new one.');
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // Execute navigation in a separate microtask to ensure UI updates first
-    Future.microtask(() {
-      print("testsuccess");
-      Navigator.of(context)
-          .pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => LocationProfile(
-            accountId: widget.accountId,
-            subAccountId: widget.subAccountId,
-            sovId: widget.sovId,
-            accountName: widget.accountName,
-            subAccountName: widget.subAccountName,
-            sovName: widget.sovName,
-            searchQuery: widget.searchQuery,
-            page: pageToNavigate.toString(),
-            totalPages: totalPages.toString(),
-          ),
-        ),
-      )
-          .then((_) {
-        setState(() {
-          _isLoading = false;
-        });
-      });
-    });
-  }
-
-  // Future<void> _navigateRight() async {
-  //   print('Navigating from page ${widget.page} of ${widget.totalPages}');
-  //
-  //   final locationProvider =
-  //       Provider.of<MyLocationListProvider>(context, listen: false);
-  //
-  //   int currentPage = int.tryParse(widget.page) ?? 1;
-  //   int totalPages = widget.locationId.isNotEmpty
-  //       ? locationProvider.resetTotalPage
-  //       : (int.tryParse(widget.totalPages) ?? 1);
-  //
-  //   if (currentPage >= totalPages) {
-  //     print('Already on the last page.');
-  //     return;
-  //   }
-  //
-  //   int pageToNavigate = currentPage + 1;
-  //
-  //   print('Navigating to page: $pageToNavigate');
-  //
-  //   // Check if the page already exists in the navigation stack
-  //   bool alreadyExists = false;
-  //   Navigator.popUntil(context, (route) {
-  //     if (route.settings.name == 'LocationProfile$pageToNavigate') {
-  //       alreadyExists = true;
-  //     }
-  //     return true;
-  //   });
-  //
-  //   if (alreadyExists) {
-  //     print('Page $pageToNavigate already exists. Not pushing a new one.');
-  //     return;
-  //   }
-  //   // Then, push the new screen
-  //   Navigator.of(context).replace(
-  //     oldRoute: ModalRoute.of(context)!,
-  //     newRoute: MaterialPageRoute(
-  //       builder: (context) => LocationProfile(
-  //         accountId: widget.accountId,
-  //         subAccountId: widget.subAccountId,
-  //         sovId: widget.sovId,
-  //         accountName: widget.accountName,
-  //         subAccountName: widget.subAccountName,
-  //         sovName: widget.sovName,
-  //         searchQuery: widget.searchQuery,
-  //         page: pageToNavigate.toString(),
-  //         totalPages: totalPages.toString(),
-  //       ),
-  //     ),
-  //   );
-  //
-  //   print('Returned from LocationProfile');
-  // }
-
-  void _navigateLeft() {
-    int currentPage = int.tryParse(widget.page) ?? 1;
-
-    // Prevent navigation beyond first page
-    if (currentPage <= 1) {
-      print('Already on the first page.');
-      return;
-    }
-
-    int pageToNavigate = currentPage - 1;
-    print('Navigating to page: $pageToNavigate');
-
-    final locationProvider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-    int totalPages = widget.locationId.isNotEmpty
-        ? locationProvider.resetTotalPage
-        : (int.tryParse(widget.totalPages) ?? 1);
-    Navigator.of(context).replace(
-      oldRoute: ModalRoute.of(context)!,
-      newRoute: MaterialPageRoute(
-        builder: (context) => LocationProfile(
-          accountId: widget.accountId,
-          subAccountId: widget.subAccountId,
-          sovId: widget.sovId,
-          accountName: widget.accountName,
-          subAccountName: widget.subAccountName,
-          sovName: widget.sovName,
-          searchQuery: widget.searchQuery,
-          page: pageToNavigate.toString(),
-          totalPages: totalPages.toString(),
-        ),
-      ),
-    );
-  }
-
   String getOrdinal(int number) {
     if (number >= 11 && number <= 13) {
       return '${number}th';
@@ -5981,6 +5043,6 @@ class _LocationProfileState extends State<LocationProfile>
     if (widget.locationId.isNotEmpty) {
       return '';
     }
-    return ' - (${getOrdinal(location)} Location of $total)';
+    return ' - (${getOrdinal(location)} Location of $_totalPages)';
   }
 }

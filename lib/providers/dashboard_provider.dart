@@ -86,7 +86,7 @@ class DashboardProvider with ChangeNotifier {
 
       isLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }
@@ -119,7 +119,7 @@ class DashboardProvider with ChangeNotifier {
 
       isRoleLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }
@@ -152,7 +152,7 @@ class DashboardProvider with ChangeNotifier {
 
       isCompanyLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }

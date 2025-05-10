@@ -168,21 +168,31 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
+  // @override
+  // void initState() {
+  //   var userProfileProvider =
+  //       Provider.of<UserProfileProvider>(context, listen: false);
+  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+  //   // Determine the number of tabs based on trial status
+  //   int tabCount =
+  //       // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
+  //   (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
+  //   _tabController = TabController(length: tabCount, vsync: this);
+  //   // int tabCount = trialStatus.isEmpty ? 3 : 4;
+  //   // _tabController = TabController(length: tabCount, vsync: this);
+  //   super.initState();
+  //   _getData();
+  // }
   @override
   void initState() {
-    var userProfileProvider =
-        Provider.of<UserProfileProvider>(context, listen: false);
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    // Determine the number of tabs based on trial status
-    int tabCount =
-        // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
-    (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-    _tabController = TabController(length: tabCount, vsync: this);
-    // int tabCount = trialStatus.isEmpty ? 3 : 4;
-    // _tabController = TabController(length: tabCount, vsync: this);
     super.initState();
+    var userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+    int tabCount = (trialStatus.isEmpty) ? 4 : 3;
+    _tabController = TabController(length: tabCount, vsync: this);
     _getData();
   }
+
 
   @override
   void dispose() {
@@ -191,15 +201,20 @@ class _AccountListScreenState extends State<AccountListScreen>
     super.dispose();
   }
 
-  _getData() async {
-    // Fetch data from API
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AccountListProvider>(context, listen: false).page = 1;
-      Provider.of<AccountListProvider>(context, listen: false)
-          .fetchAccountList(context, "", 1, 10);
-    });
-  }
+  // _getData() async {
+  //   // Fetch data from API
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     Provider.of<AccountListProvider>(context, listen: false).page = 1;
+  //     Provider.of<AccountListProvider>(context, listen: false)
+  //         .fetchAccountList(context, "", 1, 10);
+  //   });
+  // }
 
+  _getData() async {
+    final accountListProvider = Provider.of<AccountListProvider>(context, listen: false);
+    accountListProvider.page = 1;
+    await accountListProvider.fetchAccountList(context, "", 1, 10);
+  }
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
@@ -479,7 +494,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                       //     return DataTab(
                                       //       accountName: accountListProvider.accountList[0].accountName ?? "",
                                       //       accountId: accountId,
-                                      //       subaccountId: null,
+                                      //       subaccountId: accountId,
                                       //     );
                                       //   },
                                       // ),
@@ -2325,3 +2340,110 @@ class _AccountListScreenState extends State<AccountListScreen>
     );
   }
 }
+
+// check
+
+// GridView.builder(
+//   shrinkWrap: true,
+//   physics: NeverScrollableScrollPhysics(),
+//   itemCount: totalGridItems,
+//   gridDelegate:
+//       SliverGridDelegateWithFixedCrossAxisCount(
+//     crossAxisCount: 3,
+//     crossAxisSpacing: 6,
+//     mainAxisSpacing: 6,
+//     childAspectRatio: 1,
+//   ),
+//   itemBuilder: (context, gridIndex) {
+//     // If this is the last index and upload button is to be shown
+//     if (showUpload &&
+//         gridIndex == totalGridItems - 1) {
+//       return GestureDetector(
+//         onTap: addImage,
+//         child: Container(
+//           decoration: BoxDecoration(
+//             color: Colors.transparent,
+//             borderRadius: BorderRadius.circular(10),
+//             border:
+//                 Border.all(color: Colors.white38),
+//           ),
+//           child: Center(
+//             child: Row(
+//               mainAxisAlignment:
+//                   MainAxisAlignment.center,
+//               children: [
+//                 Icon(Icons.add,
+//                     color: Colors.blueAccent,
+//                     size: 20),
+//                 SizedBox(width: 6),
+//                 Text("Upload",
+//                     style: TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 15)),
+//               ],
+//             ),
+//           ),
+//         ),
+//       );
+//     }
+//
+//     // Otherwise render an actual image
+//     final imgIndex = visibleImageIndexes[gridIndex];
+//
+//     return GestureDetector(
+//       onTap: () {
+//         setState(() {
+//           expandedCardsWithImage[index] = imgIndex;
+//         });
+//       },
+//       child: Stack(
+//         children: [
+//           ClipRRect(
+//             borderRadius: BorderRadius.circular(8),
+//             child: CachedNetworkImage(
+//               imageUrl: urls[imgIndex],
+//               fit: BoxFit.cover,
+//               width: double.infinity,
+//               height: double.infinity,
+//               placeholder: (context, url) => Center(
+//                   child:
+//                       CircularProgressIndicator()),
+//               errorWidget: (context, url, error) =>
+//                   Icon(Icons.error),
+//             ),
+//           ),
+//           Positioned(
+//             top: 4,
+//             right: 4,
+//             child: GestureDetector(
+//               onTap: () {
+//                 setState(() {
+//                   expandedCardsWithImage
+//                       .remove(index);
+//                 });
+//               },
+//               child: Container(
+//                 height: 24,
+//                 width: 24,
+//                 decoration: BoxDecoration(
+//                   color: Colors.white,
+//                   shape: BoxShape.circle,
+//                   boxShadow: [
+//                     BoxShadow(
+//                       color: Colors.black
+//                           .withOpacity(0.2),
+//                       blurRadius: 2,
+//                       offset: Offset(0, 2),
+//                     ),
+//                   ],
+//                 ),
+//                 child: Icon(Icons.close,
+//                     size: 16, color: Colors.red),
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   },
+// ),

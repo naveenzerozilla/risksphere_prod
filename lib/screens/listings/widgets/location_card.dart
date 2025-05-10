@@ -1,3 +1,4 @@
+import 'package:RiskSphare/screens/listings/widgets/conflicts_tab.dart';
 import 'package:RiskSphare/screens/listings/widgets/location_details_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,6 +15,7 @@ import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
   final Map<String, HazardDetails>? hazards;
+  final bool? isConflict;
   final String imageUrl;
   final String locationId;
   final String accountName;
@@ -45,10 +47,14 @@ class MyLocationCard extends StatefulWidget {
 
   // callback to get gata after coming back from profile page (nullable)
   final void Function()? getData;
+  final VoidCallback? onNavigateStart;
+  final VoidCallback? onNavigateBack;
+  List<Conflicts>? conflict;
 
-  const MyLocationCard({
+   MyLocationCard({
     super.key,
     this.hazards,
+    this.isConflict,
     required this.imageUrl,
     required this.locationId,
     required this.accountName,
@@ -78,6 +84,10 @@ class MyLocationCard extends StatefulWidget {
     this.hazardProcess,
     this.rented,
     this.getData,
+    this.onNavigateStart,
+    this.onNavigateBack,
+     this.conflict,
+
   });
 
   @override
@@ -145,26 +155,57 @@ class _MyLocationCardState extends State<MyLocationCard> {
           var locationListProvider =
               Provider.of<MyLocationListProvider>(context, listen: false);
           // Open location details screen
-          Navigator.of(context)
-              .push(MaterialPageRoute(
-            builder: (_) => LocationProfile(
-                accountId: widget.accountId ?? "",
-                accountName: widget.accountName ?? "",
-                subAccountId: widget.subAccountId ?? "",
-                subAccountName: widget.subAccountName ?? "",
-                sovId: widget.sovId ?? "",
-                sovName: widget.sovName ?? "",
-                searchQuery: widget.locationQuery ?? "",
-                page: (widget.index + 1).toString(),
-                totalPages: locationListProvider.locationHits.toString(),
-                hazardProcess: widget.hazardProcess
-                //here
-                ),
-          ))
-              .then((_) {
-            // Call getData after pop
-            widget.getData?.call();
-          });
+
+          widget.isConflict == true
+              ? Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ConflictsTab(
+                      processId: widget.accountId ?? "",
+                      accountId: widget.accountId ?? "",
+                      subAccountId: widget.subAccountId ?? "",
+                      accountName: widget.accountName ?? "",
+                      tempId: "tempId",
+                    lat:widget.lat,
+                    long: widget.long,
+                      geocodingAddress: widget.address,
+                    conflict: widget.conflict,
+                  )))
+              : Navigator.of(context)
+                  .push(MaterialPageRoute(
+                  builder: (_) => LocationProfile(
+                    accountId: widget.accountId ?? "",
+                    accountName: widget.accountName ?? "",
+                    subAccountId: widget.subAccountId ?? "",
+                    subAccountName: widget.subAccountName ?? "",
+                    sovId: widget.sovId ?? "",
+                    sovName: widget.sovName ?? "",
+                    searchQuery: widget.locationQuery ?? "",
+                    page: (widget.index + 1).toString(),
+                    totalPages: locationListProvider.locationHits.toString(),
+                    hazardProcess: widget.hazardProcess,
+                    onConfirmCallback: widget.getData,
+                  ),
+                ))
+                  .then((result) {
+                  // widget.getData!();
+                  if (result == true) {
+                    widget.getData!();
+                    widget.onNavigateStart?.call();
+                    widget.getData?.call();
+                    // ✅ Call getData only if LocationProfile returns true
+                  }
+                  // widget.onNavigateStart?.call();
+                  // widget.getData?.call();
+                });
+
+          // ))
+          //     .then((_) {
+          //   widget.getData!();
+          //   // Call getData after pop
+          //   widget.onNavigateStart?.call();
+          // });
+          widget.onNavigateStart?.call();
+          // widget.onNavigateBack?.call(); // ✅ Restore debouncer & timer
+          // widget.getData?.call();
           /*.then((_) {
             // Call getData after pop
             _getData();
@@ -236,36 +277,50 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return Row(
       children: [
         // Building Image
+
         isSelected
             ? CircleAvatar(
                 radius: 25,
                 backgroundColor: AppColors.primaryMain.withOpacity(0.5),
                 child: Icon(Icons.check, color: Colors.white),
               )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: (widget.geocodingScore == 5)
-                    ? Image.network(
-                        "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      )
-                    : image.isNotEmpty
+            : widget.isConflict == true
+                ? Container(
+                    height: 50, // same as CircleAvatar's diameter (radius * 2)
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryMain.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(
+                          8), // Rounded square, adjust as needed
+                    ),
+                    child: Icon(Icons.block_rounded,
+                        color: Colors.orange, size: 30),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: (widget.geocodingScore == 5)
                         ? Image.network(
-                            image,
+                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
                           )
-                        : Image.asset(
-                            'assets/images/building_image.png',
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                          ),
-              ),
+                        : image.isNotEmpty
+                            ? Image.network(
+                                image,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                'assets/images/building_image.png',
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
+                  ),
         SizedBox(width: 8),
+        // Text(widget.isConflict.toString()),
         // Expanded chip list or single chip
         Expanded(
           child: Column(

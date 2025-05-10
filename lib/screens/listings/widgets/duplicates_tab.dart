@@ -622,10 +622,10 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                               style: typography.Body2,
                             ),
                             TextSpan(
-                              text: "geocode",
+                              text: "geocode. ",
                               style: typography.Body2.copyWith(
                                 color: AppColors.primaryMain,
-                                decoration: TextDecoration.underline,
+                                // decoration: TextDecoration.underline,
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
@@ -634,21 +634,10 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                 },
                             ),
                             TextSpan(
-                              text: " and resolve any ",
+                              text: "Thank you for your assistance in keeping our data accurate! ",
                               style: typography.Body2,
                             ),
-                            TextSpan(
-                              text: "conflicts.",
-                              style: typography.Body2.copyWith(
-                                color: AppColors.primaryMain,
-                                decoration: TextDecoration.underline,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  widget.masterTabController?.animateTo(
-                                      2); // Navigate to Conflicts tab
-                                },
-                            ),
+
                           ],
                         )
                       ],

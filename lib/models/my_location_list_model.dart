@@ -8,6 +8,7 @@ class MyLocationModel {
   int? totalCertified;
   int? page;
   int? pageSize;
+  bool? isConflict;
   List<MyLocation>? results;
   List<MyLocation>? filterByLocationResult;
 
@@ -16,6 +17,7 @@ class MyLocationModel {
     this.totalCertified,
     this.page,
     this.pageSize,
+    this.isConflict,
     this.results,
     this.filterByLocationResult,
   });
@@ -31,6 +33,7 @@ class MyLocationModel {
         results!.add(MyLocation.fromJson(v));
       });
     }
+    isConflict = json['is_conflict'];
     if (json['filter_by_location_result'] != null) {
       filterByLocationResult = <MyLocation>[];
       json['filter_by_location_result'].forEach((v) {
@@ -48,6 +51,7 @@ class MyLocationModel {
     if (results != null) {
       data['result'] = results!.map((v) => v.toJson()).toList();
     }
+    data['is_conflict'] = isConflict;
     if (filterByLocationResult != null) {
       data['filter_by_location_result'] =
           filterByLocationResult!.map((v) => v.toJson()).toList();
@@ -66,6 +70,8 @@ class MyLocation with ClusterItem {
   FinalAddress? finalAddress;
   int? geocodingScore;
   bool? isSelected;
+  bool? isConflict;
+  List<Conflicts>? conflicts;
   List<String>? tags;
   int? overallScore;
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
@@ -79,6 +85,8 @@ class MyLocation with ClusterItem {
       this.finalAddress,
       this.geocodingScore,
       this.isSelected = false,
+        this.isConflict,
+        this.conflicts,
       this.tags,
       this.overallScore,
       this.hazard,
@@ -95,6 +103,11 @@ class MyLocation with ClusterItem {
     geocodingScore = json['geocoding_score'] is int
         ? json['geocoding_score']
         : int.tryParse(json['geocoding_score']?.toString() ?? '');
+    isConflict = json['is_conflict'];
+    if (json['conflicts'] != null) {
+      conflicts = <Conflicts>[];
+      json['conflicts'].forEach((v) { conflicts!.add(new Conflicts.fromJson(v)); });
+    }
     if (json['tags'] != null) {
       if (json['tags'] is List) {
         // If it's already a List, directly convert it
@@ -111,6 +124,7 @@ class MyLocation with ClusterItem {
     } else {
       overallScore = int.tryParse(json['overallScore']?.toString() ?? '');
     }
+
     geocodedAddress = json['geocoded_address'] ?? '';
 
     // Parse hazard as Map<String, HazardDetails>
@@ -145,6 +159,10 @@ class MyLocation with ClusterItem {
       data['final_address'] = finalAddress!.toJson();
     }
     data['geocoding_score'] = geocodingScore;
+    data['is_conflict'] = this.isConflict;
+    if (this.conflicts != null) {
+      data['conflicts'] = this.conflicts!.map((v) => v.toJson()).toList();
+    }
     data['tags'] = tags;
     data['overall_score'] = overallScore;
     data['geocoded_address'] = geocodedAddress;
@@ -174,6 +192,132 @@ class MyLocation with ClusterItem {
         finalAddress?.longitude ?? 0.0,
       );
 }
+
+
+class Conflicts {
+  List<UserAccounts>? userAccounts;
+  EmbeddedAddress? embeddedAddress;
+  FinalAddress? finalAddress;
+  String? processId;
+  List<String>? accountIndex;
+  List<String>? subAccountIndex;
+  // EnabledHazards? enabledHazards;
+  List<Null>? dataParameters;
+  String? geocodedAddress;
+  bool? isHazardProcessed;
+  String? mappedAddress;
+  // List<History>? history;
+  String? subProcessId;
+  String? originalAddress;
+  // EnabledHazards? dataParamIndex;
+  String? locationId;
+
+  Conflicts({this.userAccounts, this.embeddedAddress, this.finalAddress, this.processId, this.accountIndex, this.subAccountIndex,  this.dataParameters, this.geocodedAddress, this.isHazardProcessed, this.mappedAddress,  this.subProcessId, this.originalAddress, this.locationId});
+
+  Conflicts.fromJson(Map<String, dynamic> json) {
+    if (json['userAccounts'] != null) {
+      userAccounts = <UserAccounts>[];
+      json['userAccounts'].forEach((v) { userAccounts!.add(new UserAccounts.fromJson(v)); });
+    }
+    embeddedAddress = json['embedded_address'] != null ? new EmbeddedAddress.fromJson(json['embedded_address']) : null;
+    finalAddress = json['final_address'] != null ? new FinalAddress.fromJson(json['final_address']) : null;
+    processId = json['process_id'];
+    accountIndex = json['account_index'].cast<String>();
+    subAccountIndex = json['sub_account_index'].cast<String>();
+    // enabledHazards = json['enabled_hazards'] != null ? new EnabledHazards.fromJson(json['enabled_hazards']) : null;
+    // if (json['data_parameters'] != null) {
+    //   dataParameters = <Null>[];
+    //   json['data_parameters'].forEach((v) { dataParameters!.add(new Null.fromJson(v)); });
+    // }
+    geocodedAddress = json['geocoded_address'];
+    isHazardProcessed = json['is_hazard_processed'];
+    mappedAddress = json['mapped_address'];
+    // if (json['history'] != null) {
+    //   history = <History>[];
+    //   json['history'].forEach((v) { history!.add(new History.fromJson(v)); });
+    // }
+    subProcessId = json['sub_process_id'];
+    originalAddress = json['original_address'];
+    // dataParamIndex = json['data_param_index'] != null ? new EnabledHazards.fromJson(json['data_param_index']) : null;
+    locationId = json['location_id'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.userAccounts != null) {
+      data['userAccounts'] = this.userAccounts!.map((v) => v.toJson()).toList();
+    }
+    if (this.embeddedAddress != null) {
+      data['embedded_address'] = this.embeddedAddress!.toJson();
+    }
+    if (this.finalAddress != null) {
+      data['final_address'] = this.finalAddress!.toJson();
+    }
+    data['process_id'] = this.processId;
+    data['account_index'] = this.accountIndex;
+    data['sub_account_index'] = this.subAccountIndex;
+    // if (this.enabledHazards != null) {
+    //   data['enabled_hazards'] = this.enabledHazards!.toJson();
+    // }
+    // if (this.dataParameters != null) {
+    //   data['data_parameters'] = this.dataParameters!.map((v) => v.toJson()).toList();
+    // }
+    data['geocoded_address'] = this.geocodedAddress;
+    data['is_hazard_processed'] = this.isHazardProcessed;
+    data['mapped_address'] = this.mappedAddress;
+    // if (this.history != null) {
+    //   data['history'] = this.history!.map((v) => v.toJson()).toList();
+    // }
+    data['sub_process_id'] = this.subProcessId;
+    data['original_address'] = this.originalAddress;
+    // if (this.dataParamIndex != null) {
+    //   data['data_param_index'] = this.dataParamIndex!.toJson();
+    // }
+    data['location_id'] = this.locationId;
+    return data;
+  }
+}
+class UserAccounts {
+  String? folder;
+  String? subaccount;
+  String? account;
+
+  UserAccounts({this.folder, this.subaccount, this.account});
+
+  UserAccounts.fromJson(Map<String, dynamic> json) {
+    folder = json['folder'];
+    subaccount = json['subaccount'];
+    account = json['account'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['folder'] = this.folder;
+    data['subaccount'] = this.subaccount;
+    data['account'] = this.account;
+    return data;
+  }
+}
+
+class EmbeddedAddress {
+  String? sType;
+  List<double>? value;
+
+  EmbeddedAddress({this.sType, this.value});
+
+  EmbeddedAddress.fromJson(Map<String, dynamic> json) {
+    sType = json['__type__'];
+    value = json['value'].cast<double>();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['__type__'] = this.sType;
+    data['value'] = this.value;
+    return data;
+  }
+}
+
 
 class Hazard {
   int? priority;

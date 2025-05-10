@@ -595,6 +595,8 @@ class Screenshots {
   String? date;
   String? time;
   String? imageUrl;
+  CreatedAt? createdAt;
+
 
   Screenshots({
     this.id,
@@ -604,6 +606,7 @@ class Screenshots {
     this.date,
     this.time,
     this.imageUrl,
+    this.createdAt
   });
 
   Screenshots.fromJson(Map<String, dynamic> json) {
@@ -614,6 +617,7 @@ class Screenshots {
     date = json['date'];
     time = json['time'];
     imageUrl = json['image_url'];
+    createdAt = json['created_at'] != null ? CreatedAt.fromJson(json['created_at']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -625,8 +629,83 @@ class Screenshots {
     data['date'] = date;
     data['time'] = time;
     data['image_url'] = imageUrl;
+    if (createdAt != null) {
+      data['created_at'] = createdAt!.toJson();
+    }
 
     return data;
   }
 }
+class CreatedAt {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  CreatedAt({this.iSeconds, this.iNanoseconds});
+
+  CreatedAt.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
+    return data;
+  }
+}
+class data {
+  String? id;
+  String? name;
+  String? email;
+  String? companyId;
+  String? userId;
+  String? date;
+  String? time;
+  String? imageUrl;
+  CreatedAt? createdAt;
+
+  data(
+      {this.id,
+        this.name,
+        this.email,
+        this.companyId,
+        this.userId,
+        this.date,
+        this.time,
+        this.imageUrl,
+        this.createdAt});
+
+  data.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    email = json['email'];
+    companyId = json['company_id'];
+    userId = json['userId'];
+    date = json['date'];
+    time = json['time'];
+    imageUrl = json['image_url'];
+    createdAt = json['created_at'] != null
+        ? new CreatedAt.fromJson(json['created_at'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    data['name'] = this.name;
+    data['email'] = this.email;
+    data['company_id'] = this.companyId;
+    data['userId'] = this.userId;
+    data['date'] = this.date;
+    data['time'] = this.time;
+    data['image_url'] = this.imageUrl;
+    if (this.createdAt != null) {
+      data['created_at'] = this.createdAt!.toJson();
+    }
+    return data;
+  }
+}
+
+
 

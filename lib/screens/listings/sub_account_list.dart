@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:RiskSphare/screens/listings/account_list.dart';
+import 'package:RiskSphare/screens/listings/widgets/data_tab.dart';
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -179,6 +180,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     // Determine the number of tabs based on trial status
     int tabCount =
     (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
+    // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
     // int tabCount = trialStatus.isEmpty ? 3 : 2;
     // _tabController = TabController(length: tabCount, vsync: this);
@@ -464,6 +466,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       Tab(
                                                           text:
                                                               'Access Requested'),
+                                                      // Tab(
+                                                      //     text:
+                                                      //         'Data'),
                                                     ],
                                                   ),
                                                 );
@@ -495,6 +500,34 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       ConfigurationTab(
                                           accountId: widget.accountId),
                                     _getComingSoonUI("request"),
+                                    // Consumer2<AccountListProvider, SubAccountListProvider>(
+                                    //   builder: (context, accountListProvider, subAccountListProvider, _) {
+                                    //     final accountList = accountListProvider.accountList;
+                                    //     final subAccountList = subAccountListProvider.subAccountList;
+                                    //     final accountId = accountList.isNotEmpty ? accountList[0].accountId ?? "" : "";
+                                    //     final accountName = accountList.isNotEmpty ? accountList[0].accountName ?? "" : "";
+                                    //     final subaccountId = subAccountList.isNotEmpty ? subAccountList[0].subAccountId ?? "" : "";
+                                    //     return DataTab(
+                                    //       accountId: accountId,
+                                    //       accountName: accountName,
+                                    //       subaccountId: subaccountId,
+                                    //     );
+                                    //   },
+                                    // ),
+                                    // Consumer<AccountListProvider>(
+                                    //   builder: (context, accountListProvider, _) {
+                                    //     final accountId = accountListProvider.accountList.isNotEmpty
+                                    //         ? accountListProvider.accountList[0].accountId ?? ""
+                                    //         : "";
+                                    //
+                                    //     return DataTab(
+                                    //       accountName: accountListProvider.accountList[0].accountName ?? "",
+                                    //       accountId: accountId,
+                                    //       subaccountId: subAccountListProvider
+                                    //           .subAccountList[index].subAccountId.toString(),
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 ),
                               ),

@@ -1,49 +1,40 @@
 {
   "project_info": {
-    "project_number": "781106067514",
-    "firebase_url": "https://project-green-dev-429104-default-rtdb.firebaseio.com",
-    "project_id": "project-green-dev-429104",
-    "storage_bucket": "project-green-dev-429104.appspot.com"
+    "project_number": "160035685335",
+    "project_id": "project-green-r5-1-dev",
+    "storage_bucket": "project-green-r5-1-dev.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:781106067514:android:b65e4a2260608981009d03",
+        "mobilesdk_app_id": "1:160035685335:android:b865c13199ca1c7ba74192",
         "android_client_info": {
           "package_name": "com.example.green"
         }
       },
       "oauth_client": [
         {
-          "client_id": "781106067514-jcspai0npgmd7ah8d7qnpe90n306a2q6.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.green",
-            "certificate_hash": "7d6d9ecf61967bb5f4ba6be82490d51a2f8b78b0"
-          }
-        },
-        {
-          "client_id": "781106067514-vom55o5g9c3l0b0rm7hodtnogl0605vv.apps.googleusercontent.com",
+          "client_id": "160035685335-2v3rl5ubi3nfbtrmgv3e0of5arvgvsdq.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA1bCXCsBjWxXrG7Dd9dN7DaQoYmebfO8Q"
+          "current_key": "AIzaSyCyi6LKiEELcYMibue6T8ecFp8XCzpvd30"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "781106067514-vom55o5g9c3l0b0rm7hodtnogl0605vv.apps.googleusercontent.com",
+              "client_id": "160035685335-2v3rl5ubi3nfbtrmgv3e0of5arvgvsdq.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "781106067514-oousimmbej8n4s58rpem3scc0cbu8c4t.apps.googleusercontent.com",
+              "client_id": "160035685335-k5nrqrurevgf6g2drn9e7samlai8b855.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.green"
+                "bundle_id": "com.zerozilla.risksphere"
               }
             }
           ]
@@ -52,42 +43,34 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:781106067514:android:8825e5964b3e9b50009d03",
+        "mobilesdk_app_id": "1:160035685335:android:484fdbc9507ba9f6a74192",
         "android_client_info": {
-          "package_name": "com.green.qa"
+          "package_name": "com.risksphere.r5dev"
         }
       },
       "oauth_client": [
         {
-          "client_id": "781106067514-cr2tvf2i0952rfnpnaleb25l449qa59r.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.green.qa",
-            "certificate_hash": "7d6d9ecf61967bb5f4ba6be82490d51a2f8b78b0"
-          }
-        },
-        {
-          "client_id": "781106067514-vom55o5g9c3l0b0rm7hodtnogl0605vv.apps.googleusercontent.com",
+          "client_id": "160035685335-2v3rl5ubi3nfbtrmgv3e0of5arvgvsdq.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA1bCXCsBjWxXrG7Dd9dN7DaQoYmebfO8Q"
+          "current_key": "AIzaSyCyi6LKiEELcYMibue6T8ecFp8XCzpvd30"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "781106067514-vom55o5g9c3l0b0rm7hodtnogl0605vv.apps.googleusercontent.com",
+              "client_id": "160035685335-2v3rl5ubi3nfbtrmgv3e0of5arvgvsdq.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "781106067514-oousimmbej8n4s58rpem3scc0cbu8c4t.apps.googleusercontent.com",
+              "client_id": "160035685335-k5nrqrurevgf6g2drn9e7samlai8b855.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.green"
+                "bundle_id": "com.zerozilla.risksphere"
               }
             }
           ]

@@ -743,6 +743,7 @@ class AuthNotifier extends ChangeNotifier {
         ),
       );
     } catch (e) {
+      print(e);
       _isSigningIn = false;
       notifyListeners(); // Stop loader
       print("Error signing in with Google: $e");

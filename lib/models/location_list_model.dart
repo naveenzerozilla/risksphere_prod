@@ -4,10 +4,12 @@ class LocationListModel {
   int? totalHits;
   List<Location>? results;
   double? mainSovRating;
+  bool? isConflict;
+
   int? totalPages;
   List<String>? summaryList = [];
 
-  LocationListModel({this.totalHits, this.results, this.totalPages, this.summaryList, this.mainSovRating = 0.0});
+  LocationListModel({this.totalHits, this.results,this.isConflict,this.totalPages, this.summaryList, this.mainSovRating = 0.0});
 
   LocationListModel.fromJson(Map<String, dynamic> json) {
     totalHits = json['totalHits'];
@@ -17,6 +19,7 @@ class LocationListModel {
         results!.add(Location.fromJson(v));
       });
     }
+    isConflict = json['is_conflict'];
     totalPages = json['totalPages'];
     summaryList = json['summary'] != null ? List<String>.from(json['summary']) : [];
     mainSovRating = json['main_sov_rating'] ?? 0.0;
@@ -28,6 +31,7 @@ class LocationListModel {
     if (results != null) {
       data['results'] = results!.map((v) => v.toJson()).toList();
     }
+    data['is_conflict'] = isConflict;
     data['totalPages'] = totalPages;
     data['summary'] = summaryList;
     data['main_sov_rating'] = mainSovRating;

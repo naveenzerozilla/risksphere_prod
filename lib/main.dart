@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:RiskSphare/providers/connectivity_provider.dart';
+import 'package:RiskSphare/providers/data_list_parameters.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:RiskSphare/firebase_options.dart';
 import 'package:RiskSphare/providers/configuration_provider.dart';
@@ -467,6 +469,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => UserProfileProvider()),
           ChangeNotifierProvider(create: (_) => DashboardProvider()),
           ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
+          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => CorporateProvider()),
           ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
           ChangeNotifierProvider(create: (_) => AccountListProvider()),
@@ -480,18 +483,22 @@ void main() async {
           ChangeNotifierProvider(create: (_) => DrawerSelectionProvider()),
           ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
           ChangeNotifierProvider(create: (_) => NewsFeedProvider()),
+          ChangeNotifierProvider(create: (_) => SubaccountParameterProvider()),
         ],
-        child: const MyApp(),
+        child:  MyApp(),
       ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+   MyApp({super.key});
 
   static final GlobalKey<NavigatorState> navigatorKey =
   GlobalKey<NavigatorState>();
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+  GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -500,6 +507,7 @@ class MyApp extends StatelessWidget {
         print(
             'themeProvider.getTheme.brightness: ${themeProvider.getTheme.brightness}');
         return MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
           title: 'Risk Sphere',

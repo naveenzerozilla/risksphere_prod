@@ -60,7 +60,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
     super.initState();
     _listenToProcessStatus();
     _scrollController = ScrollController();
-    _masterTabController = TabController(length: 3, vsync: this);
+    _masterTabController = TabController(length: 2, vsync: this);
 
     _masterTabController?.addListener(() {
       setState(() {
@@ -638,181 +638,181 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                     ),
                                                   ),
                                           ),
-                                          Tab(
-                                            child: processStatus != "completed"
-                                                ? RichText(
-                                                    text: TextSpan(
-                                                      text: 'Conflicts ',
-                                                      style: typography
-                                                          .Subtitle2.copyWith(
-                                                        color: _currentIndex ==
-                                                                2
-                                                            ? AppColors
-                                                                .primaryMain
-                                                            : Colors.white60,
-                                                      ),
-                                                      children: [
-                                                        WidgetSpan(
-                                                          alignment:
-                                                              PlaceholderAlignment
-                                                                  .middle,
-                                                          child: provider
-                                                                      .conflictLocations
-                                                                      .length >
-                                                                  0
-                                                              ? BlinkingText(
-                                                                  conflictCount:
-                                                                      0,
-                                                                  style: typography
-                                                                          .Subtitle2
-                                                                      .copyWith(
-                                                                    color: Colors
-                                                                        .white,
-                                                                  ),
-                                                                  blinkColor: Colors
-                                                                      .orangeAccent,
-                                                                  defaultColor:
-                                                                      Colors
-                                                                          .red,
-                                                                )
-                                                              : Container(
-                                                                  padding: EdgeInsets
-                                                                      .symmetric(
-                                                                          horizontal:
-                                                                              6,
-                                                                          vertical:
-                                                                              0),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color: Colors
-                                                                        .white12,
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            10),
-                                                                  ),
-                                                                  child:
-                                                                      FutureBuilder(
-                                                                    future: provider
-                                                                            .isInitialLoad
-                                                                        ? Future
-                                                                            .delayed(
-                                                                            Duration(seconds: 2),
-                                                                            () =>
-                                                                                provider.conflictLocations.length,
-                                                                          )
-                                                                        : Future
-                                                                            .value(0),
-                                                                    builder:
-                                                                        (context,
-                                                                            snapshot) {
-                                                                      return Padding(
-                                                                        padding: const EdgeInsets
-                                                                            .only(
-                                                                            bottom:
-                                                                                2.0),
-                                                                        child:
-                                                                            Text(
-                                                                          "0",
-                                                                          style:
-                                                                              TextStyle(color: Colors.white),
-                                                                        ),
-                                                                      );
-                                                                    },
-                                                                  ),
-                                                                ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )
-                                                : RichText(
-                                                    text: TextSpan(
-                                                      text: 'Conflicts ',
-                                                      style: typography
-                                                          .Subtitle2.copyWith(
-                                                        color: _currentIndex ==
-                                                                2
-                                                            ? AppColors
-                                                                .primaryMain
-                                                            : Colors.white60,
-                                                      ),
-                                                      children: [
-                                                        if (processStatus ==
-                                                            "completed")
-                                                          WidgetSpan(
-                                                            alignment:
-                                                                PlaceholderAlignment
-                                                                    .middle,
-                                                            child: provider
-                                                                        .conflictLocations
-                                                                        .length >
-                                                                    0
-                                                                ? BlinkingText(
-                                                                    conflictCount:
-                                                                        provider
-                                                                            .conflictLocations
-                                                                            .length,
-                                                                    style: typography
-                                                                            .Subtitle2
-                                                                        .copyWith(
-                                                                      color: Colors
-                                                                          .white,
-                                                                    ),
-                                                                    blinkColor:
-                                                                        Colors
-                                                                            .orangeAccent,
-                                                                    defaultColor:
-                                                                        Colors
-                                                                            .red,
-                                                                  )
-                                                                : Container(
-                                                                    padding: EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            6,
-                                                                        vertical:
-                                                                            0),
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                          .white12,
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              10),
-                                                                    ),
-                                                                    child:
-                                                                        FutureBuilder(
-                                                                      future: provider
-                                                                              .isInitialLoad
-                                                                          ? Future
-                                                                              .delayed(
-                                                                              Duration(seconds: 1),
-                                                                              () => provider.conflictLocations.length,
-                                                                            )
-                                                                          : Future.value(provider
-                                                                              .conflictLocations
-                                                                              .length),
-                                                                      builder:
-                                                                          (context,
-                                                                              snapshot) {
-                                                                        return Container(
-                                                                          padding:
-                                                                              EdgeInsets.only(bottom: 2),
-                                                                          child:
-                                                                              Text(
-                                                                            snapshot.connectionState == ConnectionState.waiting
-                                                                                ? "0"
-                                                                                : snapshot.data.toString(),
-                                                                            style:
-                                                                                TextStyle(color: Colors.white),
-                                                                          ),
-                                                                        );
-                                                                      },
-                                                                    ),
-                                                                  ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                          ),
+                                          // Tab(
+                                          //   child: processStatus != "completed"
+                                          //       ? RichText(
+                                          //           text: TextSpan(
+                                          //             text: 'Conflicts ',
+                                          //             style: typography
+                                          //                 .Subtitle2.copyWith(
+                                          //               color: _currentIndex ==
+                                          //                       2
+                                          //                   ? AppColors
+                                          //                       .primaryMain
+                                          //                   : Colors.white60,
+                                          //             ),
+                                          //             children: [
+                                          //               WidgetSpan(
+                                          //                 alignment:
+                                          //                     PlaceholderAlignment
+                                          //                         .middle,
+                                          //                 child: provider
+                                          //                             .conflictLocations
+                                          //                             .length >
+                                          //                         0
+                                          //                     ? BlinkingText(
+                                          //                         conflictCount:
+                                          //                             0,
+                                          //                         style: typography
+                                          //                                 .Subtitle2
+                                          //                             .copyWith(
+                                          //                           color: Colors
+                                          //                               .white,
+                                          //                         ),
+                                          //                         blinkColor: Colors
+                                          //                             .orangeAccent,
+                                          //                         defaultColor:
+                                          //                             Colors
+                                          //                                 .red,
+                                          //                       )
+                                          //                     : Container(
+                                          //                         padding: EdgeInsets
+                                          //                             .symmetric(
+                                          //                                 horizontal:
+                                          //                                     6,
+                                          //                                 vertical:
+                                          //                                     0),
+                                          //                         decoration:
+                                          //                             BoxDecoration(
+                                          //                           color: Colors
+                                          //                               .white12,
+                                          //                           borderRadius:
+                                          //                               BorderRadius.circular(
+                                          //                                   10),
+                                          //                         ),
+                                          //                         child:
+                                          //                             FutureBuilder(
+                                          //                           future: provider
+                                          //                                   .isInitialLoad
+                                          //                               ? Future
+                                          //                                   .delayed(
+                                          //                                   Duration(seconds: 2),
+                                          //                                   () =>
+                                          //                                       provider.conflictLocations.length,
+                                          //                                 )
+                                          //                               : Future
+                                          //                                   .value(0),
+                                          //                           builder:
+                                          //                               (context,
+                                          //                                   snapshot) {
+                                          //                             return Padding(
+                                          //                               padding: const EdgeInsets
+                                          //                                   .only(
+                                          //                                   bottom:
+                                          //                                       2.0),
+                                          //                               child:
+                                          //                                   Text(
+                                          //                                 "0",
+                                          //                                 style:
+                                          //                                     TextStyle(color: Colors.white),
+                                          //                               ),
+                                          //                             );
+                                          //                           },
+                                          //                         ),
+                                          //                       ),
+                                          //               ),
+                                          //             ],
+                                          //           ),
+                                          //         )
+                                          //       : RichText(
+                                          //           text: TextSpan(
+                                          //             text: 'Conflicts ',
+                                          //             style: typography
+                                          //                 .Subtitle2.copyWith(
+                                          //               color: _currentIndex ==
+                                          //                       2
+                                          //                   ? AppColors
+                                          //                       .primaryMain
+                                          //                   : Colors.white60,
+                                          //             ),
+                                          //             children: [
+                                          //               if (processStatus ==
+                                          //                   "completed")
+                                          //                 WidgetSpan(
+                                          //                   alignment:
+                                          //                       PlaceholderAlignment
+                                          //                           .middle,
+                                          //                   child: provider
+                                          //                               .conflictLocations
+                                          //                               .length >
+                                          //                           0
+                                          //                       ? BlinkingText(
+                                          //                           conflictCount:
+                                          //                               provider
+                                          //                                   .conflictLocations
+                                          //                                   .length,
+                                          //                           style: typography
+                                          //                                   .Subtitle2
+                                          //                               .copyWith(
+                                          //                             color: Colors
+                                          //                                 .white,
+                                          //                           ),
+                                          //                           blinkColor:
+                                          //                               Colors
+                                          //                                   .orangeAccent,
+                                          //                           defaultColor:
+                                          //                               Colors
+                                          //                                   .red,
+                                          //                         )
+                                          //                       : Container(
+                                          //                           padding: EdgeInsets.symmetric(
+                                          //                               horizontal:
+                                          //                                   6,
+                                          //                               vertical:
+                                          //                                   0),
+                                          //                           decoration:
+                                          //                               BoxDecoration(
+                                          //                             color: Colors
+                                          //                                 .white12,
+                                          //                             borderRadius:
+                                          //                                 BorderRadius.circular(
+                                          //                                     10),
+                                          //                           ),
+                                          //                           child:
+                                          //                               FutureBuilder(
+                                          //                             future: provider
+                                          //                                     .isInitialLoad
+                                          //                                 ? Future
+                                          //                                     .delayed(
+                                          //                                     Duration(seconds: 1),
+                                          //                                     () => provider.conflictLocations.length,
+                                          //                                   )
+                                          //                                 : Future.value(provider
+                                          //                                     .conflictLocations
+                                          //                                     .length),
+                                          //                             builder:
+                                          //                                 (context,
+                                          //                                     snapshot) {
+                                          //                               return Container(
+                                          //                                 padding:
+                                          //                                     EdgeInsets.only(bottom: 2),
+                                          //                                 child:
+                                          //                                     Text(
+                                          //                                   snapshot.connectionState == ConnectionState.waiting
+                                          //                                       ? "0"
+                                          //                                       : snapshot.data.toString(),
+                                          //                                   style:
+                                          //                                       TextStyle(color: Colors.white),
+                                          //                                 ),
+                                          //                               );
+                                          //                             },
+                                          //                           ),
+                                          //                         ),
+                                          //                 ),
+                                          //             ],
+                                          //           ),
+                                          //         ),
+                                          // ),
                                         ],
                                       ),
                                     ),
@@ -1138,15 +1138,15 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         accountName: widget.accountName,
                         tempId: widget.tempId,
                       ),
-                      ConflictsTab(
-                        subAccountName: widget.subAccountName,
-                        processId: widget.processId,
-                        accountId: widget.accountId,
-                        subAccountId: widget.subAccountId,
-                        accountName: widget.accountName,
-                        tempId: widget.tempId,
-                        masterTabController: _masterTabController,
-                      ),
+                      // ConflictsTab(
+                      //   subAccountName: widget.subAccountName,
+                      //   processId: widget.processId,
+                      //   accountId: widget.accountId,
+                      //   subAccountId: widget.subAccountId,
+                      //   accountName: widget.accountName,
+                      //   tempId: widget.tempId,
+                      //   masterTabController: _masterTabController,
+                      // ),
                     ],
                   ),
                 ),
@@ -1291,41 +1291,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           SizedBox(height: 16),
                           MessageCard(
                             messageTextSpans: [
-                              TextSpan(
-                                text: "Please review the list of ",
-                                style: typography.Body2,
-                              ),
-                              TextSpan(
-                                text: "duplicate",
-                                style: typography.Body2.copyWith(
-                                  color: AppColors.primaryMain,
-                                  decoration: TextDecoration.underline,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    _masterTabController?.animateTo(
-                                        1); // Navigate to Geocode tab
-                                  },
-                              ),
-                              TextSpan(
-                                text: " locations and resolve any ",
-                                style: typography.Body2,
-                              ),
-                              TextSpan(
-                                text: "conflicts",
-                                style: typography.Body2.copyWith(
-                                  color: AppColors.primaryMain,
-                                  decoration: TextDecoration.underline,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    _masterTabController?.animateTo(
-                                        2); // Navigate to Conflicts tab
-                                  },
-                              ),
-                              TextSpan(
-                                text: ".",
-                                style: typography.Body2,
+                              TextSpan(text:"Please review the list of duplicate locations.",
+                                style: TextStyle(color: Colors.orange,fontSize: 13)
                               ),
                             ],
                           )
@@ -1334,7 +1301,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                     ),
                   )
                 : Expanded(
-                    child: ListView.builder(
+                    child:
+                    ListView.builder(
                       itemCount: provider.geocodingList.length,
                       itemBuilder: (context, index) {
                         final location = provider.geocodingList[index];
@@ -1371,47 +1339,83 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                 StatefulBuilder(
                                   builder: (context, setStateLocal) {
                                     return Checkbox(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
-                                        value: location['isChecked'] ?? false,
-                                        onChanged: (bool? value) {
-                                          if (value == null) return;
+                                      value: location['isChecked'] ?? false,
+                                      onChanged: (bool? value) {
+                                        if (value == null) return;
 
-                                          setState(() {
-                                            location['isChecked'] = value;
+                                        final currentOffset = _scrollController.offset;
 
-                                            if (value) {
-                                              // Add to selectedLocations if checked
-                                              if (!selectedLocations.any(
-                                                  (item) =>
-                                                      item['id'] ==
-                                                      location['id'])) {
-                                                selectedLocations.add(location);
-                                              }
-                                            } else {
-                                              // Remove from selectedLocations if unchecked
-                                              selectedLocations.removeWhere(
-                                                  (item) =>
-                                                      item['id'] ==
-                                                      location['id']);
-
-                                              // Uncheck "Select All" if any single checkbox is unchecked
-                                              _selectAll = false;
-                                            }
-
-                                            // If ALL locations are selected, update "Select All"
-                                            if (provider.geocodingList.every(
-                                                (item) =>
-                                                    item['isChecked'] ==
-                                                    true)) {
-                                              _selectAll = true;
-                                            }
-                                          });
+                                        setStateLocal(() {
+                                          location['isChecked'] = value;
                                         });
+
+                                        if (value) {
+                                          if (!selectedLocations.any((item) => item['id'] == location['id'])) {
+                                            selectedLocations.add(location);
+                                          }
+                                        } else {
+                                          selectedLocations.removeWhere((item) => item['id'] == location['id']);
+                                          _selectAll = false;
+                                        }
+
+                                        if (provider.geocodingList.every((item) => item['isChecked'] == true)) {
+                                          _selectAll = true;
+                                        }
+
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          if (_scrollController.hasClients) {
+                                            _scrollController.jumpTo(currentOffset);
+                                          }
+                                        });
+                                      },
+                                    );
                                   },
                                 ),
+
+                                // StatefulBuilder(
+                                //   builder: (context, setStateLocal) {
+                                //     return Checkbox(
+                                //         shape: RoundedRectangleBorder(
+                                //           borderRadius:
+                                //               BorderRadius.circular(6),
+                                //         ),
+                                //         value: location['isChecked'] ?? false,
+                                //         onChanged: (bool? value) {
+                                //           if (value == null) return;
+                                //
+                                //           setState(() {
+                                //             location['isChecked'] = value;
+                                //
+                                //             if (value) {
+                                //               // Add to selectedLocations if checked
+                                //               if (!selectedLocations.any(
+                                //                   (item) =>
+                                //                       item['id'] ==
+                                //                       location['id'])) {
+                                //                 selectedLocations.add(location);
+                                //               }
+                                //             } else {
+                                //               // Remove from selectedLocations if unchecked
+                                //               selectedLocations.removeWhere(
+                                //                   (item) =>
+                                //                       item['id'] ==
+                                //                       location['id']);
+                                //
+                                //               // Uncheck "Select All" if any single checkbox is unchecked
+                                //               _selectAll = false;
+                                //             }
+                                //
+                                //             // If ALL locations are selected, update "Select All"
+                                //             if (provider.geocodingList.every(
+                                //                 (item) =>
+                                //                     item['isChecked'] ==
+                                //                     true)) {
+                                //               _selectAll = true;
+                                //             }
+                                //           });
+                                //         });
+                                //   },
+                                // ),
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Column(

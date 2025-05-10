@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphare/design_system/components/custom_toast.dart';
@@ -87,9 +88,11 @@ class NewsFeedProvider extends ChangeNotifier {
           _selectedHazard =="All"?
           '?hazard=${hazard ?? _selectedHazard}': '?activity=${_selectedHazard.toLowerCase()}';
       // String url = '?hazard=${hazard ?? _selectedHazard}';
-
       if (startDate != null && endDate != null) {
-        url += '&start_date=${startDate.toIso8601String()}&end_date=${endDate.toIso8601String()}';
+        final dateFormat = DateFormat('yyyy-MM-dd');
+        final formattedStartDate = dateFormat.format(startDate);
+        final formattedEndDate = dateFormat.format(endDate);
+        url += '&start_date=$formattedStartDate&end_date=$formattedEndDate';
       }
 
       if (keyword != null && keyword.isNotEmpty) {
@@ -228,7 +231,7 @@ class NewsFeedProvider extends ChangeNotifier {
     if (_startDate != start || _endDate != end) {
       _startDate = start;
       _endDate = end;
-      fetchNewsFeed();
+      fetchNewsFeed(startDate: _startDate,endDate: _endDate);
     }
     notifyListeners();
   }

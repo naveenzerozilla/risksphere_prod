@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:RiskSphare/models/companymodel.dart';
+
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
@@ -33,6 +34,8 @@ import '../../service/language_service.dart';
 import '../../utils/utils.dart';
 
 import 'package:country_picker/country_picker.dart' as country_picker;
+
+import '../terms_privacy.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   final UserCredential? userCredential;
@@ -148,6 +151,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _showPasswordConfirmationCorporate = false;
 
   bool _showPasswordCorporate = false;
+  bool _termsAccepted = false;
+  bool _privacyAccepted = false;
 
   @override
   void initState() {
@@ -277,7 +282,79 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ],
                       ),
                     ),*/
-                  SizedBox(height: CustomSpacing.eight),
+                  SizedBox(height: CustomSpacing.three),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _termsAccepted,
+                              onChanged: (value) {
+                                setState(() {
+                                  _termsAccepted = value!;
+                                });
+                              },
+                            ),
+                            Text("I accept the "),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TermsPage(
+                                      title: 'Terms & conditions',
+                                      url:
+                                          'https://www.risksphere.ai/terms-and-conditions/', // replace with your actual URL
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                "Terms & conditions",
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _privacyAccepted,
+                              onChanged: (value) {
+                                setState(() {
+                                  _privacyAccepted = value!;
+                                });
+                              },
+                            ),
+                            Text("I accept the "),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TermsPage(
+                                      title: 'Privacy Policy',
+                                      url:
+                                          'https://www.risksphere.ai/privacy-policy/', // replace with your actual URL
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                "Privacy Policy",
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: CustomSpacing.three),
                   Row(
                     children: [
                       Expanded(
@@ -298,6 +375,28 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                         horizontal: 22, vertical: 8),
                                   ),
                                   onPressed: () async {
+                                    if (!_termsAccepted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Please accept the Terms & Conditions.'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (!_privacyAccepted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Please accept the Privacy Policy.'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
                                     if (_formKey.currentState!.validate()) {
                                       /* if(isCaptchaVerified == false) {
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1164,13 +1263,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 return null;
               },
               builder: (FormFieldState<String> fieldState) {
-                return
-                  Column(
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextField(
                       readOnly: true,
-                      controller: TextEditingController(text:""),
+                      controller: TextEditingController(text: ""),
                       onTap: () {
                         showModalBottomSheet(
                           context: context,
@@ -1184,18 +1282,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               addChip: (role) {
                                 setState(() {
                                   _selectedRoles.add(role);
-                                  _textEditingController.text =
-                                      _selectedRoles.map((e) => e.name!).join(', ');
+                                  _textEditingController.text = _selectedRoles
+                                      .map((e) => e.name!)
+                                      .join(', ');
                                   fieldState.didChange(role.name);
                                 });
                               },
                               removeChip: (role) {
                                 setState(() {
                                   _selectedRoles.remove(role);
-                                  _textEditingController.text = _selectedRoles.isEmpty
-                                      ? ''
-                                      : _selectedRoles.map((e) => e.name!).join(', ');
-                                  fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
+                                  _textEditingController.text =
+                                      _selectedRoles.isEmpty
+                                          ? ''
+                                          : _selectedRoles
+                                              .map((e) => e.name!)
+                                              .join(', ');
+                                  fieldState.didChange(_selectedRoles.isEmpty
+                                      ? null
+                                      : role.name);
                                 });
                               },
                               removeAllChips: () {
@@ -1205,7 +1309,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                   fieldState.didChange(null);
                                 });
                               },
-                              selectedOption: _selectedOption ?? SignUpOptions.individual,
+                              selectedOption:
+                                  _selectedOption ?? SignUpOptions.individual,
                               onOptionChanged: (SignUpOptions option) {
                                 setState(() {
                                   _selectedOption = option;
@@ -1220,8 +1325,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: LanguageService.getTranslated(
-                                    context, "register_non_corporate_role_field_label"),
+                                text: LanguageService.getTranslated(context,
+                                    "register_non_corporate_role_field_label"),
                               ),
                               TextSpan(
                                 text: " *",
@@ -1253,18 +1358,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                     setState(() {
                                       _selectedRoles.add(role);
                                       _textEditingController.text =
-                                          _selectedRoles.map((e) => e.name!).join(', ');
+                                          _selectedRoles
+                                              .map((e) => e.name!)
+                                              .join(', ');
                                       fieldState.didChange(role.name);
                                     });
                                   },
                                   removeChip: (role) {
                                     setState(() {
                                       _selectedRoles.remove(role);
-                                      _textEditingController.text = _selectedRoles.isEmpty
-                                          ? ''
-                                          : _selectedRoles.map((e) => e.name!).join(', ');
+                                      _textEditingController.text =
+                                          _selectedRoles.isEmpty
+                                              ? ''
+                                              : _selectedRoles
+                                                  .map((e) => e.name!)
+                                                  .join(', ');
                                       fieldState.didChange(
-                                          _selectedRoles.isEmpty ? null : role.name);
+                                          _selectedRoles.isEmpty
+                                              ? null
+                                              : role.name);
                                     });
                                   },
                                   removeAllChips: () {
@@ -1274,8 +1386,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       fieldState.didChange(null);
                                     });
                                   },
-                                  selectedOption: _selectedOption ?? SignUpOptions.individual,
-                                  onOptionChanged: (SignUpOptions signUpOptions) {
+                                  selectedOption: _selectedOption ??
+                                      SignUpOptions.individual,
+                                  onOptionChanged:
+                                      (SignUpOptions signUpOptions) {
                                     setState(() {
                                       _selectedOption = signUpOptions;
                                     });
@@ -1287,33 +1401,39 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ),
                         prefixIcon: _selectedRoles.isNotEmpty
                             ? SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: _selectedRoles.map((role) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 12.0,left:12),
-                                child: Chip(
-                                  label: Text(role.name!),
-                                  deleteIcon: const Icon(Icons.cancel),
-                                  onDeleted: () {
-                                    setState(() {
-                                      _selectedRoles.remove(role);
-                                      _textEditingController.text = _selectedRoles.isEmpty
-                                          ? ''
-                                          : _selectedRoles.map((e) => e.name!).join(', ');
-                                      fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
-                                    });
-                                  },
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: _selectedRoles.map((role) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 12.0, left: 12),
+                                      child: Chip(
+                                        label: Text(role.name!),
+                                        deleteIcon: const Icon(Icons.cancel),
+                                        onDeleted: () {
+                                          setState(() {
+                                            _selectedRoles.remove(role);
+                                            _textEditingController.text =
+                                                _selectedRoles.isEmpty
+                                                    ? ''
+                                                    : _selectedRoles
+                                                        .map((e) => e.name!)
+                                                        .join(', ');
+                                            fieldState.didChange(
+                                                _selectedRoles.isEmpty
+                                                    ? null
+                                                    : role.name);
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        )
+                              )
                             : null,
                       ),
                     ),
-
 
                     // TextField(
                     //   readOnly: true,
@@ -1473,7 +1593,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     // ),
                   ],
                 );
-
               },
             ),
           ],
@@ -1836,60 +1955,60 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   valueListenable: authNotifier.companyOptionsNotifier,
                   builder: (context, companyOptions, _) {
                     return Autocomplete<Companies>(
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        print(
-                            'Options builder called with: ${textEditingValue.text}');
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          print(
+                              'Options builder called with: ${textEditingValue.text}');
 
-                        if (textEditingValue.text.isEmpty) {
-                          return const Iterable<Companies>.empty();
-                        }
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Companies>.empty();
+                          }
 
-                        final filteredOptions = List<Companies>.from(
-                            companyOptions.where((Companies) =>
-                                Companies.name.toLowerCase().contains(
-                                    textEditingValue.text.toLowerCase())));
-                        print('Filtered options count: ${filteredOptions.length}');
-                        return filteredOptions;
-                      },
-                      onSelected: (Companies selection) {
-                        print('Selected: ${selection.name}');
-                        _textEditingController.text = selection.name;
-                        companyDisplayNameController.text =
-                            selection.name;
-                        setState(() {
-                          _enableCompanyTypeDropdown = false;
-                        });
-                      },
-                      displayStringForOption: (Companies option) =>
-                          option.name,
-                      fieldViewBuilder: (context, textEditingController,
-                          focusNode, onFieldSubmitted) {
-                        _textEditingController = textEditingController;
-                        return TextFormField(
-                          controller: textEditingController,
-                          focusNode: focusNode,
-                          decoration: InputDecoration(
-                            labelText: "Company Name",
-                            hintText: "Enter company name...",
-                            border: const OutlineInputBorder(),
-                            suffixIcon: isLoading
-                                ? const Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    ),
-                                  )
-                                : const Icon(Icons.search),
-                          ),
-
-                        );
-                      },
+                          final filteredOptions = List<Companies>.from(
+                              companyOptions.where((Companies) => Companies.name
+                                  .toLowerCase()
+                                  .contains(
+                                      textEditingValue.text.toLowerCase())));
+                          print(
+                              'Filtered options count: ${filteredOptions.length}');
+                          return filteredOptions;
+                        },
+                        onSelected: (Companies selection) {
+                          print('Selected: ${selection.name}');
+                          _textEditingController.text = selection.name;
+                          companyDisplayNameController.text = selection.name;
+                          setState(() {
+                            _enableCompanyTypeDropdown = false;
+                          });
+                        },
+                        displayStringForOption: (Companies option) =>
+                            option.name,
+                        fieldViewBuilder: (context, textEditingController,
+                            focusNode, onFieldSubmitted) {
+                          _textEditingController = textEditingController;
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: "Company Name",
+                              hintText: "Enter company name...",
+                              border: const OutlineInputBorder(),
+                              suffixIcon: isLoading
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(10),
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      ),
+                                    )
+                                  : const Icon(Icons.search),
+                            ),
+                          );
+                        },
                         optionsViewBuilder: (context, onSelected, options) {
-                        print("options");
-                        print(options);
+                          print("options");
+                          print(options);
                           return StatefulBuilder(
                             builder: (context, setState) {
                               return Align(
@@ -1897,18 +2016,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 child: Material(
                                   elevation: 4.0,
                                   child: Container(
-                                    width: MediaQuery.of(context).size.width * 0.9,
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.9,
                                     constraints: BoxConstraints(maxHeight: 130),
                                     child: ListView.builder(
                                       padding: EdgeInsets.zero,
                                       itemCount: options.length,
-                                      itemBuilder: (BuildContext context, int index) {
+                                      itemBuilder:
+                                          (BuildContext context, int index) {
                                         final option = options.elementAt(index);
                                         return ListTile(
                                           title: Text(option.name),
                                           onTap: () {
                                             onSelected(option);
-                                            setState(() {}); // Ensures UI updates
+                                            setState(
+                                                () {}); // Ensures UI updates
                                           },
                                         );
                                       },
@@ -1918,9 +2040,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               );
                             },
                           );
-                        }
-
-                    );
+                        });
                   },
                 ),
               ],

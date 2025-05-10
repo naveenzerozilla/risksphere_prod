@@ -28,10 +28,14 @@ import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../models/location_list_model.dart';
+import '../../providers/configuration_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:RiskSphare/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
 import 'widgets/geocoding_list_card.dart';
 
 class LocationList extends StatefulWidget {
@@ -99,6 +103,7 @@ class _LocationListState extends State<LocationList>
   String? _uploadedFileName;
   TextEditingController _sovNameController = TextEditingController();
   late File files;
+  String isMaintenance = "";
 
   TabController? _mainTabController;
   int selectedMainTab = 0;
@@ -181,6 +186,26 @@ class _LocationListState extends State<LocationList>
     _getData();
   }
 
+  @override
+  void dispose() {
+    // Cancel the debouncer timer if it's active
+    deBouncer?.cancel();
+
+    mobileController.dispose();
+    _sovNameController.dispose();
+
+    // Dispose TabControllers if not null
+    _tabController?.dispose();
+    _mainTabController?.dispose();
+    _connectionsTabController?.dispose();
+
+    // Nullify file if needed (no dispose, but cleanup reference)
+    // files = null; // Optional, if you want to release it
+
+    // Finally call super
+    super.dispose();
+  }
+
   void _getData() async {
     // Fetch data from API
     Provider.of<LocationListProvider>(context, listen: false)
@@ -215,6 +240,77 @@ class _LocationListState extends State<LocationList>
     );
     Provider.of<LocationListProvider>(context, listen: false)
         .fetchCampusIds(widget.accountId, widget.subAccountId, widget.sovId);
+  }
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+
+    print(results.toString());
+
+    print("results.toString()");
+
+
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+
+
+    _getData1();
+    _getMaintainancePeriod();
+    setState(() {});
+  }
+  Future<void> _getMaintainancePeriod() async {
+    isMaintenance =
+        await SharedPreferenceService.getScheduleInProgress() ?? "false";
+  }
+  Future<void> _getData1() async {
+    final dashboardProvider =
+    Provider.of<DashboardProvider>(context, listen: false);
+    final userProfileProvider =
+    Provider.of<UserProfileProvider>(context, listen: false);
+    final configurationProvider =
+    Provider.of<ConfigurationProvider>(context, listen: false);
+
+    try {
+      final results = await Future.wait([
+        dashboardProvider.getDashboardData(context),
+        userProfileProvider.getAllUserData(context, "", ""),
+        configurationProvider.getConfiguration(
+            accountId: null, subAccountId: null),
+        configurationProvider.getVendors(),
+      ]);
+
+      userProfileProvider.fetchTrialInfo();
+
+      var config = configurationProvider.configurations['result'] ?? {};
+      // subscriptions = config['subscribe'] ?? {};
+
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            // vendorList = configurationProvider.vendors['result'] ?? [];
+          });
+        });
+      }
+    } catch (error) {
+      print("Error fetching data: $error");
+    }
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -308,7 +404,8 @@ class _LocationListState extends State<LocationList>
                           _selectedScreen = Screens.addLocation;
                           Navigator.of(context)
                               .push(MaterialPageRoute(
-                            builder: (_) => AddLocationScreen(
+                            builder: (_) =>
+                                AddLocationScreen(
                               accountId: widget.accountId,
                               subAccountId: widget.subAccountId,
                               sovId: widget.sovId,
@@ -317,6 +414,8 @@ class _LocationListState extends State<LocationList>
                             ),
                           ))
                               .then((value) {
+
+                            _setClaims();
                             _getData();
                           });
                         },
@@ -861,12 +960,13 @@ class _LocationListState extends State<LocationList>
     return InkWell(
       onTap: () {
         print('Going to page $index');
+        deBouncer!.cancel();
         var locationListProvider =
             Provider.of<LocationListProvider>(context, listen: false);
         // Open location details screen
-        Navigator.of(context)
-            .push(MaterialPageRoute(
-          builder: (_) => LocationProfile(
+        Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext newContext) => LocationProfile(
 
             accountId: widget.accountId,
             accountName: widget.companyName,
@@ -881,6 +981,7 @@ class _LocationListState extends State<LocationList>
           ),
         ))
             .then((_) {
+
           // Call getData after pop
           _getData();
         });

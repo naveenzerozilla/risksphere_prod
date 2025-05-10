@@ -110,10 +110,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     isAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_ADMIN)??false;
     isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;
     isIndivudual = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.Is_Indivudual)??false;
-
-print(results.toString());
-print(isIndivudual);
-print("results.toString()");
+  
+  print(results.toString());
+  print(isIndivudual);
+  print("results.toString()");
 
     showTotalCorporates = results[0] ?? false;
     showAllUsers = results[1] ?? false;

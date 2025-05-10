@@ -11,6 +11,7 @@ import 'package:RiskSphare/service/api_service.dart';
 import 'package:RiskSphare/utils/api_constants.dart';
 
 import '../service/language_service.dart';
+import '../utils/toast.dart';
 
 class SubAccountListProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -34,8 +35,11 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   bool _isDeleteLocationLoading = false;
+
   bool get isDeleteLocationLoading => _isDeleteLocationLoading;
+
   set isDeleteLocationLoading(bool value) {
     _isDeleteLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -255,63 +259,80 @@ class SubAccountListProvider extends ChangeNotifier {
       int page,
       int pageSize) async {
     var typography = CustomTypography(context);
-    try {
-      if (page == 1) {
-        isLoading = true;
-      } else {
-        isNextPageLoading = true;
+    bool isConnectedToInternet = await checkIsConnectedToInternet();
+    if (isConnectedToInternet != "ConnectivityResult.none") {
+      var typography = CustomTypography(context);
+      try {
+        if (page == 1) {
+          isLoading = true;
+        } else {
+          isNextPageLoading = true;
+        }
+
+        ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST +
+            "/sub_accounts?account_id=$selectedAccountId");
+        String url = '&page=$page&pageSize=$pageSize';
+        if (searchQuery.isNotEmpty) {
+          url += '&search=$searchQuery';
+        }
+
+        var response = await apiService.get(url);
+        log(response.toString());
+
+        SubAccountListModel subAccountListModel =
+            SubAccountListModel.fromJson(response);
+
+        showOwner = subAccountListModel.settings?.owner ?? true;
+        showSovCount = subAccountListModel.settings?.sovCount ?? true;
+        totalRecords = subAccountListModel.totalHits ?? 0;
+        totalPages = totalRecords ~/ pageSize;
+
+        //totalPages = subAccountListModel.totalPages??1;
+        if (page == 1) {
+          subAccountList = subAccountListModel.results ?? [];
+        } else {
+          addToSubAccountList(subAccountListModel.results ?? []);
+        }
+        log(subAccountList.toString());
+        log(totalPages.toString());
+        log(page.toString());
+        isLoading = false;
+        isNextPageLoading = false;
+      } on BackendException catch (e, stackTrace) {
+        isLoading = false;
+        isNextPageLoading = false;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            e.message,
+            style: typography.Body1,
+          ),
+        ));
+        print(stackTrace);
+      } catch (e, stackTrace) {
+        isLoading = false;
+        isNextPageLoading = false;
+        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        //   content: Text(
+        //     e.toString(),
+        //     style: typography.Body1,
+        //   ),
+        // ));
+        print(e);
+        print(stackTrace);
       }
-
-      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST +
-          "/sub_accounts?account_id=$selectedAccountId");
-      String url = '&page=$page&pageSize=$pageSize';
-      if (searchQuery.isNotEmpty) {
-        url += '&search=$searchQuery';
-      }
-
-      var response = await apiService.get(url);
-      log(response.toString());
-
-      SubAccountListModel subAccountListModel =
-          SubAccountListModel.fromJson(response);
-
-      showOwner = subAccountListModel.settings?.owner ?? true;
-      showSovCount = subAccountListModel.settings?.sovCount ?? true;
-      totalRecords = subAccountListModel.totalHits ?? 0;
-      totalPages = totalRecords ~/ pageSize;
-
-      //totalPages = subAccountListModel.totalPages??1;
-      if (page == 1) {
-        subAccountList = subAccountListModel.results ?? [];
-      } else {
-        addToSubAccountList(subAccountListModel.results ?? []);
-      }
-      log(subAccountList.toString());
-      log(totalPages.toString());
-      log(page.toString());
-      isLoading = false;
-      isNextPageLoading = false;
-    } on BackendException catch (e, stackTrace) {
-      isLoading = false;
-      isNextPageLoading = false;
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          e.message,
+          "Please check your internet connectivity and try again",
           style: typography.Body1,
         ),
       ));
-      print(stackTrace);
-    } catch (e, stackTrace) {
-      isLoading = false;
-      isNextPageLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          e.toString(),
-          style: typography.Body1,
-        ),
-      ));
-      print(e);
-      print(stackTrace);
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     pleaseCheckYourInternetConnectivityAndTryAgain.toString(),
+      //     style: typography.Body1,
+      //   ),
+      // ));
     }
   }
 
@@ -360,13 +381,14 @@ class SubAccountListProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteAccount(BuildContext context, String accountId,String subaccountId) async {
+  Future<bool> deleteAccount(
+      BuildContext context, String accountId, String subaccountId) async {
     try {
       isDeleteLocationLoading = true;
       notifyListeners(); // Notify UI to update the button state
 
-      ApiService apiService =
-          ApiService("${AppConstant.DELETE_SUB_ACCOUNT}account_id=$accountId&sub_account_id=$subaccountId");
+      ApiService apiService = ApiService(
+          "${AppConstant.DELETE_SUB_ACCOUNT}account_id=$accountId&sub_account_id=$subaccountId");
       var response = await apiService.delete({});
 
       log(response.toString());

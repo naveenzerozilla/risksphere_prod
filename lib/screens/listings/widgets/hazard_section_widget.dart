@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../models/my_location_list_model.dart';
@@ -14,6 +15,30 @@ class HazardsSection extends StatelessWidget {
   ];
 
   HazardsSection({required this.hazards});
+
+  final Map<String, int> hazardOrder = {
+    'Hurricane': 1,
+    'Earthquake': 2,
+    'Wildfire': 3,
+    'CoastalFlood': 4,
+    'RiverineFlood': 5,
+    'Avalanche': 6,
+    'ColdWave': 7,
+    // 'CommunityResilience': 8,
+    'Drought': 8,
+    'Hail': 9,
+    'HeatWave': 10,
+    'IceStorm': 11,
+    'Landslide': 12,
+    'Lightning': 13,
+    'StrongWind': 14,
+    // 'Overall': 15,
+    // 'SocialVulnerability': 16,
+    'Tornado': 15,
+    'Tsunami': 16,
+    'VolcanicActivity': 17,
+    'WinterWeather': 18,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +61,12 @@ class HazardsSection extends StatelessWidget {
                       ),
                     ),
                   ]
-                : hazards.entries.map((entry) {
+                : hazards.entries.toList().sorted((a, b) {
+                    final orderA =
+                        hazardOrder[a.key] ?? 999; // If not found, put at end
+                    final orderB = hazardOrder[b.key] ?? 999;
+                    return orderA.compareTo(orderB);
+                  }).map((entry) {
                     final hazardName = entry.key;
                     final hazard = entry.value;
                     final rating = hazard.rating ?? 0;
@@ -100,6 +130,83 @@ class HazardsSection extends StatelessWidget {
                     );
                   }).toList(),
           ),
+
+          // Column(
+          //   children: hazards.entries.isEmpty
+          //       ? [
+          //           Padding(
+          //             padding: const EdgeInsets.all(16.0),
+          //             child: Text(
+          //               "No risk score data to show",
+          //               style: typography.Body2.copyWith(
+          //                   fontWeight: FontWeight.w500),
+          //             ),
+          //           ),
+          //         ]
+          //       : hazards.entries.map((entry) {
+          //           final hazardName = entry.key;
+          //           final hazard = entry.value;
+          //           final rating = hazard.rating ?? 0;
+          //           final color = rating >= 0 && rating < scoreColors.length
+          //               ? scoreColors[rating]
+          //               : Colors.grey;
+          //
+          //           return ExpansionTile(
+          //             shape: RoundedRectangleBorder(
+          //               borderRadius: BorderRadius.circular(12),
+          //             ),
+          //             tilePadding: const EdgeInsets.symmetric(horizontal: 12.0),
+          //             title: Row(
+          //               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //               children: [
+          //                 Text(
+          //                   hazardName,
+          //                   style: typography.Body2.copyWith(
+          //                       fontWeight: FontWeight.w500),
+          //                 ),
+          //                 Container(
+          //                   padding: EdgeInsets.symmetric(
+          //                       horizontal: 12, vertical: 8),
+          //                   decoration: BoxDecoration(
+          //                     color: color,
+          //                     borderRadius: BorderRadius.circular(8),
+          //                   ),
+          //                   child: Text(
+          //                     rating != 0 ? rating.toString() : 'N/A',
+          //                     style: typography.Body2.copyWith(
+          //                       color: Colors.white,
+          //                       fontWeight: FontWeight.w500,
+          //                     ),
+          //                   ),
+          //                 ),
+          //               ],
+          //             ),
+          //             trailing: Icon(Icons.arrow_drop_down,
+          //                 color: Theme.of(context).colorScheme.onSurface),
+          //             children: [
+          //               Container(
+          //                 padding: const EdgeInsets.all(12.0),
+          //                 decoration: BoxDecoration(
+          //                   color: Theme.of(context)
+          //                       .colorScheme
+          //                       .surfaceContainerHighest,
+          //                   borderRadius: BorderRadius.circular(12),
+          //                   boxShadow: [
+          //                     BoxShadow(
+          //                       color: Colors.black12,
+          //                       blurRadius: 4,
+          //                       offset: Offset(0, 2),
+          //                     ),
+          //                   ],
+          //                 ),
+          //                 child: SingleChildScrollView(
+          //                   child: _buildVendorDetails(hazard, typography),
+          //                 ),
+          //               ),
+          //             ],
+          //           );
+          //         }).toList(),
+          // ),
         ),
       ),
     );

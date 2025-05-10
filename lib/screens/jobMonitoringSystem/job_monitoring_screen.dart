@@ -269,7 +269,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
     required int totalLocations,
     required int successCount,
     required int failureCount,
-    required Map<String, dynamic> jobData,
+    required dynamic jobData,
   }) {
     print('Job data: $jobData');
     var typography = CustomTypography(context);
@@ -329,13 +329,21 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     children: [
                       Tooltip(
                         message: jobId,
-                        child: Text(
-
-                          jobData["process_name"] ?? "Process",
+                        child:
+                        Text(
+                          (jobData["process_name"] is Map)
+                              ? jobData["process_name"]["filename"].toString()
+                              : jobData["process_name"]?.toString() ?? "Process",
                           style: typography.Body1.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        // Text(
+                        //   jobData["process_name"]?["filename"].toString() ?? "Process",
+                        //   style: typography.Body1.copyWith(
+                        //     fontWeight: FontWeight.w500,
+                        //   ),
+                        // ),
                       ),
                       SizedBox(height: 8),
                       Row(
@@ -1270,7 +1278,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                   Tooltip(
                     message: selectedProcessId,
                     child: Text(
-                      summaryData?["result"]?['process_name'] ?? "Process",
+                      "",
+                      // summaryData?["result"]?['process_name'] ?? "Process",
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w500,
                       ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphare/models/account_list_model.dart';
@@ -10,6 +11,7 @@ import 'package:RiskSphare/service/language_service.dart';
 import 'package:RiskSphare/utils/api_constants.dart';
 
 import '../design_system/components/custom_toast.dart';
+import '../utils/toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
 
@@ -216,52 +218,68 @@ class AccountListProvider extends ChangeNotifier {
   /// Fetch account list with pagination and search query
   Future<void> fetchAccountList(BuildContext context, String searchQuery, int page, int pageSize) async {
     var typography = CustomTypography(context);
-    try {
-      if(isLoading || isNextPageLoading) return;
-      if (page == 1) {
-        isLoading = true;
-      } else {
-        isNextPageLoading = true;
-      }
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      String url = '?page=$page&pageSize=$pageSize';
-      if (searchQuery.isNotEmpty) {
-        url += '&search=$searchQuery'; // Change ? to & here
-      }
 
-      var response = await apiService.get(url);
-      log(response.toString());
+    bool isConnectedToInternet = await checkIsConnectedToInternet();
+    if (isConnectedToInternet != "ConnectivityResult.none") {
+      try {
+        if (isLoading || isNextPageLoading) return;
+        if (page == 1) {
+          isLoading = true;
+        } else {
+          isNextPageLoading = true;
+        }
+        ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+        String url = '?page=$page&pageSize=$pageSize';
+        if (searchQuery.isNotEmpty) {
+          url += '&search=$searchQuery'; // Change ? to & here
+        }
+        var response = await apiService.get(url);
+        log(response.toString());
 
-      AccountListModel accountListModel = AccountListModel.fromJson(response);
-      showOwner = accountListModel.settings?.owner ?? true;
-      showSOVCount = accountListModel.settings?.sovCount ?? true;
-      showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
-      showOverallScore = accountListModel.settings?.overallScore ?? true;
-      accountHits = accountListModel.totalRecords??0;
-      totalPages = accountHits~/pageSize;
-      if (page == 1) {
-        accountList = accountListModel.results ?? [];
-      } else {
-        addToAccountList(accountListModel.results ?? []);
+        AccountListModel accountListModel = AccountListModel.fromJson(response);
+        showOwner = accountListModel.settings?.owner ?? true;
+        showSOVCount = accountListModel.settings?.sovCount ?? true;
+        showSubAccountCount =
+            accountListModel.settings?.subAccountCount ?? true;
+        showOverallScore = accountListModel.settings?.overallScore ?? true;
+        accountHits = accountListModel.totalRecords ?? 0;
+        totalPages = accountHits ~/ pageSize;
+        if (page == 1) {
+          accountList = accountListModel.results ?? [];
+        } else {
+          addToAccountList(accountListModel.results ?? []);
+        }
+        isLoading = false;
+        isNextPageLoading = false;
+      } on BackendException catch (e, stackTrace) {
+        print(stackTrace);
+        isLoading = false;
+        isNextPageLoading = false;
+        print(e.message.toString());
+        print("e.message.toString()");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message, style: typography.Body1,),
+
+        ));
+      } catch (e, stackTrace) {
+        print(stackTrace);
+        isLoading = false;
+        isNextPageLoading = false;
+        print("e.toString()");
+        print(e.toString());
+        print("e.toString()");
+        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        //   content: Text(e.toString(), style: typography.Body1,),
+        //
+        // ));
       }
-      isLoading = false;
-      isNextPageLoading = false;
-    } on BackendException catch (e, stackTrace) {
-      print(stackTrace);
-      isLoading = false;
-      isNextPageLoading = false;
+    }
+    else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
+        content: Text("Please check your internet connectivity and try again".toString(), style: typography.Body1,),
 
       ));
-    } catch (e, stackTrace) {
-      print(stackTrace);
-      isLoading = false;
-      isNextPageLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
-
-      ));
+      // errorToast(pleaseCheckYourInternetConnectivityAndTryAgain);
     }
   }
 
@@ -415,10 +433,10 @@ class AccountListProvider extends ChangeNotifier {
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
-
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1,),
+      //
+      // ));
     } finally {
       isAutoCompleteLoading = false;
     }
@@ -484,7 +502,7 @@ class AccountListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       log("Unexpected error: $e");
       log(stackTrace.toString());
-      CustomToast.error(context, "An unexpected error occurred");
+      // CustomToast.error(context, "An unexpected error occurred");
       return false;
     } finally {
       isDeleteLocationLoading = false;

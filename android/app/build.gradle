@@ -21,7 +21,7 @@ if (keystoreConfigFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '1').toInteger()
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '2').toInteger()
 def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0')
 
 android {
@@ -48,7 +48,7 @@ android {
         applicationId "com.example.green"
         minSdkVersion 23
         targetSdkVersion 35  // ✅ Updated from 34 to 35
-        versionCode flutterVersionCode
+        versionCode 4
         versionName flutterVersionName
         multiDexEnabled true
     }

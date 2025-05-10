@@ -51,24 +51,28 @@ throw UnsupportedError(
 }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA1bCXCsBjWxXrG7Dd9dN7DaQoYmebfO8Q',
-    appId: '1:781106067514:android:b65e4a2260608981009d03',
-    messagingSenderId: '781106067514',
-    projectId: 'project-green-dev-429104',
-    databaseURL: 'https://project-green-dev-429104-default-rtdb.firebaseio.com',
-    storageBucket: 'project-green-dev-429104.appspot.com',
+    apiKey: 'AIzaSyCyi6LKiEELcYMibue6T8ecFp8XCzpvd30',
+    appId: '1:160035685335:android:b865c13199ca1c7ba74192',
+    messagingSenderId: '160035685335',
+    projectId: 'project-green-r5-1-dev',
+    storageBucket: 'project-green-r5-1-dev.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBG-dUbaXycqAOpPZzQSaQ3mkSLXyhadE0',
-    appId: '1:781106067514:ios:d988e7e8e0e1d6c0009d03',
-    messagingSenderId: '781106067514',
-    projectId: 'project-green-dev-429104',
-    databaseURL: 'https://project-green-dev-429104-default-rtdb.firebaseio.com',
-    storageBucket: 'project-green-dev-429104.appspot.com',
-    androidClientId: '781106067514-cr2tvf2i0952rfnpnaleb25l449qa59r.apps.googleusercontent.com',
-    iosClientId: '781106067514-vg3tqt2m694h0qd3enl4toff2eug19cp.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCstV5UDSN8huvSrp738E9shu6gkltdYN8',
+    appId: '1:160035685335:ios:9aec62c3a48fbf16a74192',
+    messagingSenderId: '160035685335',
+    projectId: 'project-green-r5-1-dev',
+    storageBucket: 'project-green-r5-1-dev.firebasestorage.app',
+    iosClientId: '160035685335-phveajbvmridomq1v4bj8h510ggr799f.apps.googleusercontent.com',
     iosBundleId: 'com.zerozilla.green',
   );
+
+// apiKey: "AIzaSyCYkVSSfxlq0G0URowvvyfq7Pn1Af_f2YA",
+// authDomain: "project-green-r5-1-qa.firebaseapp.com",
+// projectId: "project-green-r5-1-qa",
+// storageBucket: "project-green-r5-1-qa.firebasestorage.app",
+// messagingSenderId: "857135835532",
+// appId: "1:857135835532:web:921d30d6259ce18ac84ea9"
 
 }

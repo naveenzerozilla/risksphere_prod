@@ -551,12 +551,44 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   onPressed: () async {
                     setState(() => isLoadingNo = true);
 
-                    await Future.delayed(
-                        Duration(seconds: 2)); // Simulate API call delay
+                    var key = generateServiceKey(
+                        title.toLowerCase().replaceAll(' ', '_'));
+                    await provider.updateConfiguration(
+                      context,
+                      mainId,
+                      key,
+                      level,
+                      value,
+                      "false",
+                      accountId: widget.accountId,
+                      subAccountId: widget.subaccountId,
+                    );
 
                     setState(() => isLoadingNo = false);
-                    Navigator.pop(context); // Close the dialog
+
+                    if (!provider.isLoading) {
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        final provider = Provider.of<ConfigurationProvider>(
+                            context,
+                            listen: false);
+                        await provider.getConfiguration(
+                          accountId: widget.accountId,
+                          subAccountId: widget.subaccountId,
+                        );
+                        loadConfiguration();
+                      }
+                    }
                   },
+                  // onPressed: () async {
+                  //   setState(() => isLoadingNo = true);
+                  //
+                  //   await Future.delayed(
+                  //       Duration(seconds: 2)); // Simulate API call delay
+                  //
+                  //   setState(() => isLoadingNo = false);
+                  //   Navigator.pop(context); // Close the dialog
+                  // },
                   style: TextButton.styleFrom(
                     side: BorderSide(color: AppColors.primaryMain, width: 1.5),
                     shape: RoundedRectangleBorder(
