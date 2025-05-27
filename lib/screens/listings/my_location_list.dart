@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'package:RiskSphare/screens/listings/account_list.dart';
-import 'package:RiskSphare/screens/listings/sub_account_list.dart';
-import 'package:RiskSphare/utils/debouncer.dart';
+import 'package:dio/dio.dart';
+import 'package:RiskSphere/screens/listings/account_list.dart';
+import 'package:RiskSphere/screens/listings/sub_account_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/conflicts_tab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -13,30 +16,28 @@ import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:RiskSphare/models/my_location_list_model.dart';
-import 'package:RiskSphare/providers/location_list_provider.dart';
-import 'package:RiskSphare/providers/my_location_list_provider.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
-import 'package:RiskSphare/screens/listings/add_location_screen.dart';
-import 'package:RiskSphare/screens/listings/sov_location_list.dart';
-import 'package:RiskSphare/screens/listings/widgets/configurations_tab.dart';
-import 'package:RiskSphare/screens/listings/widgets/data_tab.dart';
-import 'package:RiskSphare/screens/listings/widgets/export_dialog.dart';
-import 'package:RiskSphare/screens/listings/widgets/listings_filter_screen.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_card.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_list_map_view.dart';
-import 'package:RiskSphare/screens/listings/widgets/maintenance_widget.dart';
-import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
-import 'package:RiskSphare/screens/listings/widgets/message_card.dart';
-import 'package:RiskSphare/screens/listings/widgets/overall_score_table.dart';
-import 'package:RiskSphare/screens/processMonitoringScreen/process_monitoring_system.dart';
-import 'package:RiskSphare/service/shared_preference_service.dart';
+import 'package:RiskSphere/models/my_location_list_model.dart';
+import 'package:RiskSphere/providers/location_list_provider.dart';
+import 'package:RiskSphere/providers/my_location_list_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/listings/add_location_screen.dart';
+import 'package:RiskSphere/screens/listings/sov_location_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
+import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
+import 'package:RiskSphere/screens/listings/widgets/listings_filter_screen.dart';
+import 'package:RiskSphere/screens/listings/widgets/location_card.dart';
+import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
+import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
+import 'package:RiskSphere/screens/listings/widgets/overall_score_table.dart';
+import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
+import 'package:RiskSphere/service/shared_preference_service.dart';
+import 'package:google_places_autocomplete_text_field/google_places_autocomplete_text_field.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:rxdart/rxdart.dart';
-
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
@@ -52,12 +53,13 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/sov_list_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphare/models/role_model.dart' as roleModel;
+import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
-import 'addlocation.dart';
+import '../../utils/common_headers.dart';
+import 'package:http/http.dart' as http;
 
 class MyLocationList extends StatefulWidget {
   final String? accountID;
@@ -100,9 +102,7 @@ class _MyLocationListState extends State<MyLocationList>
 
   int requestActionIndex = 0;
   bool _isLoading = false;
-
   List<roleModel.Roles> filterRoleList = [];
-
   List<roleModel.Roles> filterRoles = [];
   List<String> filterNames = [];
   List<String> filterEmails = [];
@@ -112,19 +112,16 @@ class _MyLocationListState extends State<MyLocationList>
   roleModel.Roles? selectedRoleForFilter;
   String selectedStatus = '';
   String locationQuery = '';
-
   bool showSelectAll = false;
-  bool isAllSelected = false; // State variable to manage "Select All"
+  bool isAllSelected = false;
+  bool _isHazardLoading = false;
 
   Timer? deBouncer;
-
   List<MyLocation> selectedLocations = [];
-
   String? _uploadedFileName;
   TextEditingController _sovNameController = TextEditingController();
   TextEditingController _locationNameController = TextEditingController();
   File? files;
-
   TabController? _mainTabController;
   int selectedMainTab = 0;
   int selectedTab = 0;
@@ -144,6 +141,7 @@ class _MyLocationListState extends State<MyLocationList>
   bool showCorporateProfile = true;
   bool addToSOVCheck = false;
   bool isLoading = false;
+  var conflictLocations;
 
   String selectedSovId = "";
   TextEditingController sovController = TextEditingController();
@@ -164,6 +162,10 @@ class _MyLocationListState extends State<MyLocationList>
   @override
   void initState() {
     super.initState();
+    _fetchTabData(0);
+    _tabController = TabController(length: 2, vsync: this);
+
+    _tabController?.addListener(_onTabChanged);
 
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
@@ -174,6 +176,7 @@ class _MyLocationListState extends State<MyLocationList>
 
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
+
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount = trialStatus.isEmpty ? 6 : 5;
     _masterTabController = TabController(length: tabCount, vsync: this);
@@ -182,9 +185,6 @@ class _MyLocationListState extends State<MyLocationList>
         selectedMasterTab = _masterTabController?.index ?? 0;
       });
     });
-
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController?.addListener(_onTabChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData(); // Load all data after first render
@@ -209,8 +209,7 @@ class _MyLocationListState extends State<MyLocationList>
       widget.subAccountID!,
       "widget.sovId!",
     );
-
-    _fetchTabData(0); // Load default tab data
+    // _fetchTabData(0); // Load default tab data
   }
 
   void _onTabChanged() {
@@ -228,7 +227,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        40,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -241,7 +240,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        40,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -400,7 +399,7 @@ class _MyLocationListState extends State<MyLocationList>
         });
       }
     } catch (error) {
-      print("Error fetching data: $error");
+      // print("Error fetching data: $error");
     }
   }
 
@@ -454,13 +453,19 @@ class _MyLocationListState extends State<MyLocationList>
   //     }
   //   });
   // }
-
   void _startRefreshTimer() {
     if (_refreshTimer != null && _refreshTimer!.isActive) return;
     if (_hasActiveTimer) return;
 
     _hasActiveTimer = true;
 
+    // 👇 Immediately refresh once when timer starts
+    final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+    if (mounted && provider.isProcessing) {
+      _refreshData();
+    }
+
+    // 👇 Then schedule periodic refresh
     _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       final provider =
           Provider.of<JobMonitoringProvider>(context, listen: false);
@@ -472,6 +477,24 @@ class _MyLocationListState extends State<MyLocationList>
       }
     });
   }
+
+  // void _startRefreshTimer() {
+  //   if (_refreshTimer != null && _refreshTimer!.isActive) return;
+  //   if (_hasActiveTimer) return;
+  //
+  //   _hasActiveTimer = true;
+  //
+  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+  //     final provider =
+  //         Provider.of<JobMonitoringProvider>(context, listen: false);
+  //     if (mounted && provider.isProcessing) {
+  //       _refreshData();
+  //     } else {
+  //       _refreshTimer?.cancel();
+  //       _hasActiveTimer = false;
+  //     }
+  //   });
+  // }
 
   // void _startRefreshTimer() {
   //   if (_refreshTimer != null && _refreshTimer!.isActive) return;
@@ -499,7 +522,7 @@ class _MyLocationListState extends State<MyLocationList>
       context,
       "",
       locationListProvider.certifiedPage,
-      40,
+      20,
       widget.accountID,
       widget.subAccountID,
       widget.initialProcessId,
@@ -510,7 +533,7 @@ class _MyLocationListState extends State<MyLocationList>
       context,
       "",
       1,
-      40,
+      100,
       widget.accountID,
       widget.subAccountID,
       widget.initialProcessId,
@@ -545,7 +568,7 @@ class _MyLocationListState extends State<MyLocationList>
             context,
             "",
             1,
-            40,
+            100,
             widget.accountID,
             widget.subAccountID,
             widget.initialProcessId,
@@ -554,19 +577,18 @@ class _MyLocationListState extends State<MyLocationList>
           .then(
               (_) => setState(() {})), // Update UI after fetching location list
 
-      myLocationProvider
-          .fetchCertifiedLocationList(
-            context,
-            "",
-            1,
-            40,
-            widget.accountID,
-            widget.subAccountID,
-            widget.initialProcessId,
-            widget.initialSubProcessId,
-          )
-          .then((_) => WidgetsBinding.instance!.addPostFrameCallback(
-              (_) => setState(() {}))), // Update UI after frame rendering
+      myLocationProvider.fetchCertifiedLocationList(
+        context,
+        "",
+        1,
+        20,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      ),
+      // .then((_) => WidgetsBinding.instance!.addPostFrameCallback(
+      //     (_) => setState(() {}))), // Update UI after frame rendering
 
       sovListProvider.fetchSovList(
         context,
@@ -661,7 +683,8 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  _getSovUploadStatus() async {
+  Future<void> _getSovUploadStatus() async {
+    // _getSovUploadStatus() async {
     String? tempProcessId = await SharedPreferenceService.getSovUploadTempId();
     String? accountId = await SharedPreferenceService.getSovAccountId();
     String? subAccountId =
@@ -797,7 +820,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     "",
                                     1,
-                                    40,
+                                    100,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -2206,10 +2229,10 @@ class _MyLocationListState extends State<MyLocationList>
         SizedBox(height: CustomSpacing.two),
         Expanded(
           child: TabBarView(
-            physics: NeverScrollableScrollPhysics(),
-            // Prevents scrolling in main TabBarView
             controller: _mainTabController,
+            physics: NeverScrollableScrollPhysics(),
             children: [
+              // First Tab: List View with Nested Tabs
               Column(
                 children: [
                   Consumer<MyLocationListProvider>(
@@ -2219,79 +2242,62 @@ class _MyLocationListState extends State<MyLocationList>
                         labelStyle: typography.BottomNavigationActiveLabel,
                         tabs: [
                           Tab(
-                            child: InkWell(
-                              onTap: () {
-                                _tabController?.animateTo(0);
-                                _fetchTabData(0);
-                                // _fetchTabData(0);
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    LanguageService.getTranslated(
-                                      context,
-                                      "locationlist_app_connections_tab_all",
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(LanguageService.getTranslated(
+                                  context,
+                                  "locationlist_app_connections_tab_all",
+                                )),
+                                SizedBox(width: CustomSpacing.two),
+                                SizedBox(
+                                  height: 25,
+                                  child: Chip(
+                                    labelPadding: EdgeInsets.zero,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    label: Text(
+                                      locationListProvider.isLoading
+                                          ? "0"
+                                          : locationListProvider.locationHits
+                                              .toString(),
+                                      style:
+                                          typography.BottomNavigationActiveLabel
+                                              .copyWith(height: -0.6),
                                     ),
                                   ),
-                                  SizedBox(width: CustomSpacing.two),
-                                  SizedBox(
-                                    height: 25,
-                                    child: Chip(
-                                      labelPadding: EdgeInsets.all(0),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      label: Text(
-                                        locationListProvider.isLoading
-                                            ? "0" // Show 0 while loading
-                                            : locationListProvider.locationHits
-                                                .toString(),
-                                        style: typography
-                                                .BottomNavigationActiveLabel
-                                            .copyWith(height: -0.6),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                           Tab(
-                            child: InkWell(
-                              onTap: () {
-                                _tabController?.animateTo(1);
-                                _fetchTabData(1);
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    LanguageService.getTranslated(
-                                      context,
-                                      "locationlist_app_connections_tab_certified",
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(LanguageService.getTranslated(
+                                  context,
+                                  "locationlist_app_connections_tab_certified",
+                                )),
+                                SizedBox(width: CustomSpacing.two),
+                                SizedBox(
+                                  height: 25,
+                                  child: Chip(
+                                    labelPadding: EdgeInsets.zero,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    label: Text(
+                                      locationListProvider.isLoading
+                                          ? "0"
+                                          : locationListProvider
+                                              .certifiedLocationHits
+                                              .toString(),
+                                      style:
+                                          typography.BottomNavigationActiveLabel
+                                              .copyWith(height: -0.6),
                                     ),
                                   ),
-                                  SizedBox(width: CustomSpacing.two),
-                                  SizedBox(
-                                    height: 25,
-                                    child: Chip(
-                                      labelPadding: EdgeInsets.all(0),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      label: Text(
-                                        locationListProvider.isLoading
-                                            ? "0" // Show 0 while loading
-                                            : locationListProvider
-                                                .certifiedLocationHits
-                                                .toString(),
-                                        style: typography
-                                                .BottomNavigationActiveLabel
-                                            .copyWith(height: -0.6),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -2303,7 +2309,6 @@ class _MyLocationListState extends State<MyLocationList>
                     child: TabBarView(
                       controller: _tabController,
                       physics: NeverScrollableScrollPhysics(),
-                      // Prevents scrolling in nested TabBarView
                       children: [
                         _getLocationListAllUI(),
                         _getLocationListCertifiedUI(),
@@ -2313,17 +2318,16 @@ class _MyLocationListState extends State<MyLocationList>
                 ],
               ),
 
-              // Map View
+              // Second Tab: Table View
               Consumer<MyLocationListProvider>(
                 builder: (context, locationListProvider, child) {
                   return locationListProvider.isLoading
-                      ? Center(
-                          child: CircularProgressIndicator(),
-                        )
+                      ? Center(child: CircularProgressIndicator())
                       : LocationTable(
                           locations: locationListProvider.myLocationList);
                 },
               ),
+              // Third Tab: Map View
               LocationListMapView(
                 accountId: widget.accountID!,
                 subAccountId: widget.subAccountID!,
@@ -2331,6 +2335,134 @@ class _MyLocationListState extends State<MyLocationList>
             ],
           ),
         ),
+
+        // Expanded(
+        //   child: TabBarView(
+        //     physics: NeverScrollableScrollPhysics(),
+        //     // Prevents scrolling in main TabBarView
+        //     controller: _mainTabController,
+        //     children: [
+        //       Column(
+        //         children: [
+        //           Consumer<MyLocationListProvider>(
+        //             builder: (context, locationListProvider, child) {
+        //               return TabBar(
+        //                 controller: _tabController,
+        //                 labelStyle: typography.BottomNavigationActiveLabel,
+        //                 tabs: [
+        //                   Tab(
+        //                     child: InkWell(
+        //                       onTap: () {
+        //                         _tabController?.animateTo(0);
+        //                         _fetchTabData(0);
+        //                         // _fetchTabData(0);
+        //                       },
+        //                       child: Row(
+        //                         mainAxisAlignment: MainAxisAlignment.center,
+        //                         children: [
+        //                           Text(
+        //                             LanguageService.getTranslated(
+        //                               context,
+        //                               "locationlist_app_connections_tab_all",
+        //                             ),
+        //                           ),
+        //                           SizedBox(width: CustomSpacing.two),
+        //                           SizedBox(
+        //                             height: 25,
+        //                             child: Chip(
+        //                               labelPadding: EdgeInsets.all(0),
+        //                               materialTapTargetSize:
+        //                                   MaterialTapTargetSize.shrinkWrap,
+        //                               label: Text(
+        //                                 locationListProvider.isLoading
+        //                                     ? "0" // Show 0 while loading
+        //                                     : locationListProvider.locationHits
+        //                                         .toString(),
+        //                                 style: typography
+        //                                         .BottomNavigationActiveLabel
+        //                                     .copyWith(height: -0.6),
+        //                               ),
+        //                             ),
+        //                           ),
+        //                         ],
+        //                       ),
+        //                     ),
+        //                   ),
+        //                   Tab(
+        //                     child: InkWell(
+        //                       onTap: () {
+        //                         _tabController?.animateTo(1);
+        //                         _fetchTabData(1);
+        //                       },
+        //                       child: Row(
+        //                         mainAxisAlignment: MainAxisAlignment.center,
+        //                         children: [
+        //                           Text(
+        //                             LanguageService.getTranslated(
+        //                               context,
+        //                               "locationlist_app_connections_tab_certified",
+        //                             ),
+        //                           ),
+        //                           SizedBox(width: CustomSpacing.two),
+        //                           SizedBox(
+        //                             height: 25,
+        //                             child: Chip(
+        //                               labelPadding: EdgeInsets.all(0),
+        //                               materialTapTargetSize:
+        //                                   MaterialTapTargetSize.shrinkWrap,
+        //                               label: Text(
+        //                                 locationListProvider.isLoading
+        //                                     ? "0" // Show 0 while loading
+        //                                     : locationListProvider
+        //                                         .certifiedLocationHits
+        //                                         .toString(),
+        //                                 style: typography
+        //                                         .BottomNavigationActiveLabel
+        //                                     .copyWith(height: -0.6),
+        //                               ),
+        //                             ),
+        //                           ),
+        //                         ],
+        //                       ),
+        //                     ),
+        //                   ),
+        //                 ],
+        //               );
+        //             },
+        //           ),
+        //           SizedBox(height: CustomSpacing.four),
+        //           Expanded(
+        //             child: TabBarView(
+        //               controller: _tabController,
+        //               physics: NeverScrollableScrollPhysics(),
+        //               // Prevents scrolling in nested TabBarView
+        //               children: [
+        //                 _getLocationListAllUI(),
+        //                 _getLocationListCertifiedUI(),
+        //               ],
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //
+        //       // Map View
+        //       Consumer<MyLocationListProvider>(
+        //         builder: (context, locationListProvider, child) {
+        //           return locationListProvider.isLoading
+        //               ? Center(
+        //                   child: CircularProgressIndicator(),
+        //                 )
+        //               : LocationTable(
+        //                   locations: locationListProvider.myLocationList);
+        //         },
+        //       ),
+        //       LocationListMapView(
+        //         accountId: widget.accountID!,
+        //         subAccountId: widget.subAccountID!,
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ],
     );
   }
@@ -2338,7 +2470,7 @@ class _MyLocationListState extends State<MyLocationList>
   void _fetchTabData(int index) {
     final locationListProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
-    locationListProvider.page = 1;
+    locationListProvider.page = 0;
 
     if (index == 0) {
       // Fetch All locations
@@ -2367,38 +2499,226 @@ class _MyLocationListState extends State<MyLocationList>
         widget.initialProcessId,
         widget.initialSubProcessId,
       );
+      locationListProvider.fetchLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+      );
     }
   }
 
-  Widget _getLiveUI(JobMonitoringProvider provider) {
-    var typography = CustomTypography(context);
+  // Widget _getLiveUI(JobMonitoringProvider provider) {
+  //   var typography = CustomTypography(context);
+  //
+  //   // Define the secondary stream with proper caching
+  //   Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
+  //   print('docids: ${provider.docIds}');
+  //   processStream = FirebaseFirestore.instance
+  //       .collection('processes')
+  //       .where('location_data.account_id', isEqualTo: widget.accountID)
+  //       .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
+  //       .where('process_type', isEqualTo: 'hazard')
+  //       .orderBy('created_at', descending: true)
+  //       .limit(1)
+  //       .snapshots()
+  //       .distinct()
+  //       .asBroadcastStream();
+  //
+  //   // Cache the subaccount stream
+  //   final subaccountStream = FirebaseFirestore.instance
+  //       .collection('subaccount')
+  //       .doc(widget.subAccountID)
+  //       .snapshots()
+  //       .asBroadcastStream();
+  //
+  //   // Combine streams with debounce to prevent rapid UI updates
+  //   var combinedStream = Rx.combineLatest2<
+  //       DocumentSnapshot<Map<String, dynamic>>,
+  //       QuerySnapshot<Map<String, dynamic>>,
+  //       Map<String, dynamic>>(
+  //     subaccountStream,
+  //     processStream,
+  //     (heatmapSnapshot, processSnapshot) {
+  //       return {
+  //         'heatmapData': heatmapSnapshot.data(),
+  //         'processData': processSnapshot.docs.isNotEmpty
+  //             ? processSnapshot.docs.first.data()
+  //             : null,
+  //       };
+  //     },
+  //   ).debounceTime(const Duration(seconds: 20));
+  //
+  //   return StreamBuilder<Map<String, dynamic>>(
+  //     stream: combinedStream,
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting &&
+  //           !snapshot.hasData) {
+  //         return SizedBox(height: CustomSpacing.six);
+  //       }
+  //
+  //       if (snapshot.hasError) {
+  //         return SizedBox.shrink();
+  //       }
+  //
+  //       if (!snapshot.hasData) {
+  //         return SizedBox(height: CustomSpacing.sixteen);
+  //       }
+  //
+  //       var data = snapshot.data!;
+  //       var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+  //       var processStatus = data['processData']?['status'] ?? 'completed';
+  //
+  //       // Extract ongoing processes and ensure it's a list
+  //       List<dynamic> onGoingProcesses = data['on_going_processes'] is List
+  //           ? data['on_going_processes']
+  //           : [];
+  //
+  //       print('Ongoing Processes: $onGoingProcesses');
+  //
+  //       // Update Provider's isProcessing state
+  //       bool isCurrentlyProcessing =
+  //           processStatus.toLowerCase() == 'processing';
+  //       String newProcessStatus = data['processData']?['status'] ?? 'completed';
+  //
+  //       // Get the provider instance
+  //       var jobProvider =
+  //           Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //       // Check if status has changed
+  //       if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+  //         jobProvider.updateProcessStatus(newProcessStatus);
+  //
+  //         if (isCurrentlyProcessing) {
+  //           _startRefreshTimer();
+  //         } else {
+  //           _refreshTimer?.cancel();
+  //           _getData();
+  //         }
+  //       }
+  //
+  //       // if (jobProvider.processStatus != newProcessStatus) {
+  //       //   jobProvider.updateProcessStatus(newProcessStatus);
+  //       //
+  //       //   // Refresh when status changes
+  //       //   // _getData();
+  //       //
+  //       //   if (isCurrentlyProcessing) {
+  //       //     _startRefreshTimer(); // Start timer when processing starts
+  //       //   } else {
+  //       //     _getData();
+  //       //     _refreshTimer?.cancel(); // Stop timer when processing stops
+  //       //   }
+  //       // }
+  //
+  //       print('Heatmap Status: $heatmapStatus');
+  //       print('Process Status: $processStatus');
+  //
+  //       var provider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       provider.isHeatMapGeneratingLive =
+  //           heatmapStatus.toString().toLowerCase() == 'initiated';
+  //
+  //       // Extract process count and calculate percentage
+  //       int totalCompleted =
+  //           data['processData']?['total_processes_completed'] ?? 0;
+  //       var totalProcesses = data['processData']?['total_processes'] ?? 1;
+  //       double percentage = (totalCompleted / totalProcesses) * 100;
+  //
+  //       return AnimatedSwitcher(
+  //         duration: const Duration(milliseconds: 300),
+  //         child: Column(
+  //           key: ValueKey('$processStatus-$heatmapStatus'),
+  //           crossAxisAlignment: CrossAxisAlignment.end,
+  //           children: [
+  //             if (processStatus.toString().toLowerCase() == 'processing')
+  //               GestureDetector(
+  //                 onTap: () {
+  //                   Navigator.push(
+  //                       context,
+  //                       MaterialPageRoute(
+  //                           builder: (context) => ProcessMonitoringScreen(
+  //                                 accountId: widget.accountID,
+  //                                 subAccountId: widget.subAccountID,
+  //                               ))).then((value) => _getData());
+  //                 },
+  //                 child: Padding(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.end,
+  //                     children: [
+  //                       Row(
+  //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                         children: [
+  //                           Row(
+  //                             children: [
+  //                               Lottie.asset(
+  //                                 'assets/lottie/loading.json',
+  //                                 width: 20,
+  //                                 height: 20,
+  //                               ),
+  //                               const SizedBox(width: 8.0),
+  //                               Text(
+  //                                 'Processing '
+  //                                 '${percentage.toStringAsFixed(0)}%',
+  //                                 style: typography.Caption.copyWith(
+  //                                   fontWeight: FontWeight.w500,
+  //                                 ),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               )
+  //             else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+  //               Row(
+  //                 mainAxisAlignment: MainAxisAlignment.end,
+  //                 children: [
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                     child: Column(
+  //                       children: [
+  //                         Row(
+  //                           children: [
+  //                             Lottie.asset(
+  //                               'assets/lottie/loading.json',
+  //                               width: 20,
+  //                               height: 20,
+  //                             ),
+  //                             const SizedBox(width: 8.0),
+  //                             Text(
+  //                               'Generating Heatmap',
+  //                               style: typography.Caption.copyWith(
+  //                                   fontWeight: FontWeight.w500),
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+  Stream<Map<String, dynamic>> _createCombinedStream(
+    Stream<DocumentSnapshot<Map<String, dynamic>>> subaccountStream,
+    Stream<QuerySnapshot<Map<String, dynamic>>> processStream,
+  ) {
+    bool firstEmissionDone = false;
 
-    // Define the secondary stream with proper caching
-    Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
-    print('docids: ${provider.docIds}');
-    processStream = FirebaseFirestore.instance
-        .collection('processes')
-        .where('location_data.account_id', isEqualTo: widget.accountID)
-        .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
-        .where('process_type', isEqualTo: 'hazard')
-        .orderBy('created_at', descending: true)
-        .limit(1)
-        .snapshots()
-        .distinct()
-        .asBroadcastStream();
-
-    // Cache the subaccount stream
-    final subaccountStream = FirebaseFirestore.instance
-        .collection('subaccount')
-        .doc(widget.subAccountID)
-        .snapshots()
-        .asBroadcastStream();
-
-    // Combine streams with debounce to prevent rapid UI updates
-    var combinedStream = Rx.combineLatest2<
-        DocumentSnapshot<Map<String, dynamic>>,
-        QuerySnapshot<Map<String, dynamic>>,
-        Map<String, dynamic>>(
+    return Rx.combineLatest2<DocumentSnapshot<Map<String, dynamic>>,
+        QuerySnapshot<Map<String, dynamic>>, Map<String, dynamic>>(
       subaccountStream,
       processStream,
       (heatmapSnapshot, processSnapshot) {
@@ -2409,7 +2729,33 @@ class _MyLocationListState extends State<MyLocationList>
               : null,
         };
       },
-    ).debounceTime(const Duration(milliseconds: 500));
+    ).transform(
+      StreamTransformer<Map<String, dynamic>, Map<String, dynamic>>.fromBind(
+        (stream) async* {
+          await for (final value in stream) {
+            if (!firstEmissionDone) {
+              firstEmissionDone = true;
+              yield value; // immediate emit on first load
+            } else {
+              await Future.delayed(const Duration(seconds: 20));
+              yield value;
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _getLiveUI(JobMonitoringProvider provider) {
+    var typography = CustomTypography(context);
+    FirebaseAuth auth = FirebaseAuth.instance;
+    String uid = auth.currentUser!.uid;
+
+    final combinedStream = _createLiveProcessStream(
+      userId: uid,
+      accountId: widget.accountID!,
+      subAccountId: widget.subAccountID!,
+    );
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: combinedStream,
@@ -2419,149 +2765,122 @@ class _MyLocationListState extends State<MyLocationList>
           return SizedBox(height: CustomSpacing.six);
         }
 
-        if (snapshot.hasError) {
+        if (snapshot.hasError || !snapshot.hasData) {
           return SizedBox.shrink();
         }
 
-        if (!snapshot.hasData) {
-          return SizedBox(height: CustomSpacing.sixteen);
-        }
+        final data = snapshot.data!;
+        final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+        final processStatus = data['processData']?['status'] ?? 'completed';
 
-        var data = snapshot.data!;
-        var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
-        var processStatus = data['processData']?['status'] ?? 'completed';
+        final List<dynamic> onGoingProcesses =
+            data['on_going_processes'] is List
+                ? data['on_going_processes']
+                : [];
 
-        // Extract ongoing processes and ensure it's a list
-        List<dynamic> onGoingProcesses = data['on_going_processes'] is List
-            ? data['on_going_processes']
-            : [];
-
-        print('Ongoing Processes: $onGoingProcesses');
-
-        // Update Provider's isProcessing state
-        bool isCurrentlyProcessing =
+        final bool isCurrentlyProcessing =
             processStatus.toLowerCase() == 'processing';
-        String newProcessStatus = data['processData']?['status'] ?? 'completed';
+        final String newProcessStatus =
+            data['processData']?['status'] ?? 'completed';
 
-        // Get the provider instance
-        var jobProvider =
+        final jobProvider =
             Provider.of<JobMonitoringProvider>(context, listen: false);
-
-        // Check if status has changed
+        _startRefreshTimer();
         if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
-          jobProvider.updateProcessStatus(newProcessStatus);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!_isDisposed) {
+              jobProvider.updateProcessStatus(newProcessStatus);
 
-          if (isCurrentlyProcessing) {
-            _startRefreshTimer();
-          } else {
-            _refreshTimer?.cancel();
-            _getData();
-          }
+              if (isCurrentlyProcessing) {
+                _startRefreshTimer();
+              } else {
+                _refreshTimer?.cancel();
+                _getData();
+              }
+            }
+          });
         }
 
-        // if (jobProvider.processStatus != newProcessStatus) {
+        // if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
         //   jobProvider.updateProcessStatus(newProcessStatus);
         //
-        //   // Refresh when status changes
-        //   // _getData();
-        //
         //   if (isCurrentlyProcessing) {
-        //     _startRefreshTimer(); // Start timer when processing starts
+        //     _startRefreshTimer();
         //   } else {
+        //     _refreshTimer?.cancel();
         //     _getData();
-        //     _refreshTimer?.cancel(); // Stop timer when processing stops
         //   }
         // }
 
-        print('Heatmap Status: $heatmapStatus');
-        print('Process Status: $processStatus');
-
-        var provider =
+        final locationProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
-        provider.isHeatMapGeneratingLive =
+        locationProvider.isHeatMapGeneratingLive =
             heatmapStatus.toString().toLowerCase() == 'initiated';
 
-        // Extract process count and calculate percentage
-        int totalCompleted =
+        final int totalCompleted =
             data['processData']?['total_processes_completed'] ?? 0;
-        var totalProcesses = data['processData']?['total_processes'] ?? 1;
-        double percentage = (totalCompleted / totalProcesses) * 100;
+        final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+        final double percentage = (totalCompleted / totalProcesses) * 100;
 
         return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           child: Column(
             key: ValueKey('$processStatus-$heatmapStatus'),
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (processStatus.toString().toLowerCase() == 'processing')
+              if (isCurrentlyProcessing)
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ProcessMonitoringScreen(
-                                  accountId: widget.accountID,
-                                  subAccountId: widget.subAccountID,
-                                ))).then((value) => _getData());
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProcessMonitoringScreen(
+                          accountId: widget.accountID,
+                          subAccountId: widget.subAccountID,
+                        ),
+                      ),
+                    ).then((value) => _getData());
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    child: Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Lottie.asset(
-                                  'assets/lottie/loading.json',
-                                  width: 20,
-                                  height: 20,
-                                ),
-                                const SizedBox(width: 8.0),
-                                Text(
-                                  'Processing '
-                                  '${percentage.toStringAsFixed(0)}%',
-                                  style: typography.Caption.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        Lottie.asset(
+                          'assets/lottie/loading.json',
+                          width: 20,
+                          height: 20,
+                        ),
+                        const SizedBox(width: 8.0),
+                        Text(
+                          'Processing ${percentage.toStringAsFixed(0)}%',
+                          style: typography.Caption.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 )
               else if (heatmapStatus.toString().toLowerCase() == 'initiated')
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Lottie.asset(
-                                'assets/lottie/loading.json',
-                                width: 20,
-                                height: 20,
-                              ),
-                              const SizedBox(width: 8.0),
-                              Text(
-                                'Generating Heatmap',
-                                style: typography.Caption.copyWith(
-                                    fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Lottie.asset(
+                        'assets/lottie/loading.json',
+                        width: 20,
+                        height: 20,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8.0),
+                      Text(
+                        'Generating Heatmap',
+                        style: typography.Caption.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -2569,6 +2888,287 @@ class _MyLocationListState extends State<MyLocationList>
       },
     );
   }
+
+  Stream<Map<String, dynamic>> _createLiveProcessStream({
+    required String userId,
+    required String accountId,
+    required String subAccountId,
+  }) {
+    final userStream =
+        FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
+
+    final subaccountStream = FirebaseFirestore.instance
+        .collection('subaccount')
+        .where('sub_account_id', isEqualTo: subAccountId)
+        .snapshots();
+
+    return Rx.combineLatest2(userStream, subaccountStream, (userSnap, subSnap) {
+      final userData = userSnap.data() as Map<String, dynamic>? ?? {};
+      final onGoingProcesses = userData['on_going_processes'] ?? [];
+
+      final activeProcess = onGoingProcesses.firstWhere(
+        (p) =>
+            p['last_account'] == accountId &&
+            p['last_sub_account'] == subAccountId,
+        orElse: () => null,
+      );
+
+      final String? lastProcessId = activeProcess?['last_process_id'];
+
+      final heatmapData =
+          subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
+
+      if (lastProcessId != null) {
+        final processDocStream = FirebaseFirestore.instance
+            .collection('processes')
+            .where('process_id', isEqualTo: lastProcessId)
+            .limit(1)
+            .snapshots();
+
+        return processDocStream.map((processSnap) {
+          final processData =
+              processSnap.docs.isNotEmpty ? processSnap.docs.first.data() : {};
+
+          return {
+            'processData': processData,
+            'heatmapData': heatmapData,
+            'on_going_processes': onGoingProcesses,
+          };
+        });
+      }
+
+      return Stream.value({
+        'processData': null,
+        'heatmapData': heatmapData,
+        'on_going_processes': onGoingProcesses,
+      });
+    }).switchMap((stream) => stream); // flatten nested stream
+  }
+
+  // Stream<Map<String, dynamic>> _createLiveProcessStream({
+  //   required String userId,
+  //   required String accountId,
+  //   required String subAccountId,
+  // }) {
+  //   final userDocStream =
+  //       FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
+  //
+  //   return userDocStream.asyncExpand((userSnapshot) {
+  //     if (!userSnapshot.exists) {
+  //       return Stream.value({
+  //         'processData': null,
+  //         'heatmapData': null,
+  //         'on_going_processes': [],
+  //       });
+  //     }
+  //
+  //     final userData = userSnapshot.data();
+  //     final onGoingProcesses = List<Map<String, dynamic>>.from(
+  //         userData?['on_going_processes'] ?? []);
+  //     final activeProcess = onGoingProcesses.firstWhere(
+  //       (process) =>
+  //           process['last_account'] == accountId &&
+  //           process['last_sub_account'] == subAccountId,
+  //       orElse: () => {},
+  //     );
+  //
+  //     final String? lastProcessId = activeProcess['last_process_id'];
+  //
+  //     if (lastProcessId == null) {
+  //       return Stream.value({
+  //         'processData': null,
+  //         'heatmapData': null,
+  //         'on_going_processes': onGoingProcesses,
+  //       });
+  //     }
+  //
+  //     final processQuery = FirebaseFirestore.instance
+  //         .collection('processes')
+  //         .where('process_id', isEqualTo: lastProcessId)
+  //         .limit(1);
+  //
+  //     final processStream = processQuery.snapshots();
+  //
+  //     final subaccountStream = FirebaseFirestore.instance
+  //         .collection('subaccount')
+  //         .doc(subAccountId)
+  //         .snapshots();
+  //
+  //     return Rx.combineLatest2<QuerySnapshot, DocumentSnapshot,
+  //         Map<String, dynamic>>(
+  //       processStream,
+  //       subaccountStream,
+  //       (processSnapshot, subaccountSnapshot) {
+  //         final processData = processSnapshot.docs.isNotEmpty
+  //             ? processSnapshot.docs.first.data() as Map<String, dynamic>
+  //             : null;
+  //
+  //         final heatmapData = subaccountSnapshot.data();
+  //
+  //         return {
+  //           'processData': processData,
+  //           'heatmapData': heatmapData,
+  //           'on_going_processes': onGoingProcesses,
+  //         };
+  //       },
+  //     );
+  //   });
+  // }
+
+//old one
+  // Widget _getLiveUI(JobMonitoringProvider provider) {
+  //   var typography = CustomTypography(context);
+  //   FirebaseAuth auth = FirebaseAuth.instance;
+  //   String uid = auth.currentUser!.uid;
+  //   print(uid.toString());
+  //   print("");
+  //   print('docids: ${provider.docIds}');
+  //
+  //   final processStream = FirebaseFirestore.instance
+  //       .collection('processes')
+  //       .where('location_data.account_id', isEqualTo: widget.accountID)
+  //       .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
+  //       .where('process_type', isEqualTo: 'hazard')
+  //       .orderBy('created_at', descending: true)
+  //       .limit(1)
+  //       .snapshots()
+  //       .distinct()
+  //       .asBroadcastStream();
+  //
+  //   final subaccountStream = FirebaseFirestore.instance
+  //       .collection('subaccount')
+  //       .doc(widget.subAccountID)
+  //       .snapshots()
+  //       .asBroadcastStream();
+  //
+  //   final combinedStream = _createCombinedStream(subaccountStream, processStream);
+  //
+  //   return StreamBuilder<Map<String, dynamic>>(
+  //     stream: combinedStream,
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting &&
+  //           !snapshot.hasData) {
+  //         return SizedBox(height: CustomSpacing.six);
+  //       }
+  //
+  //       if (snapshot.hasError || !snapshot.hasData) {
+  //         return SizedBox.shrink();
+  //       }
+  //
+  //       final data = snapshot.data!;
+  //       final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+  //       final processStatus = data['processData']?['status'] ?? 'completed';
+  //
+  //       final List<dynamic> onGoingProcesses =
+  //           data['on_going_processes'] is List
+  //               ? data['on_going_processes']
+  //               : [];
+  //
+  //       print('Ongoing Processes: $onGoingProcesses');
+  //
+  //       final bool isCurrentlyProcessing =
+  //           processStatus.toLowerCase() == 'processing';
+  //       final String newProcessStatus =
+  //           data['processData']?['status'] ?? 'completed';
+  //
+  //       final jobProvider =
+  //           Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //       if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+  //         jobProvider.updateProcessStatus(newProcessStatus);
+  //
+  //         if (isCurrentlyProcessing) {
+  //           _startRefreshTimer();
+  //         } else {
+  //           _refreshTimer?.cancel();
+  //           _getData();
+  //         }
+  //       }
+  //
+  //       print('Heatmap process-check: $heatmapStatus');
+  //       print(data['processData']);
+  //       print(data.toString());
+  //       print('Process Status: $processStatus');
+  //
+  //       final locationProvider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       locationProvider.isHeatMapGeneratingLive =
+  //           heatmapStatus.toString().toLowerCase() == 'initiated';
+  //
+  //       final int totalCompleted =
+  //           data['processData']?['total_processes_completed'] ?? 0;
+  //       final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+  //       final double percentage = (totalCompleted / totalProcesses) * 100;
+  //
+  //       return AnimatedSwitcher(
+  //         duration: const Duration(milliseconds: 250),
+  //         child: Column(
+  //           key: ValueKey('$processStatus-$heatmapStatus'),
+  //           crossAxisAlignment: CrossAxisAlignment.end,
+  //           children: [
+  //             if (processStatus.toString().toLowerCase() == 'processing')
+  //               GestureDetector(
+  //                 onTap: () {
+  //                   Navigator.push(
+  //                     context,
+  //                     MaterialPageRoute(
+  //                       builder: (context) => ProcessMonitoringScreen(
+  //                         accountId: widget.accountID,
+  //                         subAccountId: widget.subAccountID,
+  //                       ),
+  //                     ),
+  //                   ).then((value) => _getData());
+  //                 },
+  //                 child: Padding(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                   child: Row(
+  //                     children: [
+  //                       Lottie.asset(
+  //                         'assets/lottie/loading.json',
+  //                         width: 20,
+  //                         height: 20,
+  //                       ),
+  //                       const SizedBox(width: 8.0),
+  //                       Text(
+  //                         'Processing ${percentage.toStringAsFixed(0)}%',
+  //                         style: typography.Caption.copyWith(
+  //                           fontWeight: FontWeight.w500,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               )
+  //             else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+  //               Row(
+  //                 mainAxisAlignment: MainAxisAlignment.end,
+  //                 children: [
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                     child: Row(
+  //                       children: [
+  //                         Lottie.asset(
+  //                           'assets/lottie/loading.json',
+  //                           width: 20,
+  //                           height: 20,
+  //                         ),
+  //                         const SizedBox(width: 8.0),
+  //                         Text(
+  //                           'Generating Heatmap',
+  //                           style: typography.Caption.copyWith(
+  //                               fontWeight: FontWeight.w500),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   // Widget _getLiveUI(JobMonitoringProvider provider) {
   //   var typography = CustomTypography(context);
@@ -3558,37 +4158,74 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  _getComingSoonUI() {
-    var typography = CustomTypography(context);
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Text(
-                        LanguageService.getTranslated(
-                            context, 'coming_soon_title'),
-                        style: typography.H4),
-                  ),
-                  SizedBox(
-                    height: CustomSpacing.two,
-                  ),
-                  Text(
-                      LanguageService.getTranslated(
-                          context, 'coming_soon_subtitle'),
-                      style: typography.Body1),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _StartHazardConflict(
+      {required List<MyLocation> conflictLocations}) async {
+    final conflictData = await handleFetchConflict(false);
+    final provider = Provider.of<UploadSovProvider>(context, listen: false);
+    final selectedData = {
+      'location_id': conflictData.toList(),
+      'account_id': widget.accountID,
+      'sub_account_id': widget.subAccountID,
+      'account_name': widget.accountName,
+      'sub_account_name': widget.subAccountName,
+    };
+
+    print('Selected Data: $selectedData');
+
+    final success = await provider.startHazard(selectedData);
+    if (success) {
+      Provider.of<JobMonitoringProvider>(context, listen: false)
+          .updateProcessStatus('processing');
+      _startRefreshTimer();
+    }
+    // if (success) {
+    //   _startRefreshTimer();
+    //
+    //
+    // }
+  }
+
+  Future<List<Object?>> handleFetchConflict(bool conflictsCheck) async {
+    final url = Uri.parse(
+      '${AppConstant.HANDLE_CONFLICT}?page=0&pageSize=100'
+      '&account_id=${widget.accountID}'
+      '&sub_account_id=${widget.subAccountID}'
+      '&show_full_list=true'
+      '&conflicts=false',
     );
+
+    try {
+      final headers =
+          await CommonHeaders.createHeaders(); // Use your auth/token headers
+      final response = await http.get(url, headers: headers);
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final List<dynamic> resultJson = data['result'] ?? [];
+
+        final List<MyLocation> locations =
+            resultJson.map((item) => MyLocation.fromJson(item)).toList();
+
+        final List<String?> locationIds =
+            locations.map((loc) => loc.id).toList();
+        print(locationIds);
+        print("locationIds");
+
+        final bool isConflict = data['is_conflict'] ?? false;
+        final bool canStartHazardProcess = data['hazard_can_start'] ?? false;
+        return locationIds;
+      } else {
+        print("Failed to fetch conflict locations");
+        throw Exception("Failed to load conflict locations");
+      }
+    } catch (e, stackTrace) {
+      print(stackTrace);
+      print('Error fetching conflict locations: $e');
+      return [];
+    }
   }
 
   _getSharedComingSoonUI(String title) {
@@ -3665,6 +4302,9 @@ class _MyLocationListState extends State<MyLocationList>
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
+        final conflictLocations = locationListProvider.myLocationList
+            .where((location) => location.isConflict == true)
+            .toList();
         return Column(
           children: [
             Padding(
@@ -3827,7 +4467,7 @@ class _MyLocationListState extends State<MyLocationList>
                             context,
                             locationQuery,
                             1,
-                            40,
+                            1000,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -3845,7 +4485,7 @@ class _MyLocationListState extends State<MyLocationList>
               ),
             ),
             if (locationListProvider.myLocationList.length > 1) ...[
-              if (locationListProvider!.isConflict == true) ...[
+              if (locationListProvider.isConflict == true) ...[
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),
@@ -3866,7 +4506,62 @@ class _MyLocationListState extends State<MyLocationList>
                                 color: AppColors.primaryMain,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()..onTap = () {},
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  for (int i = 0;
+                                      i < conflictLocations.length;
+                                      i++) {
+                                    print(
+                                        'Item $i - Geocoded Address: ${conflictLocations[i].geocodedAddress}');
+                                  }
+
+                                  Navigator.of(context)
+                                      .push(MaterialPageRoute(
+                                    builder: (_) => ConflictsTab(
+                                      processId: widget.accountID ?? "",
+                                      accountId: widget.accountID ?? "",
+                                      subAccountId: widget.subAccountID ?? "",
+                                      sovId: "null",
+                                      accountName: widget.accountName ?? "",
+                                      subAccountName:
+                                          widget.subAccountName ?? "",
+                                      tempId: "tempId",
+                                      lat: conflictLocations
+                                          .first.location.latitude
+                                          .toString(),
+
+                                      long: conflictLocations
+                                          .first.location.longitude
+                                          .toString(),
+                                      geocodingAddress: conflictLocations
+                                              .first.finalAddress?.address ??
+                                          "",
+                                      conflict:
+                                          conflictLocations.first.conflicts,
+                                      // Optional or just first one
+                                      location: conflictLocations,
+
+                                      startHazard:
+                                          locationListProvider.isHazardCanStart,
+                                    ),
+                                  ))
+                                      .then((value) {
+                                    if (value == true) {
+                                      _StartHazardConflict(
+                                          conflictLocations: conflictLocations);
+                                      locationListProvider.fetchLocationList(
+                                        context,
+                                        locationQuery,
+                                        1,
+                                        100,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                      );
+                                    }
+                                  });
+                                },
                             ),
                           ],
                         )
@@ -3874,7 +4569,7 @@ class _MyLocationListState extends State<MyLocationList>
                     ),
                   ),
                 ),
-              ] else ...[
+              ] else if (locationListProvider.isHazardCanStart == true) ...[
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),
@@ -3889,13 +4584,37 @@ class _MyLocationListState extends State<MyLocationList>
                                   "Great news, there are no conflicts to resolve!, Click here to ",
                               style: typography.Body2,
                             ),
-                            TextSpan(
-                              text: "Update Hazard scores",
-                              style: typography.Body2.copyWith(
-                                color: AppColors.primaryMain,
-                                decoration: TextDecoration.underline,
-                              ),
-                              recognizer: TapGestureRecognizer()..onTap = () {},
+                            WidgetSpan(
+                              child: _isHazardLoading
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primaryMain,
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap: () async {
+                                        setState(() {
+                                          _isHazardLoading = true;
+                                        });
+                                        await _StartHazardConflict(
+                                            conflictLocations:
+                                                conflictLocations);
+
+                                        setState(() {
+                                          _isHazardLoading = false;
+                                        });
+                                      },
+                                      child: Text(
+                                        "Update Hazard scores",
+                                        style: typography.Body2.copyWith(
+                                          color: AppColors.primaryMain,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ],
                         )
@@ -3929,49 +4648,6 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
                         )
                       : RefreshIndicator(
-                          // onRefresh: () async {
-                          //   // Store selected item IDs before refreshing
-                          //   List<String?> selectedItemIds = locationListProvider
-                          //       .selectedLocations
-                          //       .map((item) => item.id)
-                          //       .toList();
-                          //
-                          //   // Clear existing selections before the refresh starts
-                          //   locationListProvider.selectedLocations.clear();
-                          //   locationListProvider
-                          //       .notifyListeners(); // Update UI immediately
-                          //
-                          //   // Refresh data
-                          //   locationListProvider.certifiedPage = 1;
-                          //   await locationListProvider.fetchLocationList(
-                          //     context,
-                          //     locationQuery,
-                          //     1,
-                          //     40,
-                          //     widget.accountID,
-                          //     widget.subAccountID,
-                          //     widget.initialProcessId,
-                          //     widget.initialSubProcessId,
-                          //   );
-                          //
-                          //   await locationListProvider.fetchAllLocationList(
-                          //     context,
-                          //     widget.accountID,
-                          //     widget.subAccountID,
-                          //     processId: widget.initialProcessId,
-                          //     subProcessId: widget.initialSubProcessId,
-                          //   );
-                          //
-                          //   // Restore selection after refresh
-                          //   locationListProvider.selectedLocations.addAll(
-                          //       locationListProvider.myLocationList.where(
-                          //           (item) =>
-                          //               selectedItemIds.contains(item.id)));
-                          //
-                          //   locationListProvider
-                          //       .notifyListeners(); // Ensure UI updates immediately
-                          // },
-
                           onRefresh: () async {
                             // Store selected item IDs before refreshing
                             List<String?> selectedItemIds = locationListProvider
@@ -3991,7 +4667,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 context,
                                 locationQuery,
                                 1,
-                                40,
+                                60,
                                 widget.accountID,
                                 widget.subAccountID,
                                 widget.initialProcessId,
@@ -4015,46 +4691,6 @@ class _MyLocationListState extends State<MyLocationList>
                             locationListProvider
                                 .notifyListeners(); // Ensure UI updates immediately
                           },
-
-                          // onRefresh: () async {
-                          //   // Store selected item IDs before refreshing
-                          //   List<dynamic> selectedItemIds = locationListProvider
-                          //       .selectedLocations
-                          //       .map((item) => item.id)
-                          //       .toList();
-                          //
-                          //   // Refresh data
-                          //   locationListProvider.certifiedPage = 1;
-                          //   await locationListProvider.fetchLocationList(
-                          //     context,
-                          //     locationQuery,
-                          //     1,
-                          //     40,
-                          //     widget.accountID,
-                          //     widget.subAccountID,
-                          //     widget.initialProcessId,
-                          //     widget.initialSubProcessId,
-                          //   );
-                          //
-                          //   await locationListProvider.fetchAllLocationList(
-                          //     context,
-                          //     widget.accountID,
-                          //     widget.subAccountID,
-                          //     processId: widget.initialProcessId,
-                          //     subProcessId: widget.initialSubProcessId,
-                          //   );
-                          //
-                          //   // Restore selection after refresh
-                          //   locationListProvider.selectedLocations
-                          //       .clear(); // Clear existing selections
-                          //   locationListProvider.selectedLocations.addAll(
-                          //       locationListProvider.myLocationList.where(
-                          //           (item) =>
-                          //               selectedItemIds.contains(item.id)));
-                          //
-                          //   locationListProvider
-                          //       .notifyListeners(); // Notify UI update
-                          // },
                           child: ListView.builder(
                             physics: ClampingScrollPhysics(),
                             shrinkWrap: true,
@@ -4084,175 +4720,187 @@ class _MyLocationListState extends State<MyLocationList>
                                       "location list: ${locationListProvider.myLocationList}");*/
                                   return Column(
                                     children: [
-                                      Text("data"),
-                                      // MyLocationCard(
-                                      //   hazards: locationListProvider
-                                      //       .myLocationList[index].hazard,
-                                      //   imageUrl: (locationListProvider
-                                      //               .myLocationList[index]
-                                      //               .screenshots
-                                      //               ?.isNotEmpty ??
-                                      //           false)
-                                      //       ? locationListProvider
-                                      //               .myLocationList[index]
-                                      //               .screenshots![0]
-                                      //               .imageUrl ??
-                                      //           ''
-                                      //       : '',
-                                      //   index: index,
-                                      //   campusId: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.campusId ??
-                                      //       '',
-                                      //   accountId: widget.accountID,
-                                      //   subAccountId: widget.subAccountID,
-                                      //   subAccountName: widget.subAccountName,
-                                      //   locationId: locationListProvider
-                                      //           .myLocationList[index].id ??
-                                      //       '',
-                                      //   accountName: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.accountName ??
-                                      //       '',
-                                      //   ownerName: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.ownerName ??
-                                      //       '',
-                                      //   address: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .geocodedAddress ??
-                                      //       '',
-                                      //   percentage: double.parse(
-                                      //       locationListProvider
-                                      //               .myLocationList[index]
-                                      //               .finalAddress
-                                      //               ?.percent ??
-                                      //           '0'),
-                                      //   geocodingScore: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.score ??
-                                      //       0,
-                                      //   riskScore: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .overallScore ??
-                                      //       5,
-                                      //   dataCompletenessScore: 0,
-                                      //   isAutoCertified: true,
-                                      //   tags: (locationListProvider
-                                      //           .myLocationList[index]?.tags ??
-                                      //       []),
-                                      //   onDelete: (locationId) {
-                                      //     // Show delete confirmation dialog
-                                      //     showDeleteConfirmationDialog(
-                                      //       context,
-                                      //       () async {
-                                      //         print(
-                                      //             "Deleting location $locationId");
-                                      //         // Delete the location
-                                      //         await Provider.of<
-                                      //                     MyLocationListProvider>(
-                                      //                 context,
-                                      //                 listen: false)
-                                      //             .deleteLocations(
-                                      //                 context,
-                                      //                 widget.accountID!,
-                                      //                 widget.subAccountID!,
-                                      //                 "",
-                                      //                 [locationId]);
-                                      //
-                                      //         // Refresh the list after deletion
-                                      //         Provider.of<MyLocationListProvider>(
-                                      //                 context,
-                                      //                 listen: false)
-                                      //             .fetchLocationList(
-                                      //           context,
-                                      //           locationQuery,
-                                      //           1,
-                                      //           40,
-                                      //           widget.accountID,
-                                      //           widget.subAccountID,
-                                      //           widget.initialProcessId,
-                                      //           widget.initialSubProcessId,
-                                      //         );
-                                      //
-                                      //         Navigator.of(context).pop();
-                                      //       },
-                                      //       [locationId],
-                                      //     );
-                                      //   },
-                                      //   onAddToSOV: (locationId) {
-                                      //     // Show add to SOV dialog
-                                      //     // Implement bulk add to SOV
-                                      //     locationListProvider.addSelectedToSOV(
-                                      //         context,
-                                      //         widget.accountID!,
-                                      //         widget.subAccountID!,
-                                      //         widget.accountName,
-                                      //         widget.subAccountName,
-                                      //         _masterTabController,
-                                      //         locationId);
-                                      //   },
-                                      //   onAddTag: (locationId) {
-                                      //     // Show add tag dialog
-                                      //     // Implement bulk add tag
-                                      //     locationListProvider
-                                      //         .addTagsToSelectedLocations(
-                                      //             context,
-                                      //             widget.accountID!,
-                                      //             widget.subAccountID!,
-                                      //             locationId);
-                                      //   },
-                                      //   lat: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.latitude
-                                      //           .toString() ??
-                                      //       "",
-                                      //   long: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .finalAddress
-                                      //           ?.longitude
-                                      //           .toString() ??
-                                      //       "",
-                                      //   overallScore: locationListProvider
-                                      //           .myLocationList[index]
-                                      //           .overallScore
-                                      //           ?.toString() ??
-                                      //       "0",
-                                      //   hazardProcess: locationListProvider
-                                      //       .myLocationList[index]
-                                      //       .isHazardProcess,
-                                      //   rented: locationListProvider
-                                      //       .myLocationList[index]
-                                      //       .finalAddress
-                                      //       ?.rented,
-                                      //   getData: _getData,
-                                      //   onNavigateStart: () {
-                                      //     _isDisposed = true;
-                                      //     _refreshTimer?.cancel();
-                                      //     deBouncer?.cancel();
-                                      //   },
-                                      //   onNavigateBack: () {
-                                      //     _isDisposed = false;
-                                      //     _startRefreshTimer();
-                                      //      // Restore new instance
-                                      //   },
-                                      // ),
-                                      // Padding(
-                                      //   padding: const EdgeInsets.all(8.0),
-                                      //   child: Center(
-                                      //     child: Text(
-                                      //       LanguageService.getTranslated(
-                                      //           context,
-                                      //           "location_list_end_of_list"),
-                                      //       style: typography.Body1,
-                                      //     ),
-                                      //   ),
-                                      // ),
+                                      MyLocationCard(
+                                        hazards: locationListProvider
+                                            .myLocationList[index].hazard,
+                                        imageUrl: (locationListProvider
+                                                    .myLocationList[index]
+                                                    .screenshots
+                                                    ?.isNotEmpty ??
+                                                false)
+                                            ? locationListProvider
+                                                    .myLocationList[index]
+                                                    .screenshots![0]
+                                                    .imageUrl ??
+                                                ''
+                                            : '',
+                                        index: index,
+                                        isHazardCanStart: locationListProvider
+                                            .isHazardCanStart,
+                                        campusId: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.campusId ??
+                                            '',
+                                        accountId: widget.accountID,
+                                        subAccountId: widget.subAccountID,
+                                        subAccountName: widget.subAccountName,
+                                        locationId: locationListProvider
+                                                .myLocationList[index].id ??
+                                            '',
+                                        accountName: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.accountName ??
+                                            '',
+                                        ownerName: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.ownerName ??
+                                            '',
+                                        address: locationListProvider
+                                                .myLocationList[index]
+                                                .geocodedAddress ??
+                                            '',
+                                        percentage: double.parse(
+                                            locationListProvider
+                                                    .myLocationList[index]
+                                                    .finalAddress
+                                                    ?.percent ??
+                                                '0'),
+                                        geocodingScore: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.score ??
+                                            0,
+                                        riskScore: locationListProvider
+                                                .myLocationList[index]
+                                                .overallScore ??
+                                            5,
+                                        dataCompletenessScore: 0,
+                                        isAutoCertified: true,
+                                        tags: (locationListProvider
+                                                .myLocationList[index]?.tags ??
+                                            []),
+                                        onDelete: (locationId) {
+                                          // Show delete confirmation dialog
+                                          showDeleteConfirmationDialog(
+                                            context,
+                                            () async {
+                                              print(
+                                                  "Deleting location $locationId");
+                                              // Delete the location
+                                              await Provider.of<
+                                                          MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .deleteLocations(
+                                                      context,
+                                                      widget.accountID!,
+                                                      widget.subAccountID!,
+                                                      "",
+                                                      [locationId]);
+
+                                              // Refresh the list after deletion
+                                              Provider.of<MyLocationListProvider>(
+                                                      context,
+                                                      listen: false)
+                                                  .fetchLocationList(
+                                                context,
+                                                locationQuery,
+                                                1,
+                                                40,
+                                                widget.accountID,
+                                                widget.subAccountID,
+                                                widget.initialProcessId,
+                                                widget.initialSubProcessId,
+                                              );
+
+                                              Navigator.of(context).pop();
+                                            },
+                                            [locationId],
+                                          );
+                                        },
+                                        onAddToSOV: (locationId) {
+                                          // Show add to SOV dialog
+                                          // Implement bulk add to SOV
+                                          locationListProvider.addSelectedToSOV(
+                                              context,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
+                                              widget.accountName,
+                                              widget.subAccountName,
+                                              _masterTabController,
+                                              locationId);
+                                        },
+                                        onAddTag: (locationId) {
+                                          // Show add tag dialog
+                                          // Implement bulk add tag
+                                          locationListProvider
+                                              .addTagsToSelectedLocations(
+                                                  context,
+                                                  widget.accountID!,
+                                                  widget.subAccountID!,
+                                                  locationId);
+                                        },
+                                        lat: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.latitude
+                                                .toString() ??
+                                            "",
+                                        long: locationListProvider
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.longitude
+                                                .toString() ??
+                                            "",
+                                        overallScore: locationListProvider
+                                                .myLocationList[index]
+                                                .overallScore
+                                                ?.toString() ??
+                                            "0",
+                                        hazardProcess: locationListProvider
+                                            .myLocationList[index]
+                                            .isHazardProcess,
+                                        rented: locationListProvider
+                                            .myLocationList[index]
+                                            .finalAddress
+                                            ?.rented,
+                                        getData: _getData,
+                                        onNavigateStart: () {
+                                          _isDisposed = true;
+                                          _refreshTimer?.cancel();
+                                          deBouncer?.cancel();
+                                        },
+                                        onNavigateBack: () {
+                                          _StartHazardConflict(
+                                              conflictLocations:
+                                                  conflictLocations);
+                                          locationListProvider
+                                              .fetchLocationList(
+                                            context,
+                                            locationQuery,
+                                            1,
+                                            10,
+                                            widget.accountID,
+                                            widget.subAccountID,
+                                            widget.initialProcessId,
+                                            widget.initialSubProcessId,
+                                          );
+                                        },
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Center(
+                                          child: Text(
+                                            LanguageService.getTranslated(
+                                                context,
+                                                "location_list_end_of_list"),
+                                            style: typography.Body1,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   );
                                 } else {
@@ -4285,6 +4933,8 @@ class _MyLocationListState extends State<MyLocationList>
                                     {},
                                 isConflict: locationListProvider
                                     .myLocationList[index].isConflict,
+                                isHazardCanStart:
+                                    locationListProvider.isHazardCanStart,
 
                                 conflict: locationListProvider
                                     .myLocationList[index].conflicts,
@@ -4372,7 +5022,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         context,
                                         locationQuery,
                                         1,
-                                        40,
+                                        60,
                                         widget.accountID,
                                         widget.subAccountID,
                                         widget.initialProcessId,
@@ -4427,9 +5077,19 @@ class _MyLocationListState extends State<MyLocationList>
                                   deBouncer?.cancel();
                                 },
                                 onNavigateBack: () {
-                                  _isDisposed = false;
-                                  _startRefreshTimer();
-                                  // deBouncer = deBouncer.isActive; // Restore new instance
+                                  print("Hello1");
+                                  _StartHazardConflict(
+                                      conflictLocations: conflictLocations);
+                                  locationListProvider.fetchLocationList(
+                                    context,
+                                    locationQuery,
+                                    1,
+                                    10,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
+                                  );
                                 },
                               );
                             },
@@ -4612,7 +5272,7 @@ class _MyLocationListState extends State<MyLocationList>
                             context,
                             locationQuery,
                             1,
-                            40,
+                            70,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -4664,7 +5324,7 @@ class _MyLocationListState extends State<MyLocationList>
                               context,
                               locationQuery,
                               1,
-                              40,
+                              70,
                               widget.accountID,
                               widget.subAccountID,
                               widget.initialProcessId,
@@ -4764,6 +5424,7 @@ class _MyLocationListState extends State<MyLocationList>
                       .certifiedLocationList[index].screenshots![0].imageUrl ??
                   ''
               : '',
+      isHazardCanStart: locationListProvider.isHazardCanStart,
       index: index,
       accountId: widget.accountID,
       subAccountId: widget.subAccountID,
@@ -4840,7 +5501,7 @@ class _MyLocationListState extends State<MyLocationList>
               context,
               locationQuery,
               1,
-              40,
+              70,
               widget.accountID,
               widget.subAccountID,
               widget.initialProcessId,
@@ -4880,7 +5541,10 @@ class _MyLocationListState extends State<MyLocationList>
               ? locationListProvider.myLocationList[index].isHazardProcess
               : false)
           : false,
-      rented: locationListProvider.myLocationList[index].finalAddress?.rented,
+      rented: (index < locationListProvider.myLocationList.length)
+          ? locationListProvider.myLocationList[index].finalAddress?.rented ??
+              false
+          : false,
 
       // Provide a default boolean value // hazardProcess: locationListProvider.myLocationList[index].isHazardProcess ??"",
       getData: _getData,
@@ -4891,9 +5555,18 @@ class _MyLocationListState extends State<MyLocationList>
       },
 
       onNavigateBack: () {
-        _isDisposed = false;
-        _startRefreshTimer();
-        // Restore new instance
+        print("Hello1");
+        _StartHazardConflict(conflictLocations: conflictLocations);
+        locationListProvider.fetchLocationList(
+          context,
+          locationQuery,
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+        );
       },
     );
   }
@@ -5516,7 +6189,11 @@ class _MyLocationListState extends State<MyLocationList>
                                                                                 accountName: widget.accountName ?? "",
                                                                                 subAccountName: widget.subAccountName ?? "",
                                                                                 subAccountId: widget.subAccountID!,
-                                                                              )));
+                                                                              ))).then((value) {
+                                                                    if (value) {
+                                                                      _getData();
+                                                                    }
+                                                                  });
                                                                 }
                                                               }
                                                             }

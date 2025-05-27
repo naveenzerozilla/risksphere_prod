@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:RiskSphare/design_system/primitives/app_colors.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';

@@ -6,10 +6,10 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gcaptcha_v3/constants.dart';
-import 'package:RiskSphare/models/avatar_model.dart';
-import 'package:RiskSphare/models/company_type_model.dart';
-import 'package:RiskSphare/models/user_profile_model.dart';
-import 'package:RiskSphare/models/user_team_model.dart';
+import 'package:RiskSphere/models/avatar_model.dart';
+import 'package:RiskSphere/models/company_type_model.dart';
+import 'package:RiskSphere/models/user_profile_model.dart';
+import 'package:RiskSphere/models/user_team_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // Import for JSON encoding/decoding
 import 'dart:developer'; // Import for logging
@@ -142,7 +142,7 @@ class UserProfileProvider with ChangeNotifier {
       return userDataLocal;
     } on BackendException catch (e) {
       // Catch any errors that occur during the process
-      print('Error: $e'); // Log the error
+      print('Error1: $e'); // Log the error
       // Show a generic error message to the user
      // if (context.mounted) CustomToast.error(context, e.message);
       await fetchTrialInfo();
@@ -152,7 +152,7 @@ class UserProfileProvider with ChangeNotifier {
     catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: $e'); // Log the error
+      log('Error2: $e'); // Log the error
       // Show a generic error message to the user
       // TODO: Display a generic error message to the user
 
@@ -229,7 +229,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return false; // Return false in case of error
     }
@@ -265,7 +265,7 @@ class UserProfileProvider with ChangeNotifier {
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
       String error = e.toString();
-      if (context.mounted) CustomToast.error(context, error);
+      // if (context.mounted) CustomToast.error(context, error);
       isAvatarLoading = false;
       return []; // Return an empty list in case of error
     }
@@ -292,7 +292,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isImageUploadLoading = false;
       return ''; // Return false in case of error
     }
@@ -329,7 +329,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isLoading = false;
       return []; // Return an empty list in case of error
     }
@@ -409,7 +409,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isUserTeamLoading = false;
       return []; // Return an empty list in case of error
     }
@@ -447,7 +447,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isUserTeamLoading = false;
       return false; // Return false in case of error
     }
@@ -532,7 +532,7 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      if (context.mounted) CustomToast.error(context, e.toString());
+      // if (context.mounted) CustomToast.error(context, e.toString());
       isUserTeamLoading = false;
       return false; // Return false in case of error
     }

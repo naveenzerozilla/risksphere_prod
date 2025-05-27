@@ -7,14 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:RiskSphare/providers/location_list_provider.dart';
-import 'package:RiskSphare/providers/location_profile_provider.dart';
-import 'package:RiskSphare/providers/my_location_list_provider.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
-import 'package:RiskSphare/screens/listings/location_profile.dart';
-import 'package:RiskSphare/screens/listings/widgets/auto_complete_options_sovs.dart';
-import 'package:RiskSphare/screens/listings/widgets/map_full_screen.dart';
-import 'package:RiskSphare/screens/listings/widgets/message_card.dart';
+import 'package:RiskSphere/providers/location_list_provider.dart';
+import 'package:RiskSphere/providers/location_profile_provider.dart';
+import 'package:RiskSphere/providers/my_location_list_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/listings/location_profile.dart';
+import 'package:RiskSphere/screens/listings/widgets/auto_complete_options_sovs.dart';
+import 'package:RiskSphere/screens/listings/widgets/map_full_screen.dart';
+import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -43,11 +43,12 @@ class AddLocationScreen extends StatefulWidget {
   final String sovId;
   final String sovName;
   final String locationId;
-  final String locationName;
+  final String? locationName;
   final String locationIdForRef;
   final String searchQuery;
   final String page;
   final String totalPages;
+  final bool? is_conflict;
 
   const AddLocationScreen(
       {super.key,
@@ -58,11 +59,12 @@ class AddLocationScreen extends StatefulWidget {
       this.accountName = "",
       this.subAccountName = "",
       this.sovName = "",
-      this.locationName = "",
+      this.locationName,
       this.locationIdForRef = "",
       this.searchQuery = "",
       this.page = "0",
-      this.totalPages = "1"});
+      this.totalPages = "1",
+      this.is_conflict});
 
   @override
   State<AddLocationScreen> createState() => _AddLocationScreenState();
@@ -110,10 +112,20 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       // get location details
       var provider =
           Provider.of<MyLocationListProvider>(context, listen: false);
-      _locationNameController.text =
-          provider.locationProfile?.finalAddress?.locationName ?? "";
+      _locationNameController.text = (widget.is_conflict!
+          ? widget.locationName
+          : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!)!;
+
+      // _locationNameController.text = ((widget.is_conflict!) ? widget.locationName : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!));
+
+      // _locationNameController.text =
+      //     provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!;
       _locationAddressController.text =
-          provider.locationProfile?.finalAddress?.address ?? "";
+      (widget.is_conflict!
+          ? widget.locationName
+          : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!)!;
+
+      // provider.locationProfile?.finalAddress?.address ?? widget.searchQuery!;
       _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
       _locationZipCodeController.text =
           provider.locationProfile?.finalAddress?.zip ?? "";
@@ -980,7 +992,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       "data": {
         "account_id": widget.accountId,
         "sub_account_id": widget.subAccountId,
-        "sov_id": widget.sovId,
+        "sov_id": null,
         "by_search": false,
         "location_name": _locationNameController.text,
         "location_type": [_selectedLocationType],
@@ -1001,6 +1013,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "name": sovController.text.toString(),
         "account_name": widget.accountName,
         "sub_account_name": widget.subAccountName,
+        if (widget.is_conflict == true) "is_conflict": widget.is_conflict,
         if (widget.locationId.isNotEmpty) "location_id": widget.locationId,
       }
     };
@@ -1033,34 +1046,38 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
 
     if (success.toLowerCase() == 'true' && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
+      if (widget.is_conflict == true) {
+        Navigator.pop(context);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
 
-        // Navigate and wait for result
-        final result = await Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LocationProfile(
-              accountId: widget.accountId,
-              subAccountId: widget.subAccountId,
-              sovId: widget.sovId,
-              accountName: widget.accountName,
-              subAccountName: widget.subAccountName,
-              sovName: widget.sovName,
-              locationId: widget.locationId,
-              searchQuery: widget.searchQuery,
-              page: widget.page,
-              totalPages: widget.totalPages,
+          // Navigate and wait for result
+          final result = await Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LocationProfile(
+                accountId: widget.accountId,
+                subAccountId: widget.subAccountId,
+                sovId: widget.sovId,
+                accountName: widget.accountName,
+                subAccountName: widget.subAccountName,
+                sovName: widget.sovName,
+                locationId: widget.locationId,
+                searchQuery: widget.searchQuery,
+                page: widget.page,
+                totalPages: widget.totalPages,
+              ),
             ),
-          ),
-          (route) => false,
-        );
+            (route) => false,
+          );
 
-        // Reload the page when coming back
-        if (mounted) {
-          setState(() {});
-        }
-      });
+          // Reload the page when coming back
+          if (mounted) {
+            setState(() {});
+          }
+        });
+      }
     }
 
     // if (success.toLowerCase() == 'true' && mounted) {

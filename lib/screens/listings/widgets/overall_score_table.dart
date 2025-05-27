@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import '../../../models/my_location_list_model.dart';
 
 class LocationTable extends StatefulWidget {

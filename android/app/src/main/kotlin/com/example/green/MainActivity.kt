@@ -1,4 +1,4 @@
-package com.example.green
+package com.risksphere.green
 
 import io.flutter.embedding.android.FlutterActivity
 

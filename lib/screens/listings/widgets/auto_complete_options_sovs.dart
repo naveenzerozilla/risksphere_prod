@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/models/sov_list_model.dart';
+import 'package:RiskSphere/models/sov_list_model.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../models/account_list_model.dart';
 

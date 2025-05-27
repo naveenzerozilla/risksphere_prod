@@ -25,7 +25,7 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '2')
 def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0')
 
 android {
-    namespace "com.example.green"
+    namespace "com.risksphere.green"
     compileSdk 35  // ✅ Updated from 34 to 35
 
     ndkVersion flutter.ndkVersion
@@ -45,33 +45,27 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.green"
+        applicationId "com.risksphere.green"
         minSdkVersion 23
         targetSdkVersion 35  // ✅ Updated from 34 to 35
-        versionCode 4
+        versionCode 6
         versionName flutterVersionName
         multiDexEnabled true
     }
 
     signingConfigs {
         debug {
-            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
+            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
+            storePassword 'risksphere'
+            keyAlias 'alias_name'
+            keyPassword 'risksphere'
         }
+
         qa {
-            storeFile file('/Users/naveen/Downloads/qa.keystore')
-
-            if (storeFile != null && storeFile.exists()) {
-                println "✅ Keystore file exists: ${storeFile.absolutePath}"
-            } else {
-                println "❌ Keystore file does NOT exist or is not accessible: ${storeFile?.absolutePath}"
-            }
-
-            storePassword keystoreConfig.getProperty('QA_KEYSTORE_PASSWORD')
-            keyAlias keystoreConfig.getProperty('QA_KEY_ALIAS')
-            keyPassword keystoreConfig.getProperty('QA_KEY_PASSWORD')
+            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
+            storePassword 'risksphere'
+            keyAlias 'alias_name'
+            keyPassword 'risksphere'
         }
     }
 
@@ -83,7 +77,7 @@ android {
             signingConfig signingConfigs.qa
         }
         debug {
-            signingConfig signingConfigs.qa
+            signingConfig signingConfigs.debug
         }
     }
 }

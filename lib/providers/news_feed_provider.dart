@@ -2,9 +2,9 @@ import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/components/custom_toast.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/components/custom_toast.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 
 class NewsFeedProvider extends ChangeNotifier {
   bool _isActivityLoading = false;

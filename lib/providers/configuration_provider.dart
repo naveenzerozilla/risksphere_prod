@@ -2,7 +2,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/service/api_service.dart';
+import 'package:RiskSphere/service/api_service.dart';
 
 import '../design_system/primitives/custom_typography.dart';
 import '../utils/api_constants.dart';

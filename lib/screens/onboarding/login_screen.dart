@@ -1,29 +1,24 @@
 import 'dart:convert';
-import 'dart:developer';
 
-import 'package:RiskSphare/main.dart';
+import 'package:RiskSphere/main.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:RiskSphare/design_system/primitives/app_colors.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/screens/home/dashboard_screen.dart';
-import 'package:RiskSphare/service/language_service.dart';
+
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/service/language_service.dart';
 import 'package:provider/provider.dart';
 
-import '../../design_system/components/custom_checkbox.dart';
-import '../../design_system/components/custom_text_field.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../design_system/repo/constants.dart';
-import '../../design_system/repo/home.dart';
+
 import '../../providers/auth_provider.dart';
 import '../../providers/user_profile_provider.dart';
-import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'create_account_screen.dart';
 
@@ -47,18 +42,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    AuthNotifier authNotifier =
-        Provider.of<AuthNotifier>(context, listen: false);
-    authNotifier.signOut();
+    // AuthNotifier authNotifier =
+    //     Provider.of<AuthNotifier>(context, listen: false);
+    // authNotifier.signOut();
 
     super.initState();
   }
 
-  @override
-  void dispose() {
-    recaptchaV2Controller.dispose();
-    super.dispose();
-  }
+  //
+  // @override
+  // void dispose() {
+  //   recaptchaV2Controller.dispose();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -250,52 +246,52 @@ class _LoginScreenState extends State<LoginScreen> {
           //   );
           // }),
 
-          SizedBox(
-            height: CustomSpacing.one,
-          ),
-          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-            return SocialMediaButton(
-              onPressed: () async {
-                // Add your onPressed function here
-                await authNotifier.signInWithMicrosoft(context: context);
-                // Check if the user is authenticated after login attempt
-                if (authNotifier.user != null && !authNotifier.isNewUser) {
-                  // Navigate to the home screen or any other screen after login
-                  Provider.of<UserProfileProvider>(context, listen: false)
-                      .getAllUserData(context, '', '');
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => /*Home(
-                          useLightMode: false,
-                          useMaterial3: true,
-                          colorSelected: ColorSeed.baseColor,
-                          imageSelected: ColorImageProvider.leaves,
-                          handleBrightnessChange: handleBrightnessChange,
-                          handleMaterialVersionChange:
-                              handleMaterialVersionChange,
-                          handleColorSelect: handleColorSelect,
-                          handleImageSelect: handleImageSelect,
-                          colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                        ),*/
-                              DashboardScreen(),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Email not found. Please enter a valid email address.'),
-                    ),
-                  );
-                }
-              },
-              buttonText: LanguageService.getTranslated(
-                  context, "login_microsoft_button"),
-              iconPath: 'assets/images/microsoftLogo.svg',
-            );
-          }),
+          // SizedBox(
+          //   height: CustomSpacing.one,
+          // ),
+          // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+          //   return SocialMediaButton(
+          //     onPressed: () async {
+          //       // Add your onPressed function here
+          //       await authNotifier.signInWithMicrosoft(context: context);
+          //       // Check if the user is authenticated after login attempt
+          //       if (authNotifier.user != null && !authNotifier.isNewUser) {
+          //         // Navigate to the home screen or any other screen after login
+          //         Provider.of<UserProfileProvider>(context, listen: false)
+          //             .getAllUserData(context, '', '');
+          //         Navigator.pushReplacement(
+          //           context,
+          //           MaterialPageRoute(
+          //             builder:
+          //                 (context) => /*Home(
+          //                 useLightMode: false,
+          //                 useMaterial3: true,
+          //                 colorSelected: ColorSeed.baseColor,
+          //                 imageSelected: ColorImageProvider.leaves,
+          //                 handleBrightnessChange: handleBrightnessChange,
+          //                 handleMaterialVersionChange:
+          //                     handleMaterialVersionChange,
+          //                 handleColorSelect: handleColorSelect,
+          //                 handleImageSelect: handleImageSelect,
+          //                 colorSelectionMethod: ColorSelectionMethod.colorSeed,
+          //               ),*/
+          //                     DashboardScreen(),
+          //           ),
+          //         );
+          //       } else {
+          //         ScaffoldMessenger.of(context).showSnackBar(
+          //           SnackBar(
+          //             content: Text(
+          //                 'Email not found. Please enter a valid email address.'),
+          //           ),
+          //         );
+          //       }
+          //     },
+          //     buttonText: LanguageService.getTranslated(
+          //         context, "login_microsoft_button"),
+          //     iconPath: 'assets/images/microsoftLogo.svg',
+          //   );
+          // }),
           SizedBox(height: CustomSpacing.eight),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -510,8 +506,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) =>
-                                            DashboardScreen() /*Home(
+                                        builder: (context) => DashboardScreen()
+                                        /*Home(
                                         useLightMode: false,
                                         useMaterial3: true,
                                         colorSelected: ColorSeed.baseColor,
@@ -544,42 +540,76 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }),
           SizedBox(height: CustomSpacing.four),
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (context) =>
-                        // WebViewExample()),
-                        CreateAccountScreen()),
-              );
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: CustomSpacing.onePointFive,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: CustomSpacing.onePointFive),
+              Text(
+                LanguageService.getTranslated(context, 'login_dont_hv_account'),
+                style: typography.Body1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                Text(
-                    LanguageService.getTranslated(
-                        context, 'login_dont_hv_account'),
-                    style: typography.Body1.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface)),
-                Text(
-                  ' ',
-                  style: typography.Body1.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface),
+              ),
+              Text(
+                ' ',
+                style: typography.Body1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                Flexible(
-                  child: Text(
-                      LanguageService.getTranslated(
-                          context, 'login_register_now'),
-                      style: typography.Subtitle1.copyWith(
-                          color: AppColors.primaryMain)),
+              ),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => CreateAccountScreen()),
+                  );
+                },
+                child: Text(
+                  LanguageService.getTranslated(context, 'login_register_now'),
+                  style: typography.Subtitle1.copyWith(
+                    color: AppColors.primaryMain,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.start,
+          //   crossAxisAlignment: CrossAxisAlignment.center,
+          //   children: [
+          //     SizedBox(
+          //       height: CustomSpacing.onePointFive,
+          //     ),
+          //     Text(
+          //         LanguageService.getTranslated(
+          //             context, 'login_dont_hv_account'),
+          //         style: typography.Body1.copyWith(
+          //             color: Theme.of(context).colorScheme.onSurface)),
+          //     Text(
+          //       ' ',
+          //       style: typography.Body1.copyWith(
+          //           color: Theme.of(context).colorScheme.onSurface),
+          //     ),
+          //     InkWell(
+          //       onTap: () {
+          //         print("object");
+          //         Navigator.push(
+          //             context,
+          //             MaterialPageRoute(
+          //                 builder: (context) => CreateAccountScreen()));
+          //       },
+          //       child: Flexible(
+          //         child: Text(
+          //             LanguageService.getTranslated(
+          //                 context, 'login_register_now'),
+          //             style: typography.Subtitle1.copyWith(
+          //                 color: AppColors.primaryMain)),
+          //       ),
+          //     ),
+          //   ],
+          // ),
 
           SizedBox(height: CustomSpacing.eight),
         ],

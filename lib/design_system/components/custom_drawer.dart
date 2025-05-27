@@ -1,18 +1,20 @@
-import 'package:RiskSphare/providers/user_profile_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/screens/event/notification_map_screen.dart';
-import 'package:RiskSphare/screens/listings/hazard_proto.dart';
+import 'package:RiskSphere/screens/event/notification_map_screen.dart';
+import 'package:RiskSphere/screens/listings/hazard_proto.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphare/design_system/components/theme_switcher.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/screens/home/dashboard_screen.dart';
-import 'package:RiskSphare/screens/listings/account_list.dart';
-import 'package:RiskSphare/screens/userManagement/user_management.dart';
+import 'package:RiskSphere/design_system/components/theme_switcher.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/screens/listings/account_list.dart';
+import 'package:RiskSphere/screens/userManagement/user_management.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
@@ -176,52 +178,52 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 controller: _scrollController,
                 child: Consumer<DrawerSelectionProvider>(
                   builder: (context, provider, child) {
-                    return
-                      provider.isLoading
-                          ? Center(child: CircularProgressIndicator()) // Show Loader
-                          :
-                      ListView(
-                      physics: ClampingScrollPhysics(),
-                      padding: EdgeInsets.only(top: 0),
-                      children: <Widget>[
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "Dashboard",
-                          icon: Icons.home,
-                          onTap: () {
-                            provider.setSelectedItem("dashboard");
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => DashboardScreen()));
-                          },
-                          isSelected: provider.selectedItem == "dashboard",
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "Accounts",
-                          icon: Icons.account_balance_wallet,
-                          onTap: () {
-                            provider.setSelectedItem("accounts");
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => AccountListScreen()));
-                          },
-                          isSelected: provider.selectedItem == "accounts",
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "News Feed",
-                          icon: Icons.space_dashboard,
-                          onTap: () {
-                            provider.setSelectedItem("news");
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => NewsFeedScreen()));
-                          },
-                          isSelected: provider.selectedItem == "news",
-                        ),
-                      ],
-                    );
+                    return provider.isLoading
+                        ? Center(
+                            child: CircularProgressIndicator()) // Show Loader
+                        : ListView(
+                            physics: ClampingScrollPhysics(),
+                            padding: EdgeInsets.only(top: 0),
+                            children: <Widget>[
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Dashboard",
+                                icon: Icons.home,
+                                onTap: () {
+                                  provider.setSelectedItem("dashboard");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => DashboardScreen()));
+                                },
+                                isSelected:
+                                    provider.selectedItem == "dashboard",
+                              ),
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Accounts",
+                                icon: Icons.account_balance_wallet,
+                                onTap: () {
+                                  provider.setSelectedItem("accounts");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => AccountListScreen()));
+                                },
+                                isSelected: provider.selectedItem == "accounts",
+                              ),
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "News Feed",
+                                icon: Icons.space_dashboard,
+                                onTap: () {
+                                  provider.setSelectedItem("news");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => NewsFeedScreen()));
+                                },
+                                isSelected: provider.selectedItem == "news",
+                              ),
+                            ],
+                          );
                   },
                 ),
               ),
@@ -308,26 +310,65 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                         style: typography.Body1.copyWith(
                                             color: iconColor)),
                                   ),
+
                                   TextButton(
                                     onPressed: () async {
-                                      await authNotifier.signOut();
+                                      try {
+                                        final googleSignIn = GoogleSignIn();
 
-                                      Provider.of<DrawerSelectionProvider>(
-                                              context,
-                                              listen: false)
-                                          .setSelectedItem("dashboard");
-                                      Navigator.pushAndRemoveUntil(
+                                        // Sign out from Firebase Auth
+                                        await FirebaseAuth.instance.signOut();
+
+                                        // Revoke Google access and sign out
+                                        if (await googleSignIn.isSignedIn()) {
+                                          await googleSignIn.disconnect(); // Revokes access so next sign-in prompts account chooser
+                                          await googleSignIn.signOut();
+                                        }
+
+                                        // Reset drawer state
+                                        Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                            .setSelectedItem("dashboard");
+
+                                        // Navigate to SplashScreen
+                                        Navigator.pushAndRemoveUntil(
                                           context,
-                                          MaterialPageRoute(
-                                              builder: (_) => SplashScreen()),
-                                          (route) => false);
+                                          MaterialPageRoute(builder: (_) => SplashScreen()),
+                                              (route) => false,
+                                        );
+                                      } catch (e) {
+                                        print("Logout error: $e");
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("Logout failed. Please try again.")),
+                                        );
+                                      }
                                     },
                                     child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "drawer_menu_logout"),
-                                        style: typography.Body1.copyWith(
-                                            color: iconColor)),
+                                      LanguageService.getTranslated(context, "drawer_menu_logout"),
+                                      style: typography.Body1.copyWith(color: iconColor),
+                                    ),
                                   ),
+
+                                  // TextButton(
+                                  //   onPressed: () async {
+                                  //     await authNotifier.signOut();
+                                  //
+                                  //
+                                  //     Provider.of<DrawerSelectionProvider>(
+                                  //             context,
+                                  //             listen: false)
+                                  //         .setSelectedItem("dashboard");
+                                  //     Navigator.pushAndRemoveUntil(
+                                  //         context,
+                                  //         MaterialPageRoute(
+                                  //             builder: (_) => SplashScreen()),
+                                  //         (route) => false);
+                                  //   },
+                                  //   child: Text(
+                                  //       LanguageService.getTranslated(
+                                  //           context, "drawer_menu_logout"),
+                                  //       style: typography.Body1.copyWith(
+                                  //           color: iconColor)),
+                                  // ),
                                 ],
                               );
                             },
@@ -341,40 +382,45 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       showEmployeeManagementTab)
                     Consumer<DrawerSelectionProvider>(
                       builder: (context, provider, child) {
-                        return
-
-                          Consumer<UserProfileProvider>(
-
+                        return Consumer<UserProfileProvider>(
                           builder: (context, userProfileProvider, child) {
-                            bool isNotIndividual = !(userProfileProvider.userData.isIndividual ?? true); // Defaulting to true if null
+                            bool isNotIndividual =
+                                !(userProfileProvider.userData.isIndividual ??
+                                    true); // Defaulting to true if null
 
-                            return
-                            userProfileProvider.isLoading ? Center(child: CircularProgressIndicator()) :
-
-                             isNotIndividual
-                                ? Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(66),
-                                color: provider.selectedItem == "user_management"
-                                    ? AppColors.primaryMain.withOpacity(0.4)
-                                    : Colors.transparent,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.person,
-                                  color: provider.selectedItem == "user_management"
-                                      ? AppColors.primaryMain
-                                      : iconColor,
-                                ),
-                                onPressed: () {
-                                  provider.setSelectedItem("user_management");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(builder: (_) => UserManagementScreen()),
-                                  );
-                                },
-                              ),
-                            )
-                                : Container();
+                            return userProfileProvider.isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : isNotIndividual
+                                    ? Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(66),
+                                          color: provider.selectedItem ==
+                                                  "user_management"
+                                              ? AppColors.primaryMain
+                                                  .withOpacity(0.4)
+                                              : Colors.transparent,
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.person,
+                                            color: provider.selectedItem ==
+                                                    "user_management"
+                                                ? AppColors.primaryMain
+                                                : iconColor,
+                                          ),
+                                          onPressed: () {
+                                            provider.setSelectedItem(
+                                                "user_management");
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      UserManagementScreen()),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Container();
 
                             //   bool.parse((!userProfileProvider.userData.isIndividual! ?? true).toString()) ?
                             //   Container(

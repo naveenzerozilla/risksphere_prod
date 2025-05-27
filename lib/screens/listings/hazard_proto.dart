@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 
 class CustomTileProviderGEM implements TileProvider {
   final String baseUrl;

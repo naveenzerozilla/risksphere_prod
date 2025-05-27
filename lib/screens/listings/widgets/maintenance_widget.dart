@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
 
 class MaintenanceUI extends StatefulWidget {
   final String? isMaintenance;

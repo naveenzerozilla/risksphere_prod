@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/screens/listings/my_location_list.dart';
+import 'package:RiskSphere/screens/listings/my_location_list.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
 import '../../../design_system/components/custom_button.dart';
@@ -125,8 +125,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                                                   context); // Close the dialog
                                               Navigator.pop(
                                                   context); // Navigate back
-                                              Navigator.pop(
-                                                  context); // Navigate back
                                             } else {
                                               setState(() {
                                                 _isCancelLoading = false;
@@ -242,23 +240,14 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       widget.selectedLocations == null
                           ? '0'
                           : (geocodingCount == widget.selectedLocations!.length
-                          ? geocodingCount.toString()
-                          : widget.selectedLocations!.length.toString()),
+                              ? geocodingCount.toString()
+                              : widget.selectedLocations!.length.toString()),
                       style: typography.Body1.copyWith(
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    // Text(
-                    //   geocodingCount == widget.selectedLocations!.length
-                    //       ? geocodingCount.toString()
-                    //       : widget.selectedLocations!.length.toString(),
-                    //   style: typography.Body1.copyWith(
-                    //     color: Colors.green,
-                    //     fontWeight: FontWeight.bold,
-                    //   ),
-                    // ),
                     SizedBox(width: 8),
                     Text(
                       "Locations will be processed!",
@@ -281,25 +270,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                     SizedBox(width: 8),
                     Text(
                       "Locations will be reused!",
-                      style: typography.Body2.copyWith(color: Colors.white70),
-                    ),
-                  ],
-                ),
-                // ],
-                // if (conflitCount != 0) ...[
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      "$conflictCount",
-                      style: typography.Body1.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Locations will be ignored!",
                       style: typography.Body2.copyWith(color: Colors.white70),
                     ),
                   ],
@@ -349,21 +319,8 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       ),
                     ),
                     onPressed: () {
-                      // Navigator.pop(context);
-                      // Navigator.pop(context);
-                      // Navigator.pop(context);
-                      //           Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      //             return /* LocationProfile(
-                      //   account: accountListProvider.accountList[index],
-                      // );*/
-                      //               MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
-                      //           }));
-
                       if (geocodingCount + duplicateCount > 0) {
-                        // Proceed only if there are locations to commit
-                        // Call the function to commit locations
                         _commitLocations(context);
-
                         Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(

@@ -3,16 +3,16 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
-import 'package:RiskSphare/models/hazard_data.dart';
-import 'package:RiskSphare/providers/custom_tile_providers.dart';
-import 'package:RiskSphare/providers/custom_tile_providers_main_hazards.dart';
-import 'package:RiskSphare/screens/listings/account_list.dart';
-import 'package:RiskSphare/screens/listings/hazard_proto.dart'
+import 'package:RiskSphere/models/hazard_data.dart';
+import 'package:RiskSphere/providers/custom_tile_providers.dart';
+import 'package:RiskSphere/providers/custom_tile_providers_main_hazards.dart';
+import 'package:RiskSphere/screens/listings/account_list.dart';
+import 'package:RiskSphere/screens/listings/hazard_proto.dart'
     hide CustomTileProvider;
-import 'package:RiskSphare/screens/listings/sub_account_list.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_card.dart'
+import 'package:RiskSphere/screens/listings/sub_account_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/location_card.dart'
     show GeocodingDialog;
-import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart' show DateFormat;
@@ -26,20 +26,20 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:RiskSphare/constants/enums.dart';
-import 'package:RiskSphare/design_system/components/rating_widget.dart';
-import 'package:RiskSphare/design_system/primitives/app_colors.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:RiskSphare/models/account_list_model.dart';
-import 'package:RiskSphare/providers/location_profile_provider.dart';
-import 'package:RiskSphare/providers/place_api_provider.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
-import 'package:RiskSphare/screens/listings/add_location_screen.dart';
-import 'package:RiskSphare/screens/listings/widgets/dots_indicator.dart';
-import 'package:RiskSphare/screens/listings/widgets/export_dialog.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_details_popup.dart';
-import 'package:RiskSphare/screens/listings/widgets/message_card.dart';
+import 'package:RiskSphere/constants/enums.dart';
+import 'package:RiskSphere/design_system/components/rating_widget.dart';
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
+import 'package:RiskSphere/providers/location_profile_provider.dart';
+import 'package:RiskSphere/providers/place_api_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/listings/add_location_screen.dart';
+import 'package:RiskSphere/screens/listings/widgets/dots_indicator.dart';
+import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
+import 'package:RiskSphere/screens/listings/widgets/location_details_popup.dart';
+import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -76,6 +76,7 @@ class LocationProfile extends StatefulWidget {
     this.reset = false,
     this.hazardProcess,
     this.onConfirmCallback,
+    this.onNavigateBack,
   });
 
   final String accountId;
@@ -91,6 +92,7 @@ class LocationProfile extends StatefulWidget {
   final bool reset;
   final bool? hazardProcess;
   final VoidCallback? onConfirmCallback;
+  final VoidCallback? onNavigateBack;
 
   @override
   State<LocationProfile> createState() => _LocationProfileState();
@@ -179,6 +181,12 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
+  String _formatTimestamp(int? seconds) {
+    if (seconds == null) return '';
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+    return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+  }
+
   @override
   void initState() {
     if (!_isInitialized) {
@@ -226,13 +234,11 @@ class _LocationProfileState extends State<LocationProfile>
 
     int currentPage = int.tryParse(widget.page) ?? 1;
     int? totalPages = widget.locationId.isNotEmpty
-        ? int.parse(locationProvider.totalPages.toString())
-        : int.tryParse(widget.totalPages!) ==
-                int.parse(locationProvider.totalPages.toString())
-            ? int.tryParse(widget.totalPages!)
-            : int.parse(locationProvider.totalPages.toString());
+        ? int.tryParse(locationProvider.totalPages.toString())
+        : int.tryParse(widget.totalPages!) ??
+            int.tryParse(locationProvider.totalPages.toString());
 
-    if (currentPage >= totalPages!) {
+    if (currentPage >= (totalPages ?? 0)) {
       print('Already on the last page.');
       setState(() {
         _isLoading = false;
@@ -243,6 +249,7 @@ class _LocationProfileState extends State<LocationProfile>
     int pageToNavigate = currentPage + 1;
     print('Navigating to page: $pageToNavigate');
 
+    // Check if the page already exists in the navigation stack
     bool alreadyExists = false;
     Navigator.popUntil(context, (route) {
       if (route.settings.name == 'LocationProfile$pageToNavigate') {
@@ -259,11 +266,9 @@ class _LocationProfileState extends State<LocationProfile>
       return;
     }
 
-    // Execute navigation in a separate microtask to ensure UI updates first
-    Future.microtask(() {
-      print("testsuccess");
-      Navigator.of(context)
-          .pushReplacement(
+    // Navigate to the next page
+    try {
+      await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => LocationProfile(
             accountId: widget.accountId,
@@ -277,13 +282,14 @@ class _LocationProfileState extends State<LocationProfile>
             totalPages: totalPages.toString(),
           ),
         ),
-      )
-          .then((_) {
-        setState(() {
-          _isLoading = false;
-        });
+      );
+    } catch (e) {
+      print('Navigation error: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
-    });
+    }
   }
 
   void _navigateLeft() {
@@ -326,6 +332,121 @@ class _LocationProfileState extends State<LocationProfile>
       ),
     );
   }
+
+  // Future<void> _navigateRight() async {
+  //   if (_isLoading) return;
+  //
+  //   setState(() {
+  //     _isLoading = true;
+  //   });
+  //
+  //   print('Navigating from page ${widget.page} of ${widget.totalPages}');
+  //
+  //   final locationProvider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //
+  //   int currentPage = int.tryParse(widget.page) ?? 1;
+  //   int? totalPages = widget.locationId.isNotEmpty
+  //       ? int.parse(locationProvider.totalPages.toString())
+  //       : int.tryParse(widget.totalPages!) ==
+  //               int.parse(locationProvider.totalPages.toString())
+  //           ? int.tryParse(widget.totalPages!)
+  //           : int.parse(locationProvider.totalPages.toString());
+  //
+  //   if (currentPage >= totalPages!) {
+  //     print('Already on the last page.');
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //     return;
+  //   }
+  //
+  //   int pageToNavigate = currentPage + 1;
+  //   print('Navigating to page: $pageToNavigate');
+  //
+  //   bool alreadyExists = false;
+  //   Navigator.popUntil(context, (route) {
+  //     if (route.settings.name == 'LocationProfile$pageToNavigate') {
+  //       alreadyExists = true;
+  //     }
+  //     return true;
+  //   });
+  //
+  //   if (alreadyExists) {
+  //     print('Page $pageToNavigate already exists. Not pushing a new one.');
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //     return;
+  //   }
+  //
+  //   // Execute navigation in a separate microtask to ensure UI updates first
+  //   Future.microtask(() {
+  //     print("testsuccess");
+  //     Navigator.of(context)
+  //         .pushReplacement(
+  //       MaterialPageRoute(
+  //         builder: (context) => LocationProfile(
+  //           accountId: widget.accountId,
+  //           subAccountId: widget.subAccountId,
+  //           sovId: widget.sovId,
+  //           accountName: widget.accountName,
+  //           subAccountName: widget.subAccountName,
+  //           sovName: widget.sovName,
+  //           searchQuery: widget.searchQuery,
+  //           page: pageToNavigate.toString(),
+  //           totalPages: totalPages.toString(),
+  //         ),
+  //       ),
+  //     )
+  //         .then((_) {
+  //       setState(() {
+  //         _isLoading = false;
+  //       });
+  //     });
+  //   });
+  // }
+  //
+  // void _navigateLeft() {
+  //   int currentPage = int.tryParse(widget.page) ?? 1;
+  //
+  //   // Prevent navigation beyond first page
+  //   if (currentPage <= 1) {
+  //     print('Already on the first page.');
+  //     return;
+  //   }
+  //
+  //   int pageToNavigate = currentPage - 1;
+  //   print('Navigating to page: $pageToNavigate');
+  //
+  //   final locationProvider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //   int? totalPages = widget.locationId.isNotEmpty
+  //       ? int.parse(locationProvider.totalPages.toString())
+  //       : int.tryParse(widget.totalPages!) ==
+  //               int.parse(locationProvider.totalPages.toString())
+  //           ? int.tryParse(widget.totalPages!)
+  //           : int.parse(locationProvider.totalPages.toString());
+  //   // int? totalPages = widget.locationId.isNotEmpty
+  //   //     ? locationProvider.resetTotalPage
+  //   //     : (int.tryParse(widget.totalPages!) ?? 1);
+  //   Navigator.of(context).replace(
+  //     oldRoute: ModalRoute.of(context)!,
+  //     newRoute: MaterialPageRoute(
+  //       builder: (context) => LocationProfile(
+  //         accountId: widget.accountId,
+  //         subAccountId: widget.subAccountId,
+  //         sovId: widget.sovId,
+  //         accountName: widget.accountName,
+  //         subAccountName: widget.subAccountName,
+  //         sovName: widget.sovName,
+  //         searchQuery: widget.searchQuery,
+  //         page: pageToNavigate.toString(),
+  //         totalPages: totalPages.toString(),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Future<void> _initializeClusterManager() async {
     final allLocations =
@@ -687,7 +808,8 @@ class _LocationProfileState extends State<LocationProfile>
                                           InkWell(
                                               onTap: () {
                                                 !bottomsheetopened
-                                                    ? Navigator.pop(context)
+                                                    ? Navigator.pop(
+                                                        context, false)
                                                     : null;
                                               },
                                               child: Icon(
@@ -1196,7 +1318,7 @@ class _LocationProfileState extends State<LocationProfile>
           duration: Duration(milliseconds: 300),
           constraints: BoxConstraints(
             maxHeight: _isBottomSheetExpanded
-                ? MediaQuery.of(context).size.height * 0.67
+                ? MediaQuery.of(context).size.height * 0.65
                 : 100,
           ),
           // height: _isBottomSheetExpanded ? 600 : 100,
@@ -1316,7 +1438,7 @@ class _LocationProfileState extends State<LocationProfile>
                           // setState(() {
                           //   _isBottomSheetExpanded = !_isBottomSheetExpanded;
                           // });
-                          print("object");
+
                           setState(() {
                             _isBottomSheetExpanded = !_isBottomSheetExpanded;
                             bottomsheetopened == false
@@ -1413,14 +1535,11 @@ class _LocationProfileState extends State<LocationProfile>
                         ],
                       ),
                       Container(
-                        // height:
-                        // constraints.maxHeight * 0.5,
                         constraints: BoxConstraints(
                           minHeight: 10,
                           maxHeight: Platform.isAndroid
-                              ? MediaQuery.of(context).size.height * 0.30
-                              : MediaQuery.of(context).size.height * 0.37,
-                          //430,
+                              ? MediaQuery.of(context).size.height * 0.38
+                              : MediaQuery.of(context).size.height * 0.31,
                         ),
                         child: TabBarView(
                           physics: NeverScrollableScrollPhysics(),
@@ -2351,19 +2470,21 @@ class _LocationProfileState extends State<LocationProfile>
                             ? Column(
                                 children: [
                                   Container(
-                                    height: 240,
+                                    height:
+                                        MediaQuery.of(context).size.height / 4,
                                     decoration: BoxDecoration(
                                       color:
                                           Theme.of(context).colorScheme.surface,
                                     ),
                                     child: PageView.builder(
-                                      key: ValueKey(_images.length +
-                                          (locationProfileProvider
-                                                  .locationProfile
-                                                  ?.screenshots
-                                                  ?.length ??
-                                              0)),
-                                      // 🔥 Important to force rebuild
+                                      key: ValueKey(
+                                        _images.length +
+                                            (locationProfileProvider
+                                                    .locationProfile
+                                                    ?.screenshots
+                                                    ?.length ??
+                                                0),
+                                      ),
                                       controller:
                                           PageController(viewportFraction: 0.9),
                                       itemCount: _images.length +
@@ -2375,6 +2496,81 @@ class _LocationProfileState extends State<LocationProfile>
                                       itemBuilder: (BuildContext context,
                                           int itemIndex) {
                                         if (itemIndex < _images.length) {
+                                          // ✅ Local image
+                                          final localImage = _images[itemIndex];
+
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Stack(
+                                                    children: [
+                                                      Center(
+                                                        child: ClipRRect(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(16),
+                                                          child: Image.file(
+                                                            localImage,
+                                                            width:
+                                                                double.infinity,
+                                                            height:
+                                                                double.infinity,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Positioned(
+                                                        top: 8,
+                                                        right: 8,
+                                                        child: IconButton(
+                                                          icon: Icon(
+                                                              Icons.delete,
+                                                              color:
+                                                                  Colors.red),
+                                                          onPressed: () {
+                                                            print(localImage ??
+                                                                '');
+                                                            setState(() {
+                                                              _images.removeAt(
+                                                                  itemIndex);
+                                                            });
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                const Padding(
+                                                  padding: EdgeInsets.only(
+                                                      left: 10.0),
+                                                  child: Text(
+                                                    '',
+                                                    style:
+                                                        TextStyle(), // You can add styling if needed
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          left: 10.0),
+                                                  child: Text(
+                                                    "",
+                                                    // _formatTimestamp(DateTime.now().second),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        } else {
                                           final screenshotIndex =
                                               itemIndex - _images.length;
                                           final screenshot =
@@ -2382,14 +2578,17 @@ class _LocationProfileState extends State<LocationProfile>
                                                       .locationProfile
                                                       ?.screenshots?[
                                                   screenshotIndex];
-                                          // For local images (_images)
+
+                                          if (screenshot == null)
+                                            return const SizedBox();
+
                                           return Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 8.0),
                                             child: GestureDetector(
                                               onTap: () =>
                                                   _showImagePreviewFromUrl(
-                                                      screenshot?.imageUrl ??
+                                                      screenshot.imageUrl ??
                                                           ''),
                                               child: Column(
                                                 crossAxisAlignment:
@@ -2407,7 +2606,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                             child:
                                                                 Image.network(
                                                               screenshot
-                                                                      ?.imageUrl ??
+                                                                      .imageUrl ??
                                                                   '',
                                                               width: double
                                                                   .infinity,
@@ -2426,6 +2625,9 @@ class _LocationProfileState extends State<LocationProfile>
                                                                 color:
                                                                     Colors.red),
                                                             onPressed: () {
+                                                              print(screenshot
+                                                                      .imageUrl ??
+                                                                  '');
                                                               setState(() {
                                                                 locationProfileProvider
                                                                     .locationProfile
@@ -2445,7 +2647,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                         const EdgeInsets.only(
                                                             left: 10.0),
                                                     child: Text(
-                                                      '${screenshot?.name ?? ''} (@)',
+                                                      '${screenshot.name ?? ''} (@)',
                                                       style: Theme.of(context)
                                                           .textTheme
                                                           .bodyMedium,
@@ -2456,7 +2658,9 @@ class _LocationProfileState extends State<LocationProfile>
                                                         const EdgeInsets.only(
                                                             left: 10.0),
                                                     child: Text(
-                                                      '${screenshot?.createdAt!.iSeconds ?? ''} (@)',
+                                                      _formatTimestamp(
+                                                          screenshot.createdAt
+                                                              ?.iSeconds),
                                                       style: Theme.of(context)
                                                           .textTheme
                                                           .bodyMedium,
@@ -2466,150 +2670,271 @@ class _LocationProfileState extends State<LocationProfile>
                                               ),
                                             ),
                                           );
-                                        } else {
-                                          // For network images (screenshots)
-                                          final screenshotIndex =
-                                              itemIndex - _images.length;
-                                          final screenshot =
-                                              locationProfileProvider
-                                                      .locationProfile
-                                                      ?.screenshots?[
-                                                  screenshotIndex];
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8.0),
-                                            child: GestureDetector(
-                                              onTap: () =>
-                                                  _showImagePreviewFromUrl(
-                                                      screenshot?.imageUrl ??
-                                                          ''),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Stack(
-                                                    children: [
-                                                      Center(
-                                                        child: ClipRRect(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(16),
-                                                          child: Image.network(
-                                                            screenshot
-                                                                    ?.imageUrl ??
-                                                                '',
-                                                            width:
-                                                                double.infinity,
-                                                            height: 180,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Positioned(
-                                                        top: 8,
-                                                        right: 8,
-                                                        child: IconButton(
-                                                          icon: Icon(
-                                                              Icons.delete,
-                                                              color:
-                                                                  Colors.red),
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              locationProfileProvider
-                                                                  .locationProfile
-                                                                  ?.screenshots
-                                                                  ?.removeAt(
-                                                                      itemIndex -
-                                                                          _images
-                                                                              .length);
-                                                            });
-                                                          },
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 20.0),
-                                                    child: Text(
-                                                      '${screenshot?.name ?? ''} (@)',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 0),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 10.0),
-                                                    child: Text(
-                                                      (screenshot?.createdAt
-                                                                  ?.iSeconds !=
-                                                              null)
-                                                          ? _formatDate(
-                                                              screenshot!
-                                                                  .createdAt!
-                                                                  .iNanoseconds!)
-                                                          : '',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium,
-                                                    ),
-                                                  )
-                                                ],
-                                              ),
-                                            ),
-                                          );
-
-                                          // return Padding(
-                                          //   padding: const EdgeInsets.symmetric(
-                                          //       horizontal: 8.0),
-                                          //   child: GestureDetector(
-                                          //     onTap: () =>
-                                          //         _showImagePreviewFromUrl(
-                                          //             screenshot?.imageUrl ??
-                                          //                 ''),
-                                          //     child: Stack(
-                                          //       children: [
-                                          //         Center(
-                                          //           child: ClipRRect(
-                                          //             borderRadius:
-                                          //                 BorderRadius.circular(
-                                          //                     16),
-                                          //             child: Image.network(
-                                          //               screenshot?.imageUrl ??
-                                          //                   '',
-                                          //               width: double.infinity,
-                                          //               height: 200,
-                                          //               fit: BoxFit.cover,
-                                          //             ),
-                                          //           ),
-                                          //         ),
-                                          //         Positioned(
-                                          //           top: 8,
-                                          //           right: 8,
-                                          //           child: IconButton(
-                                          //             icon: Icon(Icons.delete,
-                                          //                 color: Colors.red),
-                                          //             onPressed: () {
-                                          //               setState(() {
-                                          //                 _images.removeAt(
-                                          //                     itemIndex);
-                                          //               });
-                                          //             },
-                                          //           ),
-                                          //         ),
-                                          //       ],
-                                          //     ),
-                                          //   ),
-                                          // );
                                         }
                                       },
                                     ),
                                   ),
+
+                                  // Container(
+                                  //   height: 240,
+                                  //   decoration: BoxDecoration(
+                                  //     color:
+                                  //         Theme.of(context).colorScheme.surface,
+                                  //   ),
+                                  //   child: PageView.builder(
+                                  //     key: ValueKey(_images.length +
+                                  //         (locationProfileProvider
+                                  //                 .locationProfile
+                                  //                 ?.screenshots
+                                  //                 ?.length ??
+                                  //             0)),
+                                  //     // 🔥 Important to force rebuild
+                                  //     controller:
+                                  //         PageController(viewportFraction: 0.9),
+                                  //     itemCount: _images.length +
+                                  //         (locationProfileProvider
+                                  //                 .locationProfile
+                                  //                 ?.screenshots
+                                  //                 ?.length ??
+                                  //             0),
+                                  //     itemBuilder: (BuildContext context,
+                                  //         int itemIndex) {
+                                  //       if (itemIndex < _images.length) {
+                                  //         final screenshotIndex =
+                                  //             itemIndex - _images.length;
+                                  //         final screenshot =
+                                  //             locationProfileProvider
+                                  //                     .locationProfile
+                                  //                     ?.screenshots?[
+                                  //                 screenshotIndex];
+                                  //         // For local images (_images)
+                                  //         return Padding(
+                                  //           padding: const EdgeInsets.symmetric(
+                                  //               horizontal: 8.0),
+                                  //           child: GestureDetector(
+                                  //             onTap: () =>
+                                  //                 _showImagePreviewFromUrl(
+                                  //                     screenshot?.imageUrl ??
+                                  //                         ''),
+                                  //             child: Column(
+                                  //               crossAxisAlignment:
+                                  //                   CrossAxisAlignment.start,
+                                  //               children: [
+                                  //                 Expanded(
+                                  //                   child: Stack(
+                                  //                     children: [
+                                  //                       Center(
+                                  //                         child: ClipRRect(
+                                  //                           borderRadius:
+                                  //                               BorderRadius
+                                  //                                   .circular(
+                                  //                                       16),
+                                  //                           child:
+                                  //                               Image.network(
+                                  //                             screenshot
+                                  //                                     ?.imageUrl ??
+                                  //                                 '',
+                                  //                             width: double
+                                  //                                 .infinity,
+                                  //                             height: double
+                                  //                                 .infinity,
+                                  //                             fit: BoxFit.cover,
+                                  //                           ),
+                                  //                         ),
+                                  //                       ),
+                                  //                       Positioned(
+                                  //                         top: 8,
+                                  //                         right: 8,
+                                  //                         child: IconButton(
+                                  //                           icon: Icon(
+                                  //                               Icons.delete,
+                                  //                               color:
+                                  //                                   Colors.red),
+                                  //                           onPressed: () {
+                                  //                             setState(() {
+                                  //                               locationProfileProvider
+                                  //                                   .locationProfile
+                                  //                                   ?.screenshots
+                                  //                                   ?.removeAt(
+                                  //                                       screenshotIndex);
+                                  //                             });
+                                  //                           },
+                                  //                         ),
+                                  //                       ),
+                                  //                     ],
+                                  //                   ),
+                                  //                 ),
+                                  //                 const SizedBox(height: 2),
+                                  //                 Padding(
+                                  //                   padding:
+                                  //                       const EdgeInsets.only(
+                                  //                           left: 10.0),
+                                  //                   child: Text(
+                                  //                     '${screenshot?.name ?? ''} (@)',
+                                  //                     style: Theme.of(context)
+                                  //                         .textTheme
+                                  //                         .bodyMedium,
+                                  //                   ),
+                                  //                 ),
+                                  //                 Padding(
+                                  //                   padding:
+                                  //                       const EdgeInsets.only(
+                                  //                           left: 10.0),
+                                  //                   child: Text(
+                                  //                     '${screenshot?.createdAt!.iSeconds ?? ''} (@)',
+                                  //                     style: Theme.of(context)
+                                  //                         .textTheme
+                                  //                         .bodyMedium,
+                                  //                   ),
+                                  //                 ),
+                                  //               ],
+                                  //             ),
+                                  //           ),
+                                  //         );
+                                  //       } else {
+                                  //         // For network images (screenshots)
+                                  //         final screenshotIndex =
+                                  //             itemIndex - _images.length;
+                                  //         final screenshot =
+                                  //             locationProfileProvider
+                                  //                     .locationProfile
+                                  //                     ?.screenshots?[
+                                  //                 screenshotIndex];
+                                  //         return Padding(
+                                  //           padding: const EdgeInsets.symmetric(
+                                  //               horizontal: 8.0),
+                                  //           child: GestureDetector(
+                                  //             onTap: () =>
+                                  //                 _showImagePreviewFromUrl(
+                                  //                     screenshot?.imageUrl ??
+                                  //                         ''),
+                                  //             child: Column(
+                                  //               crossAxisAlignment:
+                                  //                   CrossAxisAlignment.start,
+                                  //               children: [
+                                  //                 Stack(
+                                  //                   children: [
+                                  //                     Center(
+                                  //                       child: ClipRRect(
+                                  //                         borderRadius:
+                                  //                             BorderRadius
+                                  //                                 .circular(16),
+                                  //                         child: Image.network(
+                                  //                           screenshot
+                                  //                                   ?.imageUrl ??
+                                  //                               '',
+                                  //                           width:
+                                  //                               double.infinity,
+                                  //                           height: 180,
+                                  //                           fit: BoxFit.cover,
+                                  //                         ),
+                                  //                       ),
+                                  //                     ),
+                                  //                     Positioned(
+                                  //                       top: 8,
+                                  //                       right: 8,
+                                  //                       child: IconButton(
+                                  //                         icon: Icon(
+                                  //                             Icons.delete,
+                                  //                             color:
+                                  //                                 Colors.red),
+                                  //                         onPressed: () {
+                                  //                           setState(() {
+                                  //                             locationProfileProvider
+                                  //                                 .locationProfile
+                                  //                                 ?.screenshots
+                                  //                                 ?.removeAt(
+                                  //                                     itemIndex -
+                                  //                                         _images
+                                  //                                             .length);
+                                  //                           });
+                                  //                         },
+                                  //                       ),
+                                  //                     ),
+                                  //                   ],
+                                  //                 ),
+                                  //                 const SizedBox(height: 4),
+                                  //                 Padding(
+                                  //                   padding:
+                                  //                       const EdgeInsets.only(
+                                  //                           left: 20.0),
+                                  //                   child: Text(
+                                  //                     '${screenshot?.name ?? ''} (@)',
+                                  //                     style: Theme.of(context)
+                                  //                         .textTheme
+                                  //                         .bodyMedium,
+                                  //                   ),
+                                  //                 ),
+                                  //                 const SizedBox(height: 0),
+                                  //                 Padding(
+                                  //                   padding:
+                                  //                       const EdgeInsets.only(
+                                  //                           left: 10.0),
+                                  //                   child: Text(
+                                  //                     (screenshot?.createdAt
+                                  //                                 ?.iSeconds !=
+                                  //                             null)
+                                  //                         ? _formatDate(
+                                  //                             screenshot!
+                                  //                                 .createdAt!
+                                  //                                 .iNanoseconds!)
+                                  //                         : '',
+                                  //                     style: Theme.of(context)
+                                  //                         .textTheme
+                                  //                         .bodyMedium,
+                                  //                   ),
+                                  //                 )
+                                  //               ],
+                                  //             ),
+                                  //           ),
+                                  //         );
+                                  //
+                                  //         // return Padding(
+                                  //         //   padding: const EdgeInsets.symmetric(
+                                  //         //       horizontal: 8.0),
+                                  //         //   child: GestureDetector(
+                                  //         //     onTap: () =>
+                                  //         //         _showImagePreviewFromUrl(
+                                  //         //             screenshot?.imageUrl ??
+                                  //         //                 ''),
+                                  //         //     child: Stack(
+                                  //         //       children: [
+                                  //         //         Center(
+                                  //         //           child: ClipRRect(
+                                  //         //             borderRadius:
+                                  //         //                 BorderRadius.circular(
+                                  //         //                     16),
+                                  //         //             child: Image.network(
+                                  //         //               screenshot?.imageUrl ??
+                                  //         //                   '',
+                                  //         //               width: double.infinity,
+                                  //         //               height: 200,
+                                  //         //               fit: BoxFit.cover,
+                                  //         //             ),
+                                  //         //           ),
+                                  //         //         ),
+                                  //         //         Positioned(
+                                  //         //           top: 8,
+                                  //         //           right: 8,
+                                  //         //           child: IconButton(
+                                  //         //             icon: Icon(Icons.delete,
+                                  //         //                 color: Colors.red),
+                                  //         //             onPressed: () {
+                                  //         //               setState(() {
+                                  //         //                 _images.removeAt(
+                                  //         //                     itemIndex);
+                                  //         //               });
+                                  //         //             },
+                                  //         //           ),
+                                  //         //         ),
+                                  //         //       ],
+                                  //         //     ),
+                                  //         //   ),
+                                  //         // );
+                                  //       }
+                                  //     },
+                                  //   ),
+                                  // ),
                                   SizedBox(height: 8),
                                 ],
                               )
@@ -3381,6 +3706,7 @@ class _LocationProfileState extends State<LocationProfile>
           : Stack(
               children: [
                 Container(
+                  height: MediaQuery.of(context).size.height * 0.5,
                   margin: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -3403,8 +3729,7 @@ class _LocationProfileState extends State<LocationProfile>
                           key: UniqueKey(),
                           mapType: _currentMapType,
                           onCameraIdle: () {
-                            _mapIsReady =
-                                true; // Set the flag when map is fully ready
+                            _mapIsReady = true;
                           },
                           markers: Set<Marker>.of(markers.values),
                           zoomControlsEnabled: true,
@@ -3413,11 +3738,7 @@ class _LocationProfileState extends State<LocationProfile>
                             zoom: 18,
                           ),
                           onMapCreated: (GoogleMapController controller) {
-                            // onMapCreated: (controller) {
                             _mapController = controller;
-                            // },  // if (!_controller.isCompleted) {
-                            //   _controller.complete(controller);
-                            // }
                           },
                           gestureRecognizers: <Factory<
                               OneSequenceGestureRecognizer>>{
@@ -3430,6 +3751,57 @@ class _LocationProfileState extends State<LocationProfile>
                     ),
                   ),
                 ),
+
+                // Container(
+                //   margin: EdgeInsets.all(16),
+                //   decoration: BoxDecoration(
+                //     color: Colors.white,
+                //     borderRadius: BorderRadius.circular(20),
+                //     boxShadow: [
+                //       BoxShadow(
+                //         color: Colors.black.withOpacity(0.1),
+                //         blurRadius: 10,
+                //         offset: Offset(0, 5),
+                //       ),
+                //     ],
+                //   ),
+                //   child: ClipRRect(
+                //     borderRadius: BorderRadius.circular(20),
+                //     child: Screenshot(
+                //       controller: _geocodingScreenshotController,
+                //       child: RepaintBoundary(
+                //         key: _mapKey,
+                //         child: GoogleMap(
+                //           key: UniqueKey(),
+                //           mapType: _currentMapType,
+                //           onCameraIdle: () {
+                //             _mapIsReady =
+                //                 true; // Set the flag when map is fully ready
+                //           },
+                //           markers: Set<Marker>.of(markers.values),
+                //           zoomControlsEnabled: true,
+                //           initialCameraPosition: CameraPosition(
+                //             target: LatLng(latitude, longitude),
+                //             zoom: 18,
+                //           ),
+                //           onMapCreated: (GoogleMapController controller) {
+                //             // onMapCreated: (controller) {
+                //             _mapController = controller;
+                //             // },  // if (!_controller.isCompleted) {
+                //             //   _controller.complete(controller);
+                //             // }
+                //           },
+                //           gestureRecognizers: <Factory<
+                //               OneSequenceGestureRecognizer>>{
+                //             Factory<OneSequenceGestureRecognizer>(
+                //                 () => EagerGestureRecognizer()),
+                //           },
+                //           onTap: _isAddingMarker ? _handleMapTap : null,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
                 // Left navigation button
                 if ((int.tryParse(widget.page) ?? 1) > 1 &&
@@ -3482,7 +3854,7 @@ class _LocationProfileState extends State<LocationProfile>
 
                 // Floating Action Buttons (Map Type & Screenshot)
                 Positioned(
-                  bottom: 105,
+                  bottom: MediaQuery.of(context).size.height / 5.8,
                   left: 16,
                   child: Container(
                     margin: EdgeInsets.all(12),
@@ -3683,6 +4055,7 @@ class _LocationProfileState extends State<LocationProfile>
 
       // Show success message
       if (mounted) {
+        widget.onConfirmCallback?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Screenshot uploaded successfully!')),
         );
@@ -3748,29 +4121,27 @@ class _LocationProfileState extends State<LocationProfile>
 
     return Consumer<MyLocationListProvider>(
       builder: (context, locationProfileProvider, child) {
-        // Ensure safe latitude and longitude values
         double latitude =
             locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
         double longitude =
             locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
 
-        return Stack(
-          children: [
-            // Google Map
-            Positioned.fill(
-              child: ClipRRect(
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: Stack(
+            children: [
+              // ✅ Let the map fill the stack naturally
+              ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Screenshot(
                   controller: _riskScoreScreenshotController,
                   child: GoogleMap(
-                    // key: _googleMapKey,
                     mapType: MapType.normal,
-                    // mapType: _currentMapType1,
                     zoomControlsEnabled: true,
                     markers: Set<Marker>.of(markers.values),
                     initialCameraPosition: CameraPosition(
                       target: LatLng(latitude, longitude),
-                      zoom: 15,
+                      zoom: 13,
                     ),
                     onMapCreated: (GoogleMapController controller) {
                       if (!_controller.isCompleted) {
@@ -3779,7 +4150,7 @@ class _LocationProfileState extends State<LocationProfile>
                     },
                     gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                       Factory<OneSequenceGestureRecognizer>(
-                        () => EagerGestureRecognizer(), // Allows button taps
+                        () => EagerGestureRecognizer(),
                       ),
                     },
                     onTap: _isAddingMarker ? _handleMapTap : null,
@@ -3787,47 +4158,193 @@ class _LocationProfileState extends State<LocationProfile>
                   ),
                 ),
               ),
-            ),
 
-            // Hazard Controls (Bottom)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: _buildHazardControls(),
-            ),
-
-            // Map Type Selector (Top Right)
-            // Positioned(
-            //   top: 16,
-            //   right: 16,
-            //   child: _buildMapTypeSelector(),
-            // ),
-
-            // Left Navigation Button
-            if ((int.tryParse(widget.page) ?? 1) > 1)
-              _buildNavigationButton(
-                alignment: Alignment.centerLeft,
-                left: 16,
-                icon: Icons.chevron_left,
-                onPressed: _navigateLeft,
+              Positioned(
+                top: 40,
+                bottom: 50,
+                left: 0,
+                child: _buildHazardControls(),
               ),
 
-            // Right Navigation Button
-            if ((int.tryParse(widget.page) ?? 1) <
-                (widget.locationId.isNotEmpty
-                    ? locationProfileProvider.resetTotalPage! - 1
-                    : (int.tryParse(widget.totalPages!) ?? 1)))
-              _buildNavigationButton(
-                alignment: Alignment.centerRight,
-                right: 16,
-                icon: Icons.chevron_right,
-                onPressed: _navigateRight,
-              ),
-          ],
+              if ((int.tryParse(widget.page) ?? 1) > 1)
+                Positioned(
+                  left: 16,
+                  child: _buildNavigationButton(
+                    alignment: Alignment.centerLeft,
+                    icon: Icons.chevron_left,
+                    onPressed: _navigateLeft,
+                  ),
+                ),
+
+              if ((int.tryParse(widget.page) ?? 1) <
+                  (widget.locationId.isNotEmpty
+                      ? locationProfileProvider.resetTotalPage! - 1
+                      : (int.tryParse(widget.totalPages!) ?? 1)))
+                Positioned(
+                  right: 16,
+                  child: _buildNavigationButton(
+                    alignment: Alignment.centerRight,
+                    icon: Icons.chevron_right,
+                    onPressed: _navigateRight,
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
   }
+
+  // Widget _riskScore() {
+  //   var typography = CustomTypography(context);
+  //
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, locationProfileProvider, child) {
+  //       // Ensure safe latitude and longitude values
+  //       double latitude =
+  //           locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
+  //       double longitude =
+  //           locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
+  //       return Stack(
+  //         children: [
+  //           // Google Map
+  //           Positioned.fill(
+  //             child: ClipRRect(
+  //               borderRadius: BorderRadius.circular(20),
+  //               child: Screenshot(
+  //                 controller: _riskScoreScreenshotController,
+  //                 child: GoogleMap(
+  //                   mapType: MapType.normal,
+  //                   zoomControlsEnabled: true,
+  //                   markers: Set<Marker>.of(markers.values),
+  //                   initialCameraPosition: CameraPosition(
+  //                     target: LatLng(latitude, longitude),
+  //                     zoom: 13,
+  //                   ),
+  //                   onMapCreated: (GoogleMapController controller) {
+  //                     if (!_controller.isCompleted) {
+  //                       _controller.complete(controller);
+  //                     }
+  //                   },
+  //                   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+  //                     Factory<OneSequenceGestureRecognizer>(
+  //                           () => EagerGestureRecognizer(),
+  //                     ),
+  //                   },
+  //                   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                   tileOverlays: _getTileOverlays(),
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //
+  //           // Hazard Controls
+  //           Positioned(
+  //             bottom: 0,
+  //             left: 0,
+  //             child: _buildHazardControls(),
+  //           ),
+  //
+  //           // Left Navigation Button
+  //           if ((int.tryParse(widget.page) ?? 1) > 1)
+  //             Positioned(
+  //               left: 16,
+  //               child: _buildNavigationButton(
+  //                 alignment: Alignment.centerLeft,
+  //                 icon: Icons.chevron_left,
+  //                 onPressed: _navigateLeft,
+  //               ),
+  //             ),
+  //
+  //           // Right Navigation Button
+  //           if ((int.tryParse(widget.page) ?? 1) <
+  //               (widget.locationId.isNotEmpty
+  //                   ? locationProfileProvider.resetTotalPage! - 1
+  //                   : (int.tryParse(widget.totalPages!) ?? 1)))
+  //             Positioned(
+  //               right: 16,
+  //               child: _buildNavigationButton(
+  //                 alignment: Alignment.centerRight,
+  //                 icon: Icons.chevron_right,
+  //                 onPressed: _navigateRight,
+  //               ),
+  //             ),
+  //         ],
+  //       );
+  //       //   Stack(
+  //       //   children: [
+  //       //     // Google Map
+  //       //     Positioned.fill(
+  //       //       child: ClipRRect(
+  //       //         borderRadius: BorderRadius.circular(20),
+  //       //         child: Screenshot(
+  //       //           controller: _riskScoreScreenshotController,
+  //       //           child: GoogleMap(
+  //       //             // key: _googleMapKey,
+  //       //             mapType: MapType.normal,
+  //       //             // mapType: _currentMapType1,
+  //       //             zoomControlsEnabled: true,
+  //       //             markers: Set<Marker>.of(markers.values),
+  //       //             initialCameraPosition: CameraPosition(
+  //       //               target: LatLng(latitude, longitude),
+  //       //               zoom: 13,
+  //       //             ),
+  //       //             onMapCreated: (GoogleMapController controller) {
+  //       //               if (!_controller.isCompleted) {
+  //       //                 _controller.complete(controller);
+  //       //               }
+  //       //             },
+  //       //             gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+  //       //               Factory<OneSequenceGestureRecognizer>(
+  //       //                 () => EagerGestureRecognizer(), // Allows button taps
+  //       //               ),
+  //       //             },
+  //       //             onTap: _isAddingMarker ? _handleMapTap : null,
+  //       //             tileOverlays: _getTileOverlays(),
+  //       //           ),
+  //       //         ),
+  //       //       ),
+  //       //     ),
+  //       //
+  //       //     // Hazard Controls (Bottom)
+  //       //     Positioned(
+  //       //       bottom: 0,
+  //       //       left: 0,
+  //       //       child: _buildHazardControls(),
+  //       //     ),
+  //       //
+  //       //     // Map Type Selector (Top Right)
+  //       //     // Positioned(
+  //       //     //   top: 16,
+  //       //     //   right: 16,
+  //       //     //   child: _buildMapTypeSelector(),
+  //       //     // ),
+  //       //
+  //       //     // Left Navigation Button
+  //       //     if ((int.tryParse(widget.page) ?? 1) > 1)
+  //       //       _buildNavigationButton(
+  //       //         alignment: Alignment.centerLeft,
+  //       //         left: 16,
+  //       //         icon: Icons.chevron_left,
+  //       //         onPressed: _navigateLeft,
+  //       //       ),
+  //       //
+  //       //     // Right Navigation Button
+  //       //     if ((int.tryParse(widget.page) ?? 1) <
+  //       //         (widget.locationId.isNotEmpty
+  //       //             ? locationProfileProvider.resetTotalPage! - 1
+  //       //             : (int.tryParse(widget.totalPages!) ?? 1)))
+  //       //       _buildNavigationButton(
+  //       //         alignment: Alignment.centerRight,
+  //       //         right: 16,
+  //       //         icon: Icons.chevron_right,
+  //       //         onPressed: _navigateRight,
+  //       //       ),
+  //       //   ],
+  //       // );
+  //     },
+  //   );
+  // }
 
   /// Returns tile overlays with safe null checks
   Set<TileOverlay> _getTileOverlays() {
@@ -3896,7 +4413,7 @@ class _LocationProfileState extends State<LocationProfile>
     // Show loading spinner if the main hazards are loading
     if (isLoadingMainHazards) {
       return Positioned(
-        bottom: 16,
+        bottom: 33,
         left: 16,
         child: Container(
           width: 45,
@@ -3962,7 +4479,6 @@ class _LocationProfileState extends State<LocationProfile>
                             child:
                                 Text(vendor.name, style: typography.InputLabel),
                             onPressed: () {
-                              print("object");
                               _changeHazardLayer(hazard.id);
                               _changeVendor(vendor.name);
                             },
@@ -4588,18 +5104,6 @@ class _LocationProfileState extends State<LocationProfile>
                         'Do you want to get campus for this location?',
                         style: typography.Body1,
                       ),
-
-                      // const SizedBox(height: 16),
-                      // Center(
-                      //   // Center the loader
-                      //   child: Container(
-                      //     width: 24, // Explicit size for visibility
-                      //     height: 24,
-                      //     child: const CircularProgressIndicator(
-                      //       strokeWidth: 2.5, // Make it more visible
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),

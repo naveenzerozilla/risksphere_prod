@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 
 import '../providers/auth_provider.dart';

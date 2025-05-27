@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:RiskSphare/providers/connectivity_provider.dart';
-import 'package:RiskSphare/providers/data_list_parameters.dart';
+import 'package:RiskSphere/providers/connectivity_provider.dart';
+import 'package:RiskSphere/providers/data_list_parameters.dart';
+import 'package:RiskSphere/screens/onboarding/create_account_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:RiskSphare/firebase_options.dart';
-import 'package:RiskSphare/providers/configuration_provider.dart';
-import 'package:RiskSphare/providers/drawer_selection_provider.dart';
-import 'package:RiskSphare/providers/job_monitoring_provier.dart';
-import 'package:RiskSphare/providers/my_location_list_provider.dart';
-import 'package:RiskSphare/providers/news_feed_provider.dart';
-import 'package:RiskSphare/screens/event/notification_map_screen.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/firebase_options.dart';
+import 'package:RiskSphere/providers/configuration_provider.dart';
+import 'package:RiskSphere/providers/drawer_selection_provider.dart';
+import 'package:RiskSphere/providers/job_monitoring_provier.dart';
+import 'package:RiskSphere/providers/my_location_list_provider.dart';
+import 'package:RiskSphere/providers/news_feed_provider.dart';
+import 'package:RiskSphere/screens/event/notification_map_screen.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -20,25 +21,25 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:RiskSphare/providers/account_list_provider.dart';
-import 'package:RiskSphare/providers/auth_provider.dart';
-import 'package:RiskSphare/providers/company_provider.dart';
-import 'package:RiskSphare/providers/connections_provider.dart';
-import 'package:RiskSphare/providers/corporate_user_provider.dart';
-import 'package:RiskSphare/providers/dashboard_provider.dart';
-import 'package:RiskSphare/providers/email_provider.dart';
-import 'package:RiskSphare/providers/employee_provider.dart';
-import 'package:RiskSphare/providers/feature_provider.dart';
-import 'package:RiskSphare/providers/location_list_provider.dart';
-import 'package:RiskSphare/providers/location_profile_provider.dart';
-import 'package:RiskSphare/providers/non_corporate_user_Provider.dart';
-import 'package:RiskSphare/providers/role_provider.dart';
-import 'package:RiskSphare/providers/sov_list_provider.dart';
-import 'package:RiskSphare/providers/sub_account_list_provider.dart';
-import 'package:RiskSphare/providers/upload_sov_provider.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
-import 'package:RiskSphare/providers/verification_provider.dart';
-import 'package:RiskSphare/service/shared_preference_service.dart';
+import 'package:RiskSphere/providers/account_list_provider.dart';
+import 'package:RiskSphere/providers/auth_provider.dart';
+import 'package:RiskSphere/providers/company_provider.dart';
+import 'package:RiskSphere/providers/connections_provider.dart';
+import 'package:RiskSphere/providers/corporate_user_provider.dart';
+import 'package:RiskSphere/providers/dashboard_provider.dart';
+import 'package:RiskSphere/providers/email_provider.dart';
+import 'package:RiskSphere/providers/employee_provider.dart';
+import 'package:RiskSphere/providers/feature_provider.dart';
+import 'package:RiskSphere/providers/location_list_provider.dart';
+import 'package:RiskSphere/providers/location_profile_provider.dart';
+import 'package:RiskSphere/providers/non_corporate_user_Provider.dart';
+import 'package:RiskSphere/providers/role_provider.dart';
+import 'package:RiskSphere/providers/sov_list_provider.dart';
+import 'package:RiskSphere/providers/sub_account_list_provider.dart';
+import 'package:RiskSphere/providers/upload_sov_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/providers/verification_provider.dart';
+import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:provider/provider.dart';
 
 import 'design_system/app_themes.dart';
@@ -48,17 +49,17 @@ import 'providers/theme_provider.dart';
 import 'screens/onboarding/splash_screen.dart';
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
+
 void initializeNotifications() {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final DarwinInitializationSettings initializationSettingsIOS =
-  DarwinInitializationSettings(
+      DarwinInitializationSettings(
     requestSoundPermission: true,
     requestBadgePermission: true,
     requestAlertPermission: true,
-
   );
 
   final InitializationSettings initializationSettings = InitializationSettings(
@@ -128,7 +129,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void checkForInitialMessage() async {
   print('Checking for initial message');
   RemoteMessage? initialMessage =
-  await FirebaseMessaging.instance.getInitialMessage();
+      await FirebaseMessaging.instance.getInitialMessage();
   print('Initial message: $initialMessage');
 
   if (initialMessage != null) {
@@ -172,7 +173,6 @@ setupFirebaseMessaging() {
     }
   });
 }
-
 
 void handleNotificationNavigation(Map<String, dynamic> data) {
   print('Handling notification navigation: $data');
@@ -234,7 +234,7 @@ Future<void> initFCM(String userId) async {
     if (token != null) {
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
-      await SharedPreferenceService.getNotificationSubscription();
+          await SharedPreferenceService.getNotificationSubscription();
 
       if (isSubscribed) {
         print("TestA");
@@ -245,7 +245,7 @@ Future<void> initFCM(String userId) async {
           SharedPreferenceService.saveNotificationSubscription(true);
           print('Subscribed to topic: general');
         }
-      }else{
+      } else {
         print("TestB");
       }
     }
@@ -402,7 +402,7 @@ Future<void> showNotification(
   // Ensure the channel is created
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
   await flutterLocalNotificationsPlugin.show(
@@ -434,12 +434,11 @@ void main() async {
     print("APNS token not available yet. Retrying later...");
   }
 
-
   // Check if the app was opened by a notification
   checkForInitialMessage();
 
   final themeProvider =
-  ThemeProvider(AppThemes.darkTheme); // Default to dark theme
+      ThemeProvider(AppThemes.darkTheme); // Default to dark theme
   await themeProvider.loadTheme(); // Load the saved theme
 
   runApp(
@@ -484,28 +483,28 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
           ChangeNotifierProvider(create: (_) => NewsFeedProvider()),
           ChangeNotifierProvider(create: (_) => SubaccountParameterProvider()),
+          ChangeNotifierProvider(create: (_) => UploadSovProvider()),
         ],
-        child:  MyApp(),
+        child: MyApp(),
       ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-   MyApp({super.key});
+  MyApp({super.key});
 
   static final GlobalKey<NavigatorState> navigatorKey =
-  GlobalKey<NavigatorState>();
+      GlobalKey<NavigatorState>();
 
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-  GlobalKey<ScaffoldMessengerState>();
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        print(
-            'themeProvider.getTheme.brightness: ${themeProvider.getTheme.brightness}');
+
         return MaterialApp(
           scaffoldMessengerKey: scaffoldMessengerKey,
           debugShowCheckedModeBanner: false,

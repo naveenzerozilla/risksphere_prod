@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/user_profile_provider.dart';

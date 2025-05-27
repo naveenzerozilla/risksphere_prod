@@ -4,11 +4,11 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/account_list_model.dart';
-import 'package:RiskSphare/models/sov_list_model.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
+import 'package:RiskSphere/models/sov_list_model.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -222,19 +222,19 @@ class SOVListProvider extends ChangeNotifier {
       isNextPageLoading = false;
       print(e.message);
       print(stack);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
-
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message, style: typography.Body1,),
+      //
+      // ));
     } catch (e, stack) {
       isLoading = false;
       isNextPageLoading = false;
       print(e);
       print(stack);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
-
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1,),
+      //
+      // ));
     }
   }
 
@@ -398,13 +398,13 @@ class SOVListProvider extends ChangeNotifier {
       log(autoCompleteSovList.toString());
       print("Updated autoCompleteAccountList: $autoCompleteSovList");
     } on BackendException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message, style: typography.Body1),
+      // ));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isAutoCompleteLoading = false;
       notifyListeners();

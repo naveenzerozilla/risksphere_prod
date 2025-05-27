@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:RiskSphare/models/networking_model.dart';
+import 'package:RiskSphere/models/networking_model.dart';
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/design_system/components/expandable_card_container.dart';
-import 'package:RiskSphare/models/networking_model.dart';
-import 'package:RiskSphare/service/language_service.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/design_system/components/expandable_card_container.dart';
+import 'package:RiskSphere/models/networking_model.dart';
+import 'package:RiskSphere/service/language_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';

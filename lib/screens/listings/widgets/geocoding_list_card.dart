@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphare/screens/listings/widgets/score_bar.dart';
+import 'package:RiskSphere/screens/listings/widgets/score_bar.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
 

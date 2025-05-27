@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphare/screens/event/notification_map_screen.dart';
+import 'package:RiskSphere/screens/event/notification_map_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/enums.dart';

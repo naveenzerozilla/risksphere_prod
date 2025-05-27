@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
 

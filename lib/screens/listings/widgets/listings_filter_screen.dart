@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:RiskSphare/screens/listings/widgets/vertical_flat_bar_indicator.dart';
+import 'package:RiskSphere/screens/listings/widgets/vertical_flat_bar_indicator.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';

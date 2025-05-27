@@ -1,4 +1,4 @@
-import 'package:RiskSphare/providers/auth_provider.dart';
+import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {

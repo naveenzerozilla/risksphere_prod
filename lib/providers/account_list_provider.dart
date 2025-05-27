@@ -4,11 +4,11 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/account_list_model.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/service/language_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/service/language_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../design_system/components/custom_toast.dart';
 import '../utils/toast.dart';

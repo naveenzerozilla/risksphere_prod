@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 
 class RatingWidget extends StatelessWidget {
   final int score; // Rating score from 1 to 5

@@ -9,6 +9,8 @@ class MyLocationModel {
   int? page;
   int? pageSize;
   bool? isConflict;
+  bool? isHazardCanStart;
+  bool? isAnyHazardProcessing;
   List<MyLocation>? results;
   List<MyLocation>? filterByLocationResult;
 
@@ -18,6 +20,8 @@ class MyLocationModel {
     this.page,
     this.pageSize,
     this.isConflict,
+    this.isHazardCanStart,
+    this.isAnyHazardProcessing,
     this.results,
     this.filterByLocationResult,
   });
@@ -34,6 +38,8 @@ class MyLocationModel {
       });
     }
     isConflict = json['is_conflict'];
+    isHazardCanStart = json['hazard_can_start'];
+    isAnyHazardProcessing = json['is_any_hazard_processing'];
     if (json['filter_by_location_result'] != null) {
       filterByLocationResult = <MyLocation>[];
       json['filter_by_location_result'].forEach((v) {
@@ -52,6 +58,8 @@ class MyLocationModel {
       data['result'] = results!.map((v) => v.toJson()).toList();
     }
     data['is_conflict'] = isConflict;
+    data['hazard_can_start'] = isHazardCanStart;
+    data['is_any_hazard_processing'] = isAnyHazardProcessing;
     if (filterByLocationResult != null) {
       data['filter_by_location_result'] =
           filterByLocationResult!.map((v) => v.toJson()).toList();
@@ -72,6 +80,7 @@ class MyLocation with ClusterItem {
   bool? isSelected;
   bool? isConflict;
   List<Conflicts>? conflicts;
+  int? defaultConflictindex;
   List<String>? tags;
   int? overallScore;
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
@@ -87,6 +96,7 @@ class MyLocation with ClusterItem {
       this.isSelected = false,
         this.isConflict,
         this.conflicts,
+        this.defaultConflictindex,
       this.tags,
       this.overallScore,
       this.hazard,
@@ -108,6 +118,10 @@ class MyLocation with ClusterItem {
       conflicts = <Conflicts>[];
       json['conflicts'].forEach((v) { conflicts!.add(new Conflicts.fromJson(v)); });
     }
+
+    defaultConflictindex = json['default_conflict_index'] is int
+        ? json['default_conflict_index']
+        : int.tryParse(json['default_conflict_index']?.toString() ?? '');
     if (json['tags'] != null) {
       if (json['tags'] is List) {
         // If it's already a List, directly convert it
@@ -163,6 +177,7 @@ class MyLocation with ClusterItem {
     if (this.conflicts != null) {
       data['conflicts'] = this.conflicts!.map((v) => v.toJson()).toList();
     }
+    data['default_conflict_index'] = defaultConflictindex;
     data['tags'] = tags;
     data['overall_score'] = overallScore;
     data['geocoded_address'] = geocodedAddress;

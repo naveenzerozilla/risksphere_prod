@@ -9,7 +9,7 @@ import '../../../../../design_system/primitives/app_colors.dart';
 import '../../../../../design_system/primitives/custom_typography.dart';
 import '../../../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../../../../providers/verification_provider.dart';
-import 'package:RiskSphare/models/role_model.dart' as roleModel;
+import 'package:RiskSphere/models/role_model.dart' as roleModel;
 
 class VerificationUserRequestsListItem extends StatelessWidget {
   final int index;

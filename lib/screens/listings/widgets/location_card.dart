@@ -1,12 +1,12 @@
-import 'package:RiskSphare/screens/listings/widgets/conflicts_tab.dart';
-import 'package:RiskSphare/screens/listings/widgets/location_details_popup.dart';
+import 'package:RiskSphere/screens/listings/widgets/conflicts_tab.dart';
+import 'package:RiskSphere/screens/listings/widgets/location_details_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/my_location_list_model.dart';
-import 'package:RiskSphare/providers/my_location_list_provider.dart';
-import 'package:RiskSphare/providers/user_profile_provider.dart';
-import 'package:RiskSphare/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/my_location_list_model.dart';
+import 'package:RiskSphere/providers/my_location_list_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/app_colors.dart';
@@ -50,8 +50,9 @@ class MyLocationCard extends StatefulWidget {
   final VoidCallback? onNavigateStart;
   final VoidCallback? onNavigateBack;
   List<Conflicts>? conflict;
+  bool? isHazardCanStart;
 
-   MyLocationCard({
+  MyLocationCard({
     super.key,
     this.hazards,
     this.isConflict,
@@ -86,8 +87,8 @@ class MyLocationCard extends StatefulWidget {
     this.getData,
     this.onNavigateStart,
     this.onNavigateBack,
-     this.conflict,
-
+    this.conflict,
+    this.isHazardCanStart,
   });
 
   @override
@@ -157,18 +158,27 @@ class _MyLocationCardState extends State<MyLocationCard> {
           // Open location details screen
 
           widget.isConflict == true
-              ? Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => ConflictsTab(
-                      processId: widget.accountId ?? "",
-                      accountId: widget.accountId ?? "",
-                      subAccountId: widget.subAccountId ?? "",
-                      accountName: widget.accountName ?? "",
-                      tempId: "tempId",
-                    lat:widget.lat,
-                    long: widget.long,
-                      geocodingAddress: widget.address,
-                    conflict: widget.conflict,
-                  )))
+              ? Navigator.of(context)
+                  .push(MaterialPageRoute(
+                      builder: (_) => ConflictsTab(
+                            processId: widget.accountId ?? "",
+                            accountId: widget.accountId ?? "",
+                            subAccountId: widget.subAccountId ?? "",
+                            accountName: widget.accountName ?? "",
+                            subAccountName: widget.subAccountName ?? "",
+                            tempId: "tempId",
+                            startHazard: widget.isHazardCanStart,
+                            lat: widget.lat,
+                            long: widget.long,
+                            geocodingAddress: widget.address,
+                            conflict: widget.conflict,
+                            sovId: 'null',
+                          )))
+                  .then((result) {
+                  if (result == true) {
+                    widget.onNavigateBack!.call();
+                  }
+                })
               : Navigator.of(context)
                   .push(MaterialPageRoute(
                   builder: (_) => LocationProfile(
@@ -183,6 +193,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     totalPages: locationListProvider.locationHits.toString(),
                     hazardProcess: widget.hazardProcess,
                     onConfirmCallback: widget.getData,
+                    onNavigateBack: widget.onNavigateBack,
                   ),
                 ))
                   .then((result) {
@@ -191,14 +202,17 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     widget.getData!();
                     widget.onNavigateStart?.call();
                     widget.getData?.call();
-                    // ✅ Call getData only if LocationProfile returns true
+                    widget.onNavigateBack?.call();
+                  } else {
+                    widget.getData!();
+                    widget.getData?.call();
                   }
                   // widget.onNavigateStart?.call();
                   // widget.getData?.call();
                 });
 
           // ))
-          //     .then((_) {
+          //     . then((_) {
           //   widget.getData!();
           //   // Call getData after pop
           //   widget.onNavigateStart?.call();

@@ -14,12 +14,12 @@ class ConnectivityProvider with ChangeNotifier {
 
   ConnectivityProvider() {
     _checkInitialConnection();
-    _subscription = Connectivity().onConnectivityChanged.listen(_updateStatus);
+    // _subscription = Connectivity().onConnectivityChanged.listen(_updateStatus);
   }
 
   void _checkInitialConnection() async {
     final result = await Connectivity().checkConnectivity();
-    _updateStatus(result);
+    // _updateStatus(result);
   }
   void _updateStatus(ConnectivityResult result) async {
     final currentResult = await Connectivity().checkConnectivity();

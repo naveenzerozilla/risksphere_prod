@@ -3,7 +3,7 @@ import 'dart:math';
 import 'dart:io';
 
 // import 'package:country_list_picker/country_list_picker.dart';
-import 'package:RiskSphare/screens/listings/widgets/data_tab.dart';
+import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,20 +11,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/design_system/components/roles_dropdown.dart';
-import 'package:RiskSphare/models/account_list_model.dart';
-import 'package:RiskSphare/models/transfer_autocomplete_model.dart';
-import 'package:RiskSphare/models/upload_sov_model.dart';
-import 'package:RiskSphare/providers/account_list_provider.dart';
-import 'package:RiskSphare/providers/connections_provider.dart';
-import 'package:RiskSphare/providers/upload_sov_provider.dart';
-import 'package:RiskSphare/screens/listings/location_list.dart';
-import 'package:RiskSphare/screens/listings/location_profile.dart';
-import 'package:RiskSphare/screens/listings/sub_account_list.dart';
-import 'package:RiskSphare/screens/listings/widgets/auto_complete_options.dart';
-import 'package:RiskSphare/screens/listings/widgets/configurations_tab.dart';
-import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/design_system/components/roles_dropdown.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
+import 'package:RiskSphere/models/transfer_autocomplete_model.dart';
+import 'package:RiskSphere/models/upload_sov_model.dart';
+import 'package:RiskSphere/providers/account_list_provider.dart';
+import 'package:RiskSphere/providers/connections_provider.dart';
+import 'package:RiskSphere/providers/upload_sov_provider.dart';
+import 'package:RiskSphere/screens/listings/location_list.dart';
+import 'package:RiskSphere/screens/listings/location_profile.dart';
+import 'package:RiskSphere/screens/listings/sub_account_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/auto_complete_options.dart';
+import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
+import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -42,7 +42,7 @@ import '../../models/initial_data_model.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphare/models/role_model.dart' as roleModel;
+import 'package:RiskSphere/models/role_model.dart' as roleModel;
 
 import '../../providers/user_profile_provider.dart';
 import '../../service/api_service.dart';
@@ -95,10 +95,6 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   Timer? autoCompleteDeBouncer;
 
-  // String? _uploadedFileName;
-  String? _uploadedFileSize;
-
-  // TextEditingController _sovNameController = TextEditingController();
   late File files;
 
   void _scrollLeft() {
@@ -168,31 +164,18 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
-  // @override
-  // void initState() {
-  //   var userProfileProvider =
-  //       Provider.of<UserProfileProvider>(context, listen: false);
-  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-  //   // Determine the number of tabs based on trial status
-  //   int tabCount =
-  //       // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
-  //   (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-  //   _tabController = TabController(length: tabCount, vsync: this);
-  //   // int tabCount = trialStatus.isEmpty ? 3 : 4;
-  //   // _tabController = TabController(length: tabCount, vsync: this);
-  //   super.initState();
-  //   _getData();
-  // }
   @override
   void initState() {
     super.initState();
-    var userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+    var userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount = (trialStatus.isEmpty) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
-    _getData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getData();
+    });
   }
-
 
   @override
   void dispose() {
@@ -201,20 +184,13 @@ class _AccountListScreenState extends State<AccountListScreen>
     super.dispose();
   }
 
-  // _getData() async {
-  //   // Fetch data from API
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     Provider.of<AccountListProvider>(context, listen: false).page = 1;
-  //     Provider.of<AccountListProvider>(context, listen: false)
-  //         .fetchAccountList(context, "", 1, 10);
-  //   });
-  // }
-
   _getData() async {
-    final accountListProvider = Provider.of<AccountListProvider>(context, listen: false);
+    final accountListProvider =
+        Provider.of<AccountListProvider>(context, listen: false);
     accountListProvider.page = 1;
-    await accountListProvider.fetchAccountList(context, "", 1, 10);
+    await accountListProvider.fetchAccountList(context, "", 1, 5);
   }
+
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
@@ -1416,451 +1392,6 @@ class _AccountListScreenState extends State<AccountListScreen>
     }
   }
 
-  void _showSettingsModal(BuildContext context) {
-    var typography = CustomTypography(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Consumer<AccountListProvider>(
-                builder: (context, accountListProvider, _) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                    leading: accountListProvider.isOwnerLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: accountListProvider.showOwner,
-                            onChanged: (value) async {
-                              bool result = await accountListProvider
-                                  .changeColumnVisibility(context,
-                                      showOwner: value ?? false,
-                                      showSOVCount:
-                                          accountListProvider.showSOVCount,
-                                      showSubAccountCount: accountListProvider
-                                          .showSubAccountCount,
-                                      showOverallScore:
-                                          accountListProvider.showOverallScore,
-                                      type: 'owner');
-
-                              if (result) {
-                                setModalState(() {
-                                  accountListProvider.showOwner =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  accountListProvider.showOwner =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                accountListProvider.fetchAccountList(
-                                    context,
-                                    _accountQuery,
-                                    accountListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(
-                            context, "account_list_app_column_owner_text"),
-                        style: typography.Body1),
-                  ),
-                  ListTile(
-                    leading: accountListProvider.showSOVCountLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: accountListProvider.showSOVCount,
-                            onChanged: (value) async {
-                              bool result = await accountListProvider
-                                  .changeColumnVisibility(context,
-                                      showOwner: accountListProvider.showOwner,
-                                      showSOVCount: value ?? false,
-                                      showSubAccountCount: accountListProvider
-                                          .showSubAccountCount,
-                                      showOverallScore:
-                                          accountListProvider.showOverallScore,
-                                      type: 'sov_count');
-
-                              if (result) {
-                                setModalState(() {
-                                  accountListProvider.showSOVCount =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  accountListProvider.showSOVCount =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                accountListProvider.fetchAccountList(
-                                    context,
-                                    _accountQuery,
-                                    accountListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(
-                            context, "account_list_app_column_sov_count_text"),
-                        style: typography.Body1),
-                  ),
-                  ListTile(
-                    leading: accountListProvider.showSubAccountCountLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: accountListProvider.showSubAccountCount,
-                            onChanged: (value) async {
-                              bool result = await accountListProvider
-                                  .changeColumnVisibility(context,
-                                      showOwner: accountListProvider.showOwner,
-                                      showSOVCount:
-                                          accountListProvider.showSOVCount,
-                                      showSubAccountCount: value ?? false,
-                                      showOverallScore:
-                                          accountListProvider.showOverallScore,
-                                      type: 'sub_account_count');
-                              if (result) {
-                                setModalState(() {
-                                  accountListProvider.showSubAccountCount =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  accountListProvider.showSubAccountCount =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                accountListProvider.fetchAccountList(
-                                    context,
-                                    _accountQuery,
-                                    accountListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(context,
-                            "account_list_app_column_sub_account_count_text"),
-                        style: typography.Body1),
-                  ),
-                  ListTile(
-                    leading: accountListProvider.showOverallScoreLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: accountListProvider.showOverallScore,
-                            onChanged: (value) async {
-                              bool result = await accountListProvider
-                                  .changeColumnVisibility(context,
-                                      showOwner: accountListProvider.showOwner,
-                                      showSOVCount:
-                                          accountListProvider.showSOVCount,
-                                      showSubAccountCount: accountListProvider
-                                          .showSubAccountCount,
-                                      showOverallScore: value ?? false,
-                                      type: 'overall_score');
-                              if (result) {
-                                setModalState(() {
-                                  accountListProvider.showOverallScore =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  accountListProvider.showOverallScore =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                accountListProvider.fetchAccountList(
-                                    context,
-                                    _accountQuery,
-                                    accountListProvider.page,
-                                    10);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(context,
-                            "account_list_app_column_overall_score_text"),
-                        style: typography.Body1),
-                  ),
-                ],
-              );
-            });
-          },
-        );
-      },
-    );
-  }
-
-  void _showUploadDialog(String accountId) {
-    var typography = CustomTypography(context);
-    bool addToSoV = false; // New variable for checkbox state
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, StateSetter setState) {
-            return PopScope(
-              onPopInvokedWithResult: (canPop, result) {
-                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                Provider.of<DrawerSelectionProvider>(context, listen: false)
-                    .setSelectedItem("dashboard");
-              },
-              child: AlertDialog(
-                backgroundColor: Colors.black87,
-                content: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(height: 20),
-                      GestureDetector(
-                        onTap: () async {
-                          FilePickerResult? result =
-                              await FilePicker.platform.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: ['xls', 'xlsx'],
-                          );
-                          if (result != null) {
-                            File file = File(result.files.single.path!);
-                            setState(() {
-                              files = file;
-                              _uploadedFileName = file.path.split('/').last;
-                              _sovNameController.text = _uploadedFileName!;
-                            });
-                          }
-                        },
-                        child: _uploadedFileName == null
-                            ? Container(
-                                height: 150,
-                                width: MediaQuery.of(context).size.width / 1.2,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.cloud_upload_outlined,
-                                          color: Colors.white),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_account_upload_drag_and_drop"),
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(height: 5),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.info_outline,
-                                              color: Colors.white54),
-                                          SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
-                                              style: typography.Body1),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : Container(
-                                height: 150,
-                                width: MediaQuery.of(context).size.width / 1.2,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.description, size: 25),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      _sovNameController.text,
-                                      style: typography.Body1,
-                                    ),
-                                    SizedBox(height: 10),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _uploadedFileName = null;
-                                          _sovNameController.clear();
-                                        });
-                                      },
-                                      child: Text(
-                                        LanguageService.getTranslated(context,
-                                            "account_list_app_cancel_text"),
-                                        style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .error,
-                                            fontSize: 14),
-                                      ),
-                                    ),
-                                    SizedBox(height: 5),
-                                  ],
-                                ),
-                              ),
-                      ),
-                      SizedBox(height: 15),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: addToSoV,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                addToSoV = value!;
-                              });
-                            },
-                          ),
-                          Text(
-                            'Add to SoV',
-                            style: typography.Body1,
-                          ),
-                        ],
-                      ),
-                      if (!addToSoV) ...[
-                        TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Enter Tags (separated by comma)",
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                            hintStyle: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                      ],
-                      if (addToSoV) ...[
-                        // Fields displayed only if checkbox is checked
-                        TextField(
-                          controller: _sovNameController,
-                          readOnly: _uploadedFileName != null,
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Name of the SoV",
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                            hintStyle: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Enter Tags (separated by comma)",
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                            hintStyle: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Enter Account Name",
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                            hintStyle: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Enter Sub-account Name",
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                            hintStyle: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _uploadedFileName = null;
-                                _sovNameController.clear();
-                              });
-                              Navigator.of(context).pop();
-                            },
-                            child: Text("Close", style: typography.Body1),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              // Upload action
-                            },
-                            child:
-                                Text("Upload", style: typography.ButtonLarge),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _showAddAccountDialog(BuildContext context) async {
     var typography = CustomTypography(context);
     await showDialog(
@@ -2270,7 +1801,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                     : RefreshIndicator(
                         onRefresh: () async {
                           accountListProvider.fetchAccountList(
-                              context, _accountQuery, 1, 10);
+                              context, _accountQuery, 1, 5);
                         },
                         child: ListView.builder(
                             itemCount: accountListProvider.accountList.length,
@@ -2340,110 +1871,3 @@ class _AccountListScreenState extends State<AccountListScreen>
     );
   }
 }
-
-// check
-
-// GridView.builder(
-//   shrinkWrap: true,
-//   physics: NeverScrollableScrollPhysics(),
-//   itemCount: totalGridItems,
-//   gridDelegate:
-//       SliverGridDelegateWithFixedCrossAxisCount(
-//     crossAxisCount: 3,
-//     crossAxisSpacing: 6,
-//     mainAxisSpacing: 6,
-//     childAspectRatio: 1,
-//   ),
-//   itemBuilder: (context, gridIndex) {
-//     // If this is the last index and upload button is to be shown
-//     if (showUpload &&
-//         gridIndex == totalGridItems - 1) {
-//       return GestureDetector(
-//         onTap: addImage,
-//         child: Container(
-//           decoration: BoxDecoration(
-//             color: Colors.transparent,
-//             borderRadius: BorderRadius.circular(10),
-//             border:
-//                 Border.all(color: Colors.white38),
-//           ),
-//           child: Center(
-//             child: Row(
-//               mainAxisAlignment:
-//                   MainAxisAlignment.center,
-//               children: [
-//                 Icon(Icons.add,
-//                     color: Colors.blueAccent,
-//                     size: 20),
-//                 SizedBox(width: 6),
-//                 Text("Upload",
-//                     style: TextStyle(
-//                         color: Colors.white,
-//                         fontSize: 15)),
-//               ],
-//             ),
-//           ),
-//         ),
-//       );
-//     }
-//
-//     // Otherwise render an actual image
-//     final imgIndex = visibleImageIndexes[gridIndex];
-//
-//     return GestureDetector(
-//       onTap: () {
-//         setState(() {
-//           expandedCardsWithImage[index] = imgIndex;
-//         });
-//       },
-//       child: Stack(
-//         children: [
-//           ClipRRect(
-//             borderRadius: BorderRadius.circular(8),
-//             child: CachedNetworkImage(
-//               imageUrl: urls[imgIndex],
-//               fit: BoxFit.cover,
-//               width: double.infinity,
-//               height: double.infinity,
-//               placeholder: (context, url) => Center(
-//                   child:
-//                       CircularProgressIndicator()),
-//               errorWidget: (context, url, error) =>
-//                   Icon(Icons.error),
-//             ),
-//           ),
-//           Positioned(
-//             top: 4,
-//             right: 4,
-//             child: GestureDetector(
-//               onTap: () {
-//                 setState(() {
-//                   expandedCardsWithImage
-//                       .remove(index);
-//                 });
-//               },
-//               child: Container(
-//                 height: 24,
-//                 width: 24,
-//                 decoration: BoxDecoration(
-//                   color: Colors.white,
-//                   shape: BoxShape.circle,
-//                   boxShadow: [
-//                     BoxShadow(
-//                       color: Colors.black
-//                           .withOpacity(0.2),
-//                       blurRadius: 2,
-//                       offset: Offset(0, 2),
-//                     ),
-//                   ],
-//                 ),
-//                 child: Icon(Icons.close,
-//                     size: 16, color: Colors.red),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   },
-// ),

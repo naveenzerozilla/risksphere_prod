@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:RiskSphare/providers/news_feed_provider.dart';
-import 'package:RiskSphare/screens/event/widgets/hazard_info_section.dart';
-import 'package:RiskSphare/screens/event/widgets/image_filter_section.dart';
-import 'package:RiskSphare/screens/listings/hazard_proto.dart';
+import 'package:RiskSphere/providers/news_feed_provider.dart';
+import 'package:RiskSphere/screens/event/widgets/hazard_info_section.dart';
+import 'package:RiskSphere/screens/event/widgets/image_filter_section.dart';
+import 'package:RiskSphere/screens/listings/hazard_proto.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 

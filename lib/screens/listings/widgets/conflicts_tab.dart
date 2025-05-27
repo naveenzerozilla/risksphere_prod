@@ -1,11 +1,15 @@
-import 'package:RiskSphare/models/my_location_list_model.dart';
+import 'package:RiskSphere/models/my_location_list_model.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
+import '../../../providers/my_location_list_provider.dart';
 import '../../../providers/upload_sov_provider.dart';
+import '../../../utils/api_constants.dart';
+import '../add_location_screen.dart';
 import 'message_card.dart';
 
 class ConflictsTab extends StatefulWidget {
@@ -13,25 +17,31 @@ class ConflictsTab extends StatefulWidget {
   final String processId;
   final String accountId;
   final String subAccountId;
+  final String sovId;
   final String accountName;
   final String tempId;
   final String? lat;
   final String? long;
   final String? geocodingAddress;
   final List<Conflicts>? conflict;
+  final List<MyLocation>? location;
+  final bool? startHazard;
 
-  const ConflictsTab({
+  ConflictsTab({
     super.key,
     this.subAccountName,
     required this.processId,
     required this.accountId,
     required this.subAccountId,
+    required this.sovId,
     required this.accountName,
     required this.tempId,
     this.lat,
     this.long,
     this.geocodingAddress,
     this.conflict,
+    this.location,
+    this.startHazard,
   });
 
   @override
@@ -48,14 +58,16 @@ class ConflictsTabState extends State<ConflictsTab> {
   List<String>? conflictIds; // stable IDs
   bool isLoading = false;
   bool isResolving = false;
+  bool isSkiped = false;
   bool conflictResolved = false;
+  String? selectedValue = "0";
 
   @override
   void initState() {
     super.initState();
-    conflictIds = widget.conflict!
-        .map((c) => c.locationId ?? UniqueKey().toString())
-        .toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateMap();
+    });
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -70,7 +82,7 @@ class ConflictsTabState extends State<ConflictsTab> {
   }
 
   void _navigateNext() {
-    if (currentIndex < widget.conflict!.length - 1) {
+    if (currentIndex < widget.location!.length - 1) {
       setState(() {
         currentIndex++;
         selectedOption = 'none';
@@ -103,44 +115,138 @@ class ConflictsTabState extends State<ConflictsTab> {
   }
 
   void _resolveConflict() async {
-    if (selectedOption == null) {
+    print("object");
+    if (selectedValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Please select an option to resolve the conflict.")),
+          content: Text("Please select an option to resolve the conflict."),
+        ),
       );
       return;
     }
+    print("debug-A");
+    final provider = Provider.of<UploadSovProvider>(context, listen: false);
+    print(widget.location.toString());
+    print(widget.conflict.toString());
+
+    // if (widget.location == null || widget.location!.isEmpty) return;
+
+    final isLastItem =
+        widget.location == null ? true : widget.location!.length == 1;
 
     setState(() {
-      isResolving = true;
+      if (isLastItem) isResolving = true;
     });
 
-    final provider = Provider.of<UploadSovProvider>(context, listen: false);
-    final currentConflict = widget.conflict![currentIndex];
+    final currentConflictId = widget.location == null
+        ? widget.conflict![0].locationId
+        : widget.location![currentIndex].id;
 
     final selectedData = [
       {
-        'account_id': widget.accountId,
-        'sub_account_id': widget.subAccountId,
-        'unique_object_id': '', // Fill from currentConflict if needed
-        'process_id': widget.processId,
-        'location_id': selectedOption == 'none' ? null : selectedOption,
+        'conflict_index': currentIndex,
+        'location_id': currentConflictId,
       }
     ];
+    print(selectedData);
+    final success = await provider.resolveConflict(selectedData);
 
-    final success = await provider.resolveConflict(context, selectedData);
-
-    setState(() {
-      isResolving = false;
-    });
+    if (!mounted) return;
 
     if (success) {
+      print("object");
+
+      if (widget.location == null) {
+        setState(() {
+          conflictResolved = true;
+          isResolving = false;
+        });
+      } else {
+        setState(() {
+          widget.location!.removeAt(currentIndex);
+
+          selectedOption = 'none';
+          selectedValue = null;
+          selectedIndex = null;
+
+          if (currentIndex >= widget.location!.length) {
+            currentIndex =
+                widget.location!.isNotEmpty ? widget.location!.length - 1 : 0;
+          }
+
+          if (widget.location!.isEmpty) {
+            conflictResolved = true;
+          }
+
+          isResolving = false;
+        });
+
+        _updateMap();
+
+        if (conflictResolved) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("All conflicts resolved.")),
+          );
+        }
+      }
+    } else {
+      if (!mounted) return;
+
       setState(() {
-        conflictResolved = true;
+        isResolving = false;
       });
 
-      // Optional: Show a success message or refresh the page
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to resolve conflict. Try again.")),
+      );
     }
+
+    // final success = await provider.resolveConflict(context, selectedData);
+    //
+    // if (success) {
+    //   print("object");
+    //   if (widget.location == null) {
+    //     setState(() {
+    //       conflictResolved = true;
+    //       isResolving = false;
+    //     });
+    //   } else {
+    //     setState(() {
+    //       widget.location!.removeAt(currentIndex);
+    //
+    //       // Reset selected state
+    //       selectedOption = 'none';
+    //       selectedValue = null;
+    //       selectedIndex = null;
+    //
+    //       if (currentIndex >= widget.location!.length) {
+    //         currentIndex =
+    //             widget.location!.isNotEmpty ? widget.location!.length - 1 : 0;
+    //       }
+    //
+    //       if (widget.location!.isEmpty) {
+    //         conflictResolved = true;
+    //       }
+    //
+    //       isResolving = false;
+    //     });
+    //
+    //     _updateMap();
+    //
+    //     if (conflictResolved) {
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         const SnackBar(content: Text("All conflicts resolved.")),
+    //       );
+    //     }
+    //   }
+    // } else {
+    //   setState(() {
+    //     isResolving = false;
+    //   });
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text("Failed to resolve conflict. Try again.")),
+    //   );
+    // }
   }
 
   @override
@@ -157,128 +263,151 @@ class ConflictsTabState extends State<ConflictsTab> {
               fontWeight: FontWeight.w700,
             )),
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: Theme.of(context).primaryColor,
-        shape: CircularNotchedRectangle(), // Optional, for a rounded edge look
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        color: AppColors.primaryMain,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Your cancel button logic here
-                  },
-                  child: Text(
-                    'Cancel',
-                    style: typography.ButtonLarge.copyWith(
-                      color: AppColors.primaryMain,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        color: AppColors.primaryMain,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onPressed: () async {
-                    if (conflictResolved == true) {
-                      Navigator.pop(context);
-                    } else {
-                      setState(() {
-                        isLoading = true;
-                      });
-
-                      // Simulate reload or call your actual reload logic here
-                      await Future.delayed(Duration(seconds: 2));
-
-                      setState(() {
-                        isLoading = false;
-                      });
-
-                      // Optional: Add your refresh logic here
-                    }
-                  },
-                  child: isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-
+      bottomNavigationBar: conflictResolved == true
+          ? null
+          : BottomAppBar(
+              color: Theme.of(context).primaryColor,
+              shape:
+                  CircularNotchedRectangle(), // Optional, for a rounded edge look
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              color: AppColors.primaryMain,
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        )
-                      : Text(
-                          conflictResolved == true
-                              ? "Commit Locations"
-                              : 'Refresh Locations',
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          // Your cancel button logic here
+                        },
+                        child: Text(
+                          'Cancel',
                           style: typography.ButtonLarge.copyWith(
                             color: AppColors.primaryMain,
                           ),
                         ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: conflictResolved == true
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(0.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Great news, there are no conflicts to resolve!",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
                     ),
-                    MessageCard1(
-                      messageTextSpans: [
-                        TextSpan(
-                          text: "Click here to",
-                          style: typography.Body2,
-                        ),
-                        TextSpan(
-                          text: "Update Hazard scores",
-                          style: typography.Body2.copyWith(
-                            color: AppColors.primaryMain,
-                            decoration: TextDecoration.underline,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              color: widget.startHazard == true
+                                  ? AppColors.primaryMain
+                                  : Colors.grey, // Disable border color
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          recognizer: TapGestureRecognizer()..onTap = () {},
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          backgroundColor: Colors.transparent,
+                          // Or your preferred background
+                          foregroundColor: widget.startHazard == true
+                              ? AppColors.primaryMain
+                              : Colors.grey, // Controls text color
                         ),
-                      ],
-                    )
+                        onPressed: widget.startHazard == true
+                            ? () async {
+                                if (conflictResolved == true) {
+                                  Navigator.pop(context, true);
+                                } else {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  await Future.delayed(Duration(seconds: 2));
+                                  print("Hello");
+                                  Navigator.pop(context, true);
+
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                }
+                              }
+                            : null, // disables the button if startHazard is false
+                        child: isLoading
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                conflictResolved == true
+                                    ? "Commit Locations"
+                                    : 'Start Hazard Score',
+                                style: typography.ButtonLarge.copyWith(
+                                  color: widget.startHazard == true
+                                      ? AppColors.primaryMain
+                                      : Colors.grey, // Disable text color
+                                ),
+                              ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            )
+            ),
+      body: conflictResolved == true
+          ? Consumer<MyLocationListProvider>(
+              builder: (context, locationListProvider, child) {
+              final conflictLocations = locationListProvider.myLocationList
+                  .where((location) => location.isConflict == true)
+                  .toList();
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(0.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Great news, there are no conflicts to resolve!",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                      SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context, true);
+                          // _StartHazardConflict(
+                          //     conflictLocations: conflictLocations);
+                        },
+                        child: MessageCard1(
+                          messageTextSpans: [
+                            TextSpan(
+                              text: "Click here to ",
+                              style: typography.Body2,
+                            ),
+                            TextSpan(
+                              text: "Update Hazard scores",
+                              style: typography.Body2.copyWith(
+                                color: AppColors.primaryMain,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            })
           : RefreshIndicator(
-              onRefresh: () async {
-                // Refresh logic
-              },
+              onRefresh: () async {},
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -339,11 +468,18 @@ class ConflictsTabState extends State<ConflictsTab> {
     return markers;
   }
 
+  bool isRefreshing = false; // Add this to your StatefulWidget
+
   Widget _buildConflictSheet(CustomTypography typography) {
-    final currentConflict =
-        widget.conflict != null && widget.conflict!.isNotEmpty
-            ? widget.conflict![currentIndex]
-            : null;
+    final hasMultipleLocations =
+        widget.location != null && widget.location!.length > 1;
+    final conflictData =
+        hasMultipleLocations ? widget.location : widget.conflict;
+    final currentItem = conflictData != null &&
+            conflictData.isNotEmpty &&
+            currentIndex < conflictData.length
+        ? conflictData[currentIndex]
+        : null;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.53,
@@ -356,205 +492,374 @@ class ConflictsTabState extends State<ConflictsTab> {
             color: Colors.black,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: Column(
-            children: [
-              // Top bar
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
-                child: Row(
-                  children: [
-                    FloatingActionButton(
-                      shape: const CircleBorder(),
-                      mini: true,
-                      elevation: 0,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      onPressed: _navigatePrevious,
-                      child: Icon(
-                        Icons.chevron_left,
-                        size: 24,
-                        color: AppColors.primaryMain,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Expanded(
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text("Resolve Conflicts",
-                                style: typography.Body1.copyWith(
-                                    color: Colors.white)),
-                            // const SizedBox(width: 8),
-                            //
-                            // Container(
-                            //   padding: const EdgeInsets.symmetric(
-                            //       horizontal: 6, vertical: 2),
-                            //   decoration: BoxDecoration(
-                            //     color: Colors.red,
-                            //     borderRadius: BorderRadius.circular(12),
-                            //   ),
-                            //   child: Text(widget.conflict!.length.toString(),
-                            //       style: typography.Body2.copyWith(
-                            //           color: Colors.white)),
-                            // )
-                          ],
-                        ),
-                      ),
-                    ),
-                    FloatingActionButton(
-                      shape: const CircleBorder(),
-                      mini: true,
-                      elevation: 0,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      onPressed: _navigateNext,
-                      child: Icon(
-                        Icons.chevron_right,
-                        size: 24,
-                        color: AppColors.primaryMain,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(),
-              SizedBox(height: 10),
-
-              if (currentConflict != null &&
-                  currentConflict.finalAddress != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    currentConflict.finalAddress!.address ??
-                        widget.geocodingAddress ??
-                        '',
-                    style: typography.H7.copyWith(
-                      color: Colors.lightBlueAccent,
-                      fontWeight: FontWeight.w500,
-                    ),
+          child: isRefreshing
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(),
                   ),
-                ),
-
-              const SizedBox(height: 10),
-
-              // List of conflict options
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                )
+              : Column(
                   children: [
-                    ...widget.conflict!.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final conflict = entry.value;
-                      final address = conflict.finalAddress;
-                      final locationId = conflictIds![index];
-
-                      return RadioListTile<String>(
-                        activeColor: Colors.white,
-                        title: Text(
-                          address?.address ?? 'Unknown',
-                          style: typography.Body2.copyWith(color: Colors.white),
-                        ),
-                        value: locationId,
-                        groupValue: selectedIndex == index ? locationId : null,
-                        // Only selected if index matches
-                        onChanged: (value) {
-                          setState(() {
-                            selectedIndex = index; // Update the selected index
-                          });
-
-                          if (address != null) {
-                            _navigateToMarker(
-                              address.latitude ?? 0.0,
-                              address.longitude ?? 0.0,
-                            );
-                          }
-                        },
-                      );
-                    }).toList(),
-                    const SizedBox(height: 25),
+                    // Header with navigation
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 2, vertical: 14),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          FloatingActionButton(
+                            shape: const CircleBorder(),
+                            mini: true,
+                            elevation: 0,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            onPressed:
+                                currentIndex > 0 ? _navigatePrevious : null,
+                            child: Icon(Icons.chevron_left,
+                                size: 24, color: AppColors.primaryMain),
+                          ),
+                          const SizedBox(width: 4),
                           Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  side: BorderSide(
-                                    color: AppColors.primaryMain,
-                                    width: 1,
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  InkWell(
+                                    onTap: () async {
+                                      setState(() {
+                                        isRefreshing = true;
+                                      });
+
+                                      await Future.delayed(const Duration(
+                                          seconds: 1)); // simulate fetch
+
+                                      setState(() {
+                                        selectedOption = 'none';
+                                        selectedValue = null;
+                                        selectedIndex = null;
+                                        isRefreshing = false;
+                                      });
+                                    },
+                                    child: const Icon(Icons.refresh,
+                                        color: Colors.white),
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                              ),
-                              onPressed:
-                                  // _isCancelLoading  _skipConflict
-                                  //     ? null
-                                  //     :
-                                  () {
-                                Navigator.pop(context);
-                              },
-                              child:
-                                  // _isCancelLoading
-                                  //     ? Center(
-                                  //   child: CircularProgressIndicator(
-                                  //     color: AppColors.primaryMain,
-                                  //   ),
-                                  // )
-                                  //     :
+                                  const SizedBox(width: 5),
                                   Text(
-                                'Skip',
-                                style: typography.ButtonLarge.copyWith(
-                                  color: AppColors.primaryMain,
-                                ),
+                                    hasMultipleLocations
+                                        ? "Resolve Locations "
+                                        : "Resolve Conflicts ",
+                                    style: typography.Body1.copyWith(
+                                        color: Colors.white),
+                                  ),
+                                  if (widget.location != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: Text(
+                                        widget.location!.length.toString(),
+                                        style: typography.Body1.copyWith(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: isResolving ? null : _resolveConflict,
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.lightBlueAccent,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                              ),
-                              child: isResolving
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.black),
-                                      ),
-                                    )
-                                  : Text(
-                                      "Resolve",
-                                      style: CustomTypography(context)
-                                          .ButtonLarge
-                                          .copyWith(color: Colors.black),
-                                    ),
-                            ),
+                          FloatingActionButton(
+                            shape: const CircleBorder(),
+                            mini: true,
+                            elevation: 0,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            onPressed: hasMultipleLocations &&
+                                    currentIndex < widget.location!.length - 1
+                                ? _navigateNext
+                                : null,
+                            child: Icon(Icons.chevron_right,
+                                size: 24, color: AppColors.primaryMain),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+
+                    const Divider(),
+                    const SizedBox(height: 10),
+
+                    // Address and edit icon
+                    if (currentItem != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${currentIndex + 1} -",
+                              style: typography.H4.copyWith(
+                                color: Colors.lightBlueAccent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width / 1.4,
+                              child: Text(
+                                hasMultipleLocations
+                                    ? (currentItem as MyLocation)
+                                            .geocodedAddress ??
+                                        (currentItem as MyLocation)
+                                            .geocodedAddress ??
+                                        ''
+                                    : (currentItem as Conflicts)
+                                            .geocodedAddress ??
+                                        widget.geocodingAddress ??
+                                        '',
+                                maxLines: 3,
+                                style: typography.H4.copyWith(
+                                  color: Colors.lightBlueAccent,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            InkWell(
+                              onTap: () {
+                                final locationId = hasMultipleLocations
+                                    ? (currentItem as MyLocation).id ?? ''
+                                    : (currentItem as Conflicts).locationId ??
+                                        '';
+                                print(widget.geocodingAddress.toString());
+                                final address = (currentItem as MyLocation)
+                                        .geocodedAddress ??
+                                    widget.geocodingAddress;
+                                print(address.toString());
+                                print("address".toString());
+
+                                Navigator.of(context)
+                                    .push(MaterialPageRoute(
+                                  builder: (_) => AddLocationScreen(
+                                    accountId: widget.accountId,
+                                    subAccountId: widget.subAccountId,
+                                    sovId: "null",
+                                    accountName: widget.accountName,
+                                    subAccountName: widget.subAccountName!,
+                                    sovName: "widget.sovName!",
+                                    locationId: locationId,
+                                    locationName: address,
+                                    locationIdForRef: locationId,
+                                    searchQuery: address!,
+                                    is_conflict: true,
+                                  ),
+                                ))
+                                    .then((_) {
+                                  setState(() {
+                                    widget.location!.removeAt(currentIndex);
+                                    selectedOption = 'none';
+                                    selectedValue = null;
+                                    selectedIndex = null;
+                                  });
+                                });
+                              },
+                              child: const Icon(Icons.edit,
+                                  size: 20, color: Colors.lightBlueAccent),
+                            )
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 10),
+
+                    // Conflict List and Resolve button
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        children: [
+                          hasMultipleLocations == false
+                              ? Column(
+                                  children: widget.conflict!
+                                      .map((option) => RadioListTile<String>(
+                                            title: Text(
+                                                option.finalAddress?.address ??
+                                                    'Unknown'),
+                                            value:
+                                                option.finalAddress?.address ??
+                                                    '',
+                                            groupValue: selectedOption,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                selectedOption = value;
+                                              });
+                                            },
+                                          ))
+                                      .toList(),
+                                )
+                              : (currentItem != null
+                                  ? Column(
+                                      children: ((hasMultipleLocations
+                                                  ? (currentItem as MyLocation)
+                                                      .conflicts
+                                                  : [
+                                                      (currentItem as Conflicts)
+                                                    ]) ??
+                                              [])
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        final index = entry.key;
+                                        final conflict = entry.value;
+                                        final address = conflict.finalAddress;
+                                        final locationId = hasMultipleLocations
+                                            ? "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index"
+                                            : "${conflict.locationId ?? 'conflict'}_$index";
+
+                                        final conflictsList =
+                                            hasMultipleLocations
+                                                ? (currentItem as MyLocation)
+                                                    .conflicts
+                                                : [(currentItem as Conflicts)];
+                                        print("locationId: ${locationId}");
+                                        print(
+                                            "conflictsList length: ${conflictsList?.length}");
+
+                                        return RadioListTile<String>(
+                                          activeColor: Colors.white,
+                                          title: Text(
+                                            address?.address ?? 'Unknown',
+                                            style: typography.Body2.copyWith(
+                                                color: Colors.white),
+                                          ),
+                                          value: locationId,
+                                          groupValue: selectedValue,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              selectedValue = value;
+                                              selectedIndex = index;
+                                            });
+                                            if (address != null) {
+                                              _navigateToMarker(
+                                                address.latitude ?? 0.0,
+                                                address.longitude ?? 0.0,
+                                              );
+                                            }
+                                          },
+                                        );
+                                      }).toList(),
+                                    )
+                                  : const SizedBox.shrink()),
+//future enhancement
+//                           hasMultipleLocations ?
+//                         Column(
+//                           children: widget.conflict!.map((option) => RadioListTile<String>(
+//                             title: Text(option.finalAddress!.address!),
+//                             value: option.finalAddress!.address!,
+//                             groupValue: selectedOption,
+//                             onChanged: (value) {
+//                               setState(() {
+//                                 selectedOption = value;
+//                               });
+//                             },
+//                           ))
+//                               .toList(),
+//                         ):
+//
+//                           if (currentItem != null)
+//                             ...((hasMultipleLocations
+//                                         ? (currentItem as MyLocation).conflicts
+//                                         : [(currentItem as Conflicts)])
+//                                     ?.asMap()
+//                                     .entries
+//                                     .map((entry) {
+//                                   final index = entry.key;
+//                                   final conflict = entry.value;
+//                                   final address = conflict.finalAddress;
+//                                   final locationId = hasMultipleLocations
+//                                       ? "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index"
+//                                       : "${conflict.locationId ?? 'conflict'}_$index";
+// print("locationId");
+//                                   final conflictsList = hasMultipleLocations
+//                                       ? (currentItem as MyLocation).conflicts
+//                                       : [(currentItem as Conflicts)];
+//                                   print("locationId:${conflictsList?.length}");
+//
+//                                   return RadioListTile<String>(
+//
+//                                     activeColor: Colors.white,
+//                                     title: Text(
+//                                       address?.address ?? 'Unknown',
+//                                       style: typography.Body2.copyWith(
+//                                           color: Colors.white),
+//                                     ),
+//                                     value: locationId,
+//                                     groupValue: selectedValue,
+//                                     onChanged: (value) {
+//                                       setState(() {
+//                                         selectedValue = value;
+//                                         selectedIndex = index;
+//                                       });
+//                                       if (address != null) {
+//                                         _navigateToMarker(
+//                                             address.latitude ?? 0.0,
+//                                             address.longitude ?? 0.0);
+//                                       }
+//                                     },
+//                                   );
+//                                 }).toList() ??
+//                                 []),
+                          const SizedBox(height: 25),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        isResolving ? null : _resolveConflict,
+                                    style: ElevatedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      foregroundColor: Colors.white,
+                                      backgroundColor: Colors.lightBlueAccent,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                    ),
+                                    child: isResolving
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 3,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
+                                            ),
+                                          )
+                                        : Text(
+                                            "Resolve",
+                                            style: CustomTypography(context)
+                                                .ButtonLarge
+                                                .copyWith(color: Colors.black),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
         );
       },
     );

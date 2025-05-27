@@ -1,13 +1,13 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/upload_sov_model.dart';
-import 'package:RiskSphare/screens/listings/sub_account_list.dart';
-import 'package:RiskSphare/screens/listings/widgets/mapping_screen.dart';
-import 'package:RiskSphare/screens/processMonitoringScreen/process_monitoring_system.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/service/shared_preference_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/upload_sov_model.dart';
+import 'package:RiskSphere/screens/listings/sub_account_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
+import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/service/shared_preference_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:provider/provider.dart';
 
 import '../screens/listings/account_list.dart';
@@ -24,8 +24,9 @@ class UploadSovProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   bool isInitialLoad = true;
-  List<Map<String, dynamic>> geocodingList = [];
+  // List<Map<String, dynamic>> geocodingList = [];
 
   void toggleSelection(int index) {
     geocodingList[index]['isChecked'] =
@@ -33,9 +34,9 @@ class UploadSovProvider extends ChangeNotifier {
     notifyListeners(); // Notify only for this change
   }
 
-  bool areAllSelected() {
-    return geocodingList.every((item) => item['isChecked'] == true);
-  }
+  // bool areAllSelected() {
+  //   return geocodingList.every((item) => item['isChecked'] == true);
+  // }
 
   bool _isSubmitLoading = false;
 
@@ -47,6 +48,56 @@ class UploadSovProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  List<Map<String, dynamic>> geocodingList = [];
+
+
+
+  void setGeocodingList(List<Map<String, dynamic>> list) {
+    _geocodingList = list;
+    notifyListeners();
+  }
+
+  void toggleItem(String id, bool value) {
+    final index = _geocodingList.indexWhere((item) => item['id'] == id);
+    if (index != -1) {
+      _geocodingList[index]['isChecked'] = value;
+      notifyListeners();
+    }
+  }
+
+  bool get areAllSelected =>
+      _geocodingList.isNotEmpty &&
+          _geocodingList.every((item) => item['isChecked'] == true);
+
+  void toggleSelectAll(bool value) {
+    for (var item in _geocodingList) {
+      item['isChecked'] = value;
+    }
+    notifyListeners();
+  }
+
+  void toggleLocation(String id, bool isChecked) {
+    for (var location in geocodingList) {
+      if (location['id'] == id) {
+        location['isChecked'] = isChecked;
+        break;
+      }
+    }
+    notifyListeners();
+  }
+
+  // void toggleSelectAll(bool isChecked) {
+  //   for (var location in geocodingList) {
+  //     location['isChecked'] = isChecked;
+  //   }
+  //   notifyListeners();
+  // }
+
+  // bool get areAllSelected =>
+  //     geocodingList.isNotEmpty &&
+  //         geocodingList.every((item) => item['isChecked'] == true);
+
+
 
   SovUploadModel? _sovUploadModel;
 
@@ -81,6 +132,23 @@ class UploadSovProvider extends ChangeNotifier {
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+  // List<Map<String, dynamic>> geocodingList = [];
+
+  bool get isAllSelected =>
+      geocodingList.isNotEmpty &&
+          geocodingList.every((item) => item['isChecked'] == true);
+
+  // void toggleSelectAll(bool value) {
+  //   for (var item in geocodingList) {
+  //     item['isChecked'] = value;
+  //   }
+  //   notifyListeners();
+  // }
+
+  void toggleItemChecked(int index, bool value) {
+    geocodingList[index]['isChecked'] = value;
+    notifyListeners();
   }
 
   int locationCount = 0;
@@ -349,7 +417,7 @@ class UploadSovProvider extends ChangeNotifier {
       BuildContext context, String processId) async {
     try {
       isLoading = true;
-notifyListeners();
+      notifyListeners();
       ApiService apiService =
           ApiService(AppConstant.FETCH_LOCATIONS_DUPLICATION_CHECK);
       String url = '/$processId';
@@ -362,7 +430,7 @@ notifyListeners();
         return {
           'isChecked': false,
           ''
-              'formatted_address':
+                  'formatted_address':
               item['formatted_address'] ?? 'No address available',
           'line_no': item['line_no'] ?? '',
           'city': item['property City'] ?? '',
@@ -409,7 +477,7 @@ notifyListeners();
       BuildContext context, String processId) async {
     try {
       isLoading = true;
- notifyListeners();
+      notifyListeners();
       ApiService apiService =
           ApiService(AppConstant.FETCH_LOCATION_DUPLICATIONS);
       String url = '/$processId';
@@ -469,7 +537,7 @@ notifyListeners();
       BuildContext context, String processId) async {
     try {
       isLoading = true;
-notifyListeners();
+      notifyListeners();
       ApiService apiService = ApiService(AppConstant.FETCH_LOCATION_CONFLICTS);
       String url = '/$processId';
 
@@ -510,7 +578,7 @@ notifyListeners();
   }
 
   Future<bool> markAsNotDuplicate(
-    BuildContext context,
+    // BuildContext context,
     String accountId,
     String subAccountId,
     String processId,
@@ -530,7 +598,6 @@ notifyListeners();
           'is_duplicate': false,
           'location_id': row['duplicates'][0]?['location_id'] ?? "",
         };
-
       }).toList();
       //
       // // Log the request body for debugging
@@ -545,12 +612,12 @@ notifyListeners();
 
       // Handle response
       if (response['message'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(response['message'] ?? "Location marked as not duplicate"),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content:
+        //         Text(response['message'] ?? "Location marked as not duplicate"),
+        //   ),
+        // );
         return true; // Success
       } else {
         throw Exception('Failed to mark as not duplicate');
@@ -558,11 +625,11 @@ notifyListeners();
     } catch (error, stackTrace) {
       log('Error: $error');
       // log('StackTrace: $stackTrace');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to update duplicate status"),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text("Failed to update duplicate status"),
+      //   ),
+      // );
       return false; // Failure
     } finally {
       isLoading = false;
@@ -570,7 +637,7 @@ notifyListeners();
   }
 
   Future<bool> resolveConflict(
-    BuildContext context,
+    // BuildContext context,
     List<Map<String, dynamic>> conflictData,
   ) async {
     try {
@@ -591,12 +658,12 @@ notifyListeners();
 
       // Handle response
       if (response['message'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(response['message'] ?? "Conflict resolved successfully"),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content:
+        //         Text(response['message'] ?? "Conflict resolved successfully"),
+        //   ),
+        // );
         return true; // Success
       } else {
         throw Exception('Failed to resolve conflict');
@@ -604,11 +671,51 @@ notifyListeners();
     } catch (error, stackTrace) {
       log('Error: $error');
       log('StackTrace: $stackTrace');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to resolve conflict"),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text("Failed to resolve conflict"),
+      //   ),
+      // );
+      return false; // Failure
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  Future<bool> startHazard(
+    // BuildContext context,
+    Map<String, dynamic> conflictData,
+  ) async {
+    try {
+      isLoading = true;
+
+      // Prepare API service
+      ApiService apiService = ApiService(AppConstant.START_HAZARD_CONFLICTS);
+
+      // Make the PATCH request
+      var response = await apiService.post({'data': conflictData});
+
+      // Log the response for debugging
+      log('Response: $response');
+
+      // Handle response
+      if (response['message'] != null) {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(response['message'] ?? "Hazard started successfully"),
+        //   ),
+        // );
+        return true; // Success
+      } else {
+        throw Exception('Failed to start hazard');
+      }
+    } catch (error, stackTrace) {
+      log('StackTrace: $stackTrace');
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text("Failed to start hazard"),
+      //   ),
+      // );
       return false; // Failure
     } finally {
       isLoading = false;
@@ -680,7 +787,6 @@ notifyListeners();
           'locations': formattedLocations,
           'duplicates': formattedDuplication,
           'formatType': formatType,
-
         }
       };
 
@@ -730,9 +836,7 @@ notifyListeners();
       String formatType,
       String accountId,
       String accountName,
-
-String subAccountId
-      ) async {
+      String subAccountId) async {
     try {
       isSubmitLoading = true;
       /* final formattedLocations = locationsToSubmit.map((location) {
@@ -751,7 +855,6 @@ String subAccountId
           'duplicates': duplicationToSubmit,
           'formatType': formatType,
           'sub_account_id': subAccountId,
-
         }
       };
 
@@ -873,11 +976,14 @@ String subAccountId
           .toList();
     }
   }
+
   List<Map<String, dynamic>> _getSelectedGeocodingLocations() {
     if (geocodingList.every((element) => element['isChecked'] == false)) {
       return geocodingList;
     } else {
-      return geocodingList.where((element) => element['isChecked'] == true).toList();
+      return geocodingList
+          .where((element) => element['isChecked'] == true)
+          .toList();
     }
   }
 
@@ -893,20 +999,22 @@ String subAccountId
     if (conflictLocations.every((element) => element['isChecked'] == false)) {
       return conflictLocations;
     } else {
-      return conflictLocations.where((element) => element['isChecked'] == true).toList();
+      return conflictLocations
+          .where((element) => element['isChecked'] == true)
+          .toList();
     }
   }
 
   Future<void> commitSelectedLocations(BuildContext context, String accountId,
       String accountName, String tempId, String subAccountId) async {
-    List<Map<String, dynamic>> selectedLocations = _getSelectedGeocodingLocations();
+    List<Map<String, dynamic>> selectedLocations =
+        _getSelectedGeocodingLocations();
 
     print(selectedLocations.length.toString());
     print(duplicateLocations.length.toString());
     print("selectedLocations.length.toString()");
     print(conflictLocations.length.toString());
     print(conflictLocations.length.toString());
-
 
     /* if (selectedLocations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -916,21 +1024,14 @@ String subAccountId
       );
       return;
     }*/
-    await _submitLocations(context,geocodingList,duplicateLocations, "use_sov_data", tempId,
-        accountId, accountName, subAccountId);
+    await _submitLocations(context, geocodingList, duplicateLocations,
+        "use_sov_data", tempId, accountId, accountName, subAccountId);
   }
 
   void _commitAllLocations(BuildContext context, String accountId,
       String accountName, String tempId) {
-    _submitLocations(
-        context,
-        geocodingList,
-         duplicateLocations ,
-        "refresh_all_data",
-        tempId,
-        accountId,
-        accountName,
-        '');
+    _submitLocations(context, geocodingList, duplicateLocations,
+        "refresh_all_data", tempId, accountId, accountName, '');
   }
 
   Future<void> _submitLocations(
@@ -943,8 +1044,15 @@ String subAccountId
       String accountName,
       String subAccountId) async {
     if (accountId.isNotEmpty) {
-      await submitLocationsSubAccounts(context, tempId, locationsToSubmit,duplicationToSubmit,
-          formatType, accountId, accountName,subAccountId);
+      await submitLocationsSubAccounts(
+          context,
+          tempId,
+          locationsToSubmit,
+          duplicationToSubmit,
+          formatType,
+          accountId,
+          accountName,
+          subAccountId);
       return;
     } else {
       await submitLocationsAccounts(

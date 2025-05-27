@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/screens/listings/widgets/upload_preview_buttons.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/screens/listings/widgets/upload_preview_buttons.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/enums.dart';
 import '../../../design_system/primitives/app_colors.dart';
@@ -143,12 +143,23 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                         provider.duplicateLocations[currentIndex]
                                                 ['duplicates'] !=
                                             null
-                                    ? double.tryParse((provider.duplicateLocations[
-                                                        currentIndex]
+                                    ? double.tryParse((provider
+                                                        .duplicateLocations[currentIndex]
                                                     ['duplicates'] is List
-                                                ? provider.duplicateLocations[currentIndex]
-                                                        ['duplicates'][0]
-                                                    ['latitude']
+                                                ? (provider.duplicateLocations[currentIndex]
+                                                                ['duplicates']
+                                                            is List &&
+                                                        provider
+                                                            .duplicateLocations[currentIndex]
+                                                                ['duplicates']
+                                                            .isNotEmpty)
+                                                    ? provider.duplicateLocations[currentIndex]
+                                                            ['duplicates'][0]
+                                                        ['latitude']
+                                                    : null
+                                                // provider.duplicateLocations[currentIndex]
+                                                //                         ['duplicates'][0]
+                                                //                     ['latitude']
                                                 : provider.duplicateLocations[currentIndex]
                                                     ['duplicates']['latitude'])
                                             .toString()) ??
@@ -158,12 +169,21 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                         provider.duplicateLocations[currentIndex]
                                                 ['duplicates'] !=
                                             null
-                                    ? double.tryParse((provider.duplicateLocations[
-                                                        currentIndex]
+                                    ? double.tryParse((provider.duplicateLocations[currentIndex]
                                                     ['duplicates'] is List
-                                                ? provider.duplicateLocations[currentIndex]
-                                                        ['duplicates'][0]
-                                                    ['longitude']
+                                                ? (provider.duplicateLocations[currentIndex]['duplicates']
+                                                            is List &&
+                                                        provider
+                                                            .duplicateLocations[currentIndex]
+                                                                ['duplicates']
+                                                            .isNotEmpty
+                                                    ? provider.duplicateLocations[currentIndex]
+                                                            ['duplicates'][0]
+                                                        ['longitude']
+                                                    : null)
+                                                // provider.duplicateLocations[currentIndex]
+                                                //                         ['duplicates'][0]
+                                                //                     ['longitude']
                                                 : provider.duplicateLocations[currentIndex]
                                                     ['duplicates']['longitude'])
                                             .toString()) ??
@@ -409,7 +429,6 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                                       context,
                                                       listen: false,
                                                     ).markAsNotDuplicate(
-                                                      context,
                                                       widget.accountId,
                                                       widget.subAccountId,
                                                       widget.processId,
@@ -419,7 +438,7 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                                               ['id'] ??
                                                           "",
                                                     );
-
+                                                    if (!mounted) return;
                                                     if (success) {
                                                       provider
                                                           .duplicateLocations
@@ -486,104 +505,6 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                       ],
                                     ),
                                   ),
-
-//                           Container(
-//                             margin: EdgeInsets.symmetric(horizontal: 8),
-//                             child: Padding(
-//                               padding: const EdgeInsets.symmetric(
-//                                   horizontal: 16.0),
-//                               child: Row(
-//                                 mainAxisSize: MainAxisSize.max,
-//                                 children: [
-//                                   Expanded(
-//                                     child: CustomButton(
-//                                       type: ButtonType.elevated,
-//                                       onPressed: () async {
-//                                         // Get the current duplicate row
-//                                         final currentDuplicate =
-//                                         provider.duplicateLocations[
-//                                         currentIndex];
-// print("object");
-//                                         // Call the method to mark as not duplicate
-//                                         bool success = await Provider.of<
-//                                             UploadSovProvider>(
-//                                           context,
-//                                           listen: false,
-//                                         ).markAsNotDuplicate(
-//                                             context,
-//                                             widget.accountId,
-//                                             widget.subAccountId,
-//                                             widget.processId,
-//                                             [currentDuplicate],
-//                                             provider.duplicateLocations[
-//                                             currentIndex]['id'] ??
-//                                                 "" // Pass the current duplicate
-//                                         );
-//
-//                                         final uploadSovProvider = Provider
-//                                             .of<UploadSovProvider>(
-//                                             context,
-//                                             listen: false);
-//
-//                                         if (success) {
-//                                           print("Success");
-//                                           // Remove from duplicate list
-//                                           provider.duplicateLocations
-//                                               .removeAt(currentIndex);
-//
-//                                           // Add the item to the geocoding list (assuming it should now be treated as a valid location)
-//                                           provider.geocodingList
-//                                               .add(currentDuplicate);
-//
-//                                           // If the item was in the conflict list, remove it
-//                                           provider.conflictLocations
-//                                               .removeWhere((conflict) =>
-//                                           conflict['id'] ==
-//                                               currentDuplicate['id']);
-//
-//                                           // Update counts locally without API call
-//                                           uploadSovProvider
-//                                               .duplicateCount =
-//                                               provider.duplicateLocations
-//                                                   .length;
-//                                           uploadSovProvider
-//                                               .locationCount =
-//                                               provider
-//                                                   .geocodingList.length;
-//                                           uploadSovProvider
-//                                               .conflictCount =
-//                                               provider.conflictLocations
-//                                                   .length;
-//
-//                                           // Notify UI about the update
-//                                           uploadSovProvider
-//                                               .refreshCounts();
-//
-//                                           // Debugging log for verification
-//                                           print(
-//                                               "Updated Counts - Duplicates: ${uploadSovProvider
-//                                                   .duplicateCount}");
-//                                           print(
-//                                               "Updated Counts - Locations: ${uploadSovProvider
-//                                                   .locationCount}");
-//                                           print(
-//                                               "Updated Counts - Conflicts: ${uploadSovProvider
-//                                                   .conflictCount}");
-//                                         }
-//                                       },
-//                                       child: Text(
-//                                         "It's not duplicate!",
-//                                         style: CustomTypography(context)
-//                                             .ButtonLarge
-//                                             .copyWith(
-//                                           color: Colors.black,
-//                                         ),
-//                                       ),
-//                                     ),
-//                                   ),
-//                                 ],
-//                               ),
-//                             ),
                                 ),
                                 SizedBox(height: 16),
                               ],
@@ -634,10 +555,10 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                                 },
                             ),
                             TextSpan(
-                              text: "Thank you for your assistance in keeping our data accurate! ",
+                              text:
+                                  "Thank you for your assistance in keeping our data accurate! ",
                               style: typography.Body2,
                             ),
-
                           ],
                         )
                       ],

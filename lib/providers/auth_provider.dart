@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:RiskSphare/models/companymodel.dart';
+import 'package:RiskSphere/models/companymodel.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import 'package:flutter/foundation.dart';
@@ -10,12 +11,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:RiskSphare/constants/enums.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/main.dart';
-import 'package:RiskSphare/screens/onboarding/login_screen.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/service/language_service.dart';
+import 'package:RiskSphere/constants/enums.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/main.dart';
+import 'package:RiskSphere/screens/onboarding/login_screen.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/service/language_service.dart';
 
 import '../design_system/primitives/custom_typography.dart';
 import '../design_system/primitives/utilities/custom_spacing.dart';
@@ -206,19 +207,26 @@ class AuthNotifier extends ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse("https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=${Uri.encodeComponent(name)}"),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        Uri.parse(
+            "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=${Uri.encodeComponent(name)}"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
       );
 
       if (response.statusCode == 200) {
         print("object");
         final data = json.decode(response.body);
 
-        if (data is Map && data.containsKey("result") && data["result"] is List) {
+        if (data is Map &&
+            data.containsKey("result") &&
+            data["result"] is List) {
           print("data");
           final List<dynamic> companyList = data["result"];
           print(companyList);
-          companyOptionsNotifier.value = companyList.map((json) => Companies.fromJson(json)).toList();
+          companyOptionsNotifier.value =
+              companyList.map((json) => Companies.fromJson(json)).toList();
         } else {
           companyOptionsNotifier.value = [];
         }
@@ -231,9 +239,6 @@ class AuthNotifier extends ChangeNotifier {
     }
     companyOptionsNotifier.notifyListeners();
   }
-
-
-
 
 //   Future<List<Companies>> fetchCompanies(String name) async {
 //     print(name);
@@ -296,11 +301,6 @@ class AuthNotifier extends ChangeNotifier {
           await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
-
-
-
-
-
       );
       _user = userCredential.user;
 
@@ -724,7 +724,7 @@ class AuthNotifier extends ChangeNotifier {
           isNewUser = false;
           await Navigator.pushAndRemoveUntil(
             context!,
-            MaterialPageRoute(builder: (context) => MyApp()),
+            MaterialPageRoute(builder: (context) => DashboardScreen()),
             (route) => false,
           );
         }
@@ -1608,6 +1608,7 @@ class AuthNotifier extends ChangeNotifier {
 
     return '$localPart@$domainPart';
   }
+
   Future<String> getAllClaims() async {
     try {
       if (isAssignClaimsLoading) return "";
@@ -1618,7 +1619,8 @@ class AuthNotifier extends ChangeNotifier {
         return "";
       }
 
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('assignClaims');
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('assignClaims');
 
       // Use cached token if available
       String? token = await _auth.currentUser!.getIdToken(false);
@@ -1628,7 +1630,9 @@ class AuthNotifier extends ChangeNotifier {
         'Authorization': 'Bearer ${token ?? ""}',
       });
 
-      if (response.data == null || response.data is! Map || !response.data.containsKey('is_user_exists')) {
+      if (response.data == null ||
+          response.data is! Map ||
+          !response.data.containsKey('is_user_exists')) {
         print("Invalid response from Firebase");
         return "";
       }
@@ -1637,14 +1641,21 @@ class AuthNotifier extends ChangeNotifier {
 
       // Batch shared preferences updates
       await Future.wait([
-        SharedPreferenceService.setScheduleInProgress(data['schedule_inprogress'].toString()),
-        SharedPreferenceService.setSovUploadTempId(data['last_process_temp_id'] ?? ""),
-        SharedPreferenceService.setSovUploadProcessId(data['last_process_id'] ?? ""),
-        SharedPreferenceService.setSovUploadState(data['last_process_state'] ?? ""),
+        SharedPreferenceService.setScheduleInProgress(
+            data['schedule_inprogress'].toString()),
+        SharedPreferenceService.setSovUploadTempId(
+            data['last_process_temp_id'] ?? ""),
+        SharedPreferenceService.setSovUploadProcessId(
+            data['last_process_id'] ?? ""),
+        SharedPreferenceService.setSovUploadState(
+            data['last_process_state'] ?? ""),
         SharedPreferenceService.setSovAccountId(data['last_account'] ?? ""),
-        SharedPreferenceService.setSovSubAccountId(data['last_sub_account'] ?? ""),
-        SharedPreferenceService.setSovAccountName(data['last_account_name'] ?? ""),
-        SharedPreferenceService.setSovSubAccountName(data['last_sub_account_name'] ?? ""),
+        SharedPreferenceService.setSovSubAccountId(
+            data['last_sub_account'] ?? ""),
+        SharedPreferenceService.setSovAccountName(
+            data['last_account_name'] ?? ""),
+        SharedPreferenceService.setSovSubAccountName(
+            data['last_sub_account_name'] ?? ""),
       ]);
 
       // Parallel trial info saving
@@ -1669,6 +1680,7 @@ class AuthNotifier extends ChangeNotifier {
       isAssignClaimsLoading = false;
     }
   }
+
 //before shared preference call
   // Future<String> getAllClaims() async {
   //   try {

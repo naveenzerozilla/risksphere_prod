@@ -1,4 +1,4 @@
-import 'package:RiskSphare/models/role_model.dart';
+import 'package:RiskSphere/models/role_model.dart';
 
 class CorporateTypeModel {
   List<CorporateType>? corporateType;

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:RiskSphare/models/companymodel.dart';
+import 'package:RiskSphere/models/companymodel.dart';
 
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
@@ -13,13 +13,13 @@ import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:RiskSphare/design_system/components/country_picker_flag_name.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/main.dart';
-import 'package:RiskSphare/models/initial_data_model.dart';
-import 'package:RiskSphare/providers/auth_provider.dart';
-import 'package:RiskSphare/screens/home/dashboard_screen.dart';
-import 'package:RiskSphare/screens/onboarding/splash_screen.dart';
+import 'package:RiskSphere/design_system/components/country_picker_flag_name.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/main.dart';
+import 'package:RiskSphere/models/initial_data_model.dart';
+import 'package:RiskSphere/providers/auth_provider.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
 
@@ -30,6 +30,7 @@ import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../design_system/repo/home.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../service/language_service.dart';
 import '../../utils/utils.dart';
 
@@ -159,9 +160,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     super.initState();
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     authNotifier.fetchCompanies(""); // Initial fetch
-    authNotifier.companyOptionsNotifier.addListener(() {
-      setState(() {}); // Force rebuild when data changes
-    });
+    // authNotifier.companyOptionsNotifier.addListener(() {
+    //   // setState(() {}); // Force rebuild when data changes
+    // });
     _selectedOption = SignUpOptions.individual;
     /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
@@ -759,25 +760,56 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
           return SocialMediaButton(
             onPressed: () async {
-              // Add your onPressed function here
-              await authNotifier.signInWithGoogle(context: context);
+              try {
+                await authNotifier.signInWithGoogle(context: context);
+
+                if (authNotifier.user != null) {
+                  // Fetch user data only if user exists
+                  Provider.of<UserProfileProvider>(context, listen: false)
+                      .getAllUserData(context, '', '');
+
+                  // Navigate to Dashboard if not a new user
+                  if (!authNotifier.isNewUser) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DashboardScreen(),
+                      ),
+                    );
+                  }
+                } else {
+                  // Handle sign-in failure
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content:
+                            Text("Google sign-in failed. Please try again.")),
+                  );
+                }
+              } catch (e) {
+                // Catch any errors during sign-in
+                debugPrint("Error during Google sign-in: $e");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text("An error occurred. Please try again.")),
+                );
+              }
             },
             buttonText:
                 LanguageService.getTranslated(context, "login_googlebutton"),
             iconPath: 'assets/images/googleLogo.svg',
           );
         }),
-        SizedBox(
-          height: CustomSpacing.one,
-        ),
-        SocialMediaButton(
-          onPressed: () {
-            // Add your onPressed function here
-          },
-          buttonText:
-              LanguageService.getTranslated(context, "login_microsoft_button"),
-          iconPath: 'assets/images/microsoftLogo.svg',
-        ),
+        // SizedBox(
+        //   height: CustomSpacing.one,
+        // ),
+        // SocialMediaButton(
+        //   onPressed: () {
+        //     // Add your onPressed function here
+        //   },
+        //   buttonText:
+        //       LanguageService.getTranslated(context, "login_microsoft_button"),
+        //   iconPath: 'assets/images/microsoftLogo.svg',
+        // ),
         SizedBox(height: CustomSpacing.eight),
         Row(
           mainAxisSize: MainAxisSize.min,

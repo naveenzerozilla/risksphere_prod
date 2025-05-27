@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/providers/job_monitoring_provier.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/providers/job_monitoring_provier.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 

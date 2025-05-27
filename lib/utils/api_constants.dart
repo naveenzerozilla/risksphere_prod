@@ -68,7 +68,11 @@ class AppConstant {
   static String get FETCH_LOCATIONS_DUPLICATION_CHECK=> '$baseURL/duplicate_check';
   static String get FETCH_LOCATION_DUPLICATIONS=> '$baseURL/duplicate_check/duplicate';
   static String get FETCH_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/similar';
-  static String get RESOLVE_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/conflicts';
+  static String get RESOLVE_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/resolveconflict';
+  static String get SKIP_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/skipconflict';
+  static String get START_HAZARD_CONFLICTS=> '$baseURL/locations/starthazard';
+  static String get HANDLE_CONFLICT=> '$baseURL/locations';
+
   static String get CANCEL_SOV_UPLOAD_PROCESS => '$baseURL/user_management_new/my_last_process/cancel';
   static String get TRANSFER_SOV => '$baseURL/locations/transfer_sov';
   static String get TRANSFER_SUBACCOUNT=> '$baseURL/locations/transfer_sub_account';

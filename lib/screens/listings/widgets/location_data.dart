@@ -1,17 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/app_colors.dart';
-import 'package:RiskSphare/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:RiskSphare/screens/listings/widgets/duplicates_tab.dart';
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphere/screens/listings/widgets/duplicates_tab.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../service/language_service.dart';
-import 'conflicts_tab.dart';
 import 'location_headers.dart';
 import '../../../providers/upload_sov_provider.dart';
 import 'package:provider/provider.dart';
-
 import 'message_card.dart';
 import 'upload_preview_buttons.dart';
 
@@ -54,6 +52,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
   List<Map<String, dynamic>> selectedLocations = [];
   String processStatus = '';
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  StreamSubscription<QuerySnapshot>? _processStatusSubscription;
 
   @override
   void initState() {
@@ -71,7 +70,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
       }
     });
     _listenToProcessStatus();
-    // Initial data fetch
   }
 
   void _listenToProcessStatus() {
@@ -79,45 +77,30 @@ class LocationDataScreenState extends State<LocationDataScreen>
         .collection('processes')
         .where('process_id', isEqualTo: widget.processId);
 
-    query.snapshots().listen((querySnapshot) {
+    _processStatusSubscription = query.snapshots().listen((querySnapshot) {
+      if (!mounted) return;
+
       if (querySnapshot.docs.isNotEmpty) {
         final data = querySnapshot.docs.first.data();
+
+        if (!mounted) return;
+
         setState(() {
           processStatus = data['duplication_check_status'] ?? '';
         });
+
         print(processStatus);
-        print("processStatus");
-        _getData();
+        _getData(); // Make sure _getData checks `mounted` before setState
       }
     });
   }
 
   @override
   void dispose() {
+    _processStatusSubscription?.cancel();
     _masterTabController?.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _scrollLeft() {
-    _scrollController.animateTo(
-      _scrollController.offset - 100, // Scroll left by 100 pixels
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _scrollRight() {
-    _scrollController.animateTo(
-      _scrollController.offset + 100, // Scroll right by 100 pixels
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  Future<void> _getDataInital() async {
-    response = await Provider.of<UploadSovProvider>(context, listen: false)
-        .fetchDuplicates(context, widget.processId);
   }
 
   Future<void> _getData() async {
@@ -133,7 +116,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
       await Future.wait([
         uploadSovProvider.fetchLocations(context, widget.processId),
         uploadSovProvider.fetchDuplicates(context, widget.processId),
-        uploadSovProvider.fetchConflicts(context, widget.processId),
       ]);
     } catch (e) {
       print("Error fetching data: $e");
@@ -146,76 +128,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
       }
     }
   }
-
-  Future<void> _getLocationData() async {
-    if (_isLoading) return; // Prevent multiple calls
-
-    setState(() => _isLoading = true);
-
-    try {
-      final uploadSovProvider =
-          Provider.of<UploadSovProvider>(context, listen: false);
-
-      // Step 1: Store IDs of selected locations before refresh
-      List<String> selectedIds = uploadSovProvider.geocodingList
-          .where((location) => location['isChecked'] == true)
-          .map(
-              (location) => location['id'].toString()) // Ensure IDs are strings
-          .toList();
-
-      // Call APIs in parallel
-      await Future.wait([
-        uploadSovProvider.fetchLocations(context, widget.processId),
-      ]);
-
-      // Step 2: Restore the selected state after refreshing
-      for (var location in uploadSovProvider.geocodingList) {
-        if (selectedIds.contains(location['id'].toString())) {
-          location['isChecked'] = true;
-        }
-      }
-
-      // Step 3: Check if all items are selected and update `_selectAll`
-      _selectAll = uploadSovProvider.geocodingList.isNotEmpty &&
-          uploadSovProvider.geocodingList
-              .every((location) => location['isChecked'] == true);
-    } catch (e) {
-      print("Error fetching data: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching data. Please try again.")),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  //
-  // Future<void> _getData() async {
-  //   if (_isLoading) return; // Prevent multiple simultaneous calls
-  //   setState(() {
-  //     _isLoading = true;
-  //   });
-  //
-  //   try {
-  //     Provider.of<UploadSovProvider>(context, listen: false)
-  //         .fetchLocations(context, widget.processId);
-  //     Provider.of<UploadSovProvider>(context, listen: false)
-  //         .fetchDuplicates(context, widget.processId);
-  //     Provider.of<UploadSovProvider>(context, listen: false)
-  //         .fetchConflicts(context, widget.processId);
-  //   } catch (e) {
-  //     print("Error fetching locations: $e");
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("Error fetching locations. Please try again.")),
-  //     );
-  //   } finally {
-  //     setState(() {
-  //       _isLoading = false; // Reset the loading flag
-  //     });
-  //   }
-  // }
 
   void _toggleSelectAll(bool? value) {
     if (value == null) return;
@@ -638,181 +550,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                     ),
                                                   ),
                                           ),
-                                          // Tab(
-                                          //   child: processStatus != "completed"
-                                          //       ? RichText(
-                                          //           text: TextSpan(
-                                          //             text: 'Conflicts ',
-                                          //             style: typography
-                                          //                 .Subtitle2.copyWith(
-                                          //               color: _currentIndex ==
-                                          //                       2
-                                          //                   ? AppColors
-                                          //                       .primaryMain
-                                          //                   : Colors.white60,
-                                          //             ),
-                                          //             children: [
-                                          //               WidgetSpan(
-                                          //                 alignment:
-                                          //                     PlaceholderAlignment
-                                          //                         .middle,
-                                          //                 child: provider
-                                          //                             .conflictLocations
-                                          //                             .length >
-                                          //                         0
-                                          //                     ? BlinkingText(
-                                          //                         conflictCount:
-                                          //                             0,
-                                          //                         style: typography
-                                          //                                 .Subtitle2
-                                          //                             .copyWith(
-                                          //                           color: Colors
-                                          //                               .white,
-                                          //                         ),
-                                          //                         blinkColor: Colors
-                                          //                             .orangeAccent,
-                                          //                         defaultColor:
-                                          //                             Colors
-                                          //                                 .red,
-                                          //                       )
-                                          //                     : Container(
-                                          //                         padding: EdgeInsets
-                                          //                             .symmetric(
-                                          //                                 horizontal:
-                                          //                                     6,
-                                          //                                 vertical:
-                                          //                                     0),
-                                          //                         decoration:
-                                          //                             BoxDecoration(
-                                          //                           color: Colors
-                                          //                               .white12,
-                                          //                           borderRadius:
-                                          //                               BorderRadius.circular(
-                                          //                                   10),
-                                          //                         ),
-                                          //                         child:
-                                          //                             FutureBuilder(
-                                          //                           future: provider
-                                          //                                   .isInitialLoad
-                                          //                               ? Future
-                                          //                                   .delayed(
-                                          //                                   Duration(seconds: 2),
-                                          //                                   () =>
-                                          //                                       provider.conflictLocations.length,
-                                          //                                 )
-                                          //                               : Future
-                                          //                                   .value(0),
-                                          //                           builder:
-                                          //                               (context,
-                                          //                                   snapshot) {
-                                          //                             return Padding(
-                                          //                               padding: const EdgeInsets
-                                          //                                   .only(
-                                          //                                   bottom:
-                                          //                                       2.0),
-                                          //                               child:
-                                          //                                   Text(
-                                          //                                 "0",
-                                          //                                 style:
-                                          //                                     TextStyle(color: Colors.white),
-                                          //                               ),
-                                          //                             );
-                                          //                           },
-                                          //                         ),
-                                          //                       ),
-                                          //               ),
-                                          //             ],
-                                          //           ),
-                                          //         )
-                                          //       : RichText(
-                                          //           text: TextSpan(
-                                          //             text: 'Conflicts ',
-                                          //             style: typography
-                                          //                 .Subtitle2.copyWith(
-                                          //               color: _currentIndex ==
-                                          //                       2
-                                          //                   ? AppColors
-                                          //                       .primaryMain
-                                          //                   : Colors.white60,
-                                          //             ),
-                                          //             children: [
-                                          //               if (processStatus ==
-                                          //                   "completed")
-                                          //                 WidgetSpan(
-                                          //                   alignment:
-                                          //                       PlaceholderAlignment
-                                          //                           .middle,
-                                          //                   child: provider
-                                          //                               .conflictLocations
-                                          //                               .length >
-                                          //                           0
-                                          //                       ? BlinkingText(
-                                          //                           conflictCount:
-                                          //                               provider
-                                          //                                   .conflictLocations
-                                          //                                   .length,
-                                          //                           style: typography
-                                          //                                   .Subtitle2
-                                          //                               .copyWith(
-                                          //                             color: Colors
-                                          //                                 .white,
-                                          //                           ),
-                                          //                           blinkColor:
-                                          //                               Colors
-                                          //                                   .orangeAccent,
-                                          //                           defaultColor:
-                                          //                               Colors
-                                          //                                   .red,
-                                          //                         )
-                                          //                       : Container(
-                                          //                           padding: EdgeInsets.symmetric(
-                                          //                               horizontal:
-                                          //                                   6,
-                                          //                               vertical:
-                                          //                                   0),
-                                          //                           decoration:
-                                          //                               BoxDecoration(
-                                          //                             color: Colors
-                                          //                                 .white12,
-                                          //                             borderRadius:
-                                          //                                 BorderRadius.circular(
-                                          //                                     10),
-                                          //                           ),
-                                          //                           child:
-                                          //                               FutureBuilder(
-                                          //                             future: provider
-                                          //                                     .isInitialLoad
-                                          //                                 ? Future
-                                          //                                     .delayed(
-                                          //                                     Duration(seconds: 1),
-                                          //                                     () => provider.conflictLocations.length,
-                                          //                                   )
-                                          //                                 : Future.value(provider
-                                          //                                     .conflictLocations
-                                          //                                     .length),
-                                          //                             builder:
-                                          //                                 (context,
-                                          //                                     snapshot) {
-                                          //                               return Container(
-                                          //                                 padding:
-                                          //                                     EdgeInsets.only(bottom: 2),
-                                          //                                 child:
-                                          //                                     Text(
-                                          //                                   snapshot.connectionState == ConnectionState.waiting
-                                          //                                       ? "0"
-                                          //                                       : snapshot.data.toString(),
-                                          //                                   style:
-                                          //                                       TextStyle(color: Colors.white),
-                                          //                                 ),
-                                          //                               );
-                                          //                             },
-                                          //                           ),
-                                          //                         ),
-                                          //                 ),
-                                          //             ],
-                                          //           ),
-                                          //         ),
-                                          // ),
                                         ],
                                       ),
                                     ),
@@ -1074,59 +811,60 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           SizedBox(
                             height: CustomSpacing.four,
                           ),
-                          StreamBuilder<DocumentSnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('processes_status')
-                                  .doc(widget.processId)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return SizedBox();
-                                }
-                                final data = snapshot.data!.data()
-                                    as Map<String, dynamic>;
-                                final duplicationCheckStatus =
-                                    data['duplication_check_status']
-                                        ?.toLowerCase();
-                                print(
-                                    "Duplication Check Status: $duplicationCheckStatus");
-
-                                if (duplicationCheckStatus != "completed") {
-                                  // Show animated loader if duplication check is not completed
-                                  return Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        // Add your animated loader here
-                                        SizedBox(
-                                          height: MediaQuery.sizeOf(context)
-                                                  .height *
-                                              0.1,
-                                        ),
-                                        SizedBox(
-                                          height: 100,
-                                          width: 100,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 6,
-                                            color: Colors.blue,
-                                          ),
-                                        ),
-                                        SizedBox(height: 16),
-                                        Text(
-                                          "We're currently reviewing your addresses.\nJust hang tight for a few minutes, and we'll have it ready for you shortly!",
-                                          textAlign: TextAlign.center,
-                                          style: typography.Subtitle1,
-                                        ),
-                                      ],
+                          // StreamBuilder<DocumentSnapshot>(
+                          //     stream: FirebaseFirestore.instance
+                          //         .collection('processes_status')
+                          //         .doc(widget.processId)
+                          //         .snapshots(),
+                          //     builder: (context, snapshot) {
+                          //       if (snapshot.connectionState ==
+                          //           ConnectionState.waiting) {
+                          //         return SizedBox();
+                          //       }
+                          //       final data = snapshot.data!.data()
+                          //           as Map<String, dynamic>;
+                          //       final duplicationCheckStatus =
+                          //           data['duplication_check_status']
+                          //               ?.toLowerCase();
+                          //       print(
+                          //           "Duplication Check Status: $duplicationCheckStatus");
+                          //
+                          if (processStatus != "completed") ...[
+                            //         // Show animated loader if duplication check is not completed
+                            //         return
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Add your animated loader here
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.sizeOf(context).height * 0.1,
+                                  ),
+                                  SizedBox(
+                                    height: 100,
+                                    width: 100,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 6,
+                                      color: Colors.blue,
                                     ),
-                                  );
-                                }
-                                return Expanded(
-                                    child:
-                                        _locationListBody(typography, context));
-                              }),
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    "We're currently reviewing your addresses.\nJust hang tight for a few minutes, and we'll have it ready for you shortly!",
+                                    textAlign: TextAlign.center,
+                                    style: typography.Subtitle1,
+                                  ),
+                                ],
+                              ),
+                            )
+                          ] else if (processStatus == "completed") ...[
+                            // }
+                            // return
+                            Expanded(
+                                child: _locationListBody(typography, context)),
+                          ],
+                          // }),
                         ],
                       ),
                       DuplicatesTab(
@@ -1138,15 +876,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         accountName: widget.accountName,
                         tempId: widget.tempId,
                       ),
-                      // ConflictsTab(
-                      //   subAccountName: widget.subAccountName,
-                      //   processId: widget.processId,
-                      //   accountId: widget.accountId,
-                      //   subAccountId: widget.subAccountId,
-                      //   accountName: widget.accountName,
-                      //   tempId: widget.tempId,
-                      //   masterTabController: _masterTabController,
-                      // ),
                     ],
                   ),
                 ),
@@ -1291,9 +1020,11 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           SizedBox(height: 16),
                           MessageCard(
                             messageTextSpans: [
-                              TextSpan(text:"Please review the list of duplicate locations.",
-                                style: TextStyle(color: Colors.orange,fontSize: 13)
-                              ),
+                              TextSpan(
+                                  text:
+                                      "Please review the list of duplicate locations.",
+                                  style: TextStyle(
+                                      color: Colors.orange, fontSize: 13)),
                             ],
                           )
                         ],
@@ -1301,8 +1032,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                     ),
                   )
                 : Expanded(
-                    child:
-                    ListView.builder(
+                    child: ListView.builder(
                       itemCount: provider.geocodingList.length,
                       itemBuilder: (context, index) {
                         final location = provider.geocodingList[index];
@@ -1343,79 +1073,47 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                       onChanged: (bool? value) {
                                         if (value == null) return;
 
-                                        final currentOffset = _scrollController.offset;
+                                        final currentOffset =
+                                            _scrollController.offset;
 
                                         setStateLocal(() {
                                           location['isChecked'] = value;
                                         });
 
                                         if (value) {
-                                          if (!selectedLocations.any((item) => item['id'] == location['id'])) {
+                                          if (!selectedLocations.any((item) =>
+                                              item['id'] == location['id'])) {
                                             selectedLocations.add(location);
                                           }
                                         } else {
-                                          selectedLocations.removeWhere((item) => item['id'] == location['id']);
+                                          selectedLocations.removeWhere(
+                                              (item) =>
+                                                  item['id'] == location['id']);
                                           _selectAll = false;
                                         }
 
-                                        if (provider.geocodingList.every((item) => item['isChecked'] == true)) {
+                                        if (provider.geocodingList.every(
+                                            (item) =>
+                                                item['isChecked'] == true)) {
                                           _selectAll = true;
                                         }
 
-                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        print(_selectAll);
+                                        print("_selectAll");
+                                        setState(() {
+                                          _selectAll = _selectAll;
+                                        });
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
                                           if (_scrollController.hasClients) {
-                                            _scrollController.jumpTo(currentOffset);
+                                            _scrollController
+                                                .jumpTo(currentOffset);
                                           }
                                         });
                                       },
                                     );
                                   },
                                 ),
-
-                                // StatefulBuilder(
-                                //   builder: (context, setStateLocal) {
-                                //     return Checkbox(
-                                //         shape: RoundedRectangleBorder(
-                                //           borderRadius:
-                                //               BorderRadius.circular(6),
-                                //         ),
-                                //         value: location['isChecked'] ?? false,
-                                //         onChanged: (bool? value) {
-                                //           if (value == null) return;
-                                //
-                                //           setState(() {
-                                //             location['isChecked'] = value;
-                                //
-                                //             if (value) {
-                                //               // Add to selectedLocations if checked
-                                //               if (!selectedLocations.any(
-                                //                   (item) =>
-                                //                       item['id'] ==
-                                //                       location['id'])) {
-                                //                 selectedLocations.add(location);
-                                //               }
-                                //             } else {
-                                //               // Remove from selectedLocations if unchecked
-                                //               selectedLocations.removeWhere(
-                                //                   (item) =>
-                                //                       item['id'] ==
-                                //                       location['id']);
-                                //
-                                //               // Uncheck "Select All" if any single checkbox is unchecked
-                                //               _selectAll = false;
-                                //             }
-                                //
-                                //             // If ALL locations are selected, update "Select All"
-                                //             if (provider.geocodingList.every(
-                                //                 (item) =>
-                                //                     item['isChecked'] ==
-                                //                     true)) {
-                                //               _selectAll = true;
-                                //             }
-                                //           });
-                                //         });
-                                //   },
-                                // ),
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
@@ -1476,124 +1174,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
                         );
                       },
                     ),
-
-                    // ListView.builder(
-                    //   itemCount: provider.geocodingList.length,
-                    //   itemBuilder: (context, index) {
-                    //     final location = provider.geocodingList[index];
-                    //
-                    //     if (_searchQuery.isNotEmpty &&
-                    //         !(location['formatted_address']
-                    //                 .toString()
-                    //                 .toLowerCase()
-                    //                 .contains(_searchQuery.toLowerCase()) ||
-                    //             location['city']
-                    //                 .toString()
-                    //                 .toLowerCase()
-                    //                 .contains(_searchQuery.toLowerCase()))) {
-                    //       return Container();
-                    //     }
-                    //
-                    //     return Container(
-                    //       margin:
-                    //           EdgeInsets.only(bottom: 8, left: 16, right: 16),
-                    //       decoration: BoxDecoration(
-                    //         color: Theme.of(context)
-                    //             .colorScheme
-                    //             .surfaceContainerHighest,
-                    //         border: Border.all(
-                    //           color: Theme.of(context)
-                    //               .colorScheme
-                    //               .surfaceContainerHighest,
-                    //         ),
-                    //         borderRadius: BorderRadius.circular(12),
-                    //       ),
-                    //       child: IntrinsicHeight(
-                    //         child: Row(
-                    //           children: [
-                    //             Checkbox(
-                    //               shape: RoundedRectangleBorder(
-                    //                 borderRadius: BorderRadius.circular(6),
-                    //               ),
-                    //               value: location['isChecked'] ?? false,
-                    //               onChanged: (bool? value) {
-                    //                 setState(() {
-                    //                   location['isChecked'] = value!;
-                    //
-                    //                   if (value) {
-                    //                     selectedLocations.add(
-                    //                         location); // Use add() instead of insert()
-                    //                   } else {
-                    //                     selectedLocations.removeWhere((item) =>
-                    //                         item['id'] == location['id']);
-                    //                   }
-                    //
-                    //                   // Check if all items are selected
-                    //                   _selectAll = provider.geocodingList.every(
-                    //                       (item) => item['isChecked'] == true);
-                    //                 });
-                    //               },
-                    //             ),
-                    //             SizedBox(width: 8),
-                    //             Expanded(
-                    //               child: Column(
-                    //                 crossAxisAlignment:
-                    //                     CrossAxisAlignment.start,
-                    //                 children: [
-                    //                   SizedBox(height: 10),
-                    //                   Text(
-                    //                     location['formatted_address'],
-                    //                     style: typography.Body1,
-                    //                     maxLines: 2,
-                    //                     overflow: TextOverflow.ellipsis,
-                    //                   ),
-                    //                   SizedBox(height: 4),
-                    //                   Text(
-                    //                     "${location['city'] != null && location['city'].isNotEmpty ? location['city'] : ''}"
-                    //                     "${location['state'] != null && location['state'].isNotEmpty ? (location['city'] != null && location['city'].isNotEmpty ? ', ' : '') + location['state'] : ''}"
-                    //                     "${location['country'] != null && location['country'].isNotEmpty ? ((location['city'] != null && location['city'].isNotEmpty) || (location['state'] != null && location['state'].isNotEmpty) ? ', ' : '') + location['country'] : ''}",
-                    //                     style: typography.Caption,
-                    //                     overflow: TextOverflow.ellipsis,
-                    //                   ),
-                    //                   SizedBox(height: 10),
-                    //                 ],
-                    //               ),
-                    //             ),
-                    //             Container(
-                    //               decoration: BoxDecoration(
-                    //                 borderRadius: BorderRadius.only(
-                    //                   topRight: Radius.circular(12),
-                    //                   bottomRight: Radius.circular(12),
-                    //                 ),
-                    //                 color: Theme.of(context)
-                    //                     .colorScheme
-                    //                     .surfaceContainerLow,
-                    //               ),
-                    //               width: 50,
-                    //               height: double.infinity,
-                    //               child: IconButton(
-                    //                 icon: Icon(Icons.info,
-                    //                     color: Theme.of(context)
-                    //                         .colorScheme
-                    //                         .primary),
-                    //                 onPressed: () {
-                    //                   Navigator.push(
-                    //                     context,
-                    //                     MaterialPageRoute(
-                    //                       builder: (context) =>
-                    //                           LocationHeadersScreen(
-                    //                               location: location),
-                    //                     ),
-                    //                   );
-                    //                 },
-                    //               ),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ),
-                    //     );
-                    //   },
-                    // ),
                   ),
 
             UploadPreviewButtons(
@@ -1608,93 +1188,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
           ],
         );
       }),
-    );
-  }
-}
-
-class BlinkingText extends StatefulWidget {
-  final int conflictCount;
-  final TextStyle style;
-  final Color blinkColor;
-  final Color defaultColor;
-
-  const BlinkingText({
-    Key? key,
-    required this.conflictCount,
-    required this.style,
-    required this.blinkColor,
-    required this.defaultColor,
-  }) : super(key: key);
-
-  @override
-  _BlinkingTextState createState() => _BlinkingTextState();
-}
-
-class _BlinkingTextState extends State<BlinkingText>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Color?> _colorAnimation;
-  late Animation<Color?> _bgAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 1), // Adjust speed of blinking
-    )..repeat(reverse: true); // Reverses between colors
-
-    _colorAnimation = ColorTween(
-      begin: widget.blinkColor,
-      end: widget.defaultColor,
-    ).animate(_controller);
-
-    _bgAnimation = ColorTween(
-      begin: widget.defaultColor,
-      end: widget.blinkColor,
-    ).animate(_controller);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: _bgAnimation.value, // Blinking background color
-            borderRadius: BorderRadius.circular(10), // Rounded corners
-          ),
-          padding: EdgeInsets.fromLTRB(4, 1, 4, 2), // Optional padding
-          child: Text(
-            '${widget.conflictCount}',
-            textAlign: TextAlign.center,
-            style: widget.style.copyWith(
-              color: _colorAnimation.value, // Blinking text color
-            ),
-          ),
-        );
-        //   Container(
-        //   // padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-        //   decoration: BoxDecoration(
-        //     color: _bgAnimation.value, // Blinking background color
-        //     borderRadius: BorderRadius.circular(10), // Rounded corners
-        //   ),
-        //   child: Text(
-        //     '${widget.conflictCount}',
-        //     style: widget.style.copyWith(
-        //       color: _colorAnimation.value, // Blinking text color
-        //     ),
-        //   ),
-        // );
-      },
     );
   }
 }
@@ -1760,11 +1253,6 @@ class _BlinkingText1State extends State<BlinkingText1>
             color: _bgAnimation.value,
             borderRadius: BorderRadius.circular(10),
           ),
-          // decoration: BoxDecoration(
-          //   color: _bgAnimation.value, // Blinking background color
-          //   borderRadius: BorderRadius.circular(10), // Rounded corners
-          // ),
-          // padding: EdgeInsets.fromLTRB(4, 1, 4, 2), // Optional padding
           child: Text(
             '${widget.conflictCount}',
             textAlign: TextAlign.center,
@@ -1773,19 +1261,6 @@ class _BlinkingText1State extends State<BlinkingText1>
             ),
           ),
         );
-        //   Container(
-        //   // padding: EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-        //   decoration: BoxDecoration(
-        //     color: _bgAnimation.value, // Blinking background color
-        //     borderRadius: BorderRadius.circular(10), // Rounded corners
-        //   ),
-        //   child: Text(
-        //     '${widget.conflictCount}',
-        //     style: widget.style.copyWith(
-        //       color: _colorAnimation.value, // Blinking text color
-        //     ),
-        //   ),
-        // );
       },
     );
   }

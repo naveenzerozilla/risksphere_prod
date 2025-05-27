@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 
 class AppThemes {
   static ThemeData get lightTheme {

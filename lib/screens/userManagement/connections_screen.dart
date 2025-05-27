@@ -5,8 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphare/design_system/components/custom_button.dart';
-import 'package:RiskSphare/providers/connections_provider.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/providers/connections_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -21,7 +21,7 @@ import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphare/models/role_model.dart' as roleModel;
+import 'package:RiskSphere/models/role_model.dart' as roleModel;
 
 import '../../service/language_service.dart';
 

@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/location_profile_model.dart';
-import 'package:RiskSphare/screens/listings/location_list.dart';
-import 'package:RiskSphare/screens/listings/location_profile_preview.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/location_profile_model.dart';
+import 'package:RiskSphere/screens/listings/location_list.dart';
+import 'package:RiskSphere/screens/listings/location_profile_preview.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 

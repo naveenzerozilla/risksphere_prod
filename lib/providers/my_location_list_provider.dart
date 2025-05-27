@@ -1,17 +1,17 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/account_list_model.dart';
-import 'package:RiskSphare/models/location_list_model.dart';
-import 'package:RiskSphare/models/location_profile_model.dart';
-import 'package:RiskSphare/models/my_location_list_model.dart';
-import 'package:RiskSphare/models/sov_list_model.dart';
-import 'package:RiskSphare/providers/sov_list_provider.dart';
-import 'package:RiskSphare/screens/listings/widgets/auto_complete_options_sovs.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
-import 'package:RiskSphare/utils/common_headers.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
+import 'package:RiskSphere/models/location_list_model.dart';
+import 'package:RiskSphere/models/location_profile_model.dart';
+import 'package:RiskSphere/models/my_location_list_model.dart';
+import 'package:RiskSphere/models/sov_list_model.dart';
+import 'package:RiskSphere/providers/sov_list_provider.dart';
+import 'package:RiskSphere/screens/listings/widgets/auto_complete_options_sovs.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
+import 'package:RiskSphere/utils/common_headers.dart';
 import 'package:provider/provider.dart';
 import '../constants/enums.dart';
 import '../design_system/components/custom_button.dart';
@@ -23,10 +23,10 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:RiskSphare/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphare/models/location_list_model.dart';
-import 'package:RiskSphare/service/api_service.dart';
-import 'package:RiskSphare/utils/api_constants.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/models/location_list_model.dart';
+import 'package:RiskSphere/service/api_service.dart';
+import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/language_service.dart';
@@ -42,6 +42,8 @@ class MyLocationListProvider extends ChangeNotifier {
   int locationHits = 0;
   int certifiedLocationHits = 0;
   bool isConflict =false;
+  bool isHazardCanStart=false;
+  bool isAnyLocationSelected = false;
 
   Future<void> fetchLocations() async {
     isLoading = true;
@@ -709,7 +711,7 @@ class MyLocationListProvider extends ChangeNotifier {
       log("Error adding location to SOV: $e");
       log(e.toString());
       log(stackTrace.toString());
-      CustomToast.error(context, e.toString());
+      // CustomToast.error(context, e.toString());
     } finally {
       isAddToSOVLoading = false;
     }
@@ -741,7 +743,7 @@ class MyLocationListProvider extends ChangeNotifier {
       log("Error adding tags to location: $e");
       log(e.toString());
       log(stackTrace.toString());
-      CustomToast.error(context, e.toString());
+      // CustomToast.error(context, e.toString());
     } finally {
       isAddTagsLoading = false;
     }
@@ -767,7 +769,7 @@ class MyLocationListProvider extends ChangeNotifier {
       log("Error deleting tag from location: $e");
       log(e.toString());
       log(stackTrace.toString());
-      CustomToast.error(context, e.toString());
+      // CustomToast.error(context, e.toString());
     } finally {
       isDeleteTagLoading = false;
     }
@@ -917,12 +919,12 @@ class MyLocationListProvider extends ChangeNotifier {
       isAllLocationLoading = false;
       print(stackTrace);
       print(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          "Error fetching data",
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     "Error fetching data",
+      //     style: typography.Body1,
+      //   ),
+      // ));
     }
   }
 
@@ -1025,6 +1027,9 @@ class MyLocationListProvider extends ChangeNotifier {
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         isConflict = locationListModel.isConflict!;
+        isHazardCanStart= locationListModel.isHazardCanStart!;
+        isAnyLocationSelected=locationListModel.isAnyHazardProcessing!;
+
         totalPages = locationHits ~/ pageSize;
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
@@ -1047,22 +1052,22 @@ class MyLocationListProvider extends ChangeNotifier {
       isNextPageLoading = false;
       print(stackTrace);
       print(e.message);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          e.message,
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     e.message,
+      //     style: typography.Body1,
+      //   ),
+      // ));
     } catch (e, stackTrace) {
       isLoading = false;
       isNextPageLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          "Error fetching data",
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     "Error fetching data",
+      //     style: typography.Body1,
+      //   ),
+      // ));
     }
   }
 
@@ -1173,22 +1178,22 @@ class MyLocationListProvider extends ChangeNotifier {
       isNextPageCertifiedLoading = false;
       print(stackTrace);
       print(e.message);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          e.message,
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     e.message,
+      //     style: typography.Body1,
+      //   ),
+      // ));
     } catch (e, stackTrace) {
       isCertifiedLoading = false;
       isNextPageCertifiedLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          e.toString(),
-          style: typography.Body1,
-        ),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(
+      //     e.toString(),
+      //     style: typography.Body1,
+      //   ),
+      // ));
     }
   }
 
@@ -1316,11 +1321,11 @@ class MyLocationListProvider extends ChangeNotifier {
       return true;
     } on BackendException catch (e) {
       isAddLocationLoading = false;
-      CustomToast.error(context, e.message);
+      // CustomToast.error(context, e.message);
       return false;
     } catch (e) {
       isAddLocationLoading = false;
-      CustomToast.error(context, e.toString());
+      // CustomToast.error(context, e.toString());
       return false;
     }
   }
@@ -1983,14 +1988,14 @@ class MyLocationListProvider extends ChangeNotifier {
       print("Error uploading SOV: $e");
       // Handle other unexpected exceptions
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${e.toString()}',
-            style: typography.Body1,
-          ),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(
+      //       '${e.toString()}',
+      //       style: typography.Body1,
+      //     ),
+      //   ),
+      // );
       isImageUploadLoading = false;
       return ''; // Return empty string or handle the error as needed
     }
@@ -2202,9 +2207,9 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isIndividualLocationLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isIndividualLocationLoading = false;
       notifyListeners();
@@ -2284,9 +2289,9 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -2374,9 +2379,9 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -2451,9 +2456,9 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -2503,9 +2508,9 @@ class MyLocationListProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       isLoading = false;
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -2567,9 +2572,9 @@ class MyLocationListProvider extends ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
       return false;
     } finally {
       isLoading = false;
@@ -2633,9 +2638,9 @@ class MyLocationListProvider extends ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
       return false;
     } finally {
       isLoading = false;
@@ -2735,9 +2740,9 @@ class MyLocationListProvider extends ChangeNotifier {
           isLoading = false;
           print(e);
           print(stackTrace);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString(), style: typography.Body1),
-          ));
+          // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          //   content: Text(e.toString(), style: typography.Body1),
+          // ));
           return false.toString();
         }
       }
@@ -2757,9 +2762,9 @@ class MyLocationListProvider extends ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
       return false.toString();
     } finally {
       isLoading = false;
@@ -2807,9 +2812,9 @@ class MyLocationListProvider extends ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -2870,9 +2875,9 @@ PATCH
     } catch (e, stackTrace) {
       print(e);
       print(stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
       return false; // Indicate failure
     } finally {
       isLoading = false;
