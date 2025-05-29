@@ -48,7 +48,7 @@ android {
         applicationId "com.risksphere.green"
         minSdkVersion 23
         targetSdkVersion 35  // ✅ Updated from 34 to 35
-        versionCode 6
+        versionCode 7
         versionName flutterVersionName
         multiDexEnabled true
     }
@@ -62,10 +62,14 @@ android {
         }
 
         qa {
-            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
-            storePassword 'risksphere'
-            keyAlias 'alias_name'
-            keyPassword 'risksphere'
+//            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
+//            storePassword 'risksphere'
+//            keyAlias 'alias_name'
+//            keyPassword 'risksphere'
+            storeFile file("/Users/naveen/Documents/qa.keystore")
+            storePassword 'projectgreen123'
+            keyAlias 'qaKey'
+            keyPassword 'projectgreen123'
         }
     }
 

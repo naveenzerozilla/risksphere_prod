@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:RiskSphere/screens/listings/account_list.dart';
 import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
+
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -177,18 +178,13 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    // Determine the number of tabs based on trial status
     int tabCount =
-    (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
+        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
     // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
-    // int tabCount = trialStatus.isEmpty ? 3 : 2;
-    // _tabController = TabController(length: tabCount, vsync: this);
-
   }
 
   _getData() async {
-    // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
@@ -316,21 +312,27 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             onTap: () {
                                               Navigator.pushAndRemoveUntil(
                                                 context,
-                                                MaterialPageRoute(builder: (context) => AccountListScreen()),
-                                                    (route) => false, // This removes all previous routes
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        AccountListScreen()),
+                                                (route) =>
+                                                    false, // This removes all previous routes
                                               ).then((_) {
                                                 // Optional: Add any actions to perform after navigation
                                               });
                                             },
                                             child: Text(
                                                 widget.accountName.toString(),
-                                                style: TextStyle(fontSize: 14,color: Colors.white70)),
+                                                style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.white70)),
                                           ),
                                           Text(' > ',
                                               style: typography.InputLabel),
                                           Text("Sub Accounts",
-
-                                              style: TextStyle(fontSize: 14,color: Colors.white)),
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.white)),
                                         ],
                                       ),
                                     ),
@@ -362,7 +364,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 margin: EdgeInsets.symmetric(
                                     horizontal: 0, vertical: 0),
                                 child: DefaultTabController(
-                                  length:  _tabController!.length,
+                                  length: _tabController!.length,
                                   child: Column(
                                     children: <Widget>[
                                       // Container for the TabBar with arrows
@@ -403,17 +405,17 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     isScrollable: true,
                                                     indicatorColor:
                                                         Colors.lightBlueAccent,
-                                                    labelColor: Colors
-                                                        .lightBlueAccent,
+                                                    labelColor:
+                                                        Colors.lightBlueAccent,
                                                     unselectedLabelColor:
-                                                    Colors.white,
+                                                        Colors.white,
                                                     tabs: [
                                                       Tab(
                                                         child: Row(
                                                           children: [
                                                             Text(
-                                                                'My Sub Accounts',
-                                                           ),
+                                                              'My Sub Accounts',
+                                                            ),
                                                             subAccountListProvider
                                                                         .isLoading ||
                                                                     subAccountListProvider
@@ -1411,24 +1413,30 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 setState(() {
                                   _subAccountAlreadyExists = false;
                                   _selectedSubAccount = null;
-                                  subAccountListProvider.clearAutoCompleteList();
+                                  subAccountListProvider
+                                      .clearAutoCompleteList();
                                 });
 
                                 _autocompleteText = value;
 
                                 // Cancel the previous debounce timer
-                                if (_debounce?.isActive ?? false) _debounce!.cancel();
+                                if (_debounce?.isActive ?? false)
+                                  _debounce!.cancel();
 
                                 // Start a new debounce timer
-                                _debounce = Timer(const Duration(milliseconds: 500), () async {
-                                  await autoCompleteAccountsSearchClient(_autocompleteText);
+                                _debounce =
+                                    Timer(const Duration(milliseconds: 500),
+                                        () async {
+                                  await autoCompleteAccountsSearchClient(
+                                      _autocompleteText);
                                 });
                               },
                               decoration: InputDecoration(
                                 labelText: LanguageService.getTranslated(
-                                    context, "sub_account_list_app_account_name_field_label"),
-                                hintText: LanguageService.getTranslated(
-                                    context, "sub_account_list_app_account_name_field_hint"),
+                                    context,
+                                    "sub_account_list_app_account_name_field_label"),
+                                hintText: LanguageService.getTranslated(context,
+                                    "sub_account_list_app_account_name_field_hint"),
                                 border: const OutlineInputBorder(),
                               ),
                             ),
@@ -2208,13 +2216,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           itemCount:
                               subAccountListProvider.subAccountList.length,
                           itemBuilder: (context, index) {
-                            print("Query1: $_subAccountQuery");
                             if (index ==
                                 subAccountListProvider.subAccountList.length -
                                     1) {
-                              // Check if it's the last item
                               if (subAccountListProvider.isNextPageLoading) {
-                                // Display loading indicator
                                 return Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Center(

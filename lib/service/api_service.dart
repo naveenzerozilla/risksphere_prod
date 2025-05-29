@@ -21,7 +21,7 @@ class ApiService {
   Future<Map<String, dynamic>> get(
       [String? additionalParams, bool? isList]) async {
     var headers = await CommonHeaders.createHeaders();
-    log("Headers: $headers");
+    // log("Headers: $headers");
     log("URL: $url${additionalParams ?? ''}");
     final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'),
         headers: headers);
@@ -36,7 +36,7 @@ class ApiService {
   Future<Map<String, dynamic>> post(Map<String, dynamic> body,
       [String? additionalParams]) async {
     var headers = await CommonHeaders.createHeaders();
-    log("Headers: $headers");
+    // log("Headers: $headers");
     log("URL: $url");
     log("Body: ${json.encode(body)}");
     final response = await http.post(
@@ -66,7 +66,7 @@ class ApiService {
   /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> delete(Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createHeaders();
-    log("Headers: $headers");
+    // log("Headers: $headers");
     log("URL: $url");
     log("Body: $body");
     final response = await http.delete(Uri.parse(url),

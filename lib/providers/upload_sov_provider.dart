@@ -1009,7 +1009,7 @@ class UploadSovProvider extends ChangeNotifier {
       String accountName, String tempId, String subAccountId) async {
     List<Map<String, dynamic>> selectedLocations =
         _getSelectedGeocodingLocations();
-
+    print("selectedLocations2)");
     print(selectedLocations.length.toString());
     print(duplicateLocations.length.toString());
     print("selectedLocations.length.toString()");
@@ -1044,6 +1044,7 @@ class UploadSovProvider extends ChangeNotifier {
       String accountName,
       String subAccountId) async {
     if (accountId.isNotEmpty) {
+      print("selectedLocations3)");
       await submitLocationsSubAccounts(
           context,
           tempId,
@@ -1055,6 +1056,7 @@ class UploadSovProvider extends ChangeNotifier {
           subAccountId);
       return;
     } else {
+      print("selectedLocations4)");
       await submitLocationsAccounts(
         context,
         tempId,

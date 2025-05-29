@@ -342,7 +342,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       }
                     },
                     child: Text(
-                      "Yes",
+                      "Yes1",
                       style: typography.Body1.copyWith(color: Colors.black),
                     ),
                   ),
@@ -356,12 +356,13 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
   }
 
   void _commitLocations(BuildContext context) async {
+    print("selectedLocations1123");
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
 
     setState(() {
       _isSubmitLoading = true; // Show loader
     });
-
+    print("selectedLocations1");
     await provider.commitSelectedLocations(context, widget.accountId,
         widget.accountName, widget.tempId, widget.subAccountId);
 

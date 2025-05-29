@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:RiskSphere/models/companymodel.dart';
+import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
@@ -436,7 +437,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                           if (isSignedIn)
                                             await _googleSignIn.disconnect();
                                           FirebaseAuth.instance.signOut();
-
                                           showDialog(
                                             context: context,
                                             builder: (BuildContext context) {
@@ -450,14 +450,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () {
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                      // Navigator.pushReplacement(
-                                                      //     context,
-                                                      //     MaterialPageRoute(
-                                                      //         builder:
-                                                      //             (context) =>
-                                                      //                 MyApp()));
+                                                      Navigator.pushReplacement(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  LoginScreen()));
                                                     },
                                                     child: Row(
                                                       children: [

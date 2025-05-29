@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:RiskSphere/screens/listings/account_list.dart';
 import 'package:RiskSphere/screens/listings/sub_account_list.dart';
 import 'package:RiskSphere/screens/listings/widgets/conflicts_tab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,7 +30,6 @@ import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:RiskSphere/screens/listings/widgets/overall_score_table.dart';
 import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
-import 'package:google_places_autocomplete_text_field/google_places_autocomplete_text_field.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -162,10 +159,8 @@ class _MyLocationListState extends State<MyLocationList>
   @override
   void initState() {
     super.initState();
-    _fetchTabData(0);
     _tabController = TabController(length: 2, vsync: this);
-
-    _tabController?.addListener(_onTabChanged);
+    _tabController.addListener(_onTabChanged);
 
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
@@ -213,9 +208,9 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   void _onTabChanged() {
-    setState(() {
-      selectedTab = _tabController?.index ?? 0;
-    });
+    // setState(() {
+    //   selectedTab = _tabController?.index ?? 0;
+    // });
 
     final locationListProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
@@ -248,94 +243,6 @@ class _MyLocationListState extends State<MyLocationList>
       );
     }
   }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _setClaims();
-  //   _getData();
-  //   _startRefreshTimer();
-  //   _getSovUploadStatus();
-  //   // Initially clear all filters
-  //   Provider.of<MyLocationListProvider>(context, listen: false)
-  //       .clearAllFilters();
-  //   Provider.of<LocationListProvider>(context, listen: false)
-  //       .fetchLocationSummary(
-  //           widget.accountID!, widget.subAccountID!, "widget.sovId!");
-  //
-  //   var userProfileProvider =
-  //       Provider.of<UserProfileProvider>(context, listen: false);
-  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-  //   // Determine the number of tabs based on trial status
-  //   int tabCount = trialStatus.isEmpty ? 6 : 5;
-  //   _mainTabController = TabController(length: 3, vsync: this);
-  //   _mainTabController?.addListener(() {
-  //     setState(() {
-  //       selectedMainTab = _mainTabController?.index ?? 0;
-  //     }); // This ensures that the widget rebuilds when the tab changes
-  //   });
-  //   _masterTabController = TabController(length: tabCount, vsync: this);
-  //   _masterTabController?.addListener(() {
-  //     setState(() {
-  //       selectedMasterTab = _masterTabController?.index ?? 0;
-  //     });
-  //   });
-  //   _tabController = TabController(length: 2, vsync: this);
-  //   _tabController?.addListener(() {
-  //     setState(() {
-  //       selectedTab = _tabController?.index ?? 0;
-  //     });
-  //     if (_tabController?.index == 0) {
-  //       _selectedScreen = Screens.locationList;
-  //       var locationListProvider =
-  //           Provider.of<MyLocationListProvider>(context, listen: false);
-  //       locationListProvider.page = 1;
-  //       Provider.of<MyLocationListProvider>(context, listen: false)
-  //           .fetchLocationList(
-  //             context,
-  //             "",
-  //             1,
-  //             40,
-  //             widget.accountID,
-  //             widget.subAccountID,
-  //             widget.initialProcessId,
-  //             widget.initialSubProcessId,
-  //           )
-  //           .then((value) => setState(() {}));
-  //     } else {
-  //       _selectedScreen = Screens.certifiedLocationList;
-  //       var locationListProvider =
-  //           Provider.of<MyLocationListProvider>(context, listen: false);
-  //       locationListProvider.page = 1;
-  //       locationListProvider.clearRatingsFilter();
-  //       Provider.of<MyLocationListProvider>(context, listen: false)
-  //           .fetchCertifiedLocationList(
-  //             context,
-  //             "",
-  //             1,
-  //             40,
-  //             widget.accountID,
-  //             widget.subAccountID,
-  //             widget.initialProcessId,
-  //             widget.initialSubProcessId,
-  //           )
-  //           .then((value) => setState(() {}));
-  //       /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
-  //       Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
-  //         context,
-  //         "widget.accountId",
-  //         "widget.subAccountId",
-  //         "widget.sovId",
-  //         locationQuery,
-  //         0,
-  //         40,
-  //       );*/
-  //     }
-  //     setState(() {});
-  //   });
-  //
-  //   _getMaintainancePeriod();
-  // }
 
   Future<void> _setClaims() async {
     final results = await Future.wait([
@@ -409,31 +316,62 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   bool _isDisposed = false;
+  MyLocationListProvider? _myLocationProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _myLocationProvider ??=
+        Provider.of<MyLocationListProvider>(context, listen: false);
+  }
 
   @override
   void dispose() {
     _mainTabController?.dispose();
     _masterTabController?.dispose();
     _tabController?.dispose();
-    // _refreshTimer?.cancel();
-    _isDisposed = true;
     _refreshTimer?.cancel();
     _hasActiveTimer = false;
-    super.dispose();
+    _isDisposed = true;
+
     deBouncer?.cancel();
 
-    final myLocationProvider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-    myLocationProvider.clearAllFilters();
-    myLocationProvider.clearSelection();
-    myLocationProvider.clearRatingsFilter();
-    myLocationProvider.myLocationList.clear();
-    myLocationProvider.certifiedLocationList.clear();
-    myLocationProvider.selectedLocations.clear();
-    myLocationProvider.summaryList.clear();
+    // Safely use the cached reference
+    _myLocationProvider?.clearAllFilters();
+    _myLocationProvider?.clearSelection();
+    _myLocationProvider?.clearRatingsFilter();
+    _myLocationProvider?.myLocationList.clear();
+    _myLocationProvider?.certifiedLocationList.clear();
+    _myLocationProvider?.selectedLocations.clear();
+    _myLocationProvider?.summaryList.clear();
 
     super.dispose();
   }
+
+  // @override
+  // void dispose() {
+  //   _mainTabController?.dispose();
+  //   _masterTabController?.dispose();
+  //   _tabController?.dispose();
+  //   // _refreshTimer?.cancel();
+  //   _isDisposed = true;
+  //   _refreshTimer?.cancel();
+  //   _hasActiveTimer = false;
+  //   super.dispose();
+  //   deBouncer?.cancel();
+  //
+  //   final myLocationProvider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //   myLocationProvider.clearAllFilters();
+  //   myLocationProvider.clearSelection();
+  //   myLocationProvider.clearRatingsFilter();
+  //   myLocationProvider.myLocationList.clear();
+  //   myLocationProvider.certifiedLocationList.clear();
+  //   myLocationProvider.selectedLocations.clear();
+  //   myLocationProvider.summaryList.clear();
+  //
+  //   super.dispose();
+  // }
 
   // void _startRefreshTimer() {
   //   // Cancel any existing timer before starting a new one
@@ -477,38 +415,6 @@ class _MyLocationListState extends State<MyLocationList>
       }
     });
   }
-
-  // void _startRefreshTimer() {
-  //   if (_refreshTimer != null && _refreshTimer!.isActive) return;
-  //   if (_hasActiveTimer) return;
-  //
-  //   _hasActiveTimer = true;
-  //
-  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-  //     final provider =
-  //         Provider.of<JobMonitoringProvider>(context, listen: false);
-  //     if (mounted && provider.isProcessing) {
-  //       _refreshData();
-  //     } else {
-  //       _refreshTimer?.cancel();
-  //       _hasActiveTimer = false;
-  //     }
-  //   });
-  // }
-
-  // void _startRefreshTimer() {
-  //   if (_refreshTimer != null && _refreshTimer!.isActive) return;
-  //
-  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-  //     final provider =
-  //     Provider.of<JobMonitoringProvider>(context, listen: false);
-  //     if (mounted && provider.isProcessing) {
-  //       _refreshData();
-  //     } else {
-  //       _refreshTimer?.cancel(); // Stop timer if no longer processing
-  //     }
-  //   });
-  // }
 
   Future<void> _refreshData() async {
     if (!mounted) return; // Ensure the widget is still in the tree
@@ -561,7 +467,6 @@ class _MyLocationListState extends State<MyLocationList>
     final jobMonitoringProvider =
         Provider.of<JobMonitoringProvider>(context, listen: false);
 
-    // Run all API calls in parallel
     await Future.wait([
       myLocationProvider
           .fetchLocationList(
@@ -617,54 +522,6 @@ class _MyLocationListState extends State<MyLocationList>
     ]);
   }
 
-  // _getData() async {
-  //   // Fetch data from API
-  //   Provider.of<MyLocationListProvider>(context, listen: false)
-  //       .fetchLocationList(
-  //         context,
-  //         "",
-  //         1,
-  //         40,
-  //         widget.accountID,
-  //         widget.subAccountID,
-  //         widget.initialProcessId,
-  //         widget.initialSubProcessId,
-  //       )
-  //       .then((value) => setState(() {}));
-  //   Provider.of<MyLocationListProvider>(context, listen: false)
-  //       .fetchCertifiedLocationList(
-  //         context,
-  //         "",
-  //         1,
-  //         40,
-  //         widget.accountID,
-  //         widget.subAccountID,
-  //         widget.initialProcessId,
-  //         widget.initialSubProcessId,
-  //       )
-  //       .then((value) => WidgetsBinding.instance!.addPostFrameCallback((_) {
-  //             setState(() {});
-  //           }));
-  //   //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
-  //   Provider.of<SOVListProvider>(context, listen: false).page = 1;
-  //   Provider.of<SOVListProvider>(context, listen: false).fetchSovList(
-  //       context, widget.accountID!, widget.subAccountID!, "", 1, 10);
-  //   Provider.of<SOVListProvider>(context, listen: false)
-  //       .fetchAutoCompleteSovListLocations(
-  //           context, widget.accountID!, widget.subAccountID!);
-  //   Provider.of<MyLocationListProvider>(context, listen: false)
-  //       .fetchAllLocationList(
-  //     context,
-  //     widget.accountID,
-  //     widget.subAccountID,
-  //     processId: widget.initialProcessId,
-  //     subProcessId: widget.initialSubProcessId,
-  //   );
-  //   // Initialize the JobMonitoringProvider and fetch the company IDs
-  //   Provider.of<JobMonitoringProvider>(context, listen: false)
-  //       .fetchCompanyIds();
-  // }
-
   ScrollController _scrollController = ScrollController();
 
   void _scrollLeft() {
@@ -689,12 +546,6 @@ class _MyLocationListState extends State<MyLocationList>
     String? accountId = await SharedPreferenceService.getSovAccountId();
     String? subAccountId =
         await SharedPreferenceService.getSovSubAccountId() ?? "";
-
-    print("tempProcessId: $tempProcessId");
-    print("current sov accountId: $accountId");
-    print("widget.accountID: ${widget.accountID}");
-    print("sov subAccountId: $subAccountId");
-    print("widget.subAccountID: ${widget.subAccountID}");
 
     if (tempProcessId == null || accountId == null) {
       print("Error: Missing values from Shared Preferences.");
@@ -1430,44 +1281,6 @@ class _MyLocationListState extends State<MyLocationList>
                                   physics: NeverScrollableScrollPhysics(),
                                   controller: _masterTabController,
                                   children: [
-                                    // Consumer<MyLocationListProvider>(
-                                    //   builder: (context, myLocationListProvider, child) {
-                                    //     return RefreshIndicator(
-                                    //       onRefresh: () async {
-                                    //         myLocationListProvider.page = 1;
-                                    //         if (_selectedScreen == Screens.locationList) {
-                                    //           myLocationListProvider.myLocationList.clear();
-                                    //           myLocationListProvider.fetchLocationList(
-                                    //             context,
-                                    //             "",
-                                    //             1,
-                                    //             40,
-                                    //             widget.accountID,
-                                    //             widget.subAccountID,
-                                    //             widget.initialProcessId,
-                                    //             widget.initialSubProcessId,
-                                    //           );
-                                    //         } else if (_selectedScreen == Screens.certifiedLocationList) {
-                                    //           myLocationListProvider.certifiedLocationList.clear();
-                                    //           myLocationListProvider.fetchCertifiedLocationList(
-                                    //             context,
-                                    //             "",
-                                    //             1,
-                                    //             40,
-                                    //             widget.accountID,
-                                    //             widget.subAccountID,
-                                    //             widget.initialProcessId,
-                                    //             widget.initialSubProcessId,
-                                    //           );
-                                    //         }
-                                    //       },
-                                    //       child: SingleChildScrollView(
-                                    //         physics: AlwaysScrollableScrollPhysics(), // Ensures scrolling
-                                    //         child: _getLocationListBodyUI(myLocationListProvider, ""),
-                                    //       ),
-                                    //     );
-                                    //   },
-                                    // ),
                                     Consumer<MyLocationListProvider>(
                                       builder: (context, myLocationListProvider,
                                           child) {
@@ -1525,14 +1338,6 @@ class _MyLocationListState extends State<MyLocationList>
                                       },
                                     ),
 
-                                    // Consumer<MyLocationListProvider>(
-                                    //     builder:
-                                    //         (context,
-                                    //         myLocationListProvider,
-                                    //         child) {
-                                    //       return _getLocationListBodyUI(
-                                    //           myLocationListProvider, "");
-                                    //     }),
                                     Container(
                                       margin: EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),

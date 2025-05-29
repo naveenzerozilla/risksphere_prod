@@ -277,7 +277,6 @@ class SubAccountListProvider extends ChangeNotifier {
         }
 
         var response = await apiService.get(url);
-        log(response.toString());
 
         SubAccountListModel subAccountListModel =
             SubAccountListModel.fromJson(response);
@@ -294,8 +293,7 @@ class SubAccountListProvider extends ChangeNotifier {
           addToSubAccountList(subAccountListModel.results ?? []);
         }
         log(subAccountList.toString());
-        log(totalPages.toString());
-        log(page.toString());
+
         isLoading = false;
         isNextPageLoading = false;
       } on BackendException catch (e, stackTrace) {
@@ -307,7 +305,6 @@ class SubAccountListProvider extends ChangeNotifier {
             style: typography.Body1,
           ),
         ));
-        print(stackTrace);
       } catch (e, stackTrace) {
         isLoading = false;
         isNextPageLoading = false;
@@ -318,7 +315,6 @@ class SubAccountListProvider extends ChangeNotifier {
         //   ),
         // ));
         print(e);
-        print(stackTrace);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -94,6 +94,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
         showCorporateProfile;
   }
 
+  bool isLoggingOut = false; // Add this to your widget's state
+
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
@@ -290,84 +292,129 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             builder: (context) {
                               return AlertDialog(
                                 title: Text(
-                                    LanguageService.getTranslated(
-                                        context, "drawer_menu_logout"),
-                                    style: typography.Body1.copyWith(
-                                        color: iconColor)),
+                                  LanguageService.getTranslated(
+                                      context, "drawer_menu_logout"),
+                                  style: typography.Body1.copyWith(
+                                      color: iconColor),
+                                ),
                                 content: Text(
-                                    LanguageService.getTranslated(context,
-                                        "drawer_menu_logout_confirmation"),
-                                    style: typography.Body1.copyWith(
-                                        color: iconColor)),
+                                  LanguageService.getTranslated(context,
+                                      "drawer_menu_logout_confirmation"),
+                                  style: typography.Body1.copyWith(
+                                      color: iconColor),
+                                ),
                                 actions: <Widget>[
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pop(context);
                                     },
                                     child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "drawer_menu_cancel"),
-                                        style: typography.Body1.copyWith(
-                                            color: iconColor)),
+                                      LanguageService.getTranslated(
+                                          context, "drawer_menu_cancel"),
+                                      style: typography.Body1.copyWith(
+                                          color: iconColor),
+                                    ),
                                   ),
 
                                   TextButton(
                                     onPressed: () async {
                                       try {
-                                        final googleSignIn = GoogleSignIn();
+                                        // Optional: Show loader here if using a loading state
+                                        final GoogleSignIn _googleSignIn =
+                                            GoogleSignIn(scopes: ['email']);
 
-                                        // Sign out from Firebase Auth
-                                        await FirebaseAuth.instance.signOut();
+                                        // Step 1: If Google user is signed in
+                                        if (await _googleSignIn.isSignedIn()) {
+                                          try {
+                                            // Revoke access (optional)
+                                            await _googleSignIn.disconnect();
+                                          } catch (e) {
+                                            print(
+                                                "Google disconnect error (optional): $e");
+                                          }
 
-                                        // Revoke Google access and sign out
-                                        if (await googleSignIn.isSignedIn()) {
-                                          await googleSignIn.disconnect(); // Revokes access so next sign-in prompts account chooser
-                                          await googleSignIn.signOut();
+                                          // Sign out from Google
+                                          await _googleSignIn.signOut();
                                         }
 
-                                        // Reset drawer state
-                                        Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                        // Step 2: Sign out from Firebase
+                                        await FirebaseAuth.instance.signOut();
+
+                                        // Step 3: Reset state like drawer selection
+                                        Provider.of<DrawerSelectionProvider>(
+                                                context,
+                                                listen: false)
                                             .setSelectedItem("dashboard");
 
-                                        // Navigate to SplashScreen
+                                        // Step 4: Navigate to splash screen
                                         Navigator.pushAndRemoveUntil(
                                           context,
-                                          MaterialPageRoute(builder: (_) => SplashScreen()),
-                                              (route) => false,
+                                          MaterialPageRoute(
+                                              builder: (_) => SplashScreen()),
+                                          (route) => false,
                                         );
                                       } catch (e) {
                                         print("Logout error: $e");
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("Logout failed. Please try again.")),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  "Logout failed. Please try again.")),
                                         );
                                       }
                                     },
-                                    child: Text(
-                                      LanguageService.getTranslated(context, "drawer_menu_logout"),
-                                      style: typography.Body1.copyWith(color: iconColor),
-                                    ),
+                                    child: isLoggingOut
+                                        ? SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.0,
+                                              color: iconColor,
+                                            ),
+                                          )
+                                        : Text(
+                                            LanguageService.getTranslated(
+                                                context, "drawer_menu_logout"),
+                                            style: typography.Body1.copyWith(
+                                                color: iconColor),
+                                          ),
                                   ),
 
                                   // TextButton(
                                   //   onPressed: () async {
-                                  //     await authNotifier.signOut();
+                                  //     try {
+                                  //       final googleSignIn = GoogleSignIn();
                                   //
+                                  //       // Sign out from Firebase Auth
+                                  //       await FirebaseAuth.instance.signOut();
                                   //
-                                  //     Provider.of<DrawerSelectionProvider>(
-                                  //             context,
-                                  //             listen: false)
-                                  //         .setSelectedItem("dashboard");
-                                  //     Navigator.pushAndRemoveUntil(
+                                  //       // If signed in with Google, sign out and disconnect
+                                  //       if (await googleSignIn.isSignedIn()) {
+                                  //         await googleSignIn.disconnect();
+                                  //         await googleSignIn.signOut();
+                                  //       }
+                                  //
+                                  //       // Reset any state (like drawer)
+                                  //       Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                  //           .setSelectedItem("dashboard");
+                                  //
+                                  //       // Navigate to SplashScreen
+                                  //       Navigator.pushAndRemoveUntil(
                                   //         context,
-                                  //         MaterialPageRoute(
-                                  //             builder: (_) => SplashScreen()),
-                                  //         (route) => false);
+                                  //         MaterialPageRoute(builder: (_) => SplashScreen()),
+                                  //             (route) => false,
+                                  //       );
+                                  //     } catch (e) {
+                                  //       print("Logout error: $e");
+                                  //       ScaffoldMessenger.of(context).showSnackBar(
+                                  //         SnackBar(content: Text("Logout failed. Please try again.")),
+                                  //       );
+                                  //     }
                                   //   },
                                   //   child: Text(
-                                  //       LanguageService.getTranslated(
-                                  //           context, "drawer_menu_logout"),
-                                  //       style: typography.Body1.copyWith(
-                                  //           color: iconColor)),
+                                  //     LanguageService.getTranslated(context, "drawer_menu_logout"),
+                                  //     style: typography.Body1.copyWith(color: iconColor),
+                                  //   ),
                                   // ),
                                 ],
                               );
@@ -377,6 +424,104 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
+
+                  // Consumer<AuthNotifier>(
+                  //   builder: (context, authNotifier, child) {
+                  //     return IconButton(
+                  //       icon: Icon(Icons.logout_rounded, color: iconColor),
+                  //       onPressed: () {
+                  //         showDialog(
+                  //           context: context,
+                  //           builder: (context) {
+                  //             return AlertDialog(
+                  //               title: Text(
+                  //                   LanguageService.getTranslated(
+                  //                       context, "drawer_menu_logout"),
+                  //                   style: typography.Body1.copyWith(
+                  //                       color: iconColor)),
+                  //               content: Text(
+                  //                   LanguageService.getTranslated(context,
+                  //                       "drawer_menu_logout_confirmation"),
+                  //                   style: typography.Body1.copyWith(
+                  //                       color: iconColor)),
+                  //               actions: <Widget>[
+                  //                 TextButton(
+                  //                   onPressed: () {
+                  //                     Navigator.pop(context);
+                  //                   },
+                  //                   child: Text(
+                  //                       LanguageService.getTranslated(
+                  //                           context, "drawer_menu_cancel"),
+                  //                       style: typography.Body1.copyWith(
+                  //                           color: iconColor)),
+                  //                 ),
+                  //
+                  //                 TextButton(
+                  //                   onPressed: () async {
+                  //                     try {
+                  //                       final googleSignIn = GoogleSignIn();
+                  //
+                  //                       // Sign out from Firebase Auth
+                  //                       await FirebaseAuth.instance.signOut();
+                  //
+                  //                       // Revoke Google access and sign out
+                  //                       if (await googleSignIn.isSignedIn()) {
+                  //                         await googleSignIn.disconnect(); // Revokes access so next sign-in prompts account chooser
+                  //                         await googleSignIn.signOut();
+                  //                       }
+                  //
+                  //                       // Reset drawer state
+                  //                       Provider.of<DrawerSelectionProvider>(context, listen: false)
+                  //                           .setSelectedItem("dashboard");
+                  //
+                  //                       // Navigate to SplashScreen
+                  //                       Navigator.pushAndRemoveUntil(
+                  //                         context,
+                  //                         MaterialPageRoute(builder: (_) => SplashScreen()),
+                  //                             (route) => false,
+                  //                       );
+                  //                     } catch (e) {
+                  //                       print("Logout error: $e");
+                  //                       ScaffoldMessenger.of(context).showSnackBar(
+                  //                         SnackBar(content: Text("Logout failed. Please try again.")),
+                  //                       );
+                  //                     }
+                  //                   },
+                  //                   child: Text(
+                  //                     LanguageService.getTranslated(context, "drawer_menu_logout"),
+                  //                     style: typography.Body1.copyWith(color: iconColor),
+                  //                   ),
+                  //                 ),
+                  //
+                  //                 // TextButton(
+                  //                 //   onPressed: () async {
+                  //                 //     await authNotifier.signOut();
+                  //                 //
+                  //                 //
+                  //                 //     Provider.of<DrawerSelectionProvider>(
+                  //                 //             context,
+                  //                 //             listen: false)
+                  //                 //         .setSelectedItem("dashboard");
+                  //                 //     Navigator.pushAndRemoveUntil(
+                  //                 //         context,
+                  //                 //         MaterialPageRoute(
+                  //                 //             builder: (_) => SplashScreen()),
+                  //                 //         (route) => false);
+                  //                 //   },
+                  //                 //   child: Text(
+                  //                 //       LanguageService.getTranslated(
+                  //                 //           context, "drawer_menu_logout"),
+                  //                 //       style: typography.Body1.copyWith(
+                  //                 //           color: iconColor)),
+                  //                 // ),
+                  //               ],
+                  //             );
+                  //           },
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
                   if (showCorporateManagementTab ||
                       showNonCorporateManagementTab ||
                       showEmployeeManagementTab)

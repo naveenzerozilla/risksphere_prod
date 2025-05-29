@@ -39,10 +39,11 @@ class MyLocationListProvider extends ChangeNotifier {
     currentPage++;
     notifyListeners(); // Triggers UI update
   }
+
   int locationHits = 0;
   int certifiedLocationHits = 0;
-  bool isConflict =false;
-  bool isHazardCanStart=false;
+  bool isConflict = false;
+  bool isHazardCanStart = false;
   bool isAnyLocationSelected = false;
 
   Future<void> fetchLocations() async {
@@ -340,7 +341,7 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  int? _totalPages;
+  int? _totalPages = 1;
 
   int get totalPages => _totalPages!;
 
@@ -491,7 +492,6 @@ class MyLocationListProvider extends ChangeNotifier {
     _selectedCampusIds = value;
     notifyListeners();
   }
-
 
   bool isCertifiedTabAllowed() {
     return certifiedLocationHits > 0;
@@ -647,7 +647,7 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-  int ?resetTotalPage;
+  int? resetTotalPage;
 
   // Delete selected locations
   Future<void> deleteSelectedLocations(
@@ -941,10 +941,11 @@ class MyLocationListProvider extends ChangeNotifier {
       [String? sovID]) async {
     var typography = CustomTypography(context);
     try {
-      print('Api called page and total page are $page and $totalPages');
+      // print('Api called page and total page are $page and $totalPages');
       // Check if api is already working
       // if (isLoading || isNextPageLoading) return;
       // dont call api is next page does not exist
+      print(totalPages.toString());
       if (page - 1 > totalPages) return;
       if (page == 1) {
         myLocationList = [];
@@ -975,7 +976,6 @@ class MyLocationListProvider extends ChangeNotifier {
       if (sortBy.isNotEmpty) {
         url += "&sort=$sortBy";
       }
-
 
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
@@ -1027,8 +1027,8 @@ class MyLocationListProvider extends ChangeNotifier {
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         isConflict = locationListModel.isConflict!;
-        isHazardCanStart= locationListModel.isHazardCanStart!;
-        isAnyLocationSelected=locationListModel.isAnyHazardProcessing!;
+        isHazardCanStart = locationListModel.isHazardCanStart!;
+        isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
 
         totalPages = locationHits ~/ pageSize;
         //summaryList = locationListModel.summaryList ?? [];
@@ -2121,7 +2121,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
         print(locationListModel.page.toString());
         print(locationListModel.pageSize.toString());
         print("totalPages");
@@ -2134,10 +2135,8 @@ class MyLocationListProvider extends ChangeNotifier {
           notifyListeners();
         }
         if (locationId != null && locationId.isNotEmpty) {
-
           locationProfile = locationListModel.filterByLocationResult?.first;
           resetTotalPage = locationListModel.totalRecords ?? 1;
-
         } else {
           locationProfile = locationListModel.results?.first;
         }

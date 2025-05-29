@@ -235,7 +235,8 @@ Future<void> initFCM(String userId) async {
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
-
+print(userId);
+      print("isSubscribed: $isSubscribed");
       if (isSubscribed) {
         print("TestA");
         // Call the subscription API
