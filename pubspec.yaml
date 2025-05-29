@@ -1,4 +1,4 @@
-name: green
+name: RiskSphere
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 0.2.6+4
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -37,25 +37,83 @@ dependencies:
   cupertino_icons: ^1.0.2
   provider: ^6.1.2
   flutter_svg: ^2.0.10+1
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
+  firebase_core: ^3.4.0
+  firebase_auth: ^5.2.0
   google_sign_in: ^6.2.1
   flutter_autocomplete_label: ^1.0.0
-  country_list_picker: ^1.0.2
-  cloud_functions: ^4.6.8
-  country_pickers: ^2.0.0
+#  country_list_picker: any
+  cloud_functions: ^5.1.0
+  country_pickers: ^3.0.1
+  phone_input: ^1.0.0
   flutter_recaptcha_v2_compat: ^1.0.2+2
   flutter_gcaptcha_v3: ^2.0.4
   webview_flutter: ^4.5.0
   shared_preferences: ^2.2.3
-  intl: ^0.19.0
   fluttertoast: ^8.2.5
   image_picker: ^1.0.8
-  mat_month_picker_dialog: ^1.1.2
+  mat_month_picker_dialog: ^1.1.1
+  easy_localization: ^3.0.6
+  google_maps_flutter: ^2.9.0
+  google_places_autocomplete_text_field: ^1.1.0
+  uuid: ^4.4.0
+  image: ^4.2.0
+  cloud_firestore: ^5.4.0
+  country_picker: ^2.0.26
+  location: 7.0.1
+  file_picker: ^8.0.0+1
+  carousel_slider: ^5.0.0
+  screenshot: ^3.0.0
+  path_provider: ^2.1.3
+  open_file: ^3.3.2
+  dio: ^5.5.0+1
+  collection: ^1.18.0
+  flutter_typeahead: ^5.0.0
+  permission_handler: ^11.3.1
+  material_symbols_icons: ^4.2801.1
+  flutter_speed_dial: ^7.0.0
+  firebase_messaging: ^15.1.0
+  flutter_local_notifications: ^18.0.1
+  markers_cluster_google_maps_flutter: ^0.1.0+2
+  lottie: ^3.1.2
+  data_table_2: ^2.5.15
+  google_maps_cluster_manager_2: ^3.2.0
+  rxdart: ^0.28.0
+  async: ^2.11.0
+  google_nav_bar: ^5.0.7
+  remixicon: ^1.3.0
+  menu_bar: ^0.5.3
+  dropdown_button2: ^2.3.9
+  url_launcher: ^6.3.1
+  cached_network_image: ^3.4.1
+  flutter_launcher_icons: ^0.14.3
+  get: ^4.7.2
+  dotted_border:
+  firebase_storage:
+  timeline_tile: ^2.0.0
+  flutter_screen_capture: ^1.0.1
+  connectivity_plus:
+  flutter_keyboard_visibility: ^6.0.0
+
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutterfire_cli: ^1.1.0
+
+dependency_overrides:
+  intl: ^0.17.0
+  win32: ^5.5.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  adaptive_icon_background: "#000000" # adaptive icon background color
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -78,6 +136,10 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/fonts/
+    - assets/translations/
+    - assets/proto/
+    - assets/lottie/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

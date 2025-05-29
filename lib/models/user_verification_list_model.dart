@@ -9,7 +9,7 @@ class UserVerificationListModel {
     if (json['users'] != null) {
       users = <Users>[];
       json['users'].forEach((v) {
-        users!.add(new Users.fromJson(v));
+        users!.add(Users.fromJson(v));
       });
     }
   }
@@ -77,5 +77,12 @@ class CreatedAt {
     data['_seconds'] = this.iSeconds;
     data['_nanoseconds'] = this.iNanoseconds;
     return data;
+  }
+
+  DateTime toDateTime() {
+    return DateTime.fromMillisecondsSinceEpoch(
+      (iSeconds ?? 0) * 1000 + (iNanoseconds ?? 0) ~/ 1000000,
+      isUtc: true,
+    );
   }
 }

@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.risksphere.green",
+      "sha256_cert_fingerprints":
+      ["1A:BC:01:62:78:AB:C4:06:AF:B2:A3:0E:B4:C5:B5:E0:3F:B7:DE:2D:95:7D:D8:A4:BA:E8:F8:30:2E:F3:D5:C6"]
+    }
+  }
+]

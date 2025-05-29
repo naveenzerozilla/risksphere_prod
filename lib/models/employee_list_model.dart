@@ -1,12 +1,37 @@
 class EmployeeListModel {
   String? data;
+  List<Employees>? employees;
   Users? users;
+  String? pageToken;
+  String? direction;
+  bool? nextPageExists;
+  Counts? counts;
 
-  EmployeeListModel({this.data, this.users});
+  EmployeeListModel({this.data, this.users, this.employees,
+    // this.corporateUsers,
+    this.pageToken,
+    this.direction,
+    this.nextPageExists,
+    this.counts, });
 
-  EmployeeListModel.fromJson(Map<String, dynamic> json) {
+  EmployeeListModel.fromJson(Map<String, dynamic> json, {bool isSearch = false}) {
     data = json['data'];
-    users = json['users'] != null ? new Users.fromJson(json['users']) : null;
+    if(isSearch) {
+      users = json['users'] != null ? Users.fromJson(json['users']) : null;
+    } else {
+      if (json['employees'] != null) {
+        employees = <Employees>[];
+        json['employees'].forEach((v) {
+          employees!.add(new Employees.fromJson(v));
+        });
+      }
+
+      pageToken = json['pageToken'];
+      direction = json['direction'];
+      nextPageExists = json['nextPageExists'];
+      counts =
+      json['counts'] != null ? new Counts.fromJson(json['counts']) : null;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -14,6 +39,20 @@ class EmployeeListModel {
     data['data'] = this.data;
     if (this.users != null) {
       data['users'] = this.users!.toJson();
+    }
+    if (this.employees != null) {
+      data['employees'] =
+          this.employees!.map((v) => v.toJson()).toList();
+    }
+    // if (this.corporateUsers != null) {
+    //   data['corporate_users'] =
+    //       this.corporateUsers!.map((v) => v!.toJson()).toList();
+    // }
+    data['pageToken'] = this.pageToken;
+    data['direction'] = this.direction;
+    data['nextPageExists'] = this.nextPageExists;
+    if (this.counts != null) {
+      data['counts'] = this.counts!.toJson();
     }
     return data;
   }

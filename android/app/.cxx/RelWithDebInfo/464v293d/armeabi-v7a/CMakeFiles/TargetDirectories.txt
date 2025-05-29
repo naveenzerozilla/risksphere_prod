@@ -1,0 +1,2 @@
+/Users/naveen/Anshay-qa/android/app/.cxx/RelWithDebInfo/464v293d/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/naveen/Anshay-qa/android/app/.cxx/RelWithDebInfo/464v293d/armeabi-v7a/CMakeFiles/rebuild_cache.dir

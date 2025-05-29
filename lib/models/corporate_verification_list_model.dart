@@ -29,26 +29,23 @@ class Company {
   bool? ignore;
   String? companyName;
   String? companyTypeName;
-  CreatedAt? createdAt;
   String? id;
+  CreatedAt? createdAt;
 
   Company(
       {this.admin,
         this.ignore,
         this.companyName,
         this.companyTypeName,
-        this.createdAt,
-        this.id});
+        this.id, this.createdAt});
 
   Company.fromJson(Map<String, dynamic> json) {
     admin = json['admin'] != null ? new Admin.fromJson(json['admin']) : null;
     ignore = json['ignore'];
     companyName = json['company_name'];
     companyTypeName = json['company_type_name'];
-    createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
-        : null;
     id = json['id'];
+    createdAt = json['created_at'] != null ? json['created_at'].runtimeType == int?CreatedAt(iSeconds: json['created_at']):new CreatedAt.fromJson(json['created_at']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -56,15 +53,17 @@ class Company {
     if (this.admin != null) {
       data['admin'] = this.admin!.toJson();
     }
-    data['ignore'] = this.ignore;
-    data['company_name'] = this.companyName;
-    data['company_type_name'] = this.companyTypeName;
     if (this.createdAt != null) {
       data['created_at'] = this.createdAt!.toJson();
     }
+    data['ignore'] = this.ignore;
+    data['company_name'] = this.companyName;
+    data['company_type_name'] = this.companyTypeName;
     data['id'] = this.id;
     return data;
   }
+
+
 }
 
 class Admin {
@@ -106,4 +105,13 @@ class CreatedAt {
     data['_nanoseconds'] = this.iNanoseconds;
     return data;
   }
+
+  DateTime toDateTime() {
+    return DateTime.fromMillisecondsSinceEpoch(
+      (iSeconds ?? 0) * 1000 + (iNanoseconds ?? 0) ~/ 1000000,
+      isUtc: true,
+    );
+  }
+
+
 }

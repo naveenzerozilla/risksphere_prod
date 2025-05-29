@@ -6,8 +6,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gcaptcha_v3/constants.dart';
-import 'package:green/models/dashboard_model.dart';
-import 'package:green/models/role_model.dart';
+import 'package:RiskSphere/models/dashboard_model.dart';
+import 'package:RiskSphere/models/role_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // Import for JSON encoding/decoding
 import 'dart:developer'; // Import for logging
@@ -86,7 +86,7 @@ class DashboardProvider with ChangeNotifier {
 
       isLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }
@@ -119,7 +119,7 @@ class DashboardProvider with ChangeNotifier {
 
       isRoleLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }
@@ -152,7 +152,7 @@ class DashboardProvider with ChangeNotifier {
 
       isCompanyLoading = false;
       if (!context.mounted) return null;
-      CustomToast.error(context, 'Error fetching data. Please try again later.');
+      // CustomToast.error(context, 'Error fetching data. Please try again later.');
       return null; // Return an empty list in case of error
     }
   }

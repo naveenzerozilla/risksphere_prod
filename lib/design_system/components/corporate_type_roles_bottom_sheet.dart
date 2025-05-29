@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:green/models/company_type_model.dart';
+import 'package:RiskSphere/models/company_type_model.dart';
 
+import '../../service/language_service.dart';
 import '../primitives/custom_typography.dart';
 
 class CorporateTypeRolesBottomSheet extends StatefulWidget {
@@ -28,15 +29,18 @@ class CorporateTypeRolesBottomSheet extends StatefulWidget {
 class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottomSheet> {
   String? _selectedOption;
 
-  initState() {
+  @override
+  void initState() {
     super.initState();
-    if (widget.selectedRoles.length > 0) {
+    if (widget.selectedRoles.isNotEmpty) {
       _selectedOption = widget.selectedRoles[0].role;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final typography = CustomTypography(context);
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       child: Column(
@@ -47,11 +51,16 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
             children: [
               Container(
                 margin: const EdgeInsets.only(left: 24, top: 24),
-                child: Text('Select Account Roles',
-                    style: CustomTypography.H7.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground,
-                      fontWeight: FontWeight.bold,
-                    )),
+                child: Text(
+                  LanguageService.getTranslated(
+                    context,
+                    'usermanagement_app_employee_create_account_select_role_title',
+                  ),
+                  style: typography.H7.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               Container(
                 margin: const EdgeInsets.only(right: 24, top: 24),
@@ -65,8 +74,16 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
             ],
           ),
           Expanded(
-            child: widget.roles.length == 0
-                ? Center(child: Text('Select company type', style: CustomTypography.Body1,))
+            child: widget.roles.isEmpty
+                ? Center(
+              child: Text(
+                LanguageService.getTranslated(
+                  context,
+                  "usermanagement_app_employee_create_account_select_role_company_type",
+                ),
+                style: typography.Body1,
+              ),
+            )
                 : ListView.builder(
               itemCount: widget.roles.length,
               itemBuilder: (context, index) {
@@ -82,7 +99,7 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
                   leading: Radio<String>(
                     value: roleId,
                     groupValue: _selectedOption,
-                    onChanged: !isAdmin && !widget.isEnabled // Disable radio button if it's not the admin role
+                    onChanged: !isAdmin && !widget.isEnabled
                         ? null
                         : (value) {
                       setState(() {
@@ -100,13 +117,18 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text('SUBMIT'),
+            child: Text(
+              LanguageService.getTranslated(
+                context,
+                'usermanagement_app_employee_create_account_select_role_submit',
+              ),
+              style: typography.Body1.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-
-

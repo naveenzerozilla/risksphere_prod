@@ -1,374 +1,688 @@
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/settings/settings.dart';
-import 'package:green/screens/userManagement/user_management.dart';
+import 'package:RiskSphere/screens/event/notification_map_screen.dart';
+import 'package:RiskSphere/screens/listings/hazard_proto.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import 'package:country_pickers/country.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:RiskSphere/design_system/components/theme_switcher.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/screens/listings/account_list.dart';
+import 'package:RiskSphere/screens/userManagement/user_management.dart';
+import '../../models/my_location_list_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/drawer_selection_provider.dart';
+import '../../providers/my_location_list_provider.dart';
+import '../../screens/listings/news_feed_screen.dart';
+import '../../screens/listings/widgets/auto_complete_options_locations.dart';
+import '../../screens/onboarding/splash_screen.dart';
+import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
+import '../../utils/debouncer.dart';
+import '../primitives/app_colors.dart'; // Import the provider
 
-import '../../providers/theme_provider.dart';
-
-class CustomDrawer extends StatelessWidget {
+class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
     Key? key,
   }) : super(key: key);
 
   @override
+  State<CustomDrawer> createState() => _CustomDrawerState();
+}
+
+class _CustomDrawerState extends State<CustomDrawer> {
+  bool showCorporateManagementTab = true;
+  bool showNonCorporateManagementTab = true;
+  bool showEmployeeManagementTab = true;
+  bool showCorporateList = true;
+  bool showCorporateUserListDropdown = true;
+  bool showCorporateVerificationTab = true;
+  bool showCorporateProfile = true;
+
+  final TextEditingController searchController = TextEditingController();
+  final Debouncer debouncer =
+      Debouncer(milliseconds: 300); // Debouncer with 300ms delay
+
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    _scrollController = ScrollController();
+    _getClaims();
+    super.initState();
+  }
+
+  @override
+  dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  _getClaims() async {
+    showNonCorporateManagementTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.NCMUL) ??
+            false;
+    showEmployeeManagementTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.EMPUL) ??
+            false;
+    showCorporateList = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCL) ??
+        false;
+    showCorporateUserListDropdown =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMCUM) ??
+            false;
+    showCorporateVerificationTab =
+        await SharedPreferenceService.getClaimForSubfeature(
+                SharedPreferenceService.CAMLL) ??
+            false;
+    showCorporateProfile = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.CAMCUL) ??
+        false;
+
+    showCorporateManagementTab = showCorporateList ||
+        showCorporateUserListDropdown ||
+        showCorporateVerificationTab ||
+        showCorporateProfile;
+  }
+
+  bool isLoggingOut = false; // Add this to your widget's state
+
+  @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
+
+    // Determine the icon color based on the theme
+    Color? iconColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.grey[300] // Light color for dark theme
+        : Colors.grey[800]; // Dark color for light theme
+
     return Drawer(
       child: SafeArea(
-        child: Theme(
-          // New theme specifically for the ExpansionTile widgets
-          data: Theme.of(context).copyWith(
-            dividerColor: Colors.transparent, // Transparent divider color
-            textTheme: TextTheme(
-              bodyLarge: TextStyle(
-                // Using CustomTypography.Body1 text style
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                color: Colors.black, // Change color as per your requirement
-              ),
-            ),
-          ),
-          child: Column(
-            children: [
-              DrawerHeader(
-                padding: const EdgeInsets.all(0),
-                child: Center(
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    child: SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      semanticsLabel: 'Logo',
-                    ),
+        child: Column(
+          children: [
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 20),
+                  SvgPicture.asset(
+                    'assets/images/fullLogo.svg',
+                    semanticsLabel: 'Logo',
                   ),
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  physics: ClampingScrollPhysics(),
-                  padding: EdgeInsets.only(top: 0), // Removed top padding
-                  children: <Widget>[
-                    ListTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/homeIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-
-                      ),
-                      title: const Text('Dashboard'),
-                      onTap: () {
-                        //Navigator.pop(context);
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen()));
-                      },
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/listingsIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Listings'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Location(s) List'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Location(s) Map'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/portfolioIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
+                  const SizedBox(height: 20),
+                  // Search bar added
+                  Column(
+                    children: [
+                      TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          if (value.isNotEmpty && value.length > 2) {
+                            debouncer.run(() {
+                              Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
+                                  .performGlobalSearch(context, value);
+                            });
+                          } else {
+                            Provider.of<MyLocationListProvider>(context,
+                                    listen: false)
+                                .searchLocationList = [];
+                          }
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.search, color: iconColor),
+                          hintText: 'Search Locations',
+                          hintStyle: typography.Body1,
+                          filled: true,
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
+                          // Use a lighter color for light theme
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Portfolio/SOVs'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Risk Manager List'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Manage insurers List'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/locationIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
+                      Consumer<MyLocationListProvider>(
+                        builder: (context, provider, child) {
+                          return AutocompleteOptionsLocation(
+                            options: provider.searchLocationList,
+                            isLoading: provider.isSearchLoading,
+                            onSelected: (MyLocation selectedLocation) {
+                              // Handle location selection
+                              searchController.text =
+                                  selectedLocation.finalAddress?.address ?? '';
+                              provider.searchLocationList =
+                                  []; // Clear results after selection
+                            },
+                          );
+                        },
                       ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Locations'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Upload Locations'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Add A Location'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Create A Campus'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/newsfeedIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('News Feed'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Improved Locations'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Cat Modellers And Risk Engineers Work'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('See Vendor Activity'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Real Time Weather Activity'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Broker Activity'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Insights'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/insightsIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Insights'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('See Data Quality'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('See Hazard Scores'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('See Vendor Results'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('See Vendor Recommendations'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('See Data Improvement Recommendations'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Comparison Data'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/connectionsIcon.svg',
-                          semanticsLabel: 'Dashboard',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Connections'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Add Vendor'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Add Broker'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Add Freelancer'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/trainingDataIcon.svg',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: 'Dashboard',
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Training Data'),
-                      children: <Widget>[
-
-                        ListTile(
-                          title: const Text('Get Paid To Create Tags On Phrases'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                    ExpansionTile(
-                      leading: Container(
-                        height: 20,
-                        width: 20,
-                        child: SvgPicture.asset(
-                          'assets/images/trainingDataIcon.svg',
-                          colorFilter: ColorFilter.mode( Theme.of(context).colorScheme.onBackground , BlendMode.srcIn),
-                          semanticsLabel: 'Dashboard',
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 40),
-                      title: const Text('Leads'),
-                      children: <Widget>[
-                        ListTile(
-                          title: const Text('Leads List'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Leads Map'),
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.settings),
-                    onPressed: () {
-                      // Navigate to Settings Screen
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsScreen()));
-                    },
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.brightness_7_rounded),
-                    onPressed: () {
-                      // Change Theme
-                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.person),
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserManagementScreen()));
-                    },
-                  ),
+                  SizedBox(height: 20),
                 ],
               ),
-            ],
-          ),
+            ),
+            Expanded(
+              child: Scrollbar(
+                controller: _scrollController,
+                child: Consumer<DrawerSelectionProvider>(
+                  builder: (context, provider, child) {
+                    return provider.isLoading
+                        ? Center(
+                            child: CircularProgressIndicator()) // Show Loader
+                        : ListView(
+                            physics: ClampingScrollPhysics(),
+                            padding: EdgeInsets.only(top: 0),
+                            children: <Widget>[
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Dashboard",
+                                icon: Icons.home,
+                                onTap: () {
+                                  provider.setSelectedItem("dashboard");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => DashboardScreen()));
+                                },
+                                isSelected:
+                                    provider.selectedItem == "dashboard",
+                              ),
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Accounts",
+                                icon: Icons.account_balance_wallet,
+                                onTap: () {
+                                  provider.setSelectedItem("accounts");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => AccountListScreen()));
+                                },
+                                isSelected: provider.selectedItem == "accounts",
+                              ),
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "News Feed",
+                                icon: Icons.space_dashboard,
+                                onTap: () {
+                                  provider.setSelectedItem("news");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => NewsFeedScreen()));
+                                },
+                                isSelected: provider.selectedItem == "news",
+                              ),
+                            ],
+                          );
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  ThemeSwitcher(),
+                  CountryPickerDropdown(
+                    initialValue: _getInitialCountry(context),
+                    itemBuilder: (Country country) {
+                      return Container(
+                        width: 28.0, // Adjust the width as needed
+                        height: 28.0, // Adjust the height as needed
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10.0),
+                          // Set the desired border radius
+                          image: DecorationImage(
+                            image: AssetImage(
+                              CountryPickerUtils.getFlagImageAssetPath(
+                                  country.isoCode),
+                              package: 'country_pickers',
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    },
+                    itemFilter: (Country country) {
+                      // Only include countries with these ISO codes
+                      return ['US', 'ES', 'FR', 'JP', 'CN']
+                          .contains(country.isoCode);
+                    },
+                    icon: SizedBox(),
+                    onValuePicked: (Country country) {
+                      switch (country.isoCode) {
+                        case 'US':
+                          context.setLocale(Locale('en'));
+                          break;
+                        case 'ES':
+                          context.setLocale(Locale('es'));
+                          break;
+                        case 'FR':
+                          context.setLocale(Locale('fr'));
+                          break;
+                        case 'JP':
+                          context.setLocale(Locale('ja'));
+                          break;
+                        case 'CN':
+                          context.setLocale(Locale('zh'));
+                          break;
+                      }
+                    },
+                  ),
+                  Consumer<AuthNotifier>(
+                    builder: (context, authNotifier, child) {
+                      return IconButton(
+                        icon: Icon(Icons.logout_rounded, color: iconColor),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text(
+                                  LanguageService.getTranslated(
+                                      context, "drawer_menu_logout"),
+                                  style: typography.Body1.copyWith(
+                                      color: iconColor),
+                                ),
+                                content: Text(
+                                  LanguageService.getTranslated(context,
+                                      "drawer_menu_logout_confirmation"),
+                                  style: typography.Body1.copyWith(
+                                      color: iconColor),
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "drawer_menu_cancel"),
+                                      style: typography.Body1.copyWith(
+                                          color: iconColor),
+                                    ),
+                                  ),
+
+                                  TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        // Optional: Show loader here if using a loading state
+                                        final GoogleSignIn _googleSignIn =
+                                            GoogleSignIn(scopes: ['email']);
+
+                                        // Step 1: If Google user is signed in
+                                        if (await _googleSignIn.isSignedIn()) {
+                                          try {
+                                            // Revoke access (optional)
+                                            await _googleSignIn.disconnect();
+                                          } catch (e) {
+                                            print(
+                                                "Google disconnect error (optional): $e");
+                                          }
+
+                                          // Sign out from Google
+                                          await _googleSignIn.signOut();
+                                        }
+
+                                        // Step 2: Sign out from Firebase
+                                        await FirebaseAuth.instance.signOut();
+
+                                        // Step 3: Reset state like drawer selection
+                                        Provider.of<DrawerSelectionProvider>(
+                                                context,
+                                                listen: false)
+                                            .setSelectedItem("dashboard");
+
+                                        // Step 4: Navigate to splash screen
+                                        Navigator.pushAndRemoveUntil(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => SplashScreen()),
+                                          (route) => false,
+                                        );
+                                      } catch (e) {
+                                        print("Logout error: $e");
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  "Logout failed. Please try again.")),
+                                        );
+                                      }
+                                    },
+                                    child: isLoggingOut
+                                        ? SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.0,
+                                              color: iconColor,
+                                            ),
+                                          )
+                                        : Text(
+                                            LanguageService.getTranslated(
+                                                context, "drawer_menu_logout"),
+                                            style: typography.Body1.copyWith(
+                                                color: iconColor),
+                                          ),
+                                  ),
+
+                                  // TextButton(
+                                  //   onPressed: () async {
+                                  //     try {
+                                  //       final googleSignIn = GoogleSignIn();
+                                  //
+                                  //       // Sign out from Firebase Auth
+                                  //       await FirebaseAuth.instance.signOut();
+                                  //
+                                  //       // If signed in with Google, sign out and disconnect
+                                  //       if (await googleSignIn.isSignedIn()) {
+                                  //         await googleSignIn.disconnect();
+                                  //         await googleSignIn.signOut();
+                                  //       }
+                                  //
+                                  //       // Reset any state (like drawer)
+                                  //       Provider.of<DrawerSelectionProvider>(context, listen: false)
+                                  //           .setSelectedItem("dashboard");
+                                  //
+                                  //       // Navigate to SplashScreen
+                                  //       Navigator.pushAndRemoveUntil(
+                                  //         context,
+                                  //         MaterialPageRoute(builder: (_) => SplashScreen()),
+                                  //             (route) => false,
+                                  //       );
+                                  //     } catch (e) {
+                                  //       print("Logout error: $e");
+                                  //       ScaffoldMessenger.of(context).showSnackBar(
+                                  //         SnackBar(content: Text("Logout failed. Please try again.")),
+                                  //       );
+                                  //     }
+                                  //   },
+                                  //   child: Text(
+                                  //     LanguageService.getTranslated(context, "drawer_menu_logout"),
+                                  //     style: typography.Body1.copyWith(color: iconColor),
+                                  //   ),
+                                  // ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+
+                  // Consumer<AuthNotifier>(
+                  //   builder: (context, authNotifier, child) {
+                  //     return IconButton(
+                  //       icon: Icon(Icons.logout_rounded, color: iconColor),
+                  //       onPressed: () {
+                  //         showDialog(
+                  //           context: context,
+                  //           builder: (context) {
+                  //             return AlertDialog(
+                  //               title: Text(
+                  //                   LanguageService.getTranslated(
+                  //                       context, "drawer_menu_logout"),
+                  //                   style: typography.Body1.copyWith(
+                  //                       color: iconColor)),
+                  //               content: Text(
+                  //                   LanguageService.getTranslated(context,
+                  //                       "drawer_menu_logout_confirmation"),
+                  //                   style: typography.Body1.copyWith(
+                  //                       color: iconColor)),
+                  //               actions: <Widget>[
+                  //                 TextButton(
+                  //                   onPressed: () {
+                  //                     Navigator.pop(context);
+                  //                   },
+                  //                   child: Text(
+                  //                       LanguageService.getTranslated(
+                  //                           context, "drawer_menu_cancel"),
+                  //                       style: typography.Body1.copyWith(
+                  //                           color: iconColor)),
+                  //                 ),
+                  //
+                  //                 TextButton(
+                  //                   onPressed: () async {
+                  //                     try {
+                  //                       final googleSignIn = GoogleSignIn();
+                  //
+                  //                       // Sign out from Firebase Auth
+                  //                       await FirebaseAuth.instance.signOut();
+                  //
+                  //                       // Revoke Google access and sign out
+                  //                       if (await googleSignIn.isSignedIn()) {
+                  //                         await googleSignIn.disconnect(); // Revokes access so next sign-in prompts account chooser
+                  //                         await googleSignIn.signOut();
+                  //                       }
+                  //
+                  //                       // Reset drawer state
+                  //                       Provider.of<DrawerSelectionProvider>(context, listen: false)
+                  //                           .setSelectedItem("dashboard");
+                  //
+                  //                       // Navigate to SplashScreen
+                  //                       Navigator.pushAndRemoveUntil(
+                  //                         context,
+                  //                         MaterialPageRoute(builder: (_) => SplashScreen()),
+                  //                             (route) => false,
+                  //                       );
+                  //                     } catch (e) {
+                  //                       print("Logout error: $e");
+                  //                       ScaffoldMessenger.of(context).showSnackBar(
+                  //                         SnackBar(content: Text("Logout failed. Please try again.")),
+                  //                       );
+                  //                     }
+                  //                   },
+                  //                   child: Text(
+                  //                     LanguageService.getTranslated(context, "drawer_menu_logout"),
+                  //                     style: typography.Body1.copyWith(color: iconColor),
+                  //                   ),
+                  //                 ),
+                  //
+                  //                 // TextButton(
+                  //                 //   onPressed: () async {
+                  //                 //     await authNotifier.signOut();
+                  //                 //
+                  //                 //
+                  //                 //     Provider.of<DrawerSelectionProvider>(
+                  //                 //             context,
+                  //                 //             listen: false)
+                  //                 //         .setSelectedItem("dashboard");
+                  //                 //     Navigator.pushAndRemoveUntil(
+                  //                 //         context,
+                  //                 //         MaterialPageRoute(
+                  //                 //             builder: (_) => SplashScreen()),
+                  //                 //         (route) => false);
+                  //                 //   },
+                  //                 //   child: Text(
+                  //                 //       LanguageService.getTranslated(
+                  //                 //           context, "drawer_menu_logout"),
+                  //                 //       style: typography.Body1.copyWith(
+                  //                 //           color: iconColor)),
+                  //                 // ),
+                  //               ],
+                  //             );
+                  //           },
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
+                  if (showCorporateManagementTab ||
+                      showNonCorporateManagementTab ||
+                      showEmployeeManagementTab)
+                    Consumer<DrawerSelectionProvider>(
+                      builder: (context, provider, child) {
+                        return Consumer<UserProfileProvider>(
+                          builder: (context, userProfileProvider, child) {
+                            bool isNotIndividual =
+                                !(userProfileProvider.userData.isIndividual ??
+                                    true); // Defaulting to true if null
+
+                            return userProfileProvider.isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : isNotIndividual
+                                    ? Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(66),
+                                          color: provider.selectedItem ==
+                                                  "user_management"
+                                              ? AppColors.primaryMain
+                                                  .withOpacity(0.4)
+                                              : Colors.transparent,
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.person,
+                                            color: provider.selectedItem ==
+                                                    "user_management"
+                                                ? AppColors.primaryMain
+                                                : iconColor,
+                                          ),
+                                          onPressed: () {
+                                            provider.setSelectedItem(
+                                                "user_management");
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      UserManagementScreen()),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Container();
+
+                            //   bool.parse((!userProfileProvider.userData.isIndividual! ?? true).toString()) ?
+                            //   Container(
+                            //   decoration: BoxDecoration(
+                            //     borderRadius: BorderRadius.circular(66),
+                            //     color:
+                            //         provider.selectedItem == "user_management"
+                            //             ? AppColors.primaryMain.withOpacity(0.4)
+                            //             : Colors.transparent,
+                            //   ),
+                            //   child:
+                            //
+                            //   IconButton(
+                            //     icon:
+                            //     Icon(
+                            //       Icons.person,
+                            //       color:
+                            //           provider.selectedItem == "user_management"
+                            //               ? AppColors.primaryMain
+                            //               : iconColor,
+                            //     ),
+                            //     onPressed: () {
+                            //       provider.setSelectedItem("user_management");
+                            //       Navigator.of(context).push(
+                            //         MaterialPageRoute(
+                            //             builder: (_) => UserManagementScreen()),
+                            //       );
+                            //     },
+                            //   ),
+                            // ):Container();
+                          },
+                        );
+                      },
+                    )
+                  //               if (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
+                  //                 Consumer<DrawerSelectionProvider>(
+                  //                   builder: (context, provider, child) {
+                  //                     return
+                  //
+                  //                       Consumer<UserProfileProvider>(
+                  //                         builder: (context, userProfileProvider, child) {
+                  //                           builder:
+                  //                               (context) {
+                  //                             return Container(
+                  //
+                  //                               decoration: BoxDecoration(
+                  //                                 borderRadius: BorderRadius.circular(66),
+                  //                                 color: provider.selectedItem ==
+                  //                                     "user_management"
+                  //                                     ? AppColors.primaryMain.withOpacity(0.4)
+                  //                                     : Colors.transparent,
+                  //
+                  //                               ),
+                  //                               child: IconButton(
+                  //                                 icon: Icon(Icons.person,
+                  //                                     color: provider.selectedItem ==
+                  //                                         "user_management"
+                  //                                         ? AppColors.primaryMain
+                  //                                         : iconColor),
+                  //                                 onPressed: () {
+                  //                                   provider.setSelectedItem(
+                  //                                       "user_management");
+                  //                                   Navigator.of(context).push(
+                  //                                       MaterialPageRoute(builder: (_) =>
+                  //                                           UserManagementScreen()));
+                  //                                 },
+                  //                               ),
+                  //                             );
+                  //                           };
+                  //                         }
+                  //                         );
+                  //                         },
+                  // ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context,
+    DrawerSelectionProvider provider, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isSelected,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected
+            ? AppColors.primaryMain.withOpacity(0.1)
+            : Colors.transparent,
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: isSelected ? AppColors.primaryMain : null),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? AppColors.primaryMain : null,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  String _getInitialCountry(BuildContext context) {
+    // ['US', 'ES', 'FR', 'JP', 'CN']
+    if (context.locale == Locale('es')) return 'ES';
+    if (context.locale == Locale('fr')) return 'FR';
+    if (context.locale == Locale('ja')) return 'JP';
+    if (context.locale == Locale('zh')) return 'CN';
+    return 'US';
   }
 }

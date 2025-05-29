@@ -1,6 +1,6 @@
 
 
-import 'package:green/models/role_model.dart';
+import 'package:RiskSphere/models/role_model.dart';
 
 class UserProfileModel {
   String? data;
@@ -25,7 +25,6 @@ class UserProfileModel {
 
 class UserData {
   int? rating;
-  CreatedAt? createdAt;
   String? email;
   String? displayImageUrl;
   String? displayName;
@@ -45,7 +44,6 @@ class UserData {
 
   UserData(
       {this.rating,
-        this.createdAt,
         this.email,
         this.displayImageUrl,
         this.displayName,
@@ -64,9 +62,7 @@ class UserData {
 
   UserData.fromJson(Map<String, dynamic> json) {
     rating = json['rating'];
-    createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
-        : null;
+
     email = json['email'];
     displayImageUrl = json['display_image_url'];
     displayName = json['display_name'];
@@ -93,15 +89,21 @@ class UserData {
         acceptedRole!.add(new Roles.fromJson(v));
       });
     }
-    isExternal = json['is_external'];
+    print('userid: ${json['user_id']}');
+    print('isExternal: ${json['is_external']}');
+    if(json['is_external'] != null && json['is_external'].runtimeType == bool) {
+      isExternal = json['is_external'];
+    } else if(json['is_external'] != null && json['is_external'].runtimeType == String) {
+      isExternal = json['is_external'] == 'true' ? true : false;
+    } else {
+      isExternal = false;
+    }
+    //isExternal = json['is_external'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['rating'] = this.rating;
-    if (this.createdAt != null) {
-      data['created_at'] = this.createdAt!.toJson();
-    }
     data['email'] = this.email;
     data['display_image_url'] = this.displayImageUrl;
     data['displayName'] = this.displayName;

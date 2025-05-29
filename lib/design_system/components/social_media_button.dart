@@ -17,6 +17,7 @@ class SocialMediaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Row(
       children: [
         Expanded(
@@ -41,7 +42,7 @@ class SocialMediaButton extends StatelessWidget {
             ),
             label: Text(
               buttonText,
-              style: CustomTypography.BottomNavigationActiveLabel.copyWith(color: Theme.of(context).colorScheme.onSurface),
+              style: typography.BottomNavigationActiveLabel.copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
           ),
         ),

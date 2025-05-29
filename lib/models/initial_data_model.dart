@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 class InitialDataModel {
   InitialDataModel({
     required this.companyType,
@@ -5,24 +7,49 @@ class InitialDataModel {
     required this.companies,
     required this.config,
   });
+
   late final List<CompanyType> companyType;
   late final List<Role> role;
   late final List<Companies> companies;
   late final List<Config> config;
 
-  InitialDataModel.fromJson(Map<String, dynamic> json){
-    companyType = List.from(json['company_type']).map((e)=>CompanyType.fromJson(e)).toList();
-    role = List.from(json['role']).map((e)=>Role.fromJson(e)).toList();
-    companies = List.from(json['companies']).map((e)=>Companies.fromJson(e)).toList();
-    config = List.from(json['config']).map((e)=>Config.fromJson(e)).toList();
+  InitialDataModel.fromJson(Map<String, dynamic> json) {
+    companyType = (json['company_type'] as List?)
+            ?.map((e) => CompanyType.fromJson(e))
+            .toList() ??
+        [];
+    role = (json['role'] as List?)?.map((e) => Role.fromJson(e)).toList() ?? [];
+    companies = (json['companies'] as List?)
+            ?.map((e) => Companies.fromJson(e))
+            .toList() ??
+        [];
+    config =
+        (json['config'] as List?)?.map((e) => Config.fromJson(e)).toList() ??
+            [];
+
+    companies.forEach((element) {
+      log("company: ${element.name}");
+      log("country: ${element.countryName}");
+    });
   }
+
+  // InitialDataModel.fromJson(Map<String, dynamic> json){
+  //   companyType = List.from(json['company_type']).map((e)=>CompanyType.fromJson(e)).toList();
+  //   role = List.from(json['role']).map((e)=>Role.fromJson(e)).toList();
+  //   companies = List.from(json['companies']).map((e)=>Companies.fromJson(e)).toList();
+  //   companies!.forEach((element) {
+  //     log("company: ${element.name}");
+  //     log("country: ${element.countryName}");
+  //   });
+  //   config = List.from(json['config']).map((e)=>Config.fromJson(e)).toList();
+  // }
 
   Map<String, dynamic> toJson() {
     final _data = <String, dynamic>{};
-    _data['company_type'] = companyType.map((e)=>e.toJson()).toList();
-    _data['role'] = role.map((e)=>e.toJson()).toList();
-    _data['companies'] = companies.map((e)=>e.toJson()).toList();
-    _data['config'] = config.map((e)=>e.toJson()).toList();
+    _data['company_type'] = companyType.map((e) => e.toJson()).toList();
+    _data['role'] = role.map((e) => e.toJson()).toList();
+    _data['companies'] = companies.map((e) => e.toJson()).toList();
+    _data['config'] = config.map((e) => e.toJson()).toList();
     return _data;
   }
 }
@@ -42,6 +69,7 @@ class CompanyType {
     required this.type,
     required this.usedBy,
   });
+
   late final bool isApplicableForTrial;
   late final bool enableCorporateVerification;
   late final List<Roles> roles;
@@ -55,17 +83,88 @@ class CompanyType {
   late final String type;
   late final String usedBy;
 
-  CompanyType.fromJson(Map<String, dynamic> json){
-    isApplicableForTrial = json['is_applicable_for_trial'];
-    enableCorporateVerification = json['enable_corporate_verification'];
-    roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
-    corporateUserSelfRegistration = json['corporate_user_self_registration'];
-    name = json['name'];
-    corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
-    canBeListed = json['can_be_listed'];
-    trialPeriodDays = json['trial_period_days'];
+  CompanyType.fromJson(Map<String, dynamic> json) {
+    // id = json['id'];
+    if (json['is_applicable_for_trial'].runtimeType == bool) {
+      isApplicableForTrial = json['is_applicable_for_trial'];
+    } else {
+      print("is_applicable_for_trial: ${json['is_applicable_for_trial']}");
+      if (json['is_applicable_for_trial'] == null ||
+          json['is_applicable_for_trial'] == "") {
+        isApplicableForTrial = false;
+      } else {
+        isApplicableForTrial = bool.parse(json['is_applicable_for_trial']);
+      }
+      //isApplicableForTrial = bool.parse(json['is_applicable_for_trial']);
+    }
+    //isApplicableForTrial = json['is_applicable_for_trial'];
+    if (json['enable_corporate_verification'].runtimeType == bool) {
+      enableCorporateVerification = json['enable_corporate_verification'];
+    } else {
+      if (json['enable_corporate_verification'] == null ||
+          json['enable_corporate_verification'] == "") {
+        enableCorporateVerification = false;
+      } else {
+        enableCorporateVerification =
+            bool.parse(json['enable_corporate_verification']);
+      }
+      // enableCorporateVerification = bool.parse(json['enable_corporate_verification']);
+    }
+    //enableCorporateVerification = json['enable_corporate_verification'];
+    roles = List.from(json['roles']).map((e) => Roles.fromJson(e)).toList();
+    if (json['corporate_user_self_registration'].runtimeType == bool) {
+      corporateUserSelfRegistration = json['corporate_user_self_registration'];
+    } else {
+      if (json['corporate_user_self_registration'] == null ||
+          json['corporate_user_self_registration'] == "") {
+        corporateUserSelfRegistration = false;
+      } else {
+        corporateUserSelfRegistration =
+            bool.parse(json['corporate_user_self_registration']);
+      }
+      //corporateUserSelfRegistration = bool.parse(json['corporate_user_self_registration']);
+    }
+    //corporateUserSelfRegistration = json['corporate_user_self_registration'];
+    name = json['name'] ?? "";
+    if (json['corporate_user_verification_by_admin'].runtimeType == bool) {
+      corporateUserVerificationByAdmin =
+          json['corporate_user_verification_by_admin'];
+    } else {
+      if (json['corporate_user_verification_by_admin'] == null ||
+          json['corporate_user_verification_by_admin'] == "") {
+        corporateUserVerificationByAdmin = false;
+      } else {
+        corporateUserVerificationByAdmin =
+            bool.parse(json['corporate_user_verification_by_admin']);
+      }
+      //corporateUserVerificationByAdmin = bool.parse(json['corporate_user_verification_by_admin']);
+    }
+    //corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
+    if (json['can_be_listed'].runtimeType == bool) {
+      canBeListed = json['can_be_listed'];
+    } else {
+      if (json['can_be_listed'] == null || json['can_be_listed'] == "") {
+        canBeListed = false;
+      } else {
+        canBeListed = bool.parse(json['can_be_listed']);
+      }
+      //canBeListed = bool.parse(json['can_be_listed']);
+    }
+    //canBeListed = json['can_be_listed'];
+    trialPeriodDays = json['trial_period_days'] ?? 0;
     id = json['id'];
-    adminSelfRegistration = json['admin_self_registration'];
+    if (json['admin_self_registration'].runtimeType == bool) {
+      adminSelfRegistration = json['admin_self_registration'];
+    } else {
+      if (json['admin_self_registration'] == null ||
+          json['admin_self_registration'] == "") {
+        adminSelfRegistration = false;
+      } else {
+        adminSelfRegistration = bool.parse(json['admin_self_registration']);
+      }
+      //adminSelfRegistration = bool.parse(json['admin_self_registration']);
+    }
+    //adminSelfRegistration = json['admin_self_registration'];
     type = json['type'];
     usedBy = json['used_by'];
   }
@@ -74,10 +173,11 @@ class CompanyType {
     final _data = <String, dynamic>{};
     _data['is_applicable_for_trial'] = isApplicableForTrial;
     _data['enable_corporate_verification'] = enableCorporateVerification;
-    _data['roles'] = roles.map((e)=>e.toJson()).toList();
+    _data['roles'] = roles.map((e) => e.toJson()).toList();
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['name'] = name;
-    _data['corporate_user_verification_by_admin'] = corporateUserVerificationByAdmin;
+    _data['corporate_user_verification_by_admin'] =
+        corporateUserVerificationByAdmin;
     _data['can_be_listed'] = canBeListed;
     _data['trial_period_days'] = trialPeriodDays;
     _data['id'] = id;
@@ -97,6 +197,7 @@ class Roles {
     required this.isMultipleRoleEnabled,
     required this.id,
   });
+
   late final bool isForIndividual;
   late final bool isApplicableForTrial;
   late final String role;
@@ -104,14 +205,14 @@ class Roles {
   late final bool isMultipleRoleEnabled;
   late final String id;
 
-  Roles.fromJson(Map<String, dynamic> json){
-    isForIndividual = json['is_for_individual']??false;
-    isApplicableForTrial = json['is_applicable_for_trial']??false;
-    role = json['role']??'';
-    name = json['name']?? '';
-    isMultipleRoleEnabled = json['is_multiple_role_enabled']??false;
-    if(json['id']!=null) {
-      id = json['id']??'';
+  Roles.fromJson(Map<String, dynamic> json) {
+    isForIndividual = json['is_for_individual'] ?? false;
+    isApplicableForTrial = json['is_applicable_for_trial'] ?? false;
+    role = json['role'] ?? '';
+    name = json['name'] ?? '';
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'] ?? false;
+    if (json['id'] != null) {
+      id = json['id'] ?? '';
     } else {
       id = "";
     }
@@ -119,12 +220,12 @@ class Roles {
 
   Map<String, dynamic> toJson() {
     final _data = <String, dynamic>{};
-    _data['is_for_individual'] = isForIndividual;
-    _data['is_applicable_for_trial'] = isApplicableForTrial;
+    // _data['is_for_individual'] = isForIndividual;
+    // _data['is_applicable_for_trial'] = isApplicableForTrial;
     _data['role'] = role;
     _data['name'] = name;
-    _data['is_multiple_role_enabled'] = isMultipleRoleEnabled;
-    _data['id'] = id;
+    // _data['is_multiple_role_enabled'] = isMultipleRoleEnabled;
+    // _data['id'] = id;
     return _data;
   }
 }
@@ -134,23 +235,28 @@ class Role {
     required this.accountType,
     required this.categories,
   });
+
   late final String accountType;
   late final List<Categories> categories;
 
-  Role.fromJson(Map<String, dynamic> json){
-    accountType = json['accountType']??"";
-    if(json['categories']!=null) {
-      categories = List.from(json['categories']).map((e)=>Categories.fromJson(e)).toList();
+  Role.fromJson(Map<String, dynamic> json) {
+    accountType = json['accountType'] ?? "";
+    if (json['categories'] != null) {
+      categories = List.from(json['categories'])
+          .map((e) => Categories.fromJson(e))
+          .toList();
     }
   }
 
   Map<String, dynamic> toJson() {
     final _data = <String, dynamic>{};
     _data['accountType'] = accountType;
-    _data['categories'] = categories.map((e)=>e.toJson()).toList();
+    _data['categories'] = categories.map((e) => e.toJson()).toList();
     return _data;
   }
 }
+
+
 
 class Categories {
   Categories({
@@ -161,14 +267,15 @@ class Categories {
     required this.isMultipleRoleEnabled,
     required this.id,
   });
-  late final bool isForIndividual;
-  late final bool isApplicableForTrial;
-  late final String role;
-  late final String name;
-  late final bool isMultipleRoleEnabled;
-  late final String id;
 
-  Categories.fromJson(Map<String, dynamic> json){
+  late final bool? isForIndividual;
+  late final bool? isApplicableForTrial;
+  late final String? role;
+  late final String? name;
+  late final bool? isMultipleRoleEnabled;
+  late final String? id;
+
+  Categories.fromJson(Map<String, dynamic> json) {
     isForIndividual = json['is_for_individual'];
     isApplicableForTrial = json['is_applicable_for_trial'];
     role = json['role'];
@@ -194,78 +301,101 @@ class Companies {
     required this.isActive,
     required this.isAuthorized,
     required this.userIds,
-    required this.activeDate,
-    required this.createdAt,
     required this.displayName,
     required this.adminSelfRegistration,
-    this.roleIds,
-    required this.updatedAt,
     required this.companyTypeId,
     required this.name,
+    required this.companyTypeName,
     required this.corporateUserSelfRegistration,
     required this.corporateUserVerificationByAdmin,
     required this.noOfUsers,
     required this.admins,
     required this.roles,
+    required this.countryName,
   });
+
   late final bool isActive;
   late final bool isAuthorized;
   late final List<UserIds> userIds;
-  late final ActiveDate activeDate;
-  late final CreatedAt createdAt;
   late final String displayName;
   late final bool adminSelfRegistration;
-  late final Null roleIds;
-  late final UpdatedAt updatedAt;
   late final String companyTypeId;
   late final String name;
+  late final String companyTypeName;
   late final bool corporateUserSelfRegistration;
   late final bool corporateUserVerificationByAdmin;
   late final int noOfUsers;
   late final List<Admins> admins;
   late final List<Roles> roles;
+  late final String id;
+  late final String countryName;
 
-  Companies.fromJson(Map<String, dynamic> json){
-    isActive = json['is_active']??false;
-    isAuthorized = json['is_authorized'];
+  Companies.fromJson(Map<String, dynamic> json) {
+    id = json['id'] ?? "";
+    isActive = json['status'] ?? false;
+    isAuthorized = json['is_authorized'] ?? false;
     /*if(json['user_ids']!=null) {
       userIds =
           List.from(json['user_ids']).map((e) => UserIds.fromJson(e)).toList();
     }*/
-    userIds= [];
-    activeDate = ActiveDate.fromJson(json['active_date']);
-    createdAt = CreatedAt.fromJson(json['created_at']);
-    displayName = json['display_name'];
-    adminSelfRegistration = json['admin_self_registration'];
-    roleIds = null;
-    updatedAt = UpdatedAt.fromJson(json['updated_at']);
-    companyTypeId = json['company_type_id']??"";
-    name = json['name'];
-    corporateUserSelfRegistration = json['corporate_user_self_registration'];
-    corporateUserVerificationByAdmin = json['corporate_user_verification_by_admin'];
-    noOfUsers = json['no_of_users'];
+    userIds = [];
+
+    if (json['company_display_name'] != null) {
+      displayName = json['company_display_name'];
+    } else {
+      displayName = "";
+    }
+    adminSelfRegistration = json['admin_self_registration'] ?? false;
+
+    companyTypeId = json['company_type_id'] ?? "";
+    if (json['company_name'] != null) {
+      name = json['company_name'];
+    } else {
+      name = "";
+    }
+
+    if (json['company_type_name'] != null) {
+      companyTypeName = json['company_type_name'];
+    } else {
+      companyTypeName = "";
+    }
+    corporateUserSelfRegistration =
+        json['corporate_user_self_registration'] ?? false;
+    corporateUserVerificationByAdmin =
+        json['corporate_user_verification_by_admin'] ?? false;
+    noOfUsers = json['no_of_users'] ?? 0;
     admins = [];
-    roles = List.from(json['roles']).map((e)=>Roles.fromJson(e)).toList();
+    print("display name: $displayName");
+    print("company id: $id");
+    print("admins: $admins");
+    roles = (json['roles'] != null)
+        ? List.from(json['roles']).map((e) => Roles.fromJson(e)).toList()
+        : [];
+    if (json["country"].runtimeType == String) {
+      countryName = json['country'] ?? "";
+    } else {
+      countryName = json['country']?['name'] ?? "";
+    }
   }
 
   Map<String, dynamic> toJson() {
     final _data = <String, dynamic>{};
     _data['is_active'] = isActive;
     _data['is_authorized'] = isAuthorized;
-    _data['user_ids'] = userIds.map((e)=>e.toJson()).toList();
-    _data['active_date'] = activeDate.toJson();
-    _data['created_at'] = createdAt.toJson();
+    _data['user_ids'] = userIds.map((e) => e.toJson()).toList();
     _data['display_name'] = displayName;
     _data['admin_self_registration'] = adminSelfRegistration;
-    _data['role_ids'] = roleIds;
-    _data['updated_at'] = updatedAt.toJson();
     _data['company_type_id'] = companyTypeId;
-    _data['name'] = name;
+    _data['company_name'] = name;
+    _data['company_type_name'] = companyTypeName;
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
-    _data['corporate_user_verification_by_admin'] = corporateUserVerificationByAdmin;
+    _data['corporate_user_verification_by_admin'] =
+        corporateUserVerificationByAdmin;
     _data['no_of_users'] = noOfUsers;
-    _data['admins'] = admins.map((e)=>e.toJson()).toList();
-    _data['roles'] = roles.map((e)=>e.toJson()).toList();
+    _data['admins'] = admins.map((e) => e.toJson()).toList();
+    _data['roles'] = roles.map((e) => e.toJson()).toList();
+    _data["id"] = id;
+    _data['country'] = countryName;
     return _data;
   }
 }
@@ -289,6 +419,7 @@ class UserIds {
     required this.email,
     required this.companyId,
   });
+
   late final Null phoneNo;
   late final Null role;
   late final bool isIndividual;
@@ -306,20 +437,20 @@ class UserIds {
   late final String email;
   late final String companyId;
 
-  UserIds.fromJson(Map<String, dynamic> json){
+  UserIds.fromJson(Map<String, dynamic> json) {
     phoneNo = null;
     role = null;
-    isIndividual = json['is_individual']??false;
-    if(json['manage_user_ids']!=null) {
+    isIndividual = json['is_individual'] ?? false;
+    if (json['manage_user_ids'] != null) {
       manageUserIds = List.castFrom<dynamic, dynamic>(json['manage_user_ids']);
     }
-    isAccountManager = json['is_account_manager']??false;
-    if(json['created_at']!=null) {
+    isAccountManager = json['is_account_manager'] ?? false;
+    if (json['created_at'] != null) {
       createdAt = CreatedAt.fromJson(json['created_at']);
     }
-    displayName = json['display_name']??"";
+    displayName = json['display_name'] ?? "";
     expertise = null;
-    isVerified = json['is_verified']??false;
+    isVerified = json['is_verified'] ?? false;
     isEnabled = json['is_enabled'];
     updatedAt = UpdatedAt.fromJson(json['updated_at']);
     userId = json['user_id'];
@@ -356,10 +487,11 @@ class CreatedAt {
     required this.seconds,
     required this.nanoseconds,
   });
+
   late final int seconds;
   late final int nanoseconds;
 
-  CreatedAt.fromJson(Map<String, dynamic> json){
+  CreatedAt.fromJson(Map<String, dynamic> json) {
     seconds = json['_seconds'];
     nanoseconds = json['_nanoseconds'];
   }
@@ -377,10 +509,11 @@ class UpdatedAt {
     required this.seconds,
     required this.nanoseconds,
   });
+
   late final int seconds;
   late final int nanoseconds;
 
-  UpdatedAt.fromJson(Map<String, dynamic> json){
+  UpdatedAt.fromJson(Map<String, dynamic> json) {
     seconds = json['_seconds'];
     nanoseconds = json['_nanoseconds'];
   }
@@ -398,10 +531,11 @@ class ActiveDate {
     required this.seconds,
     required this.nanoseconds,
   });
+
   late final int seconds;
   late final int nanoseconds;
 
-  ActiveDate.fromJson(Map<String, dynamic> json){
+  ActiveDate.fromJson(Map<String, dynamic> json) {
     seconds = json['_seconds'];
     nanoseconds = json['_nanoseconds'];
   }
@@ -433,6 +567,7 @@ class Admins {
     required this.email,
     required this.companyId,
   });
+
   late final Null phoneNo;
   late final Null role;
   late final bool isIndividual;
@@ -450,18 +585,18 @@ class Admins {
   late final String email;
   late final String companyId;
 
-  Admins.fromJson(Map<String, dynamic> json){
+  Admins.fromJson(Map<String, dynamic> json) {
     phoneNo = null;
     role = null;
-    isIndividual = json['is_individual']??false;
-    if(json['manage_user_ids']!=null) {
+    isIndividual = json['is_individual'] ?? false;
+    if (json['manage_user_ids'] != null) {
       manageUserIds = List.castFrom<dynamic, dynamic>(json['manage_user_ids']);
     }
-    isAccountManager = json['is_account_manager']??false;
-    if(json['created_at']!=null) {
+    isAccountManager = json['is_account_manager'] ?? false;
+    if (json['created_at'] != null) {
       createdAt = CreatedAt.fromJson(json['created_at']);
     }
-    displayName = json['display_name']??"";
+    displayName = json['display_name'] ?? "";
     expertise = null;
     isVerified = json['is_verified'];
     isEnabled = json['is_enabled'];
@@ -499,9 +634,10 @@ class Config {
   Config({
     required this.companyVerificationByAdmin,
   });
+
   late final bool companyVerificationByAdmin;
 
-  Config.fromJson(Map<String, dynamic> json){
+  Config.fromJson(Map<String, dynamic> json) {
     companyVerificationByAdmin = json['company_verification_by_admin'];
   }
 

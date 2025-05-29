@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../../models/initial_data_model.dart';
+import '../../service/language_service.dart';
 import '../primitives/custom_typography.dart';
 import '../primitives/utilities/custom_spacing.dart';
 
@@ -42,6 +43,7 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -51,8 +53,8 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
             Container(
               margin: const EdgeInsets.only(left: 24, top: 24),
               child: Text(
-                'Select Account Roles',
-                style: CustomTypography.H7.copyWith(
+                LanguageService.getTranslated(context, 'usermanagement_app_employee_create_account_select_role_title'),
+                style: typography.H7.copyWith(
                   color: Theme.of(context).colorScheme.onBackground,
                   fontWeight: FontWeight.bold,
                 ),
@@ -126,7 +128,7 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
             // Close the bottom sheet
             Navigator.pop(context);
           },
-          child: Text('SUBMIT', style: CustomTypography.Subtitle1),
+          child: Text(LanguageService.getTranslated(context, "usermanagement_app_employee_create_account_select_role_submit"), style: typography.Subtitle1),
         ),
 
       ],

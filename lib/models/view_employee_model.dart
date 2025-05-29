@@ -1,6 +1,6 @@
 
 
-import 'package:green/models/role_model.dart';
+import 'package:RiskSphere/models/role_model.dart';
 
 class ViewEmployeeModel {
   String? data;
@@ -58,7 +58,6 @@ class Employee {
   Employee.fromJson(Map<String, dynamic> json) {
     displayName = json['displayName'];
     rating = json['rating'];
-    createdAt = json['created_at'];
     isIndividual = json['isIndividual'];
     email = json['email'];
     companyId = json['company_id'];

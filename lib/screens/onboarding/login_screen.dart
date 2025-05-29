@@ -1,20 +1,24 @@
 import 'dart:convert';
 
+import 'package:RiskSphere/main.dart';
+import 'package:country_pickers/country.dart';
+import 'package:country_pickers/country_picker_dropdown.dart';
+import 'package:country_pickers/utils/utils.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/primitives/app_colors.dart';
-import 'package:green/design_system/primitives/custom_typography.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
+
+import 'package:RiskSphere/design_system/primitives/app_colors.dart';
+import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/service/language_service.dart';
 import 'package:provider/provider.dart';
 
-import '../../design_system/components/custom_checkbox.dart';
-import '../../design_system/components/custom_text_field.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../design_system/repo/constants.dart';
-import '../../design_system/repo/home.dart';
+
 import '../../providers/auth_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../utils/utils.dart';
 import 'create_account_screen.dart';
 
@@ -34,26 +38,27 @@ class _LoginScreenState extends State<LoginScreen> {
   String verifyResult = "";
   bool isCaptchaVerified = false;
   RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
+  bool _showPassword = false;
 
   @override
   void initState() {
-    AuthNotifier authNotifier =
-        Provider.of<AuthNotifier>(context, listen: false);
-    authNotifier.signOut();
+    // AuthNotifier authNotifier =
+    //     Provider.of<AuthNotifier>(context, listen: false);
+    // authNotifier.signOut();
 
     super.initState();
   }
 
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    recaptchaV2Controller.dispose();
-  }
+  //
+  // @override
+  // void dispose() {
+  //   recaptchaV2Controller.dispose();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -76,12 +81,67 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Positioned.fill(
                       child: Center(
-                          child: Text(
-                        "Manage your Risk Profile",
-                        style: CustomTypography.H5_Regular,
-                      )),
+                        child: Text(
+                          LanguageService.getTranslated(
+                              context, "login_image_text"),
+                          style: typography.H5_Regular,
+                        ),
+                      ),
                     ),
                   ],
+                ),
+                SizedBox(height: CustomSpacing.two),
+                CountryPickerDropdown(
+                  initialValue: _getInitialCountry(),
+                  itemBuilder: (Country country) {
+                    return SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(
+                              CountryPickerUtils.getFlagImageAssetPath(
+                                  country.isoCode),
+                              package: 'country_pickers',
+                            ),
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              country.name,
+                              style: typography.Body1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemFilter: (Country country) {
+                    // Only include countries with these ISO codes
+                    return ['US', 'ES', 'FR', 'JP', 'CN']
+                        .contains(country.isoCode);
+                  },
+                  icon: SizedBox(),
+                  onValuePicked: (Country country) {
+                    switch (country.isoCode) {
+                      case 'US':
+                        context.setLocale(Locale('en'));
+                        break;
+                      case 'ES':
+                        context.setLocale(Locale('es'));
+                        break;
+                      case 'FR':
+                        context.setLocale(Locale('fr'));
+                        break;
+                      case 'JP':
+                        context.setLocale(Locale('ja'));
+                        break;
+                      case 'CN':
+                        context.setLocale(Locale('zh'));
+                        break;
+                    }
+                  },
                 ),
                 _loginForm(),
               ],
@@ -92,63 +152,106 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  _loginForm() {
+  Widget _loginForm() {
+    var typography = CustomTypography(context);
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Let’s get started!',
-            style: CustomTypography.H4,
+            LanguageService.getTranslated(context, "login_title"),
+            style: typography.H4,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: CustomSpacing.eight),
           // Social Media Buttons
+
           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
             return SocialMediaButton(
               onPressed: () async {
                 // Add your onPressed function here
                 await authNotifier.signInWithGoogle(context: context);
+                print(authNotifier.user.toString());
+                print(authNotifier.isNewUser.toString());
                 // Check if the user is authenticated after login attempt
-                if (authNotifier.user != null && !authNotifier.isNewUser) {
-                  // Navigate to the home screen or any other screen after login
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => /*Home(
-                        useLightMode: false,
-                        useMaterial3: true,
-                        colorSelected: ColorSeed.baseColor,
-                        imageSelected: ColorImageProvider.leaves,
-                        handleBrightnessChange: handleBrightnessChange,
-                        handleMaterialVersionChange:
-                            handleMaterialVersionChange,
-                        handleColorSelect: handleColorSelect,
-                        handleImageSelect: handleImageSelect,
-                        colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                      ),*/
-                              DashboardScreen(),
-                    ),
-                  );
-                }
+                // if (authNotifier.user != null && !authNotifier.isNewUser) {
+                //   // Navigate to the home screen or any other screen after login
+                //   Provider.of<UserProfileProvider>(context, listen: false)
+                //       .getAllUserData(context, '', '');
+                //   Navigator.pushReplacement(
+                //     context,
+                //     MaterialPageRoute(
+                //       builder:
+                //           (context) => /*Home(
+                //         useLightMode: false,
+                //         useMaterial3: true,
+                //         colorSelected: ColorSeed.baseColor,
+                //         imageSelected: ColorImageProvider.leaves,
+                //         handleBrightnessChange: handleBrightnessChange,
+                //         handleMaterialVersionChange:
+                //             handleMaterialVersionChange,
+                //         handleColorSelect: handleColorSelect,
+                //         handleImageSelect: handleImageSelect,
+                //         colorSelectionMethod: ColorSelectionMethod.colorSeed,
+                //       ),*/
+                //               DashboardScreen(),
+                //     ),
+                //   );
+                // }
               },
-              buttonText: 'Continue with Google',
+              buttonText:
+                  LanguageService.getTranslated(context, "login_googlebutton"),
               iconPath: 'assets/images/googleLogo.svg',
             );
           }),
 
-          SizedBox(
-            height: CustomSpacing.one,
-          ),
-          SocialMediaButton(
-            onPressed: () {
-              // Add your onPressed function here
-            },
-            buttonText: 'Continue with Microsoft',
-            iconPath: 'assets/images/microsoftLogo.svg',
-          ),
+          // SizedBox(
+          //   height: CustomSpacing.one,
+          // ),
+          // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+          //   return SocialMediaButton(
+          //     onPressed: () async {
+          //       // Add your onPressed function here
+          //       await authNotifier.signInWithMicrosoft(context: context);
+          //       // Check if the user is authenticated after login attempt
+          //       if (authNotifier.user != null && !authNotifier.isNewUser) {
+          //         // Navigate to the home screen or any other screen after login
+          //         Provider.of<UserProfileProvider>(context, listen: false)
+          //             .getAllUserData(context, '', '');
+          //         Navigator.pushReplacement(
+          //           context,
+          //           MaterialPageRoute(
+          //             builder:
+          //                 (context) => /*Home(
+          //                 useLightMode: false,
+          //                 useMaterial3: true,
+          //                 colorSelected: ColorSeed.baseColor,
+          //                 imageSelected: ColorImageProvider.leaves,
+          //                 handleBrightnessChange: handleBrightnessChange,
+          //                 handleMaterialVersionChange:
+          //                     handleMaterialVersionChange,
+          //                 handleColorSelect: handleColorSelect,
+          //                 handleImageSelect: handleImageSelect,
+          //                 colorSelectionMethod: ColorSelectionMethod.colorSeed,
+          //               ),*/
+          //                     DashboardScreen(),
+          //           ),
+          //         );
+          //       } else {
+          //         ScaffoldMessenger.of(context).showSnackBar(
+          //           SnackBar(
+          //             content: Text(
+          //                 'Email not found. Please enter a valid email address.'),
+          //           ),
+          //         );
+          //       }
+          //     },
+          //     buttonText: LanguageService.getTranslated(
+          //         context, "login_microsoft_button"),
+          //     iconPath: 'assets/images/microsoftLogo.svg',
+          //   );
+          // }),
           SizedBox(height: CustomSpacing.eight),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -163,8 +266,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(width: CustomSpacing.three),
               Text(
-                'Or register manually',
-                style: CustomTypography.Subtitle1.copyWith(
+                LanguageService.getTranslated(
+                    context, "register_non_corporate_register_manually"),
+                style: typography.Subtitle1.copyWith(
                     color: Theme.of(context).colorScheme.onSurface),
               ),
               SizedBox(width: CustomSpacing.three),
@@ -179,9 +283,12 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(height: CustomSpacing.eight),
           // Email
           TextFormField(
+            keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email address',
+              labelText: LanguageService.getTranslated(
+                  context, "register_non_corporate_emailfield_label"),
+              hintText: LanguageService.getTranslated(
+                  context, 'register_non_corporate_emailfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
             validator: (value) {
@@ -197,14 +304,27 @@ class _LoginScreenState extends State<LoginScreen> {
           // Password
           TextFormField(
             decoration: InputDecoration(
-              labelText: 'Password',
-              hintText: 'Enter your password',
+              suffixIcon: IconButton(
+                icon: _showPassword
+                    ? Icon(Icons.visibility)
+                    : Icon(Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _showPassword = !_showPassword;
+                  });
+                },
+              ),
+              labelText: LanguageService.getTranslated(
+                  context, 'register_non_corporate_passwordfield_label'),
+              hintText: LanguageService.getTranslated(
+                  context, 'login_passwordfield_placeholder'),
               border: const OutlineInputBorder(),
             ),
-            obscureText: true,
+            obscureText: !_showPassword,
             validator: (value) {
               if (value == null || value.isEmpty || value.length < 8) {
-                return 'Password must be at least 8 characters';
+                return LanguageService.getTranslated(
+                    context, 'login_password_length_error');
               }
               // You can add more specific password validation here if needed
               return null;
@@ -222,13 +342,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 : GestureDetector(
                     onTap: () async {
                       if (validateEmail(emailController.text)) {
-                        await authNotifier.resetPassword(emailController.text, context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Email sent to reset password. Please check your email.'),
-                          ),
-                        );
+                        try {
+                          var result = await authNotifier.resetPassword(
+                              emailController.text, context);
+                          if (result) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Email sent to reset password. Please check your email.'),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Email not found. Please enter a valid email address.'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Email not found. Please enter a valid email address.'),
+                            ),
+                          );
+                        }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -238,8 +377,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       }
                     },
-                    child: Text('Forgot Password?',
-                        style: CustomTypography.Subtitle1.copyWith(
+                    child: Text(
+                        LanguageService.getTranslated(
+                            context, 'login_forgot_password'),
+                        style: typography.Subtitle1.copyWith(
                             color: AppColors.primaryMain)));
           }),
           /*SizedBox(height: CustomSpacing.four),
@@ -296,13 +437,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-
                                 final String email =
                                     emailController.text.trim();
                                 final String password =
                                     passwordController.text.trim();
 
-                               /* if(isCaptchaVerified == false) {
+                                /* if(isCaptchaVerified == false) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -319,13 +459,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (user != null) {
                                   // Navigate to the home screen or any other screen after login
                                   var token = await user.getIdToken();
-                                  print(
-                                      "Claims: " + parseJwt(token!).toString());
+                                  print("fcmCall");
+                                  initFCM(user.uid);
+                                  print("fcmCall");
+
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) =>
-                                            DashboardScreen() /*Home(
+                                        builder: (context) => DashboardScreen()
+                                        /*Home(
                                         useLightMode: false,
                                         useMaterial3: true,
                                         colorSelected: ColorSeed.baseColor,
@@ -346,8 +488,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               }
                             },
                             child: Text(
-                              'Submit',
-                              style: CustomTypography.ButtonLarge.copyWith(
+                              LanguageService.getTranslated(
+                                  context, 'login_submit_button'),
+                              style: typography.ButtonLarge.copyWith(
                                   color: Colors.black),
                             ),
                           ),
@@ -357,28 +500,76 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }),
           SizedBox(height: CustomSpacing.four),
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => CreateAccountScreen()),
-              );
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: CustomSpacing.onePointFive,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: CustomSpacing.onePointFive),
+              Text(
+                LanguageService.getTranslated(context, 'login_dont_hv_account'),
+                style: typography.Body1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                Text('Don’t have an account? ',
-                    style: CustomTypography.Body1.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface)),
-                Text('Register now!',
-                    style: CustomTypography.Subtitle1.copyWith(
-                        color: AppColors.primaryMain)),
-              ],
-            ),
+              ),
+              Text(
+                ' ',
+                style: typography.Body1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => CreateAccountScreen()),
+                  );
+                },
+                child: Text(
+                  LanguageService.getTranslated(context, 'login_register_now'),
+                  style: typography.Subtitle1.copyWith(
+                    color: AppColors.primaryMain,
+                  ),
+                ),
+              ),
+            ],
           ),
+
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.start,
+          //   crossAxisAlignment: CrossAxisAlignment.center,
+          //   children: [
+          //     SizedBox(
+          //       height: CustomSpacing.onePointFive,
+          //     ),
+          //     Text(
+          //         LanguageService.getTranslated(
+          //             context, 'login_dont_hv_account'),
+          //         style: typography.Body1.copyWith(
+          //             color: Theme.of(context).colorScheme.onSurface)),
+          //     Text(
+          //       ' ',
+          //       style: typography.Body1.copyWith(
+          //           color: Theme.of(context).colorScheme.onSurface),
+          //     ),
+          //     InkWell(
+          //       onTap: () {
+          //         print("object");
+          //         Navigator.push(
+          //             context,
+          //             MaterialPageRoute(
+          //                 builder: (context) => CreateAccountScreen()));
+          //       },
+          //       child: Flexible(
+          //         child: Text(
+          //             LanguageService.getTranslated(
+          //                 context, 'login_register_now'),
+          //             style: typography.Subtitle1.copyWith(
+          //                 color: AppColors.primaryMain)),
+          //       ),
+          //     ),
+          //   ],
+          // ),
 
           SizedBox(height: CustomSpacing.eight),
         ],
@@ -408,5 +599,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final String normalized = base64Url.normalize(payload);
     final String decoded = utf8.decode(base64Url.decode(normalized));
     return json.decode(decoded);
+  }
+
+  _getInitialCountry() {
+    String isoCode = context.locale.languageCode;
+    switch (isoCode) {
+      case 'en':
+        return 'US';
+      case 'es':
+        return 'ES';
+      case 'fr':
+        return 'FR';
+      case 'ja':
+        return 'JP';
+      case 'zh':
+        return 'CN';
+    }
   }
 }

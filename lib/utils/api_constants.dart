@@ -1,29 +1,160 @@
+import '../constants/configuration.dart';
 
 class AppConstant {
-  // url for corporate management
-  static const String CORPORATE_MANAGEMENT_URL = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CREATE_CORPORATE_URL = "https://new-user-create-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_CORPORATE_URL = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String UPLOAD_FILE = "https://upload-file-nzc3rkheha-uc.a.run.app";
-  static const String GET_CORPORATE_ROLES = "https://support-nzc3rkheha-uc.a.run.app?corporate_type=true";
-  static const String GET_FEATURE_LIST = "https://feature-settings-nzc3rkheha-uc.a.run.app";
-  static const String ADD_FEATURE = "https://feature-settings-nzc3rkheha-uc.a.run.app";
-  static const String GET_ROLES = "https://support-nzc3rkheha-uc.a.run.app?role=true";
-  static const String GET_EMAILS = "https://support-nzc3rkheha-uc.a.run.app?emails=true";
-  static const String ADD_EMAILS = "https://support-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_STATUS = "https://support-nzc3rkheha-uc.a.run.app";
-  static const String GET_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app?employees_list=true";
-  static const String GET_ROLES_FOR_EMPLOYEES = "https://companies-nzc3rkheha-uc.a.run.app?role=internal";
-  static const String CREATE_EMPLOYEES = "https://new-user-create-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String VIEW_EMPLOYEES = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String GET_CORPORATE_VERIFICATION_REQUESTS = "https://companies-nzc3rkheha-uc.a.run.app?leads=company";
-  static const String GET_USER_VERIFICATION_REQUESTS = "https://companies-nzc3rkheha-uc.a.run.app?leads=users";
-  static const String CHANGE_CORPORATE_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_USER_STATUS = "https://companies-nzc3rkheha-uc.a.run.app";
-  static const String CHANGE_USER_ROLE = "https://companies-nzc3rkheha-uc.a.run.app";
-  static  const String GET_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String UPDATE_USER_DETAILS = "https://user-management-nzc3rkheha-uc.a.run.app";
-  static const String GET_AVATARS = "https://us-central1-project-green-f4d78.cloudfunctions.net/get_avatar";
-  static const String GET_DASHBOARD = "https://dashboard-data-nzc3rkheha-uc.a.run.app";
+  static const String REGION = "us-central1";
+
+  static String get baseURL => 'https://${REGION}-${Configuration.projectId}.cloudfunctions.net';
+
+  // R1 API URL
+  static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies';
+  static String get CORPORATE_MANAGEMENT_URL_NEW => '$baseURL/user_management_new/companies_list';
+  static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create';
+  static String get UPDATE_CORPORATE_URL => '$baseURL/companies';
+  static String get UPDATE_CORPORATE_URL_NEW => '$baseURL/companies';
+  static String get UPLOAD_FILE => '$baseURL/upload_file';
+  static String get GET_CORPORATE_ROLES => '$baseURL/support?corporate_type=true';
+  static String get GET_FEATURE_LIST => '$baseURL/feature_settings';
+  static String get ADD_FEATURE => '$baseURL/feature_settings';
+  static String get GET_ROLES => '$baseURL/support?role=true';
+  static String get GET_EMAILS => '$baseURL/support?emails=true';
+  static String get ADD_EMAILS => '$baseURL/support';
+  static String get CHANGE_STATUS => '$baseURL/support';
+  static String get GET_EMPLOYEES => '$baseURL/user_management?employees_list=true';
+  static String get GET_EMPLOYEES_NEW => '$baseURL/user_management_new/employee_list';
+  static String get GET_ROLES_FOR_EMPLOYEES => '$baseURL/companies?role=internal';
+  static String get GET_ROLES_FOR_CORPORATE_EMPLOYEES => '$baseURL/companies?role=external';
+  static String get CREATE_EMPLOYEES => '$baseURL/new_user_create';
+  static String get UPDATE_EMPLOYEES => '$baseURL/user_management';
+  static String get VIEW_EMPLOYEES => '$baseURL/user_management';
+  static String get GET_CORPORATE_VERIFICATION_REQUESTS => '$baseURL/companies?leads=company';
+  static String get GET_USER_VERIFICATION_REQUESTS => '$baseURL/companies?leads=users';
+  static String get CHANGE_CORPORATE_STATUS => '$baseURL/companies';
+  static String get CHANGE_USER_STATUS => '$baseURL/companies';
+  static String get CHANGE_USER_ROLE => '$baseURL/companies';
+  static String get GET_USER_DETAILS => '$baseURL/user_management';
+  static String get UPDATE_USER_DETAILS => '$baseURL/user_management';
+  static String get GET_AVATARS => '$baseURL/get_avatar';
+  static String get GET_DASHBOARD => '$baseURL/dashboard_data';
+  static String get GET_CONNECTIONS => '$baseURL/user_management/current?connections=true';
+  static String get GET_REQUESTS => '$baseURL/user_management?requests=true';
+  static String get ACCEPT_REJECT_REQUEST => '$baseURL/user_management';
+  static String get GET_NETWORKING_USER_SUGGESTIONS => '$baseURL/user_management_new/company_user_list/current';
+  static String get SEND_NETWORKING_REQUEST => '$baseURL/user_management';
+  static String get GET_USER_TEAMS => '$baseURL/user_management?my_team=true';
+  static String get DELETE_TEAM_MEMBER => '$baseURL/user_management';
+  static String get ADD_TEAM_MEMBERS => '$baseURL/user_management';
+  static String get GET_CORPORATE_USER => '$baseURL/companies';
+  static String get GET_CORPORATE_USER_NEW => '$baseURL/user_management_new/company_user_list';
+  static String get GET_CORPORATE_Company => '$baseURL/send_default_data?name=Test one';
+
+
+  static String get UPDATE_USER_STATUS => '$baseURL/user_management';
+  static String get NON_CORPORATE_USER_STATUS => '$baseURL/user_management';
+  static String get NON_CORPORATE_USER_STATUS_NEW => '$baseURL/user_management_new/individual_user_list';
+  static String get CREATE_CORPORATE_EMPLOYEES => '$baseURL/new_company_user_create';
+  static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/user_management';
+  static String get TRANSFER_USER_AUTOCOMPLETE => '$baseURL/user_management_new/company_user_list/current';
+  static String get MAIN_HAZARDS_TILE_PROVIDERS => '$baseURL/vendor_hazards/hazards_layer';
+
+  // R2 APIS
+  static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
+  static String get RENAME_ACCOUNT => '$baseURL/accounts';
+  static String get DUPLICATE_ACCOUNT => '$baseURL/accounts';//'$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get ADD_ACCOUNT => '$baseURL/locations/create_account';
+  static String get REQUEST_ACCESS => '$baseURL/accounts';
+  static String get UPLOAD_SOV_ACCOUNT => '$baseURL/sov';
+  static String get FETCH_LOCATIONS_DUPLICATION_CHECK=> '$baseURL/duplicate_check';
+  static String get FETCH_LOCATION_DUPLICATIONS=> '$baseURL/duplicate_check/duplicate';
+  static String get FETCH_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/similar';
+  static String get RESOLVE_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/resolveconflict';
+  static String get SKIP_LOCATION_CONFLICTS=> '$baseURL/duplicate_check/skipconflict';
+  static String get START_HAZARD_CONFLICTS=> '$baseURL/locations/starthazard';
+  static String get HANDLE_CONFLICT=> '$baseURL/locations';
+
+  static String get CANCEL_SOV_UPLOAD_PROCESS => '$baseURL/user_management_new/my_last_process/cancel';
+  static String get TRANSFER_SOV => '$baseURL/locations/transfer_sov';
+  static String get TRANSFER_SUBACCOUNT=> '$baseURL/locations/transfer_sub_account';
+  static String get TRANSFER_ACCOUNT=> '$baseURL/locations/transfer_account';
+  static String get FETCH_SOV_UPLOAD_DATA => '$baseURL/user_management_new/my_last_process';
+
+  // Sub Accounts
+  static String get GET_SUB_ACCOUNT_LIST => '$baseURL/locations';
+  static String get RENAME_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_SUB_ACCOUNT_LIST => '$baseURL/accounts';
+  static String get ADD_SUB_ACCOUNT => '$baseURL/locations/create_sub_account';
+  static String get REQUEST_ACCESS_SUB_ACCOUNT => '$baseURL/accounts';
+  static String get UPLOAD_SOV_SUB_ACCOUNT => '$baseURL/sov';
+
+  // Sov
+  static String get GET_SOV_LIST => '$baseURL/accounts';
+  static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/sov';
+  static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations/sov';
+  static String get RENAME_SOV => '$baseURL/accounts';
+  static String get DUPLICATE_SOV => '$baseURL/accounts';
+  static String get CHANGE_COLUMN_VISIBILITY_SOV => '$baseURL/accounts';
+  static String get AUTO_COMPLETE_SOV_LIST => '$baseURL/accounts';
+  static String get ADD_SOV => '$baseURL/accounts';
+  static String get REQUEST_ACCESS_SOV => '$baseURL/accounts';
+
+  // Location
+  static String get GET_LOCATION_LIST => '$baseURL/accounts';
+  static String get ADD_LOCATION => '$baseURL/accounts';
+  static String get MY_LOCATION => '$baseURL/locations';
+  static String get ADD_TO_SOV=> '$baseURL/locations/add_to_sov';
+
+  // Location Profile
+  static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
+  static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW => '$baseURL/locations/getlocation';
+  static String get ADD_SUBDESTINATION => '$baseURL/locations/addsubdestination';
+
+  // Location Profile New
+  static String get GET_LOCATION_PROFILE_NEW => '$baseURL/locations';
+  static String get EDIT_CAMPUS => '$baseURL/locations/editcampus';
+  static String get CHANGE_OCCUPANCY => '$baseURL/locations/rented';
+
+  // Upload Images New
+  static String get UPLOAD_IMAGES_NEW => '$baseURL/locations/location_profile_images';
+  static String get LOCATION_SUMMARY => '$baseURL/locations/location_summary';
+
+  /// R3 APIS
+  static String get GET_JOB_MONITORING => '$baseURL/job_monitoring';
+  static String get GET_JOB_MONITORING_SUMMARY => '$baseURL/vendor_management/process_summary';
+  static String get UPLOAD_SOV_LOCATIONS => '$baseURL/sov/upload';
+  static String get EXPORT => '$baseURL/locations/export';
+  static String get GLOBAL_SEARCH => '$baseURL/locations/global_search';
+
+  static String get GET_CURRENT_COMPANY_ID => '$baseURL/locations/current_company_id';
+
+  static String get CONFIGURATIONS => '$baseURL/locations/account_sub_global_configuration/global';
+
+  static String get CONFIGURATIONS_ACCOUNTS => '$baseURL/locations/account_sub_global_configuration/account';
+
+  static String get CONFIGURATIONS_SUB_ACCOUNTS => '$baseURL/locations/account_sub_global_configuration/sub_account';
+
+  static String UPDATE_CONFIGURATION = '$baseURL/locations/update_account_sub_global_configuration';
+
+  static String get VENDOR_MANAGEMENT_URL => '$baseURL/vendor_management/vendor_list/""';
+
+  static String get SUBSCRIBE_NOTIFICATION => '$baseURL/user_management_new/subscribe_notification';
+
+  static String get GET_NEWS_FEED => '$baseURL/user_management_new/getActivityFeed';
+  static String get GET_EVENT_INFO => '$baseURL/user_management_new/eventinfo';
+  static String get GET_EVENT_FEED => '$baseURL/user_management_new/getEventFeed';
+  static String get GET_EVENT_DATE => '$baseURL/user_management_new/getevent';
+  static String get UPDATE_HAZARD => '$baseURL/locations/updatehazard';
+
+
+
+// DELETE API CALL
+  static String get DELETE_ACCOUNT => '$baseURL/locations/delete_account/?';
+  static String get DELETE_SUB_ACCOUNT => '$baseURL/locations/delete_subaccount?';
+
+
+
+  static String get GET_DATA_PARAMETERS => '$baseURL/data_categories/subaccountparameter/';
+
 }

@@ -1,40 +1,108 @@
 {
   "project_info": {
-    "project_number": "37861143894",
-    "project_id": "project-green-f4d78",
-    "storage_bucket": "project-green-f4d78.appspot.com"
+    "project_number": "857135835532",
+    "project_id": "project-green-r5-1-qa",
+    "storage_bucket": "project-green-r5-1-qa.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:37861143894:android:3f15059cd05d48e1bd12f7",
+        "mobilesdk_app_id": "1:857135835532:android:9ed1f9fc3c23f4f0c84ea9",
         "android_client_info": {
           "package_name": "com.example.green"
         }
       },
       "oauth_client": [
         {
-          "client_id": "37861143894-s40t6q52l1e6tt52n35f29eo52ll1qo3.apps.googleusercontent.com",
+          "client_id": "857135835532-dp5ultfgdokjobs7od2lne4qktjkvsp7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.green",
+            "certificate_hash": "6b2342c2450e6dfd681cf45c695c0526fe2fc467"
+          }
+        },
+        {
+          "client_id": "857135835532-redqf74esfj2q8umavdvrf423q39g2cv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.green",
+            "certificate_hash": "691907fb63d3afd0f275e39f01e02a680e0b1c49"
+          }
+        },
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBVuZ3q3ztDvt6lSfwtmLzttJmI6WKxTy4"
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "37861143894-s40t6q52l1e6tt52n35f29eo52ll1qo3.apps.googleusercontent.com",
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "37861143894-cdg63uhf7d2uc1ed9vuk5cheevgdbnhd.apps.googleusercontent.com",
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.green"
+                "bundle_id": "com.zerozilla.green"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857135835532:android:ea0526befdfe1691c84ea9",
+        "android_client_info": {
+          "package_name": "com.risksphere.green"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green",
+            "certificate_hash": "691907fb63d3afd0f275e39f01e02a680e0b1c49"
+          }
+        },
+        {
+          "client_id": "857135835532-l0i3okhgojiik672fforu56clqmnrrdn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green",
+            "certificate_hash": "6b2342c2450e6dfd681cf45c695c0526fe2fc467"
+          }
+        },
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zerozilla.green"
               }
             }
           ]

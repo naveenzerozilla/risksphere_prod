@@ -1,14 +1,25 @@
-import 'package:country_pickers/country.dart';
-import 'package:country_pickers/country_pickers.dart';
-import 'package:country_pickers/utils/utils.dart';
+import 'dart:convert';
+import 'dart:developer';
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:green/design_system/components/custom_button.dart';
-import 'package:green/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:green/models/dashboard_model.dart';
-import 'package:green/providers/theme_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:RiskSphere/design_system/components/custom_button.dart';
+import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:RiskSphere/models/dashboard_model.dart';
+import 'package:RiskSphere/providers/connections_provider.dart';
+import 'package:RiskSphere/providers/drawer_selection_provider.dart';
+import 'package:RiskSphere/providers/theme_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/home/widgets/subscription_cards.dart';
+import 'package:RiskSphere/screens/listings/widgets/maintenance_widget.dart';
+import 'package:get/get.dart';
 import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
+
+// import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/enums.dart';
@@ -18,7 +29,13 @@ import '../../design_system/components/custom_month_year_picker.dart';
 import '../../design_system/components/expandable_card_container.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
+import '../../providers/configuration_provider.dart';
+import '../../providers/connectivity_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
+import '../listings/widgets/message_card.dart';
+import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -39,84 +56,401 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _selectedDateCompany;
   DateTime? _selectedDateUser;
 
+  bool showTotalCorporates = false;
+  bool showAllUsers = false;
+  bool showConnectionRequests = false;
+  bool showCompanyOnboardingStats = false;
+  bool showUserOnboardingStats = false;
+  bool showVerificationRequests = false;
+  Set<String> loadingSubscriptions = {};
+
+  List<dynamic> vendorList = [];
+  var subscriptions = {};
+  String isMaintenance = "";
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
+
   @override
   void initState() {
-    _getData();
+    // _setClaims();
+    // _getMaintainancePeriod();
     super.initState();
+    _initializeData();
   }
 
-  _getData() {
-    Provider.of<DashboardProvider>(context, listen: false)
-        .getDashboardData(context);
+  Future<void> _initializeData() async {
+    await Future.wait([
+      _setClaims(),
+
+    ]);
   }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+    SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN)??false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_ADMIN)??false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_SUPER_ADMIN)??false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.Is_Indivudual)??false;
+  
+  print(results.toString());
+  print(isIndivudual);
+  print("results.toString()");
+
+    showTotalCorporates = results[0] ?? false;
+    showAllUsers = results[1] ?? false;
+    showConnectionRequests = results[2] ?? false;
+    showCompanyOnboardingStats = results[3] ?? false;
+    showUserOnboardingStats = results[4] ?? false;
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+    showVerificationRequests =
+        showCorporateVerificationRequests || showUserVerificationRequests;
+
+    _getData();
+    _getMaintainancePeriod();
+    setState(() {});
+  }
+
+  Future<void> _getMaintainancePeriod() async {
+    isMaintenance =
+        await SharedPreferenceService.getScheduleInProgress() ?? "false";
+  }
+
+  // _setClaims() async {
+  //   showTotalCorporates = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.DASTC) ??
+  //       false;
+  //   showAllUsers = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.DASTU) ??
+  //       false;
+  //   showConnectionRequests =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.DASCR) ??
+  //           false;
+  //   showCompanyOnboardingStats =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.DASCO) ??
+  //           false;
+  //   showUserOnboardingStats =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.DASUO) ??
+  //           false;
+  //   bool showCorporateVerificationRequests =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMLL) ??
+  //           false;
+  //   bool showUserVerificationRequests =
+  //       await SharedPreferenceService.getClaimForSubfeature(
+  //               SharedPreferenceService.CAMVU) ??
+  //           false;
+  //   showVerificationRequests =
+  //       showCorporateVerificationRequests || showUserVerificationRequests;
+  //   await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.DASVR) ??
+  //       false;
+  //
+  //   _getData();
+  //   setState(() {});
+  // }
+
+  Future<T> _fetchDataInBackground<T>(Future<T> Function() apiCall) async {
+    try {
+      return await apiCall(); // Ensure it properly returns the data
+    } catch (e) {
+      print("Error in _fetchDataInBackground: $e");
+      throw e;
+    }
+  }
+
+  Future<void> _getData() async {
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
+    final userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final configurationProvider =
+        Provider.of<ConfigurationProvider>(context, listen: false);
+
+    try {
+      final results = await Future.wait([
+        dashboardProvider.getDashboardData(context),
+        userProfileProvider.getAllUserData(context, "", ""),
+        configurationProvider.getConfiguration(
+            accountId: null, subAccountId: null),
+        configurationProvider.getVendors(),
+      ]);
+
+      userProfileProvider.fetchTrialInfo();
+
+      var config = configurationProvider.configurations['result'] ?? {};
+      subscriptions = config['subscribe'] ?? {};
+
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            vendorList = configurationProvider.vendors['result'] ?? [];
+          });
+        });
+      }
+    } catch (error) {
+      print("Error fetching data: $error");
+    }
+  }
+
+  // _getData() {
+  //   final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+  //   final userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+  //   final configurationProvider = Provider.of<ConfigurationProvider>(context, listen: false);
+  //
+  //   Future.wait([
+  //     dashboardProvider.getDashboardData(context).then((data) {
+  //       print("Dashboard Data Loaded: $data");
+  //       return data;
+  //     }),
+  //     userProfileProvider.getAllUserData(context, "", "").then((data) {
+  //       print("User Data Loaded: $data");
+  //       return data;
+  //     }),
+  //     configurationProvider.getConfiguration(accountId: null, subAccountId: null).then((data) {
+  //       // print("Configuration Loaded: $data");
+  //       return data;
+  //     }),
+  //     configurationProvider.getVendors().then((data) {
+  //       // print("Vendors Loaded: $data");
+  //       return data;
+  //     }),
+  //   ]).then((results) {
+  //     userProfileProvider.fetchTrialInfo();
+  //
+  //     var config = configurationProvider.configurations['result'] ?? {};
+  //     subscriptions = config['subscribe'] ?? {};
+  //
+  //     if (mounted) {
+  //       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+  //         setState(() {
+  //           vendorList = configurationProvider.vendors['result'] ?? [];
+  //         });
+  //       });
+  //     }
+  //   }).catchError((error) {
+  //     print("Error fetching data: $error");
+  //   });
+  // }
+
+  // _getData() {
+  //   Provider.of<DashboardProvider>(context, listen: false)
+  //       .getDashboardData(context);
+  //   Provider.of<UserProfileProvider>(context, listen: false)
+  //       .getAllUserData(context, "", "")
+  //       .then((value) {
+  //     Provider.of<UserProfileProvider>(context, listen: false).fetchTrialInfo();
+  //   });
+  //
+  //   final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+  //   Future.wait([
+  //     provider.getConfiguration(
+  //       accountId: null,
+  //       subAccountId: null,
+  //     ),
+  //     provider.getVendors()
+  //   ]).then((value) {
+  //     var config = provider.configurations['result'] ?? {};
+  //     subscriptions = config['subscribe'] ?? {};
+  //     if (mounted) {
+  //       WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+  //         setState(() {
+  //           vendorList = provider.vendors['result'] ?? [];
+  //         });
+  //       });
+  //     }
+  //   });
+  // }
+
+  Future<void> _handleRefresh() async {
+    _getData();
+  }
+
+  //
+  // _getMaintainancePeriod() async {
+  //   isMaintenance =
+  //       await SharedPreferenceService.getScheduleInProgress() ?? "false";
+  // }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
-      return Scaffold(
-        backgroundColor: themeProvider.getTheme.colorScheme.background,
-        appBar: CustomAppBar(
-          isExpanded: _isExpanded,
-          showNotificationDot: _showNotificationDot,
-          onExpandPressed: (isExpanded) {
-            setState(() {
-              _isExpanded = isExpanded;
-            });
-          },
-          onSearchPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-        ),
-        drawer: CustomDrawer(),
-        body: Stack(
-          children: [
-            // Background image
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/mesh.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-
-            _homeScreenBody(),
-          ],
-        ),
-      );
-    });
-  }
-
-  _homeScreenBody() {
-    return Consumer<DashboardProvider>(
-        builder: (context, dashboardProvider, child) {
-      return dashboardProvider.isLoading
-          ? Column(
+    // final isOnline = Provider.of<ConnectivityProvider>(context).isOnline;
+    var typography = CustomTypography(context);
+    return SafeArea(
+      child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          appBar: CustomAppBar(
+            isExpanded: _isExpanded,
+            showNotificationDot: _showNotificationDot,
+            onExpandPressed: (isExpanded) {
+              setState(() {
+                _isExpanded = isExpanded;
+              });
+            },
+            onSearchPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+          ),
+          drawer: CustomDrawer(),
+          body: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            child: Stack(
               children: [
-                Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(),
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/mesh.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
+
+                SizedBox(height: 20),
+                _homeScreenBody(typography),
+                // Column(
+                //   children: [
+                //     Text(isPgAdmin.toString()),
+                //     Text(isPgAdmin.toString()),
+                //     Text(isSuperAdmin.toString()),
+                //   ],
+                // ),
+
+                // Overlay for trial expiration
+                Consumer<UserProfileProvider>(
+                  builder: (context, userProfile, child) {
+                    final trialStatus = userProfile.trialInfo['status'] ?? '';
+
+                    if (trialStatus.contains('Expired')) {
+                      return Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surface
+                              .withOpacity(0.95),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(height: CustomSpacing.four),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: MessageCard(
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text:
+                                        'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                    style: typography.Body1,
+                                  ),
+                                  // tappable
+                                  TextSpan(
+                                    text: ' Upgrade Now!',
+                                    style: typography.Body1.copyWith(
+                                      color: AppColors.primaryMain,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        // Handle subscription logic
+                                        //Coming soon Snackbar
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text('Coming soon!',
+                                                style:
+                                                    typography.Body1.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface,
+                                                )),
+                                          ),
+                                        );
+                                      },
+                                  ),
+                                ],
+                                isError: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
+                ),
               ],
-            )
-          : SingleChildScrollView(
-              child: Container(
-                margin: EdgeInsets.only(
-                    top: CustomSpacing.four,
-                    left: CustomSpacing.four,
-                    right: CustomSpacing.four),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Overview',
-                      style: CustomTypography.H5_Regular,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  _homeScreenBody(CustomTypography typography) {
+    return Consumer<DashboardProvider>(
+        builder: (context, dashboardProvider, child) {
+      return
+      dashboardProvider.dashboard.toString()=="null"
+            ? Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(),
                     ),
-                    SizedBox(height: CustomSpacing.six),
-                    _overviewCardHorizontal(
-                      title: 'Total Corporates',
+                  ),
+                ],
+              )
+            :
+          SingleChildScrollView(
+        child: Container(
+          margin: EdgeInsets.only(
+              top: CustomSpacing.four,
+              left: CustomSpacing.four,
+              right: CustomSpacing.four),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (isMaintenance.toString() == 'in_progress') ...[
+                Container(
+                  child: MaintenanceUI(isMaintenance: isMaintenance),
+                )
+              ],
+              Text(
+                LanguageService.getTranslated(
+                    context, 'usermanagement_dash_overview'),
+                style: typography.H5_Regular,
+              ),
+              SizedBox(height: CustomSpacing.six),
+              !showTotalCorporates
+                  ? SizedBox()
+                  : _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_total_corps'),
                       amount: dashboardProvider
                           .dashboard!.signups!.current!.csignup
                           .toString(),
@@ -125,55 +459,123 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          (dashboardProvider.dashboardModel?.signups?.current?.csignup??0)>(dashboardProvider.dashboardModel?.signups?.past?.csignup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
+                          (dashboardProvider.dashboardModel?.signups?.current
+                                          ?.csignup ??
+                                      0) >
+                                  (dashboardProvider.dashboardModel?.signups
+                                          ?.past?.csignup ??
+                                      0)
+                              ? Icon(Icons.trending_up, color: Colors.green)
+                              : Icon(Icons.trending_down, color: Colors.red),
                           SizedBox(width: CustomSpacing.two),
                           Flexible(
                             child: Text(
-                              _getTotalCorporatePercentage(
-                                  dashboardProvider),
-                              style: CustomTypography.Subtitle1,
+                              _getTotalCorporatePercentage(dashboardProvider),
+                              style: typography.Subtitle1,
                               maxLines: 2,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(width: CustomSpacing.four),
-                    _overviewCardHorizontal(
-                      title: 'Sign Ups',
-                      amount: dashboardProvider.dashboardModel?.signups?.current?.signup.toString()??'0',
+              !showTotalCorporates
+                  ? SizedBox()
+                  : SizedBox(width: CustomSpacing.four),
+              !showAllUsers
+                  ? SizedBox()
+                  : _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_signups'),
+                      amount: dashboardProvider
+                              .dashboardModel?.signups?.current?.signup
+                              .toString() ??
+                          '0',
                       icon: 'assets/images/sign_ups_users.svg',
                       bottomWidget: Row(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          (dashboardProvider.dashboardModel?.signups?.current?.signup??0)>(dashboardProvider.dashboardModel?.signups?.past?.signup??0)?Icon(Icons.trending_up, color: Colors.green):Icon(Icons.trending_down, color: Colors.red),
+                          (dashboardProvider.dashboardModel?.signups?.current
+                                          ?.signup ??
+                                      0) >
+                                  (dashboardProvider.dashboardModel?.signups
+                                          ?.past?.signup ??
+                                      0)
+                              ? Icon(Icons.trending_up, color: Colors.green)
+                              : Icon(Icons.trending_down, color: Colors.red),
                           SizedBox(width: CustomSpacing.two),
                           Flexible(
                             child: Text(
                               _getSignupsPercentage(dashboardProvider),
-                              style: CustomTypography.Subtitle1,
+                              style: typography.Subtitle1,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    _overviewCardHorizontal(
-                      title: 'Verification Requests',
-                      amount: dashboardProvider.dashboardModel?.verificationCount.toString()??'0',
+              !showVerificationRequests
+                  ? SizedBox()
+                  : _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_verification_req'),
+                      amount: ((dashboardProvider
+                                          .dashboardModel?.verificationCount ??
+                                      0) +
+                                  (dashboardProvider.dashboardModel
+                                          ?.companyUserLeadCount ??
+                                      0))
+                              .toString() ??
+                          '0',
                       icon: 'assets/images/verification_req_checks.svg',
                       bottomWidget: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           CustomButton(
                             type: ButtonType.outlined,
                             onPressed: () {
                               //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Provider.of<DrawerSelectionProvider>(context,
+                                      listen: false)
+                                  .setSelectedItem('user_management');
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => UserManagementScreen(
                                     initialIndex: 0,
-                                    subIndex: 1,
+                                    subIndex: 0,
+                                    initialScreen: Screens.corporateEmployeeAdd,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Add User',
+                                  style: typography.Body1,
+                                ),
+                                SizedBox(width: CustomSpacing.two),
+                                Icon(
+                                  Icons.person_add_alt_1,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () {
+                              //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Provider.of<DrawerSelectionProvider>(context,
+                                      listen: false)
+                                  .setSelectedItem('user_management');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => UserManagementScreen(
+                                    initialIndex: 0,
+                                    subIndex: 0,
                                     initialScreen: Screens.verificationList,
                                   ),
                                 ),
@@ -184,8 +586,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'See List',
-                                  style: CustomTypography.Body1,
+                                  'See All',
+                                  style: typography.Body1,
                                 ),
                                 SizedBox(width: CustomSpacing.two),
                                 Icon(
@@ -198,131 +600,484 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(width: CustomSpacing.four),
-                    _overviewCardHorizontal(
-                      title: 'Connection Requests',
-                      amount: dashboardProvider.dashboardModel?.requests?.toString()??'0',
-                      icon: 'assets/images/connection_request_people.svg',
-                      bottomWidget: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+              !showConnectionRequests
+                  ? SizedBox()
+                  : SizedBox(width: CustomSpacing.four),
+              _overviewCardHorizontal(
+                title: LanguageService.getTranslated(
+                    context, 'usermanagement_dash_connection_request'),
+                amount:
+                    dashboardProvider.dashboardModel?.requests?.toString() ??
+                        '0',
+                icon: 'assets/images/connection_request_people.svg',
+                bottomWidget: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    //reduce border radius
+                    CustomButton(
+                      type: ButtonType.outlined,
+                      onPressed: () async {
+                        FirebaseAuth auth = FirebaseAuth.instance;
+                        String uid = auth.currentUser!.uid;
+                        IdTokenResult token =
+                            await auth.currentUser!.getIdTokenResult();
+                        Map<String, dynamic>? claims = token.claims ?? {};
+                        log(claims.toString());
+                        log(auth.currentUser.toString());
+                        String name = claims['name'] ?? ''; //name of the user
+                        Provider.of<DrawerSelectionProvider>(context,
+                                listen: false)
+                            .setSelectedItem('user_management');
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ConnectionsScreen(
+                              userId: uid,
+                              userName: name,
+                              selectedTabIndex: 1,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          //reduce border radius
-                          CustomButton(
-                            type: ButtonType.outlined,
-                            onPressed: () {},
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'See List',
-                                  style: CustomTypography.Body1,
-                                ),
-                                SizedBox(width: CustomSpacing.two),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 14,
-                                ),
-                              ],
-                            ),
+                          Text(
+                            LanguageService.getTranslated(context,
+                                'usermanagement_dash_connection_req_list_btn'),
+                            style: typography.Body1,
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: CustomSpacing.one),
-                    dashboardProvider.isCompanyLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
-                      isExpanded: isCompanyOnboardingStatsExpanded,
-                      collapsedChild: _collapsedCompanyCardWidget(
-                        title: Text(
-                          'Company onboarding stats',
-                          style: CustomTypography.Body1,
-                        ),
-                      ),
-                      expandedChild: _expandedCompanyOnboardingStatsWidget(dashboardProvider),
-                    ),
-                    SizedBox(height: CustomSpacing.one),
-                    dashboardProvider.isRoleLoading?Column(children: [Center(child: SizedBox(height:25, width: 25, child: CircularProgressIndicator()),)],):ExpandableCardContainer(
-                      isExpanded: isUserOnboardingStatsExpanded,
-                      collapsedChild: _collapsedUserCardWidget(
-                        title: Text(
-                          'User onboarding stats',
-                          style: CustomTypography.Body1,
-                        ),
-                      ),
-                      expandedChild: _expandedUserOnboardingStatsWidget(dashboardProvider),
-                    ),
-                    SizedBox(height: CustomSpacing.eight),
                   ],
                 ),
               ),
+              SizedBox(
+                height: CustomSpacing.one,
+              ),
+          Consumer2<UserProfileProvider, ConfigurationProvider>(
+          builder: (context, userProfileProvider, provider, child) {
+          if (provider.isLoading) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 50),
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height / 2,
+            child: const CircularProgressIndicator(),
+          );
+          }
+
+          return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          Text(
+          "My Subscriptions",
+          style: typography.H5_Regular,
+          ),
+          SizedBox(
+          height: CustomSpacing.two,
+          ),
+          _subscriptionBody(), // Show content once loading is complete
+          ],
+          );
+          },
+          ),
+              SizedBox(height: CustomSpacing.one),
+              !showCompanyOnboardingStats
+                  ? SizedBox()
+                  : dashboardProvider.isCompanyLoading
+                      ? Column(
+                          children: [
+                            Center(
+                              child: SizedBox(
+                                  height: 25,
+                                  width: 25,
+                                  child: CircularProgressIndicator()),
+                            )
+                          ],
+                        )
+                      : ExpandableCardContainer(
+                          isExpanded: isCompanyOnboardingStatsExpanded,
+                          collapsedChild: _collapsedCompanyCardWidget(
+                            title: Text(
+                              LanguageService.getTranslated(context,
+                                  'usermanagement_dash_company_onboarding_status_title'),
+                              style: typography.Body1,
+                            ),
+                          ),
+                          expandedChild: _expandedCompanyOnboardingStatsWidget(
+                              dashboardProvider),
+                        ),
+              SizedBox(height: CustomSpacing.one),
+              !showUserOnboardingStats
+                  ? SizedBox()
+                  : dashboardProvider.isRoleLoading
+                      ? Column(
+                          children: [
+                            Center(
+                              child: SizedBox(
+                                  height: 25,
+                                  width: 25,
+                                  child: CircularProgressIndicator()),
+                            )
+                          ],
+                        )
+                      : ExpandableCardContainer(
+                          isExpanded: isUserOnboardingStatsExpanded,
+                          collapsedChild: _collapsedUserCardWidget(
+                            title: Text(
+                              LanguageService.getTranslated(context,
+                                  'usermanagement_dash_user_on_boarding_status'),
+                              style: typography.Body1,
+                            ),
+                          ),
+                          expandedChild: _expandedUserOnboardingStatsWidget(
+                              dashboardProvider),
+                        ),
+              SizedBox(height: CustomSpacing.eight),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _subscriptionBody() {
+    return
+      Consumer2<UserProfileProvider, ConfigurationProvider>(
+          builder: (context, userProfileProvider, provider, child) {
+            return provider.isLoading
+                ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 50),
+              alignment: Alignment.center,
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height / 2,
+              child: const CircularProgressIndicator(),
+            )
+                :
+      Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: subscriptions.keys.map((key) {
+                return FutureBuilder<Map<String, dynamic>?>(
+                  future: _fetchSubscriptionData(key), // Fetch data per item
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting ||
+                        loadingSubscriptions.contains(key)) {
+                      return Center(
+                          child:
+                              CircularProgressIndicator()); // Loader for this item
+                    }
+
+                    if (!snapshot.hasData) {
+                      return SizedBox.shrink(); // Hide if no data
+                    }
+
+                    final data = snapshot.data!;
+                    return Column(
+                      children: [
+                    SubscriptionCard(
+                    title: '${data['hazardLabel']} (${data['vendorName']})',
+                      description: data['description'],
+                      iconPath: data['vendorImage'],
+                      isSubscribed: data['isSubscribed'],
+                      onSubscribe: () async {
+                        if (isPgAdmin || isAdmin || isSuperAdmin ) {
+                          setState(() => loadingSubscriptions.add(key)); // Show loader
+                          await _updateSubscription(
+                              key, data['isSubscribed'], data['mainId'], data['level']);
+                          setState(() => loadingSubscriptions.remove(key)); // Remove loader
+                        } else {
+                          // Show dialog if the user doesn't have permission
+
+                        }
+                      },
+                      isPgAdmin: isPgAdmin,
+                      isAdmin: isAdmin,
+                      isSuperAdmin: isSuperAdmin,
+
+                    ),
+
+                    // SubscriptionCard(
+                        //   title:
+                        //       '${data['hazardLabel']} (${data['vendorName']})',
+                        //   description: data['description'],
+                        //   iconPath: data['vendorImage'],
+                        //   isSubscribed: data['isSubscribed'],
+                        //   onSubscribe: () async {
+                        //     isPgAdmin.toString();
+                        //     setState(() =>
+                        //         loadingSubscriptions.add(key)); // Show loader
+                        //     await _updateSubscription(key, data['isSubscribed'],
+                        //         data['mainId'], data['level']);
+                        //     setState(() => loadingSubscriptions
+                        //         .remove(key)); // Remove loader
+                        //   },
+                        // ),
+                        SizedBox(height: CustomSpacing.one),
+                      ],
+                    );
+                  },
+                );
+              }).toList(),
             );
     });
   }
 
-  _overviewCard(
-      {required String title,
-      required String amount,
-      required String icon,
-      required Row bottomWidget}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        width: 160,
-        height: 240,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Circular elevated container icon
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Card(
-                  elevation: 100,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Container(
-                    padding: EdgeInsets.all(CustomSpacing.two),
-                    child: SvgPicture.asset(
-                      icon,
-                      width: 24,
-                      height: 24,
-                    ),
-                  ),
-                ),
-                SizedBox(height: CustomSpacing.two),
-                Text(
-                  title,
-                  style: CustomTypography.Body1,
-                ),
-                SizedBox(height: CustomSpacing.two),
-                Text(
-                  amount,
-                  style: CustomTypography.H4,
-                ),
-              ],
-            ),
-            Spacer(),
-            Divider(),
-            SizedBox(height: CustomSpacing.one),
-            bottomWidget,
-          ],
-        ),
-      ),
+  // Widget _subscriptionBody(CustomTypography typography) {
+  //   Set<String> loadingSubscriptions = {}; // Track loading items
+  //
+  //   return Consumer<ConfigurationProvider>(builder: (context, provider, child) {
+  //     return
+  //       // provider.isLoading
+  //       //   ? Center(child: CircularProgressIndicator()) // Show loader initially
+  //       //   :
+  //       Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: subscriptions.keys.map((key) {
+  //         return FutureBuilder<Map<String, dynamic>?>(
+  //           future: _fetchSubscriptionData(key), // Fetch data per item
+  //           builder: (context, snapshot) {
+  //             if (snapshot.connectionState == ConnectionState.waiting ||
+  //                 loadingSubscriptions.contains(key)) {
+  //               return Center(child: CircularProgressIndicator()); // Loader for this item
+  //             }
+  //
+  //             if (!snapshot.hasData) {
+  //               return SizedBox.shrink(); // Hide if no data
+  //             }
+  //
+  //             final data = snapshot.data!;
+  //             return Column(
+  //               children: [
+  //                 SubscriptionCard(
+  //                   title: '${data['hazardLabel']} (${data['vendorName']})',
+  //                   description: data['description'],
+  //                   iconPath: data['vendorImage'],
+  //                   isSubscribed: data['isSubscribed'],
+  //                   onSubscribe: () async {
+  //                     setState(() => loadingSubscriptions.add(key)); // Show loader
+  //                     await _updateSubscription(
+  //                         key, data['isSubscribed'], data['mainId'], data['level']);
+  //                     setState(() => loadingSubscriptions.remove(key)); // Remove loader
+  //                   },
+  //                 ),
+  //                 SizedBox(height: CustomSpacing.one),
+  //               ],
+  //             );
+  //           },
+  //         );
+  //       }).toList(),
+  //     );
+  //   });
+  // }
+
+  /// Fetch vendor and hazard data for each subscription key
+  Future<Map<String, dynamic>?> _fetchSubscriptionData(String key) async {
+    final parts = key.split('_');
+    if (parts.length != 2) return null;
+
+    final vendorId = parts[0];
+    final hazardName = parts[1];
+
+    final vendor = vendorList.firstWhere(
+      (v) => v['vendor_id'] == vendorId,
+      orElse: () => null,
     );
+
+    if (vendor == null) return null;
+
+    final hazard = (vendor['hazard_commercials'] as List?)
+        ?.firstWhere((h) => h['hazard_name'] == hazardName, orElse: () => null);
+
+    if (hazard == null) return null;
+
+    final subscription = subscriptions[key];
+    final config = Provider.of<ConfigurationProvider>(context, listen: false)
+            .configurations['result'] ??
+        {};
+
+    return {
+      'vendorName': vendor['vendor_name_label'] ?? '',
+      'vendorImage':
+          vendor['display_image_url'] ?? 'assets/images/default_vendor.png',
+      'hazardLabel': hazard['hazard_name_label'] ?? 'Unknown Hazard',
+      'description': subscription['description'] ?? '',
+      'isSubscribed': subscription['is_subscribed'] == true ||
+          subscription['is_subscribed'] == 'true',
+      'mainId': config['id'] ?? '',
+      'level': config['level'] ?? '',
+    };
   }
+
+  // Widget _subscriptionBody(CustomTypography typography) {
+  //   int itemCount = 0;
+  //   debugPrint('Subscription Keys: ${subscriptions.keys.toList()}');
+  //
+  //   return Consumer<ConfigurationProvider>(builder: (context, provider, child) {
+  //     return provider.isLoading ?
+  //
+  //     Center(child: CircularProgressIndicator()):
+  //
+  //       Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       // Counter for valid items
+  //
+  //       children: subscriptions.keys.map((key) {
+  //         final parts = key.split('_');
+  //         if (parts.length != 2) {
+  //           debugPrint('Invalid subscription key format: $key');
+  //           return SizedBox.shrink();
+  //         }
+  //
+  //         final vendorId = parts[0];
+  //         final hazardName = parts[1];
+  //
+  //         final vendor = vendorList.firstWhere(
+  //           (vendor) => vendor['vendor_id'] == vendorId,
+  //           orElse: () {
+  //             debugPrint('Vendor not found for ID: $vendorId');
+  //             return null;
+  //           },
+  //         );
+  //
+  //         if (vendor == null) return SizedBox.shrink();
+  //
+  //         final hazardCommercials = vendor['hazard_commercials'] as List?;
+  //         final hazard = hazardCommercials?.firstWhere(
+  //           (commercial) => commercial['hazard_name'] == hazardName,
+  //           orElse: () {
+  //             debugPrint(
+  //                 'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+  //             return null;
+  //           },
+  //         );
+  //
+  //         if (hazard == null) return SizedBox.shrink();
+  //
+  //         // If we reach this point, the item is valid
+  //         itemCount++;
+  //
+  //         final subscription = subscriptions[key];
+  //         final vendorName = vendor['vendor_name_label'] ?? '';
+  //         final vendorImage =
+  //             vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
+  //         final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+  //         final description = subscription['description'] ?? '';
+  //
+  //         var config = provider.configurations['result'] ?? {};
+  //         var mainId = config['id'] ?? '';
+  //         var level = config['level'] ?? '';
+  //
+  //         return
+  //
+  //           Column(
+  //           children: [
+  //             SubscriptionCard(
+  //               title: '$hazardLabel ($vendorName)',
+  //               description: description.isNotEmpty ? description : vendorName,
+  //               iconPath: vendorImage,
+  //               isSubscribed: subscription['is_subscribed'] == true ||
+  //                   subscription['is_subscribed'] == 'true',
+  //               onSubscribe: () {
+  //                 print('Subscribing to $key');
+  //                 print('Main ID: $mainId');
+  //                 print('Level: $level');
+  //                 print('Subscription: ${subscription['is_subscribed']}');
+  //                 _updateSubscription(
+  //                     key, subscription['is_subscribed'], mainId, level);
+  //               },
+  //             ),
+  //             SizedBox(height: CustomSpacing.one),
+  //           ],
+  //         );
+  //       }).toList(),
+  //
+  //       // debugPrint('Total valid items: $itemCount'); // Print the count
+  //
+  //       // children: subscriptions.keys.map((key) {
+  //       //   // Split the subscription key into vendor_id and hazard_name
+  //       //   final parts = key.split('_');
+  //       //   if (parts.length != 2) {
+  //       //     debugPrint('Invalid subscription key format: $key');
+  //       //     return SizedBox.shrink();
+  //       //   }
+  //       //
+  //       //   final vendorId = parts[0];
+  //       //   final hazardName = parts[1];
+  //       //
+  //       //   // Find the vendor by vendor_id
+  //       //   final vendor = vendorList.firstWhere(
+  //       //     (vendor) => vendor['vendor_id'] == vendorId,
+  //       //     orElse: () {
+  //       //       debugPrint('Vendor not found for ID: $vendorId');
+  //       //       return null;
+  //       //     },
+  //       //   );
+  //       //
+  //       //   if (vendor == null) return SizedBox.shrink();
+  //       //
+  //       //   // Find the hazard in the vendor's hazard_commercials by hazard_name
+  //       //   final hazardCommercials = vendor['hazard_commercials'] as List?;
+  //       //   final hazard = hazardCommercials?.firstWhere(
+  //       //     (commercial) => commercial['hazard_name'] == hazardName,
+  //       //     orElse: () {
+  //       //       debugPrint(
+  //       //           'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+  //       //       return null;
+  //       //     },
+  //       //   );
+  //       //
+  //       //   if (hazard == null) return SizedBox.shrink();
+  //       //
+  //       //   // Extract subscription and hazard details
+  //       //   final subscription = subscriptions[key];
+  //       //   final vendorName = vendor['vendor_name_label'] ?? '';
+  //       //   final vendorImage =
+  //       //       vendor['display_image_url'] ?? 'assets/images/default_vendor.png';
+  //       //   final hazardLabel = hazard['hazard_name_label'] ?? 'Unknown Hazard';
+  //       //   final description = subscription['description'] ?? '';
+  //       //
+  //       //   var config = provider.configurations['result'] ?? {};
+  //       //   var mainId = config['id'] ?? '';
+  //       //   var level = config['level'] ?? '';
+  //       //
+  //       //   return Column(
+  //       //     children: [
+  //       //       SubscriptionCard(
+  //       //         title: '$hazardLabel ($vendorName)',
+  //       //         description: description.isNotEmpty ? description : vendorName,
+  //       //         iconPath: vendorImage,
+  //       //         isSubscribed: subscription['is_subscribed'] == true ||
+  //       //             subscription['is_subscribed'] == 'true',
+  //       //         onSubscribe: () {
+  //       //           print('Subscribing to $key');
+  //       //           print('Main ID: $mainId');
+  //       //           print('Level: $level');
+  //       //           print('Subscription: ${subscription['is_subscribed']}');
+  //       //           _updateSubscription(
+  //       //               key, subscription['is_subscribed'], mainId, level);
+  //       //         },
+  //       //       ),
+  //       //       SizedBox(height: CustomSpacing.one),
+  //       //     ],
+  //       //   );
+  //       // }).toList(),
+  //     );
+  //   });
+  // }
 
   _overviewCardHorizontal(
       {required String title,
       required String amount,
       required String icon,
       required Row bottomWidget}) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -362,7 +1117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(height: CustomSpacing.two),
                     Text(
                       title,
-                      style: CustomTypography.Body1,
+                      style: typography.Body1,
                     ),
                     SizedBox(height: CustomSpacing.two),
                   ],
@@ -374,7 +1129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       amount,
-                      style: CustomTypography.H4,
+                      style: typography.H4,
                     ),
                   ],
                 ),
@@ -428,7 +1183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       },
                     ),
                     SizedBox(width: CustomSpacing.two),
-                    title,
+                    Flexible(child: title),
                     Spacer(),
                   ],
                 ),
@@ -446,8 +1201,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateCompany!)),
                         decoration: InputDecoration(
-                          labelText: 'Select Period',
-                          hintText: 'MM/YYYY',
+                          labelText: LanguageService.getTranslated(context,
+                              'usermanagement_dash_select_period_label'),
+                          hintText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -465,9 +1222,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() {
                               _selectedDateCompany = pickedDate;
                             });
-                            Provider.of<DashboardProvider>(context, listen: false)
-                                .getDashboardDataForCompanies(context, pickedDate);
-
+                            Provider.of<DashboardProvider>(context,
+                                    listen: false)
+                                .getDashboardDataForCompanies(
+                                    context, pickedDate);
                           }
                         },
                       ),
@@ -483,6 +1241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   _expandedCompanyOnboardingStatsWidget(DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -510,9 +1269,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                 ),
                 SizedBox(width: CustomSpacing.two),
-                Text(
-                  'Company onboarding stats',
-                  style: CustomTypography.Body1,
+                Flexible(
+                  child: Text(
+                    LanguageService.getTranslated(context,
+                        'usermanagement_dash_company_onboarding_status_title'),
+                    style: typography.Body1,
+                  ),
                 ),
               ],
             ),
@@ -530,8 +1292,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : DateFormat('MMMM yyyy')
                                 .format(_selectedDateCompany!)),
                     decoration: InputDecoration(
-                      labelText: 'Select Period',
-                      hintText: 'MM/YYYY',
+                      labelText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_select_period_label'),
+                      hintText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_calendar'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -551,7 +1315,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         });
                         Provider.of<DashboardProvider>(context, listen: false)
                             .getDashboardDataForCompanies(context, pickedDate);
-
                       }
                     },
                   ),
@@ -564,12 +1327,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 shrinkWrap: true,
                 physics: ClampingScrollPhysics(),
-                children: [
-                  ]
-                    ..addAll(dashboardProvider.dashboardModel?.companyType?.map((corporate) {
-                      return companyOnboardingStatsProgressCards(corporate, dashboardProvider);
-                    })??[]),
-            ),),
+                children: []..addAll(dashboardProvider
+                        .dashboardModel?.companyType
+                        ?.map((corporate) {
+                      return companyOnboardingStatsProgressCards(
+                          corporate, dashboardProvider);
+                    }) ??
+                    []),
+              ),
+            ),
             SizedBox(height: CustomSpacing.four),
             Container(
               margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
@@ -577,15 +1343,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getPercentConversions(dashboardProvider.dashboardModel?.companyPercent??"0"),
-                    style: CustomTypography.H4.copyWith(
-                      color: Colors.green,
+                    _getPercentConversions(
+                        dashboardProvider.dashboardModel?.companyPercent ??
+                            "0"),
+                    style: typography.H4.copyWith(
+                      color: Colors.red,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    ' in conversions compared to last year',
-                    style: CustomTypography.Body1,
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_conversions'),
+                    style: typography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Row(
@@ -595,15 +1364,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'This year ',
-                                style: CustomTypography.Body1.copyWith(
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_1'),
+                                style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
-                                text:
-                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
-                                style: CustomTypography.Body1,
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_2'),
+                                style: typography.Body1,
                               ),
                             ],
                           ),
@@ -620,14 +1390,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget companyOnboardingStatsProgressCards(CompanyType corporate, DashboardProvider dashboardProvider) {
+  Widget companyOnboardingStatsProgressCards(
+      CompanyType corporate, DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           corporate.name ?? '',
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
         SizedBox(height: CustomSpacing.two),
         Row(
@@ -636,13 +1408,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: LinearProgressIndicator(
                 value: corporate.count == null
                     ? 0
-                    : corporate.count! / (dashboardProvider.dashboardModel?.max??1),
+                    : corporate.count! /
+                        (dashboardProvider.dashboardModel?.max ?? 1),
               ),
             ),
             SizedBox(width: CustomSpacing.two),
             Text(
               corporate.count.toString(),
-              style: CustomTypography.Subtitle1,
+              style: typography.Subtitle1,
             ),
           ],
         ),
@@ -681,7 +1454,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       },
                     ),
                     SizedBox(width: CustomSpacing.two),
-                    title,
+                    Flexible(child: title),
                     Spacer(),
                   ],
                 ),
@@ -699,8 +1472,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : DateFormat('MMMM yyyy')
                                     .format(_selectedDateUser!)),
                         decoration: InputDecoration(
-                          labelText: 'Select Period',
-                          hintText: 'MM/YYYY',
+                          labelText: LanguageService.getTranslated(context,
+                              'usermanagement_dash_select_period_label'),
+                          hintText: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_calendar'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -718,7 +1493,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() {
                               _selectedDateUser = pickedDate;
                             });
-                            Provider.of<DashboardProvider>(context, listen: false)
+                            Provider.of<DashboardProvider>(context,
+                                    listen: false)
                                 .getDashboardDataForRoles(context, pickedDate);
                           }
                         },
@@ -735,6 +1511,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   _expandedUserOnboardingStatsWidget(DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -762,9 +1539,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                 ),
                 SizedBox(width: CustomSpacing.two),
-                Text(
-                  'User onboarding stats',
-                  style: CustomTypography.Body1,
+                Flexible(
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_user_on_boarding_status'),
+                    style: typography.Body1,
+                  ),
                 ),
               ],
             ),
@@ -782,8 +1562,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : DateFormat('MMMM yyyy')
                                 .format(_selectedDateUser!)),
                     decoration: InputDecoration(
-                      labelText: 'Select Period',
-                      hintText: 'MM/YYYY',
+                      labelText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_select_period_label'),
+                      hintText: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_calendar'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -815,11 +1597,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 shrinkWrap: true,
                 physics: ClampingScrollPhysics(),
-                children: [
-                  ]
-                    ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
-                      return userOnboardingStatsProgressCards(role, dashboardProvider);
-                    })??[]),),
+                children: []
+                  ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
+                        return userOnboardingStatsProgressCards(
+                            role, dashboardProvider);
+                      }) ??
+                      []),
+              ),
             ),
             SizedBox(height: CustomSpacing.four),
             Container(
@@ -828,15 +1612,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getPercentConversions(dashboardProvider.dashboardModel?.rolePercent??"0"),
-                    style: CustomTypography.H4.copyWith(
-                      color: Colors.green,
+                    _getPercentConversions(
+                        dashboardProvider.dashboardModel?.rolePercent ?? "0"),
+                    style: typography.H4.copyWith(
+                      color: Colors.red,
                     ),
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Text(
-                    ' in conversions compared to last year',
-                    style: CustomTypography.Body1,
+                    LanguageService.getTranslated(
+                        context, 'usermanagement_dash_conversions'),
+                    style: typography.Body1,
                   ),
                   SizedBox(height: CustomSpacing.two),
                   Row(
@@ -846,15 +1632,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'This year ',
-                                style: CustomTypography.Body1.copyWith(
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_1'),
+                                style: typography.Body1.copyWith(
                                   color: AppColors.primaryMain,
                                 ),
                               ),
                               TextSpan(
-                                text:
-                                    'is forecasted to increase in your conversion by 0.5% the end of the current year.',
-                                style: CustomTypography.Body1,
+                                text: LanguageService.getTranslated(context,
+                                    'usermanagement_dash_forcast_part_2'),
+                                style: typography.Body1,
                               ),
                             ],
                           ),
@@ -871,14 +1658,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget userOnboardingStatsProgressCards(DashboardRoles role, DashboardProvider dashboardProvider) {
+  Widget userOnboardingStatsProgressCards(
+      DashboardRoles role, DashboardProvider dashboardProvider) {
+    var typography = CustomTypography(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           role.name ?? '',
-          style: CustomTypography.Body1,
+          style: typography.Body1,
         ),
         SizedBox(height: CustomSpacing.two),
         Row(
@@ -887,13 +1676,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: LinearProgressIndicator(
                 value: role.count == null
                     ? 0
-                    : role.count! / (dashboardProvider.dashboardModel?.max??1),
+                    : role.count! /
+                        (dashboardProvider.dashboardModel?.max ?? 1),
               ),
             ),
             SizedBox(width: CustomSpacing.two),
             Text(
               role.count.toString(),
-              style: CustomTypography.Subtitle1,
+              style: typography.Subtitle1,
             ),
           ],
         ),
@@ -915,24 +1705,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _getTotalCorporatePercentage(DashboardProvider dashboardProvider) {
-
-    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.csignup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.csignup ?? 0);
+    double changePercentage = getChangePercentage(
+        dashboardProvider.dashboardModel?.signups?.current?.csignup ?? 0,
+        dashboardProvider.dashboardModel?.signups?.past?.csignup ?? 0);
 
     print('changePercentage: $changePercentage');
 
-    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+    String changeText = changePercentage >= 0
+        ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
-    String output = changeText + ' vs last month';
+    String output = changeText +
+        LanguageService.getTranslated(
+            context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
 
   String _getSignupsPercentage(DashboardProvider dashboardProvider) {
-    double changePercentage = getChangePercentage(dashboardProvider.dashboardModel?.signups?.current?.signup ?? 0, dashboardProvider.dashboardModel?.signups?.past?.signup ?? 0);
+    double changePercentage = getChangePercentage(
+        dashboardProvider.dashboardModel?.signups?.current?.signup ?? 0,
+        dashboardProvider.dashboardModel?.signups?.past?.signup ?? 0);
 
-    String changeText = changePercentage >= 0 ? '${changePercentage.toStringAsFixed(2)}% increase' : '${(-changePercentage).toStringAsFixed(2)}% decrease';
+    String changeText = changePercentage >= 0
+        ? '${changePercentage.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase')}'
+        : '${(-changePercentage).toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease')}';
 
-    String output = changeText + ' vs last month';
+    String output = changeText +
+        LanguageService.getTranslated(
+            context, 'usermanagement_dash_vs_last_month');
 
     return output;
   }
@@ -944,23 +1745,371 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return changePercentage;
   }
 
-  String _getPercentConversions(String percent ){
-    //double.parse(dashboardProvider.dashboardModel?.rolePercent??"0")>=0?"${dashboardProvider.dashboardModel?.rolePercent??0}% Increase":"${dashboardProvider.dashboardModel?.rolePercent??0}% Decrease",
+  String _getPercentConversions(String percent) {
     String rolePercentText = percent ?? "0";
-// Remove '%' sign and any other non-digit characters
-    String rolePercentCleaned = rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
-    double rolePercent = double.parse(rolePercentCleaned);
+
+    // Remove '%' sign but keep negative signs and decimal points
+    String rolePercentCleaned =
+        rolePercentText.replaceAll(RegExp(r'[^0-9.-]'), '');
+
+    if (rolePercentCleaned.isEmpty) {
+      rolePercentCleaned = "0";
+    }
+
+    print("rolePercentCleaned: $rolePercentCleaned");
+
+    double rolePercent = double.tryParse(rolePercentCleaned) ?? 0.0;
 
     String changeText;
     if (rolePercent < 0) {
       rolePercent = -rolePercent; // Make it positive
-      changeText = "${rolePercent.toStringAsFixed(0)}% Decrease";
+      changeText =
+          "${rolePercent.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
     } else {
-      changeText = "${rolePercent.toStringAsFixed(0)}% Increase";
+      changeText =
+          "${rolePercent.toStringAsFixed(2)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}";
     }
 
     print(changeText);
     return changeText;
+  }
 
+//   String _getPercentConversions(String percent) {
+//     //double.parse(dashboardProvider.dashboardModel?.rolePercent??"0")>=0?"${dashboardProvider.dashboardModel?.rolePercent??0}% Increase":"${dashboardProvider.dashboardModel?.rolePercent??0}% Decrease",
+//     String rolePercentText = percent ?? "0";
+// // Remove '%' sign and any other non-digit characters
+//     String rolePercentCleaned =
+//         rolePercentText.replaceAll(RegExp(r'[^0-9-]'), '');
+//     if (rolePercentCleaned.runtimeType != String) {
+//       rolePercentCleaned = rolePercentCleaned.toString();
+//     }
+//     if (rolePercentCleaned.isEmpty) {
+//       rolePercentCleaned = "0";
+//     }
+//     print("rolePercentCleaned: $rolePercentCleaned");
+//     double rolePercent = double.parse(rolePercentCleaned);
+//
+//     String changeText;
+//     if (rolePercent < 0) {
+//       rolePercent = -rolePercent; // Make it positive
+//       changeText =
+//           "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_decrease_cap')}";
+//     } else {
+//       changeText =
+//           "${rolePercent.toStringAsFixed(0)}% ${LanguageService.getTranslated(context, 'usermanagement_dash_increase_cap')}";
+//     }
+//
+//     print(changeText);
+//     return changeText;
+//   }
+
+  Map<String, dynamic>? parseJwt(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      return null;
+    }
+
+    final payload = parts[1];
+    final String normalized = base64Url.normalize(payload);
+    final String decoded = utf8.decode(base64Url.decode(normalized));
+    return json.decode(decoded);
+  }
+
+  _updateSubscription(
+      String vendorId, bool isSubscribed, String mainId, String level) {
+    var typography = CustomTypography(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final provider =
+            Provider.of<ConfigurationProvider>(context, listen: false);
+        bool isLoading = false; // Loader for "Yes" button
+        bool isLoading1 = false; // Loader for "No" button
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width / 2,
+                    child: Text(
+                      'Do you want to apply this change globally?',
+                      maxLines: 2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.close),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading1
+                      ? null
+                      : () async {
+                          setState(() {
+                            isLoading1 = true;
+                          });
+
+                          String key = 'subscribe.$vendorId.is_subscribed';
+
+                          await provider.updateConfiguration(
+                            context,
+                            mainId,
+                            key,
+                            level,
+                            !isSubscribed,
+                            "false",
+                          );
+
+                          setState(() {
+                            isLoading1 = false;
+                          });
+
+                          if (!provider.isLoading) Navigator.pop(context);
+                          _getData();
+                        },
+                  style: TextButton.styleFrom(
+                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isLoading1
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryMain,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : Text(
+                          'No',
+                          style: typography.Body1.copyWith(
+                              color: AppColors.primaryMain),
+                        ),
+                ),
+                SizedBox(width: 10),
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          setState(() {
+                            isLoading = true;
+                          });
+
+                          String key = 'subscribe.$vendorId.is_subscribed';
+
+                          await provider.updateConfiguration(
+                            context,
+                            mainId,
+                            key,
+                            level,
+                            !isSubscribed,
+                            "true",
+                          );
+
+                          setState(() {
+                            isLoading = false;
+                          });
+
+                          if (!provider.isLoading) Navigator.pop(context);
+                          _getData();
+                        },
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryMain,
+                    side: BorderSide(color: AppColors.primaryMain, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  ),
+                  child: isLoading
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : Text(
+                          'Yes',
+                          style: typography.Body1.copyWith(color: Colors.black),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: false,
+    //   builder: (context) {
+    //     final provider =
+    //         Provider.of<ConfigurationProvider>(context, listen: false);
+    //     bool isLoading = false;
+    //     bool isLoading1 = false;
+    //
+    //     return StatefulBuilder(
+    //       builder: (context, setState) {
+    //         return AlertDialog(
+    //           title: Row(
+    //             children: [
+    //               Container(
+    //                 width: MediaQuery.of(context).size.width / 2,
+    //                 child: Text(
+    //                   'Do you want to apply this change globally?',
+    //                   maxLines: 2,
+    //                 ),
+    //               ),
+    //               IconButton(
+    //                   onPressed: () {
+    //                     Navigator.pop(context);
+    //                   },
+    //                   icon: Icon(Icons.close))
+    //             ],
+    //           ),
+    //           actions: [
+    //             TextButton(
+    //               onPressed: provider.isLoading
+    //                   ? null
+    //                   : () async {
+    //                       setState(() {
+    //                         isLoading1 = true;
+    //                       });
+    //
+    //                       String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                       await provider.updateConfiguration(context, mainId,
+    //                           key, level, !isSubscribed, "false");
+    //
+    //                       setState(() {
+    //                         isLoading1 = false;
+    //                       });
+    //
+    //                       if (!provider.isLoading) Navigator.pop(context);
+    //                       _getData();
+    //                     },
+    //               style: TextButton.styleFrom(
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 1.5),
+    //                 // Border color and width
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius:
+    //                       BorderRadius.circular(8), // Adjust border radius
+    //                 ),
+    //               ),
+    //               child: Text(
+    //                 'No',
+    //                 style:
+    //                     typography.Body1.copyWith(color: AppColors.primaryMain),
+    //               ),
+    //             ),
+    //             SizedBox(width: 10),
+    //             TextButton(
+    //               onPressed: provider.isLoading
+    //                   ? null
+    //                   : () async {
+    //                       setState(() {
+    //                         isLoading = true;
+    //                       });
+    //
+    //                       String key = 'subscribe.$vendorId.is_subscribed';
+    //
+    //                       await provider.updateConfiguration(context, mainId,
+    //                           key, level, !isSubscribed, "true");
+    //
+    //                       setState(() {
+    //                         isLoading = false;
+    //                       });
+    //
+    //                       if (!provider.isLoading) Navigator.pop(context);
+    //                       _getData();
+    //                     },
+    //               style: TextButton.styleFrom(
+    //                 backgroundColor: AppColors.primaryMain,
+    //                 // Button background color
+    //                 side: BorderSide(color: AppColors.primaryMain, width: 2),
+    //                 // Border color
+    //                 shape: RoundedRectangleBorder(
+    //                   borderRadius:
+    //                       BorderRadius.circular(8), // Optional: rounded corners
+    //                 ),
+    //                 padding: EdgeInsets.symmetric(
+    //                     vertical: 12, horizontal: 24), // Adjust padding
+    //               ),
+    //               child: provider.isLoading
+    //                   ? SizedBox(
+    //                       height: 24,
+    //                       width: 24,
+    //                       child: CircularProgressIndicator(
+    //                         color:
+    //                             Colors.white, // Adjust loader color if needed
+    //                         strokeWidth: 3,
+    //                       ),
+    //                     )
+    //                   : Text(
+    //                       'Yes',
+    //                       style: typography.Body1.copyWith(
+    //                           color: Colors.black), // Adjust text color
+    //                     ),
+    //             ),
+    //
+    //             // TextButton(
+    //             //   onPressed: provider.isLoading
+    //             //       ? null
+    //             //       : () async {
+    //             //           setState(() {
+    //             //             isLoading = true;
+    //             //           });
+    //             //
+    //             //           String key = 'subscribe.$vendorId.is_subscribed';
+    //             //
+    //             //           await provider.updateConfiguration(
+    //             //             context,
+    //             //             mainId,
+    //             //             key,
+    //             //             level,
+    //             //             !isSubscribed,
+    //             //           );
+    //             //
+    //             //           setState(() {
+    //             //             isLoading = false;
+    //             //           });
+    //             //
+    //             //           if (!provider.isLoading) Navigator.pop(context);
+    //             //           _getData();
+    //             //         },
+    //             //   child: provider.isLoading
+    //             //       ? Row(
+    //             //           mainAxisSize: MainAxisSize.min,
+    //             //           children: [
+    //             //             SizedBox(
+    //             //                 height: 38,
+    //             //                 width: 38,
+    //             //                 child: CircularProgressIndicator()),
+    //             //           ],
+    //             //         )
+    //             //       : Text(
+    //             //           'Yes',
+    //             //           style: typography.Body1.copyWith(
+    //             //               color: AppColors.primaryMain),
+    //             //         ),
+    //             // ),
+    //           ],
+    //         );
+    //       },
+    //     );
+    //   },
+    // );
   }
 }

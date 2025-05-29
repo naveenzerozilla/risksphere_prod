@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  static const Color hover = Color(0x14CAF914);
+  static const Color progressGoodGradient1 = Color(0x0066BB6A);
+  static const Color progressGoodGradient2 = Color(0xff66BB6A);
+  static const Color progressGoodBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressGoodBackgroundGradient2 = Color(0x4d90CAF9);
+  static const Color progressExcellentGradient1 = Color(0x8042A5F5);
+  static const Color progressExcellentGradient2 = Color(0xff90CAF9);
+  static const Color progressExcellentBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressExcellentBackgroundGradient2 = Color(0x4d90CAF9);
+  static const Color progressBadGradient1 = Color(0x00D32F2F);
+  static const Color progressBadGradient2 = Color(0xffD32F2F);
+  static const Color progressBadBackgroundGradient1 = Color(0x4d90CAF9);
+  static const Color progressBadBackgroundGradient2 = Color(0x4d90CAF9);
+
+  static const Color paperElevation2 = Color(0xFF232323);
+  static const Color paperElevation2Light = Color(0xFFDCDCDC);
   static const Color avatarBackground = Color(0xFFCE93D8);
   static const Color paperElavation25 = Color(0xAD000000);
+  static const Color paperElavation25Light = Color(0xADFFFFFF);
   static const Color primaryMain = Color(0xFF90CAF9);
+  static const Color primaryLight = Color(0xFFC3FDFF);
+  static const Color primaryDark = Color(0xFF42A5F5);
   static const Color warning = Color(0xFFFFA726);
+  static const Color error = Color(0xFFD32F2F);
 
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);

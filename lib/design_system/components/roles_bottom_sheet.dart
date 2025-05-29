@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +19,7 @@ class RolesBottomSheet extends StatefulWidget {
   final SignUpOptions selectedOption;
   final Function(SignUpOptions) onOptionChanged;
   final bool showCorporateSwitch;
+  final bool isUserProfile;
 
   const RolesBottomSheet({super.key,
     required this.options,
@@ -27,6 +30,7 @@ class RolesBottomSheet extends StatefulWidget {
     required this.onOptionChanged,
     required this.removeAllChips,
     required this.showCorporateSwitch,
+    this.isUserProfile = false,
   });
 
   @override
@@ -47,18 +51,50 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
     // Accessing AuthNotifier using Provider.of
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
 
-    // Filtering role list for individual and corporate options
-    filteredOptionsIndividual = (authNotifier.roleList ?? [])
-        .where((role) => role.accountType == 'individual')
-        .expand((role) =>
-        (role.categories ?? []).map((category) => category.toJson()))
-        .toList();
+    if (widget.isUserProfile) {
+      // Filtering role list for individual and corporate options
+      filteredOptionsIndividual = (authNotifier.roleList ?? [])
+          .where((role) => role.accountType == 'individual')
+          .expand((role) =>
+          (role.categories ?? []).map((category) => category.toJson()))
+          .toList();
 
-    filteredOptionsCorporate = (authNotifier.roleList ?? [])
-        .where((role) => role.accountType == 'corporate')
-        .expand((role) =>
-        (role.categories ?? []).map((category) => category.toJson()))
-        .toList();
+      filteredOptionsCorporate = (authNotifier.roleList ?? [])
+          .where((role) => role.accountType == 'corporate')
+          .expand((role) =>
+          (role.categories ?? []).map((category) => category.toJson()))
+          .toList();
+    } else {
+      // Filtering companyTypeList for individual options
+      // Log the companyTypeList for debugging
+      log("CompanyTypeList: ${authNotifier.companyTypeList}");
+
+      // Filtering companyTypeList for individual options
+      filteredOptionsIndividual = (authNotifier.companyTypeList ?? [])
+          .where((companyType) {
+        log("Processing companyType: ${companyType.type}");
+        return companyType.type!.toLowerCase() == 'individual_account';
+      })
+          .expand((companyType) {
+        log("Roles for companyType: ${companyType.roles}");
+        return (companyType.roles ?? []).map((role) {
+          log("Mapping role: ${role.toJson()}");
+          return role.toJson();
+        });
+      })
+          .toList();
+
+      log("Filtered Options Individual: $filteredOptionsIndividual");
+
+
+
+      // Filtering companyTypeList for corporate options
+      filteredOptionsCorporate = (authNotifier.roleList ?? [])
+          .where((role) => role.accountType == 'corporate')
+          .expand((role) =>
+          (role.categories ?? []).map((category) => category.toJson()))
+          .toList();
+    }
 
     _updateSelectedOptions();
   }
@@ -86,6 +122,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     List<Map<String, dynamic>> allOptions =
     widget.selectedOption == SignUpOptions.individual
         ? filteredOptionsIndividual
@@ -100,7 +137,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
             Container(
               margin: const EdgeInsets.only(left: 24, top: 24),
               child: Text('Select Account Roles',
-                  style: CustomTypography.H7.copyWith(
+                  style: typography.H7.copyWith(
                     color: Theme.of(context).colorScheme.onBackground,
                     fontWeight: FontWeight.bold,
                   )),
@@ -212,7 +249,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                         widget.selectedOption == SignUpOptions.individual
                             ? 'SWITCH TO CORPORATE'
                             : 'SWITCH TO INDIVIDUAL',
-                        style: CustomTypography
+                        style: typography
                             .Subtitle1, // Adjust text color if needed
                       ),
                     ),
@@ -221,7 +258,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                       children: [
                         Text(
                           "${widget.selectedOption != SignUpOptions.individual ? 'Individual' : 'Corporate'} account roles",
-                          style: CustomTypography.Subtitle1,
+                          style: typography.Subtitle1,
                         ),
                         SvgPicture.asset(
                           'assets/images/down_icon.svg',
@@ -269,7 +306,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: Text('SUBMIT', style: CustomTypography.Subtitle1),
+          child: Text('SUBMIT', style: typography.Subtitle1),
         ),
       ],
     );

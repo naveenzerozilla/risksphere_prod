@@ -1,17 +1,18 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:green/design_system/repo/constants.dart';
-import 'package:green/providers/auth_provider.dart';
-import 'package:green/screens/home/dashboard_screen.dart';
-import 'package:green/screens/onboarding/create_account_screen.dart';
-import 'package:green/screens/onboarding/login_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:RiskSphere/providers/auth_provider.dart';
+import 'package:RiskSphere/providers/theme_provider.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/screens/onboarding/login_screen.dart';
+import 'package:RiskSphere/service/shared_preference_service.dart';
 
-import '../../design_system/repo/home.dart';
-import '../../providers/theme_provider.dart';
+import 'login_screen_new.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -23,68 +24,101 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _animation;
   late ThemeProvider themeProvider;
+
   @override
   void initState() {
     super.initState();
-    _getInitData();
+    _initialize();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 4),
+      duration: Duration(milliseconds: 300),
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     _controller.forward();
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    var authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-    // Call function to move to the next screen after 2 seconds of animation completion
-    Future.delayed(Duration(seconds: 2) + Duration(seconds: 4), () {
-      bool isUserLoggedIn = authNotifier.user!=null;
-      if(FirebaseAuth.instance.currentUser==null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen(),),
-        );
-      } else
-
-      if(isUserLoggedIn) {
-        navigationMethod(isUserLoggedIn, authNotifier.user!);
-
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen(),),
-        );
-      }
-    });
   }
 
-  Future<void> navigationMethod(bool isUserLoggedIn, User user) async {
+  Future<void> _initialize() async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+    Provider.of<AuthNotifier>(context, listen: false).initialOptions();
 
+    // Optional: remove if _test listener is not required before navigation
+    _test();
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      });
+      return;
+    }
+
+    await _handleNavigation(currentUser);
+  }
+
+  Future<void> _handleNavigation(User user) async {
     try {
       await user.reload();
+
+      final tokenFuture = user.getIdTokenResult();
+      final tokenStringFuture = user.getIdToken();
+
+      final token = await tokenFuture;
+      final tokenString = await tokenStringFuture;
+
+      final claims = token.claims ?? {};
+      log("Claims: $claims");
+      log("Token: $tokenString");
+
+      await SharedPreferenceService.setClaims(claims);
+      await SharedPreferenceService.getAllClaims();
+
+      final isUserRegistered = claims['isIndividual'] != null;
+      if (isUserRegistered) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => DashboardScreen()),
+          );
+        });
+
+        // Load user profile in background
+        Future.microtask(() {
+          Provider.of<UserProfileProvider>(context, listen: false)
+              .getAllUserData(context, '', '');
+        });
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        });
+      }
     } catch (e) {
-      print("Error: $e");
-    }
-    IdTokenResult token = await user.getIdTokenResult();
-    Map<String, dynamic>? claims = token.claims?? {};
-    print("Claims: $claims");
-    String? tokenString = await user.getIdToken();
-    log("Token: ${token.token}");
-
-    if(claims['is_individual']==null&&claims['is_admin']==null) {
-      isUserLoggedIn = false;
-    }
-    if(isUserLoggedIn) {
-      // redirect to dashboard
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => DashboardScreen(),),);
-
-    } else {
+      log("Navigation error: $e");
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen( )),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
+      // _goToLogin();
     }
+  }
+
+  void _test() {
+    final db = FirebaseFirestore.instance;
+    final docRef = db.collection("test_process").doc("6gIC6Ljq3A3TQxUIH2oz");
+
+    docRef.snapshots().listen(
+      (event) {
+        log("current data: ${event.data()}");
+        log("loading percent: ${event.data()?['progress']}");
+      },
+      onError: (error) => log("Listen failed: $error"),
+    );
   }
 
   @override
@@ -97,42 +131,19 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: themeProvider.getTheme.scaffoldBackgroundColor,
-      body: Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Animated Logo
-          Center(
-            child: FadeTransition(
-              opacity: _animation,
-              child: Container(
-                width: 200,
-                height: 200,
-                child: SvgPicture.asset(
-                  'assets/images/logo.svg',
-                  semanticsLabel: 'Logo',
-                ),
-              ),
+      body: Center(
+        child: FadeTransition(
+          opacity: _animation,
+          child: Container(
+            width: 200,
+            height: 200,
+            child: SvgPicture.asset(
+              'assets/images/logo.svg',
+              semanticsLabel: 'Logo',
             ),
           ),
-        ],
+        ),
       ),
     );
-  }
-
-  void handleBrightnessChange(bool useLightMode) {
-  }
-
-  void handleMaterialVersionChange() {
-  }
-
-  void handleColorSelect(int value) {
-  }
-
-  void handleImageSelect(int value) {
-  }
-
-  void _getInitData() {
-    Provider.of<AuthNotifier>(context, listen: false).initialOptions();
   }
 }
