@@ -235,20 +235,20 @@ Future<void> initFCM(String userId) async {
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
-print(userId);
+      print(userId);
       print("isSubscribed: $isSubscribed");
-      if (isSubscribed) {
-        print("TestA");
-        // Call the subscription API
-        bool success = await _subscribeToNotifications(userId, token);
+      // if (isSubscribed) {
+      print("TestA");
+      // Call the subscription API
+      bool success = await _subscribeToNotifications(userId, token);
 
-        if (success) {
-          SharedPreferenceService.saveNotificationSubscription(true);
-          print('Subscribed to topic: general');
-        }
-      } else {
-        print("TestB");
+      if (success) {
+        SharedPreferenceService.saveNotificationSubscription(true);
+        print('Subscribed to topic: general');
       }
+      // } else {
+      //   print("TestB");
+      // }
     }
   } else {
     print('User declined or has not accepted permission');
@@ -505,7 +505,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-
         return MaterialApp(
           scaffoldMessengerKey: scaffoldMessengerKey,
           debugShowCheckedModeBanner: false,
