@@ -219,7 +219,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     });
 
     const String apiUrl =
-        "https://us-central1-project-green-dev-429104.cloudfunctions.net/companies?role=external";
+        "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/companies?role=external";
+        // "https://us-central1-project-green-dev-429104"
+
 
     try {
       // Get the Firebase Authentication token
@@ -4123,7 +4125,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: CustomSpacing.two,
                                               ),
                                               Text(
-                                                "Upload Image1",
+                                                "Upload Image",
                                                 style:
                                                     typography.Body1.copyWith(
                                                         color: Colors.white),

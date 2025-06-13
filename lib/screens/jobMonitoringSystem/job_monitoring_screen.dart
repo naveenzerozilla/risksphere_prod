@@ -1882,7 +1882,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Text(
-              "Geo Rating Summary1",
+              "Geo Rating Summary",
               style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
             ),
           ),

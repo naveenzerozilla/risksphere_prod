@@ -344,7 +344,6 @@ class LocationListProvider extends ChangeNotifier {
 
       var headers = await CommonHeaders.createHeaders();
 
-      print("Rating for all tab: $_rating");
       log(headers.toString());
       var body = json.encode({
         "data": {
@@ -547,9 +546,10 @@ class LocationListProvider extends ChangeNotifier {
       ApiService apiService = ApiService(
           "${AppConstant.GET_LOCATION_PROFILE_NEW + "/addlocation"}");
       var response = await apiService.post(body);
-      log(response.toString());
-      CustomToast.success(context, response['message']);
+      // print("object");
+      // log(response.toString());
       Navigator.pop(context);
+      CustomToast.success(context, response['message']);
       isAddLocationLoading = false;
       return true;
     } on BackendException catch (e) {

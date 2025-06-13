@@ -920,6 +920,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
                                                           if (widget.locationId
                                                               .isEmpty) {
+                                                            print("Start");
                                                             // Add Location
                                                             await _handleAddLocation(
                                                                 context, body);

@@ -259,76 +259,60 @@ class SubAccountListProvider extends ChangeNotifier {
       int page,
       int pageSize) async {
     var typography = CustomTypography(context);
-    bool isConnectedToInternet = await checkIsConnectedToInternet();
-    if (isConnectedToInternet != "ConnectivityResult.none") {
-      var typography = CustomTypography(context);
-      try {
-        if (page == 1) {
-          isLoading = true;
-        } else {
-          isNextPageLoading = true;
-        }
 
-        ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST +
-            "/sub_accounts?account_id=$selectedAccountId");
-        String url = '&page=$page&pageSize=$pageSize';
-        if (searchQuery.isNotEmpty) {
-          url += '&search=$searchQuery';
-        }
-
-        var response = await apiService.get(url);
-
-        SubAccountListModel subAccountListModel =
-            SubAccountListModel.fromJson(response);
-
-        showOwner = subAccountListModel.settings?.owner ?? true;
-        showSovCount = subAccountListModel.settings?.sovCount ?? true;
-        totalRecords = subAccountListModel.totalHits ?? 0;
-        totalPages = totalRecords ~/ pageSize;
-
-        //totalPages = subAccountListModel.totalPages??1;
-        if (page == 1) {
-          subAccountList = subAccountListModel.results ?? [];
-        } else {
-          addToSubAccountList(subAccountListModel.results ?? []);
-        }
-        log(subAccountList.toString());
-
-        isLoading = false;
-        isNextPageLoading = false;
-      } on BackendException catch (e, stackTrace) {
-        isLoading = false;
-        isNextPageLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            e.message,
-            style: typography.Body1,
-          ),
-        ));
-      } catch (e, stackTrace) {
-        isLoading = false;
-        isNextPageLoading = false;
-        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        //   content: Text(
-        //     e.toString(),
-        //     style: typography.Body1,
-        //   ),
-        // ));
-        print(e);
+    try {
+      if (page == 1) {
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
       }
-    } else {
+
+      ApiService apiService = ApiService(AppConstant.GET_SUB_ACCOUNT_LIST +
+          "/sub_accounts?account_id=$selectedAccountId");
+      String url = '&page=$page&pageSize=$pageSize';
+      if (searchQuery.isNotEmpty) {
+        url += '&search=$searchQuery';
+      }
+
+      var response = await apiService.get(url);
+
+      SubAccountListModel subAccountListModel =
+          SubAccountListModel.fromJson(response);
+
+      showOwner = subAccountListModel.settings?.owner ?? true;
+      showSovCount = subAccountListModel.settings?.sovCount ?? true;
+      totalRecords = subAccountListModel.totalHits ?? 0;
+      totalPages = totalRecords ~/ pageSize;
+
+      //totalPages = subAccountListModel.totalPages??1;
+      if (page == 1) {
+        subAccountList = subAccountListModel.results ?? [];
+      } else {
+        addToSubAccountList(subAccountListModel.results ?? []);
+      }
+      log(subAccountList.toString());
+
+      isLoading = false;
+      isNextPageLoading = false;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      isNextPageLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          "Please check your internet connectivity and try again",
+          e.message,
           style: typography.Body1,
         ),
       ));
+    } catch (e, stackTrace) {
+      isLoading = false;
+      isNextPageLoading = false;
       // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       //   content: Text(
-      //     pleaseCheckYourInternetConnectivityAndTryAgain.toString(),
+      //     e.toString(),
       //     style: typography.Body1,
       //   ),
       // ));
+      print(e);
     }
   }
 

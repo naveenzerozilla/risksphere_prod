@@ -333,7 +333,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                                     )),
                             (route) => false);
                       } else {
-                        // Show a snackbar if there are no locations to commit
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("No locations to commit!"),
@@ -342,7 +341,7 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                       }
                     },
                     child: Text(
-                      "Yes1",
+                      "Yes",
                       style: typography.Body1.copyWith(color: Colors.black),
                     ),
                   ),

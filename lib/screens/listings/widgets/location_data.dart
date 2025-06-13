@@ -119,9 +119,9 @@ class LocationDataScreenState extends State<LocationDataScreen>
       ]);
     } catch (e) {
       print("Error fetching data: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching data. Please try again.")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Error fetching data. Please try again.")),
+      // );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -216,7 +216,9 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                           setState(() {
                                             _currentIndex = index;
                                           });
-                                          print(_currentIndex);
+                                          _getData();
+                                          _currentIndex ==0 ?_getData() : null;
+
                                         },
                                         tabs: [
                                           Tab(
@@ -805,6 +807,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                   child: TabBarView(
                     physics: NeverScrollableScrollPhysics(),
                     controller: _masterTabController,
+
                     children: [
                       Column(
                         children: [

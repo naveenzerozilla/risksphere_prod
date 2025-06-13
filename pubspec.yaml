@@ -93,6 +93,7 @@ dependencies:
   flutter_screen_capture: ^1.0.1
   connectivity_plus:
   flutter_keyboard_visibility: ^6.0.0
+  flutter_stripe:
 
 
 

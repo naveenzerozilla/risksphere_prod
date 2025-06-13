@@ -24,7 +24,6 @@ bool regextest(String value) {
   return true; // Valid email format and local part is not numeric only
 }
 
-
 const countryCodeToIsoCode = {
   '247': [IsoCode.AC],
   '376': [IsoCode.AD],

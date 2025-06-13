@@ -641,19 +641,19 @@ class _MyLocationListState extends State<MyLocationList>
                                 _refreshTimer?.cancel();
                                 deBouncer?.cancel();
 
-                                final result = await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        // StaticDropdownExample()
-                                        AddLocationScreen(
-                                      accountId: widget.accountID!,
-                                      subAccountId: widget.subAccountID!,
-                                      sovId: "",
-                                      accountName: widget.accountName,
-                                      subAccountName: widget.subAccountName,
-                                    ),
-                                  ),
-                                );
+                                final result = await Navigator.of(context)
+                                    .push(MaterialPageRoute(
+                                        builder: (_) =>
+                                            // StaticDropdownExample()
+                                            AddLocationScreen(
+                                              accountId: widget.accountID!,
+                                              subAccountId:
+                                                  widget.subAccountID!,
+                                              sovId: "",
+                                              accountName: widget.accountName,
+                                              subAccountName:
+                                                  widget.subAccountName,
+                                            )));
 
                                 // ✅ Restore after coming back
                                 _isDisposed = false;
@@ -671,7 +671,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     "",
                                     1,
-                                    100,
+                                    50,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -1144,8 +1144,9 @@ class _MyLocationListState extends State<MyLocationList>
                                                     accountId:
                                                         widget.accountID ?? "",
                                                     accountName:
-                                                        widget.subAccountName ??
+                                                        widget.accountName ??
                                                             "",
+
                                                   ),
                                                 ),
                                                 (route) =>
@@ -3257,7 +3258,7 @@ class _MyLocationListState extends State<MyLocationList>
             // ),
             //_buildHazardSummary(summaryData),
             Container(
-                height: MediaQuery.of(context).size.height / 2.5,
+                height: MediaQuery.of(context).size.height / 2.8,
                 width: MediaQuery.of(context).size.width,
                 child: _buildHazardVendorSummary(hazardVendorData, typography)),
           ],
@@ -5895,8 +5896,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                                         .text);
                                                                 _sovNameController
                                                                     .clear();
-                                                                Navigator.pop(
-                                                                    context);
+                                                                // Navigator.pop(
+                                                                //     context);
 
                                                                 print(
                                                                     'Success: $success');
@@ -5994,11 +5995,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                                                 accountName: widget.accountName ?? "",
                                                                                 subAccountName: widget.subAccountName ?? "",
                                                                                 subAccountId: widget.subAccountID!,
-                                                                              ))).then((value) {
-                                                                    if (value) {
-                                                                      _getData();
-                                                                    }
-                                                                  });
+                                                                              )));
                                                                 }
                                                               }
                                                             }

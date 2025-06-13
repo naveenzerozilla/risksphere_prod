@@ -115,7 +115,7 @@ class ConflictsTabState extends State<ConflictsTab> {
   }
 
   void _resolveConflict() async {
-    print("object");
+    print("object1");
     if (selectedValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -135,7 +135,8 @@ class ConflictsTabState extends State<ConflictsTab> {
         widget.location == null ? true : widget.location!.length == 1;
 
     setState(() {
-      if (isLastItem) isResolving = true;
+      // if (isLastItem)
+      isResolving = true;
     });
 
     final currentConflictId = widget.location == null
@@ -158,9 +159,9 @@ class ConflictsTabState extends State<ConflictsTab> {
 
       if (widget.location == null) {
         setState(() {
-          conflictResolved = true;
           isResolving = false;
         });
+        Navigator.pop(context, true);
       } else {
         setState(() {
           widget.location!.removeAt(currentIndex);
@@ -175,14 +176,11 @@ class ConflictsTabState extends State<ConflictsTab> {
           }
 
           if (widget.location!.isEmpty) {
-            conflictResolved = true;
+            Navigator.pop(context, true);
           }
-
           isResolving = false;
         });
-
         _updateMap();
-
         if (conflictResolved) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("All conflicts resolved.")),
@@ -697,6 +695,8 @@ class ConflictsTabState extends State<ConflictsTab> {
                                             onChanged: (value) {
                                               setState(() {
                                                 selectedOption = value;
+                                                selectedValue = value;
+                                                // selectedIndex = index;
                                               });
                                             },
                                           ))

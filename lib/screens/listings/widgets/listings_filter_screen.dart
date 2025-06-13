@@ -89,17 +89,17 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Fetch the initial filter options
   void fetchFilterOptions() async {
-
-
-    final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
-    await locationListProvider.fetchInitialFilterOptions(widget.accountId, widget.subAccountId);
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    await locationListProvider.fetchInitialFilterOptions(
+        widget.accountId, widget.subAccountId);
     setState(() {
       isLoading = false; // Stop showing loader once data is fetched
       // add a list of hazards to hazardRatings (refresh all hazardRatings keys with the provider hazard list)
       print("hazard ratings from api${locationListProvider.hazardList}");
-      hazardRatings = Map.fromIterable(locationListProvider.hazardList, key: (hazard) => hazard, value: (hazard) => []);
+      hazardRatings = Map.fromIterable(locationListProvider.hazardList,
+          key: (hazard) => hazard, value: (hazard) => []);
       print("hazard ratings after api${hazardRatings}");
-
     });
     loadInitialFilters();
   }
@@ -115,8 +115,10 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
   void applyFilters(BuildContext context) {
     print(sortBy);
     print(sortBy);
-    final locationListProvider = Provider.of<MyLocationListProvider>(context, listen: false);
-    locationListProvider.countries = selectedCountry != null ? [selectedCountry!] : [];
+    final locationListProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    locationListProvider.countries =
+        selectedCountry != null ? [selectedCountry!] : [];
     locationListProvider.zipcode = zipcode ?? '';
     locationListProvider.sortBy = sortBy ?? '';
 
@@ -138,21 +140,34 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     // Pass selected geo ratings to the provider or API
     print('location hazard ratings: ${locationListProvider.hazardRatings}');
     locationListProvider.rating = selectedGeoRatings;
-    print(hazardsForApi);  // Pass this to the API
+    print(hazardsForApi); // Pass this to the API
     locationListProvider.selectedCampusIds = selectedCampusIds;
 
-    if(widget.showGeoRatings) {
+    if (widget.showGeoRatings) {
       Provider.of<MyLocationListProvider>(context, listen: false)
-          .fetchLocationList(context, "", 1, 40, widget.accountId,
-          widget.subAccountId,
+          .fetchLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountId,
+        widget.subAccountId,
         widget.initialProcessId,
-        widget.initialSubProcessId,);
+        widget.initialSubProcessId,
+      );
     } else {
-      Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId,
+      Provider.of<MyLocationListProvider>(context, listen: false)
+          .fetchCertifiedLocationList(
+        context,
+        "",
+        1,
+        40,
+        widget.accountId,
+        widget.subAccountId,
         widget.initialProcessId,
-        widget.initialSubProcessId,);
+        widget.initialSubProcessId,
+      );
     }
-
 
     Navigator.of(context).pop(); // Close the filter screen
   }
@@ -160,14 +175,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
   // Load initial filters from the provider
   void loadInitialFilters() {
     final locationListProvider =
-    Provider.of<MyLocationListProvider>(context, listen: false);
+        Provider.of<MyLocationListProvider>(context, listen: false);
 
     setState(() {
       selectedCountry = locationListProvider.countries.isNotEmpty
           ? locationListProvider.countries.first
           : null;
       zipcode = locationListProvider.zipcode;
-      sortBy=locationListProvider.sortBy;
+      sortBy = locationListProvider.sortBy;
       manualCertified =
           locationListProvider.certifications.contains('Manual Certified');
       autoCertified =
@@ -208,7 +223,8 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         ),
         Padding(
           padding: EdgeInsets.all(CustomSpacing.four),
-          child: Text('Apply filters to table data', style: typography.Subtitle2),
+          child:
+              Text('Apply filters to table data', style: typography.Subtitle2),
         ),
         SizedBox(height: CustomSpacing.two),
         Padding(
@@ -227,111 +243,122 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         SizedBox(height: CustomSpacing.two),
         Expanded(
           child: Consumer<MyLocationListProvider>(
-            builder: (context, locationListProvider, child) {
-              return ListView(
-                children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-                          child: Text(
-                            'Sort By',
-                            style: typography.Base_Light,
-                          ),
+              builder: (context, locationListProvider, child) {
+            return ListView(
+              children: [
+                SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: CustomSpacing.four),
+                        child: Text(
+                          'Sort By',
+                          style: typography.Base_Light,
                         ),
-                        SizedBox(height: 10),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _showSortOptions = !_showSortOptions; // Toggle visibility
-                                print("object");
-                              });
-                              print("_"+_showSortOptions.toString());
-                              print(_showSortOptions);
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(  // Prevents overflow issues in text
-                                    child: Text(
-                                      sortOptions.firstWhere(
-                                            (option) => option["key"] == _selectedSortOption,
-                                        orElse: () => {"label": "Select Sort Option"},
-                                      )["label"]!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: typography.Body1,
-                                    ),
-                                  ),
-                                  Icon(
-                                    _showSortOptions ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                                  ),
-                                ],
-                              ),
+                      ),
+                      SizedBox(height: 10),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: CustomSpacing.four),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showSortOptions =
+                                  !_showSortOptions; // Toggle visibility
+                              print("object");
+                            });
+                            print("_" + _showSortOptions.toString());
+                            print(_showSortOptions);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                        ),
-
-                        // Show Radio Buttons only when _showSortOptions is true
-                        if (_showSortOptions)
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-                            child: Column(
-                              children: sortOptions.map((option) {
-                                return RadioListTile<String>(
-                                  title: Text(
-                                    option["label"] ?? "",
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  // Prevents overflow issues in text
+                                  child: Text(
+                                    sortOptions.firstWhere(
+                                      (option) =>
+                                          option["key"] == _selectedSortOption,
+                                      orElse: () =>
+                                          {"label": "Select Sort Option"},
+                                    )["label"]!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    style: typography.Body1,
                                   ),
-                                  value: option["key"] ?? "",
-                                  groupValue: _selectedSortOption,
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      _selectedSortOption = value ?? "none";
-                                      _showSortOptions = false; // Hide options after selection
-                                      sortBy=_selectedSortOption;
-                                    });
-                                    print(value);
-                                    print(value);
-                                    print(value);
-                                  },
-                                );
-                              }).toList(),
+                                ),
+                                Icon(
+                                  _showSortOptions
+                                      ? Icons.arrow_drop_up
+                                      : Icons.arrow_drop_down,
+                                ),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+
+                      // Show Radio Buttons only when _showSortOptions is true
+                      if (_showSortOptions)
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: CustomSpacing.four),
+                          child: Column(
+                            children: sortOptions.map((option) {
+                              return RadioListTile<String>(
+                                title: Text(
+                                  option["label"] ?? "",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                value: option["key"] ?? "",
+                                groupValue: _selectedSortOption,
+                                onChanged: (String? value) {
+                                  setState(() {
+                                    _selectedSortOption = value ?? "none";
+                                    _showSortOptions =
+                                        false; // Hide options after selection
+                                    sortBy = _selectedSortOption;
+                                  });
+                                  print(value);
+                                  print(value);
+                                  print(value);
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
 
-                  buildGeographicalFilter(context, typography, locationListProvider.countryList),
+                buildGeographicalFilter(
+                    context, typography, locationListProvider.countryList),
 
-                  // Campus Filter
-                  buildCampusFilter(context, typography),
+                // Campus Filter
+                buildCampusFilter(context, typography),
 
-                  // Certifications Filter
-                  buildCertificationsFilter(typography),
+                // Certifications Filter
+                // buildCertificationsFilter(typography),
 
-                  // Geo Ratings Filter with VerticalBarIndicator
-                  if (widget.showGeoRatings)
-                  buildGeoRatingsFilter(typography),
+                // Geo Ratings Filter with VerticalBarIndicator
+                if (widget.showGeoRatings) buildGeoRatingsFilter(typography),
 
-                  // Hazard Filter with dropdown and multiple rating checkboxes
-                  buildHazardFilterWithDropdown(typography, locationListProvider.hazardList),
-                ],
-              );
-            }
-          ),
+                // Hazard Filter with dropdown and multiple rating checkboxes
+                buildHazardFilterWithDropdown(
+                    typography, locationListProvider.hazardList),
+              ],
+            );
+          }),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
@@ -347,19 +374,33 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  Provider.of<MyLocationListProvider>(context, listen: false).clearAllFilters();
-                  if(widget.showGeoRatings) {
+                  Provider.of<MyLocationListProvider>(context, listen: false)
+                      .clearAllFilters();
+                  if (widget.showGeoRatings) {
                     Provider.of<MyLocationListProvider>(context, listen: false)
-                        .fetchLocationList(context, "", 1, 40, widget.accountId,
-                        widget.subAccountId,
+                        .fetchLocationList(
+                      context,
+                      "",
+                      1,
+                      40,
+                      widget.accountId,
+                      widget.subAccountId,
                       widget.initialProcessId,
-                      widget.initialSubProcessId,);
+                      widget.initialSubProcessId,
+                    );
                   } else {
-                  Provider.of<MyLocationListProvider>(context, listen: false).fetchCertifiedLocationList(context, "", 1, 40, widget.accountId, widget.subAccountId,
-                    widget.initialProcessId,
-                    widget.initialSubProcessId,);
+                    Provider.of<MyLocationListProvider>(context, listen: false)
+                        .fetchCertifiedLocationList(
+                      context,
+                      "",
+                      1,
+                      40,
+                      widget.accountId,
+                      widget.subAccountId,
+                      widget.initialProcessId,
+                      widget.initialSubProcessId,
+                    );
                   }
-
                 },
                 child: Text('Clear All', style: typography.ButtonLarge),
               ),
@@ -371,12 +412,14 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
   }
 
   // Geographical Filter Section
-  Widget buildGeographicalFilter(BuildContext context, CustomTypography typography, List<String> countryList) {
+  Widget buildGeographicalFilter(BuildContext context,
+      CustomTypography typography, List<String> countryList) {
     return ExpansionTile(
       title: Text('Geographical', style: typography.Body1),
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
+          padding: EdgeInsets.symmetric(
+              horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
           child: DropdownButtonFormField<String>(
             isExpanded: true,
             decoration: InputDecoration(
@@ -391,14 +434,17 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 selectedCountry = value;
               });
             },
-            items: countryList.map((country) => DropdownMenuItem<String>(
-              value: country,
-              child: Text(country, style: typography.Body1),
-            )).toList(),
+            items: countryList
+                .map((country) => DropdownMenuItem<String>(
+                      value: country,
+                      child: Text(country, style: typography.Body1),
+                    ))
+                .toList(),
           ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
+          padding: EdgeInsets.symmetric(
+              horizontal: CustomSpacing.four, vertical: CustomSpacing.two),
           child: TextFormField(
             decoration: InputDecoration(
               labelText: 'Zipcode',
@@ -406,7 +452,6 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-
             ),
             maxLength: 15,
             style: typography.Body1,
@@ -419,7 +464,6 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         ),
       ],
     );
-
   }
 
   // Campus Filter Section
@@ -428,7 +472,8 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
     // Check if campusIds is empty
     if (locationListProvider.campusIds.isEmpty) {
-      return SizedBox.shrink(); // Return an empty widget if no campus data is available
+      return SizedBox
+          .shrink(); // Return an empty widget if no campus data is available
     }
 
     // Prefill selectedCampusIds if not already set
@@ -454,7 +499,6 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       ],
     );
   }
-
 
   // Certifications Filter Section
   Widget buildCertificationsFilter(CustomTypography typography) {
@@ -491,26 +535,28 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         return CheckboxListTile(
           title: Row(
             children: [
-              VerticalFlatBarIndicator(score: rating), // Displays the rating bars
+              VerticalFlatBarIndicator(score: rating),
+              // Displays the rating bars
               SizedBox(width: 1),
               manualCertified
-                  ? SvgPicture.asset('assets/images/certified_five.svg', width: 24, height: 24)
+                  ? SvgPicture.asset('assets/images/certified_five.svg',
+                      width: 24, height: 24)
                   : Container(
-                margin: EdgeInsets.only(left: 4),
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.green.withOpacity(0.6),
-                  child: Center(
-                    child: Text(
-                      rating.toString(),
-                      style: typography.Body1.copyWith(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
+                      margin: EdgeInsets.only(left: 4),
+                      child: CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.green.withOpacity(0.6),
+                        child: Center(
+                          child: Text(
+                            rating.toString(),
+                            style: typography.Body1.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ],
           ),
           value: selectedGeoRatings.contains(rating),
@@ -528,10 +574,9 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
     );
   }
 
-
   // Hazard Filter Section with dropdown and multiple rating checkboxes
-  Widget buildHazardFilterWithDropdown(CustomTypography typography, List<String> hazardList) {
-
+  Widget buildHazardFilterWithDropdown(
+      CustomTypography typography, List<String> hazardList) {
     print("hazard ratings from api${hazardList}");
     print("hazard ratings after api${hazardRatings}");
     return ExpansionTile(
@@ -550,9 +595,13 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
               });
             },
           ),
-          title: Text(hazard, style: typography.Body1, overflow: TextOverflow.ellipsis, maxLines: 1),
+          title: Text(hazard,
+              style: typography.Body1,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           trailing: PopupMenuButton<List<int>>(
-            offset: Offset(-160, 0), // Offset to make menu appear on the left
+            offset: Offset(-160, 0),
+            // Offset to make menu appear on the left
             position: PopupMenuPosition.under,
             constraints: BoxConstraints(maxWidth: 200),
             shape: RoundedRectangleBorder(
@@ -573,12 +622,15 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                   else
                     Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: hazardRatings[hazard]!.map((rating) =>
-                          Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: _buildRatingCircle(rating, _getRatingColor(rating)),
-                          ),
-                      ).toList(),
+                      children: hazardRatings[hazard]!
+                          .map(
+                            (rating) => Padding(
+                              padding: EdgeInsets.only(right: 4),
+                              child: _buildRatingCircle(
+                                  rating, _getRatingColor(rating)),
+                            ),
+                          )
+                          .toList(),
                     ),
                   Icon(Icons.arrow_drop_down),
                 ],

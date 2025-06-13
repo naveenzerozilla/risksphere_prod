@@ -20,6 +20,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../screens/listings/news_feed_screen.dart';
+import '../../screens/listings/pricing_list.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/onboarding/splash_screen.dart';
 import '../../service/language_service.dart';
@@ -47,7 +48,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer =
-      Debouncer(milliseconds: 300); // Debouncer with 300ms delay
+      Debouncer(milliseconds: 200); // Debouncer with 300ms delay
 
   late ScrollController _scrollController;
 
@@ -221,6 +222,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   provider.setSelectedItem("news");
                                   Navigator.of(context).push(MaterialPageRoute(
                                       builder: (_) => NewsFeedScreen()));
+                                },
+                                isSelected: provider.selectedItem == "news",
+                              ),
+                              _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Pricing",
+                                icon: Icons.space_dashboard,
+                                onTap: () {
+                                  provider.setSelectedItem("news");
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => PricingListScreen()));
                                 },
                                 isSelected: provider.selectedItem == "news",
                               ),

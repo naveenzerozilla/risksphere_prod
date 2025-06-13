@@ -553,6 +553,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+
                 if (widget.hazardProcess == true ||
                     title == 'Geocoding' ||
                     title == 'Completeness') ...[

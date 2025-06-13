@@ -26,6 +26,7 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   bool isInitialLoad = true;
+
   // List<Map<String, dynamic>> geocodingList = [];
 
   void toggleSelection(int index) {
@@ -48,9 +49,8 @@ class UploadSovProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   List<Map<String, dynamic>> geocodingList = [];
-
-
 
   void setGeocodingList(List<Map<String, dynamic>> list) {
     _geocodingList = list;
@@ -67,7 +67,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   bool get areAllSelected =>
       _geocodingList.isNotEmpty &&
-          _geocodingList.every((item) => item['isChecked'] == true);
+      _geocodingList.every((item) => item['isChecked'] == true);
 
   void toggleSelectAll(bool value) {
     for (var item in _geocodingList) {
@@ -96,8 +96,6 @@ class UploadSovProvider extends ChangeNotifier {
   // bool get areAllSelected =>
   //     geocodingList.isNotEmpty &&
   //         geocodingList.every((item) => item['isChecked'] == true);
-
-
 
   SovUploadModel? _sovUploadModel;
 
@@ -133,11 +131,12 @@ class UploadSovProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   // List<Map<String, dynamic>> geocodingList = [];
 
   bool get isAllSelected =>
       geocodingList.isNotEmpty &&
-          geocodingList.every((item) => item['isChecked'] == true);
+      geocodingList.every((item) => item['isChecked'] == true);
 
   // void toggleSelectAll(bool value) {
   //   for (var item in geocodingList) {
@@ -389,7 +388,8 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
 
       if (response['message'] != null) {
-        Navigator.of(context).push(MaterialPageRoute(
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(
           builder: (context) => LocationDataScreen(
             processId: response['process_id'] ?? "",
             tempId: tempId,
@@ -458,17 +458,17 @@ class UploadSovProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message),
+      // ));
       return {};
     } catch (e, stackTrace) {
       print(stackTrace);
       print(e);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString()),
+      // ));
       return {};
     }
   }
@@ -485,17 +485,24 @@ class UploadSovProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
       List<dynamic> data = response['result'] ?? [];
+      print("TSPL-1");
       duplicateLocations = data.map((item) {
         return {
-          'formatted_address': item['formatted_address'],
-          'id': item['id'],
-          'line_no': item['line_no'] ?? '',
+          'address': item['address'] ?? '',
           'city': item['property City'] ?? '',
-          'location_name': item['Location Name'] ?? '',
-          'state': item['State'] ?? '',
           'country': item['Country'] ?? '',
+          'location_name': item['Location Name'] ?? '',
+          'postal_code': item['Postal Code'] ?? '',
+          'state': item['State'] ?? '',
+          'doc_id': item['doc_id'] ?? '',
           'duplicates': item['duplicates'] ?? [],
+          'formatted_address': item['formatted_address'],
+          'id': item['id'] ?? '',
           'is_duplicate': item['is_duplicate'] ?? false,
+          'line_no': item['line_no'] ?? '',
+          'process_id': item['process_id'] ?? '',
+
+
           'type': item['type'] ?? '',
           // 'duplicates':item['duplicates']?.isNotEmpty == true
           //     ? [item['duplicates'][0]] // Pick the first duplicate
@@ -518,17 +525,17 @@ class UploadSovProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message),
+      // ));
       return {};
     } catch (e, stackTrace) {
       print(stackTrace);
       print(e);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString()),
+      // ));
       return {};
     }
   }
@@ -562,9 +569,9 @@ class UploadSovProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message),
+      // ));
       return {};
     } catch (e, stackTrace) {
       print(stackTrace);
@@ -741,17 +748,17 @@ class UploadSovProvider extends ChangeNotifier {
       print(e);
       print(stackTrace);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.message),
+      // ));
       return false;
     } catch (e, stackTrace) {
       print(stackTrace);
       print(e);
       isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
-      ));
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString()),
+      // ));
       return false;
     }
   }
@@ -846,14 +853,14 @@ class UploadSovProvider extends ChangeNotifier {
         }).toList();
         return Map.fromEntries(formattedFields);
       }).toList();*/
-
+print("objectaddsove theing");
       final body = {
         'data': {
-          'account_id': accountId,
+          // 'account_id': accountId,
           'temp_id': tempId,
-          'locations': locationsToSubmit,
-          'duplicates': duplicationToSubmit,
+          'duplicates': [],
           'formatType': formatType,
+          'locations': locationsToSubmit,
           'sub_account_id': subAccountId,
         }
       };
@@ -865,18 +872,19 @@ class UploadSovProvider extends ChangeNotifier {
       log('Response: $response');
 
       if (response['message'] != null) {
+        print(response['message']);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? "Submitted successfully"),
           ),
         );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => SubAccountListScreen(
-                  accountId: accountId,
-                  accountName: accountName)), // Navigate to AccountsScreen
-        );
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(
+        //       builder: (context) => SubAccountListScreen(
+        //           accountId: accountId,
+        //           accountName: accountName)), // Navigate to AccountsScreen
+        // );
         // Navigator.push(context, MaterialPageRoute(builder: (_) => ProcessMonitoringScreen()));
         //Navigator.pop(context);
         return true; // Indicate success
@@ -909,7 +917,7 @@ class UploadSovProvider extends ChangeNotifier {
       if (state.toLowerCase() == 'upload') {
         print(subAccountName);
         print("subAccountName");
-        Navigator.push(
+        Navigator.pushReplacement(
             context,
             MaterialPageRoute(
                 builder: (_) => MappingScreen(
@@ -1009,21 +1017,21 @@ class UploadSovProvider extends ChangeNotifier {
       String accountName, String tempId, String subAccountId) async {
     List<Map<String, dynamic>> selectedLocations =
         _getSelectedGeocodingLocations();
-    print("selectedLocations2)");
-    print(selectedLocations.length.toString());
-    print(duplicateLocations.length.toString());
-    print("selectedLocations.length.toString()");
-    print(conflictLocations.length.toString());
-    print(conflictLocations.length.toString());
+    // print(selectedLocations.length.toString());
+    // print(duplicateLocations.length.toString());
+    // print("selectedLocations.length.toString()");
+    // print(conflictLocations.length.toString());
+    // print(conflictLocations.length.toString());
+    //
+    // /* if (selectedLocations.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text(LanguageService.getTranslated(context, "app_no_locations_selected")),
+    //     ),
+    //   );
+    //   return;
+    // }*/
 
-    /* if (selectedLocations.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(LanguageService.getTranslated(context, "app_no_locations_selected")),
-        ),
-      );
-      return;
-    }*/
     await _submitLocations(context, geocodingList, duplicateLocations,
         "use_sov_data", tempId, accountId, accountName, subAccountId);
   }
@@ -1044,7 +1052,6 @@ class UploadSovProvider extends ChangeNotifier {
       String accountName,
       String subAccountId) async {
     if (accountId.isNotEmpty) {
-      print("selectedLocations3)");
       await submitLocationsSubAccounts(
           context,
           tempId,
@@ -1056,7 +1063,6 @@ class UploadSovProvider extends ChangeNotifier {
           subAccountId);
       return;
     } else {
-      print("selectedLocations4)");
       await submitLocationsAccounts(
         context,
         tempId,

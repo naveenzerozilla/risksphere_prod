@@ -1162,7 +1162,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                         context,
                                                                         _accountQuery,
                                                                         1,
-                                                                        20);
+                                                                        5);
                                                                   }
 
                                                                   setState(() {
