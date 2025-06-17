@@ -115,7 +115,6 @@ class ConflictsTabState extends State<ConflictsTab> {
   }
 
   void _resolveConflict() async {
-    print("object1");
     if (selectedValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -124,7 +123,6 @@ class ConflictsTabState extends State<ConflictsTab> {
       );
       return;
     }
-    print("debug-A");
     final provider = Provider.of<UploadSovProvider>(context, listen: false);
     print(widget.location.toString());
     print(widget.conflict.toString());
@@ -155,8 +153,6 @@ class ConflictsTabState extends State<ConflictsTab> {
     if (!mounted) return;
 
     if (success) {
-      print("object");
-
       if (widget.location == null) {
         setState(() {
           isResolving = false;
@@ -750,70 +746,12 @@ class ConflictsTabState extends State<ConflictsTab> {
                                                 address.longitude ?? 0.0,
                                               );
                                             }
+                                            print(selectedValue);
                                           },
                                         );
                                       }).toList(),
                                     )
                                   : const SizedBox.shrink()),
-//future enhancement
-//                           hasMultipleLocations ?
-//                         Column(
-//                           children: widget.conflict!.map((option) => RadioListTile<String>(
-//                             title: Text(option.finalAddress!.address!),
-//                             value: option.finalAddress!.address!,
-//                             groupValue: selectedOption,
-//                             onChanged: (value) {
-//                               setState(() {
-//                                 selectedOption = value;
-//                               });
-//                             },
-//                           ))
-//                               .toList(),
-//                         ):
-//
-//                           if (currentItem != null)
-//                             ...((hasMultipleLocations
-//                                         ? (currentItem as MyLocation).conflicts
-//                                         : [(currentItem as Conflicts)])
-//                                     ?.asMap()
-//                                     .entries
-//                                     .map((entry) {
-//                                   final index = entry.key;
-//                                   final conflict = entry.value;
-//                                   final address = conflict.finalAddress;
-//                                   final locationId = hasMultipleLocations
-//                                       ? "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index"
-//                                       : "${conflict.locationId ?? 'conflict'}_$index";
-// print("locationId");
-//                                   final conflictsList = hasMultipleLocations
-//                                       ? (currentItem as MyLocation).conflicts
-//                                       : [(currentItem as Conflicts)];
-//                                   print("locationId:${conflictsList?.length}");
-//
-//                                   return RadioListTile<String>(
-//
-//                                     activeColor: Colors.white,
-//                                     title: Text(
-//                                       address?.address ?? 'Unknown',
-//                                       style: typography.Body2.copyWith(
-//                                           color: Colors.white),
-//                                     ),
-//                                     value: locationId,
-//                                     groupValue: selectedValue,
-//                                     onChanged: (value) {
-//                                       setState(() {
-//                                         selectedValue = value;
-//                                         selectedIndex = index;
-//                                       });
-//                                       if (address != null) {
-//                                         _navigateToMarker(
-//                                             address.latitude ?? 0.0,
-//                                             address.longitude ?? 0.0);
-//                                       }
-//                                     },
-//                                   );
-//                                 }).toList() ??
-//                                 []),
                           const SizedBox(height: 25),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),

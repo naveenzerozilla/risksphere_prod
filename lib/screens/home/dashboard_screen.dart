@@ -118,6 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
+
     showVerificationRequests =
         showCorporateVerificationRequests || showUserVerificationRequests;
 
@@ -381,9 +382,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                           ),
-                    !showVerificationRequests
-                        ? SizedBox()
-                        : _overviewCardHorizontal(
+                    // !showVerificationRequests
+                    //     ? SizedBox()
+                    //     :
+                    _overviewCardHorizontal(
                             title: LanguageService.getTranslated(context,
                                 'usermanagement_dash_verification_req'),
                             amount: ((dashboardProvider.dashboardModel

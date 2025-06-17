@@ -73,25 +73,13 @@ class _PricingSummaryState extends State<PricingSummary> {
                   onPressed: provider.isLoading
                       ? null
                       : () async {
-                    print(widget.summary.toString());
-                    await provider.makePayment(
-                      context: context,
-                      amount: widget.summary['total'].toString(),
-                      currency: 'usd',
-                      summary: widget.summary,
-                    );
-                  },
-                  // onPressed: provider.isLoading
-                  //     ? null
-                  //     : () {
-                  //         print(widget.summary.toString());
-                  //         provider.makePayment(
-                  //           context: context,
-                  //           amount: widget.summary['total'].toString(),
-                  //           currency: 'usd',
-                  //           summary: widget.summary,
-                  //         );
-                  //       },
+                          await provider.makePayment(
+                            context: context,
+                            amount: widget.summary['total'].toString(),
+                            currency: 'usd',
+                            summary: widget.summary,
+                          );
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF99CCFF),
                     padding: const EdgeInsets.symmetric(vertical: 16),

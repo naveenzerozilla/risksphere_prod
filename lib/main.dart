@@ -4,7 +4,6 @@ import 'package:RiskSphere/providers/payment_provider.dart';
 import 'package:RiskSphere/providers/theme_provider.dart';
 import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-// import 'package:flutter_stripe/flutter_stripe.dart';
 import 'design_system/app_themes.dart';
 import 'package:RiskSphere/providers/connectivity_provider.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
@@ -18,7 +17,6 @@ import 'package:RiskSphere/screens/event/notification_map_screen.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -44,7 +42,6 @@ import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/providers/verification_provider.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:provider/provider.dart';
-
 import 'design_system/primitives/app_colors.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =

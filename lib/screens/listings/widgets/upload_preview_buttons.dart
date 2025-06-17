@@ -247,7 +247,6 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     SizedBox(width: 8),
                     Text(
                       "Locations will be processed!",
@@ -355,13 +354,12 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
   }
 
   void _commitLocations(BuildContext context) async {
-    print("selectedLocations1123");
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
 
     setState(() {
       _isSubmitLoading = true; // Show loader
     });
-    print("selectedLocations1");
+
     await provider.commitSelectedLocations(context, widget.accountId,
         widget.accountName, widget.tempId, widget.subAccountId);
 

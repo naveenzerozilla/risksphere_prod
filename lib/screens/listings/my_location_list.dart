@@ -1146,7 +1146,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                     accountName:
                                                         widget.accountName ??
                                                             "",
-
                                                   ),
                                                 ),
                                                 (route) =>

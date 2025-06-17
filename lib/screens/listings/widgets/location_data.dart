@@ -42,6 +42,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
   bool _selectAll = false;
   bool _isLoading = false;
   bool _isCancelLoading = false;
+  bool _isLoadData = false;
 
   Map<String, dynamic> response = {};
 
@@ -129,6 +130,32 @@ class LocationDataScreenState extends State<LocationDataScreen>
     }
   }
 
+  Future<void> _getGeocodeData() async {
+    if (_isLoading) return; // Prevent multiple calls
+
+    setState(() => _isLoading = true);
+
+    try {
+      final uploadSovProvider =
+          Provider.of<UploadSovProvider>(context, listen: false);
+
+      // Call APIs in parallel
+      await Future.wait([
+        uploadSovProvider.fetchLocations(context, widget.processId),
+        // uploadSovProvider.fetchDuplicates(context, widget.processId),
+      ]);
+    } catch (e) {
+      print("Error fetching data: $e");
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Error fetching data. Please try again.")),
+      // );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   void _toggleSelectAll(bool? value) {
     if (value == null) return;
 
@@ -201,27 +228,46 @@ class LocationDataScreenState extends State<LocationDataScreen>
                               Consumer<UploadSovProvider>(
                                 builder: (context, provider, child) {
                                   return Expanded(
-                                    child: SingleChildScrollView(
-                                      controller: _scrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      child: TabBar(
-                                        controller: _masterTabController,
-                                        tabAlignment: TabAlignment.start,
-                                        labelStyle: typography.Subtitle2,
-                                        isScrollable: true,
-                                        indicatorColor: AppColors.primaryMain,
-                                        labelColor: AppColors.primaryMain,
-                                        unselectedLabelColor: Colors.grey,
-                                        onTap: (index) {
-                                          setState(() {
-                                            _currentIndex = index;
-                                          });
-                                          _getData();
-                                          _currentIndex ==0 ?_getData() : null;
+                                    child: TabBar(
+                                      controller: _masterTabController,
+                                      tabAlignment: TabAlignment.start,
+                                      labelStyle: typography.Subtitle2,
+                                      isScrollable: true,
+                                      indicatorColor: AppColors.primaryMain,
+                                      labelColor: AppColors.primaryMain,
+                                      unselectedLabelColor: Colors.grey,
+                                      onTap: (index) async {
+                                        setState(() {
+                                          _currentIndex = index;
+                                          _isLoading = true; // Show loader
+                                        });
 
-                                        },
-                                        tabs: [
-                                          Tab(
+                                        // Wait for all data to load
+                                        await _getData();
+                                        if (_currentIndex == 0) {
+                                          await _getGeocodeData();
+                                        }
+
+                                        setState(() {
+                                          _isLoading =
+                                              false; // Hide loader after everything completes
+                                        });
+                                      },
+
+                                      // onTap: (index) {
+                                      //   setState(() {
+                                      //     _currentIndex = index;
+                                      //   });
+                                      //   _getData();
+                                      //   _currentIndex == 0 ? _getGeocodeData() : null;
+                                      // },
+                                      tabs: [
+                                        Container(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              2.5,
+                                          child: Tab(
                                             child: processStatus != "completed"
                                                 ? RichText(
                                                     text: TextSpan(
@@ -380,7 +426,13 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                     ),
                                                   ),
                                           ),
-                                          Tab(
+                                        ),
+                                        Container(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              2.5,
+                                          child: Tab(
                                             child: processStatus != "completed"
                                                 ? RichText(
                                                     text: TextSpan(
@@ -433,23 +485,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                                         BorderRadius.circular(
                                                                             10),
                                                                   ),
-                                                                  // alignment:
-                                                                  //     Alignment
-                                                                  //         .center,
-                                                                  // padding: EdgeInsets
-                                                                  //     .fromLTRB(
-                                                                  //         3,
-                                                                  //         0,
-                                                                  //         4,
-                                                                  //         0),
-                                                                  // decoration:
-                                                                  //     BoxDecoration(
-                                                                  //   color: Colors
-                                                                  //       .white12,
-                                                                  //   borderRadius:
-                                                                  //       BorderRadius.circular(
-                                                                  //           10),
-                                                                  // ),
                                                                   child: Text(
                                                                     "0",
                                                                     textAlign:
@@ -552,249 +587,12 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                                     ),
                                                   ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },
                               ),
-
-                              // Consumer<UploadSovProvider>(
-                              //   builder: (context, provider, child) {
-                              //     return
-                              //         // provider.isLoading ? Center(child: CircularProgressIndicator(),):
-                              //         Expanded(
-                              //       child: SingleChildScrollView(
-                              //         controller: _scrollController,
-                              //         scrollDirection: Axis.horizontal,
-                              //         child: TabBar(
-                              //           controller: _masterTabController,
-                              //           tabAlignment: TabAlignment.start,
-                              //           labelStyle: typography.Subtitle2,
-                              //           isScrollable: true,
-                              //           indicatorColor: AppColors.primaryMain,
-                              //           labelColor: AppColors.primaryMain,
-                              //           unselectedLabelColor: Colors.grey,
-                              //           tabs: [
-                              //             Tab(
-                              //               child: RichText(
-                              //                 text: TextSpan(
-                              //                   text: 'Geocoding List ',
-                              //                   style: typography.Subtitle2
-                              //                       .copyWith(
-                              //                     color: AppColors.primaryMain,
-                              //                   ),
-                              //                   children: [
-                              //                     WidgetSpan(
-                              //                       alignment:
-                              //                           PlaceholderAlignment
-                              //                               .middle,
-                              //                       child: Container(
-                              //                           width: 25,
-                              //                           alignment:
-                              //                               Alignment.center,
-                              //                           decoration:
-                              //                               BoxDecoration(
-                              //                             color: Colors.white38,
-                              //                             // Background color
-                              //                             borderRadius:
-                              //                                 BorderRadius.circular(
-                              //                                     10), // Rounded corners
-                              //                           ),
-                              //                           child: FutureBuilder(
-                              //                             future: Future.delayed(
-                              //                                 Duration(
-                              //                                     seconds: 2),
-                              //                                 () => provider
-                              //                                     .geocodingList
-                              //                                     .length),
-                              //                             builder: (context,
-                              //                                 snapshot) {
-                              //                               return Text(
-                              //                                 snapshot.connectionState ==
-                              //                                         ConnectionState
-                              //                                             .waiting
-                              //                                     ? "0"
-                              //                                     : snapshot
-                              //                                         .data
-                              //                                         .toString(),
-                              //                                 style: TextStyle(
-                              //                                     color: Colors
-                              //                                         .white),
-                              //                               );
-                              //                             },
-                              //                           )),
-                              //                     ),
-                              //                   ],
-                              //                 ),
-                              //               ),
-                              //             ),
-                              //             Tab(
-                              //               child: RichText(
-                              //                 text: TextSpan(
-                              //                   text: 'Duplicates ',
-                              //                   style: typography.Subtitle2
-                              //                       .copyWith(
-                              //                     color: AppColors.primaryMain,
-                              //                   ),
-                              //                   children: [
-                              //                     WidgetSpan(
-                              //                       alignment:
-                              //                           PlaceholderAlignment
-                              //                               .middle,
-                              //                       child: provider
-                              //                                   .duplicateLocations
-                              //                                   .length >
-                              //                               0
-                              //                           ? BlinkingText(
-                              //                               conflictCount: provider
-                              //                                   .duplicateLocations
-                              //                                   .length,
-                              //                               style: typography
-                              //                                       .Subtitle2
-                              //                                   .copyWith(
-                              //                                 color: Colors
-                              //                                     .white, // Default text color
-                              //                               ),
-                              //                               blinkColor:
-                              //                                   Colors.white,
-                              //                               defaultColor:
-                              //                                   Colors.red,
-                              //                             )
-                              //                           : Container(
-                              //                               alignment: Alignment
-                              //                                   .center,
-                              //                               padding: EdgeInsets
-                              //                                   .fromLTRB(
-                              //                                       3, 0, 4, 0),
-                              //                               decoration:
-                              //                                   BoxDecoration(
-                              //                                 color: Colors
-                              //                                     .white38,
-                              //                                 borderRadius:
-                              //                                     BorderRadius
-                              //                                         .circular(
-                              //                                             10),
-                              //                               ),
-                              //                               child:
-                              //                                   FutureBuilder(
-                              //                                 future: Future.delayed(
-                              //                                     Duration(
-                              //                                         seconds:
-                              //                                             4),
-                              //                                     () => provider
-                              //                                         .duplicateLocations
-                              //                                         .length),
-                              //                                 builder: (context,
-                              //                                     snapshot) {
-                              //                                   return Text(
-                              //                                     snapshot.connectionState ==
-                              //                                             ConnectionState
-                              //                                                 .waiting
-                              //                                         ? "0"
-                              //                                         : snapshot
-                              //                                             .data
-                              //                                             .toString(),
-                              //                                     textAlign:
-                              //                                         TextAlign
-                              //                                             .center,
-                              //                                     style: TextStyle(
-                              //                                         color: Colors
-                              //                                             .white),
-                              //                                   );
-                              //                                 },
-                              //                               ),
-                              //                             ),
-                              //                     ),
-                              //                   ],
-                              //                 ),
-                              //               ),
-                              //             ),
-                              //             Tab(
-                              //               child: RichText(
-                              //                 text: TextSpan(
-                              //                   text: 'Conflicts ',
-                              //                   style: typography.Subtitle2
-                              //                       .copyWith(
-                              //                     color: AppColors.primaryMain,
-                              //                   ),
-                              //                   children: [
-                              //                     WidgetSpan(
-                              //                       alignment:
-                              //                           PlaceholderAlignment
-                              //                               .middle,
-                              //                       child: provider
-                              //                                   .conflictLocations
-                              //                                   .length >
-                              //                               0
-                              //                           ? BlinkingText(
-                              //                               conflictCount: provider
-                              //                                   .conflictLocations
-                              //                                   .length,
-                              //                               style: typography
-                              //                                       .Subtitle2
-                              //                                   .copyWith(
-                              //                                 color:
-                              //                                     Colors.white,
-                              //                               ),
-                              //                               blinkColor: Colors
-                              //                                   .orangeAccent,
-                              //                               defaultColor:
-                              //                                   Colors.red,
-                              //                             )
-                              //                           : Container(
-                              //                               padding: EdgeInsets
-                              //                                   .symmetric(
-                              //                                       horizontal:
-                              //                                           6,
-                              //                                       vertical:
-                              //                                           0),
-                              //                               decoration:
-                              //                                   BoxDecoration(
-                              //                                 color: Colors
-                              //                                     .white38,
-                              //                                 borderRadius:
-                              //                                     BorderRadius
-                              //                                         .circular(
-                              //                                             10),
-                              //                               ),
-                              //                               child:
-                              //                                   FutureBuilder(
-                              //                                 future: Future.delayed(
-                              //                                     Duration(
-                              //                                         seconds:
-                              //                                             4),
-                              //                                     () => provider
-                              //                                         .conflictLocations
-                              //                                         .length),
-                              //                                 builder: (context,
-                              //                                     snapshot) {
-                              //                                   return Text(
-                              //                                     snapshot.connectionState ==
-                              //                                             ConnectionState
-                              //                                                 .waiting
-                              //                                         ? "0"
-                              //                                         : snapshot
-                              //                                             .data
-                              //                                             .toString(),
-                              //                                     style: TextStyle(
-                              //                                         color: Colors
-                              //                                             .white),
-                              //                                   );
-                              //                                 },
-                              //                               ),
-                              //                             ),
-                              //                     ),
-                              //                   ],
-                              //                 ),
-                              //               ),
-                              //             ),
-                              //           ],
-                              //         ),
-                              //       ),
-                              //     );
-                              //   },
-                              // ),
                             ],
                           ),
                         ),
@@ -807,7 +605,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
                   child: TabBarView(
                     physics: NeverScrollableScrollPhysics(),
                     controller: _masterTabController,
-
                     children: [
                       Column(
                         children: [
@@ -865,7 +662,12 @@ class LocationDataScreenState extends State<LocationDataScreen>
                             // }
                             // return
                             Expanded(
-                                child: _locationListBody(typography, context)),
+                              child: _isLoading
+                                  ? Center(child: CircularProgressIndicator())
+                                  : _locationListBody(typography, context),
+                            ),
+                            // Expanded(
+                            //     child: _locationListBody(typography, context)),
                           ],
                           // }),
                         ],
@@ -885,27 +687,6 @@ class LocationDataScreenState extends State<LocationDataScreen>
               ],
             ),
           ),
-          // if (isSubmitLoading)
-          //   Container(
-          //     color: Colors.black54,
-          //     child: Center(
-          //       child: CircularProgressIndicator(),
-          //     ),
-          //   ),
-          // Consumer<UploadSovProvider>(
-          //   builder: (context, provider, child) {
-          //     if (provider.isLoading) {
-          //       return Container(
-          //         color: Colors.black54,
-          //         child: Center(
-          //           child: CircularProgressIndicator(),
-          //         ),
-          //       );
-          //     } else {
-          //       return const SizedBox.shrink();
-          //     }
-          //   },
-          // ),
         ],
       ),
     );
@@ -1036,6 +817,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                   )
                 : Expanded(
                     child: ListView.builder(
+                      controller: _scrollController,
                       itemCount: provider.geocodingList.length,
                       itemBuilder: (context, index) {
                         final location = provider.geocodingList[index];
@@ -1104,7 +886,10 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                         print(_selectAll);
                                         print("_selectAll");
                                         setState(() {
-                                          _selectAll = _selectAll;
+                                          // _selectAll = _selectAll;
+                                          _selectAll = provider.geocodingList
+                                              .every((item) =>
+                                                  item['isChecked'] == true);
                                         });
                                         WidgetsBinding.instance
                                             .addPostFrameCallback((_) {

@@ -32,6 +32,7 @@ class Result {
   List<RangeYear>? rangeYear;
   List<RangeYear>? rangeMonth;
   String? type;
+  String? planType;
   CreatedAt? createdAt;
   String? planId;
   CreatedAt? updatedAt;
@@ -45,6 +46,7 @@ class Result {
       this.rangeYear,
       this.rangeMonth,
       this.type,
+        this.planType,
       this.createdAt,
       this.planId,
       this.updatedAt,
@@ -61,6 +63,7 @@ class Result {
         rangeYear!.add(new RangeYear.fromJson(v));
       });
     }
+    planType = json['plan_type'];
     if (json['range_month'] != null) {
       rangeMonth = <RangeYear>[];
       json['range_month'].forEach((v) {
@@ -91,6 +94,7 @@ class Result {
       data['range_month'] = this.rangeMonth!.map((v) => v.toJson()).toList();
     }
     data['type'] = this.type;
+    data['plan_type'] = this.planType;
     if (this.createdAt != null) {
       data['created_at'] = this.createdAt!.toJson();
     }
@@ -147,3 +151,27 @@ class CreatedAt {
     return data;
   }
 }
+class SelectedPlanState {
+  String title;
+  String planId;
+  String description;
+  String? userCount;
+  String? priceperuser;
+  String? selectedPlanType;
+  String selectedUserCount;
+  String licensePrice;
+  int? totalPrice;
+
+  SelectedPlanState({
+    this.title = '',
+    this.planId = '',
+    this.description = '',
+    this.userCount = '',
+    this.priceperuser = '',
+    this.selectedPlanType,
+    this.selectedUserCount = '',
+    this.licensePrice = '',
+    this.totalPrice,
+  });
+}
+

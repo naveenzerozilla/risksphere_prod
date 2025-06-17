@@ -15,7 +15,6 @@ import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/user_profile_provider.dart';
 
 class PricingListScreen extends StatefulWidget {
   static const String routeName = '/pricingList';
@@ -60,10 +59,6 @@ class _PricingListScreenState extends State<PricingListScreen>
   @override
   void initState() {
     super.initState();
-    var userProfileProvider =
-        Provider.of<UserProfileProvider>(context, listen: false);
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getData();
     });
@@ -78,8 +73,6 @@ class _PricingListScreenState extends State<PricingListScreen>
   _getData() async {
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
-    accountListProvider.page = 1;
-    // await accountListProvider.createPlan(context);
     await accountListProvider.fetchPricingList(context, "", 1, 5);
   }
 
@@ -91,7 +84,6 @@ class _PricingListScreenState extends State<PricingListScreen>
           builder: (buildContext, themeProvider, child) {
         Map<String, dynamic> getSummary() {
           int total = 0;
-
           List<String> titles = [];
           List<String> planId = [];
           List<String> licensePrice = [];
@@ -144,7 +136,6 @@ class _PricingListScreenState extends State<PricingListScreen>
 
         return PopScope(
           onPopInvokedWithResult: (canPop, result) {
-            print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
             Provider.of<DrawerSelectionProvider>(context, listen: false)
                 .setSelectedItem("dashboard");
           },
@@ -450,11 +441,9 @@ class _PricingListScreenState extends State<PricingListScreen>
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     filled: true,
-                    // Optional: Keep the labelText for floating effect
                     labelText: "Subscription Type",
                   ),
                   hint: const Text("Select"),
-                  // 👈 Shows when value is null
                   items: ['Monthly', 'Yearly'].map((value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -498,7 +487,7 @@ class _PricingListScreenState extends State<PricingListScreen>
 
                         // Set title from the item
                         selection.title =
-                            item.planName ?? "Location Count (Hazard)";
+                            item.planType ?? "Location Count (Hazard)";
 
                         // Find the selected range from the list
                         final selectedRange = selectedRangeList.firstWhere(
@@ -565,7 +554,6 @@ class _PricingListScreenState extends State<PricingListScreen>
         ),
       ),
       child: Card(
-        // color: Theme.of(context).colorScheme.surfaceContainerHigh,
         margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -613,28 +601,4 @@ class _PricingListScreenState extends State<PricingListScreen>
       ),
     );
   }
-}
-
-class SelectedPlanState {
-  String title;
-  String planId;
-  String description;
-  String? userCount;
-  String? priceperuser;
-  String? selectedPlanType;
-  String selectedUserCount;
-  String licensePrice;
-  int? totalPrice;
-
-  SelectedPlanState({
-    this.title = '',
-    this.planId = '',
-    this.description = '',
-    this.userCount = '',
-    this.priceperuser = '',
-    this.selectedPlanType,
-    this.selectedUserCount = '',
-    this.licensePrice = '',
-    this.totalPrice,
-  });
 }
