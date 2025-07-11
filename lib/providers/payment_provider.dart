@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'package:RiskSphere/models/TransactionModel.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import '../screens/paymentScreen.dart';
+import '../design_system/primitives/custom_typography.dart';
+import '../models/payment_success_model.dart' hide Plans;
+import '../screens/payments/paymentScreen.dart';
+import '../service/api_service.dart';
 import '../utils/api_constants.dart';
 import '../utils/common_headers.dart';
 
@@ -11,9 +15,66 @@ class PaymentProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
+  SessionData? _sessionData;
+
+  SessionData? get sessionData => _sessionData;
+
+  String? _paymentIntent;
+
+  String? get paymentIntent => _paymentIntent;
+  String? _invoiceId;
+
+  String? get invoiceId => _invoiceId;
+
+  List<Plans> _plan = [];
+
+  List<Plans> get plan => _plan;
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void setSessionData(SessionData data) {
+    _sessionData = data;
+    notifyListeners();
+  }
+
+  void _setPaymentIntent(String? intent) {
+    _paymentIntent = intent;
+    notifyListeners();
+  }
+
+  void _setInvoiceId(String? intent) {
+    _invoiceId = intent;
+    notifyListeners();
+  }
+
+  List<Result> _transactions = [];
+
+  List<Result> get transactions => _transactions;
+
+  void setTransactionData(List<Result> data) {
+    _transactions = data;
+    notifyListeners();
+  }
+
+  void setPlanData(List<Plans> data) {
+    _plan = data;
+    notifyListeners();
+  }
+
+  Future<void> makePaymentsuccess({required String sessionId}) async {
+    _setLoading(true);
+    try {
+      final paymentIntentData = await _createCheckoutSuccess(
+        sessionId: sessionId,
+      );
+    } catch (e) {
+      debugPrint(" Payment Error: ${e.toString()}");
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> makePayment({
@@ -26,18 +87,25 @@ class PaymentProvider extends ChangeNotifier {
     try {
       final paymentIntentData =
           await _createPaymentIntent(amount, currency, summary);
-      // await createPaymentIntent1(amount: amount, currency: currency);
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              Paymentscreen(paymentUrl: paymentIntentData!['session']['url']),
-        ),
-      );
+      if (paymentIntentData != null &&
+          paymentIntentData['session'] != null &&
+          paymentIntentData['session']['url'] != null &&
+          paymentIntentData['session']['id'] != null) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Paymentscreen(
+              paymentUrl: paymentIntentData['session']['url'],
+              paymentSuccessUrl: paymentIntentData['session']['id'],
+            ),
+          ),
+        );
+      } else {
+        throw Exception("Invalid payment intent data");
+      }
     } catch (e) {
       debugPrint(" Payment Error: ${e.toString()}");
-      _showSnackBar(context, "Payment failed");
+      _showSnackBar(context, "Invalid payment intent data");
     } finally {
       _setLoading(false);
     }
@@ -87,6 +155,7 @@ class PaymentProvider extends ChangeNotifier {
                           ?.toString()
                           .toLowerCase() ??
                       "",
+                  "plan_type_id": summary['planType']?[i] ?? "",
                   "selected_plan": summary['usercount']?[i] ?? "",
                   "plan_name": summary['titles']?[i] ?? "",
                   "price": summary['licenseprice']?[i] ?? "",
@@ -104,112 +173,98 @@ class PaymentProvider extends ChangeNotifier {
       throw Exception(
         'Failed to create checkout session: ${response.body}',
       );
+    } else if (response.statusCode == 500) {
+      throw Exception('Internal Server Error: ${response.body}');
     }
     final Map<String, dynamic> jsonBody = jsonDecode(response.body);
     return jsonBody;
   }
 
-  Future<Map<String, dynamic>> createPaymentIntent({
-    required String amount,
-    required String currency,
-    required Map<String, dynamic> summary,
+  Future<Map<String, dynamic>> _createCheckoutSuccess({
+    required String sessionId,
   }) async {
+    _setLoading(true);
     try {
+      final Uri url = Uri.parse(AppConstant.PAYMNET_DETAILS_URL);
+      final headers = await CommonHeaders.createHeaders();
+
+      final requestBody = {
+        "data": {"session_id": sessionId},
+      };
+
       final response = await http.post(
-        Uri.parse(
-            // 'https://api.stripe.com/v1/payment_intents'
-            "https://checkout.stripe.com/pay/"),
-        headers: {
-          'Authorization':
-              'Bearer sk_test_51RWO7ARtw6KU9heKR9SYZEqGyhQkzhLFO31YZ40e2LqKec5MAdvzP7Xwgj26b66QRVGETt9dhJjzsVo56tzm2T4X00yCZMH6Io',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          "data": {
-            "amount": int.parse(amount) * 100,
-            "plans": List.generate(summary['planId']?.length ?? 0, (index) {
-              return {
-                "plan_id": summary['planId']?[index] ?? "",
-                "plan_type": summary['selectedPlanType']?[index]
-                        ?.toString()
-                        .toLowerCase() ??
-                    "",
-                "selected_plan": summary['usercount']?[index] ?? "",
-                "plan_name": summary['titles']?[index] ?? "",
-                "price": summary['licenseprice']?[index] ?? "",
-              };
-            }),
-          }
-        },
+        url,
+        headers: headers,
+        body: jsonEncode(requestBody),
       );
 
-      print('Stripe response body: ${response.body}');
-      print('Stripe response body: ${response.body}');
-
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      final Map<String, dynamic> jsonBody = jsonDecode(response.body);
 
       if (response.statusCode != 200) {
-        throw Exception('Stripe Error: ${body['error']['message']}');
-      } else {
-        print('Stripe response: $body');
+        log('Error: ${jsonBody['message']}');
+        throw Exception(
+            'Failed to create checkout session: ${jsonBody['message']}');
       }
 
-      return body;
-    } catch (err) {
-      throw Exception(err.toString());
+      log('Success: Checkout session created successfully');
+      log('Response: $jsonBody');
+
+      final paymentInfo = TransactionModel.fromJson(jsonBody);
+      _setPaymentIntent(paymentInfo.paymentIntent);
+      _setInvoiceId(paymentInfo.invoiceId);
+      setPlanData(paymentInfo.plans ?? []);
+
+      if (paymentInfo.sessionData != null) {
+        setSessionData(paymentInfo.sessionData!);
+      }
+
+      return jsonBody;
+    } catch (e) {
+      log('Exception in createCheckoutSession: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 
-  Future<Map<String, dynamic>> createPaymentIntent1({
-    required String amount,
-    required String currency,
-    required Map<String, dynamic> summary,
-  }) async {
+  Future<void> fetchTransactionList(
+      BuildContext context, String? value, String? date) async {
+    final typography = CustomTypography(context);
+
+    _isLoading = true;
+    notifyListeners();
+
     try {
-      List<Map<String, dynamic>> plans = List.generate(
-        summary['planId']?.length ?? 0,
-        (i) => {
-          "plan_id": summary['planId']?[i] ?? "",
-          "plan_type":
-              summary['selectedPlanType']?[i]?.toString().toLowerCase() ?? "",
-          "selected_plan": summary['usercount']?[i] ?? "",
-          "plan_name": summary['titles']?[i] ?? "",
-          "price": summary['licenseprice']?[i] ?? "",
-        },
-      );
+      ApiService apiService = ApiService(AppConstant.GET_Transaction_LIST +
+          (date != null && date.isNotEmpty
+              ? date
+              : (value != null ? '?plan_type_id=$value' : '')));
 
-      final response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/checkout/sessions'),
-        headers: {
-          'Authorization':
-              'Bearer sk_test_51RWO7ARtw6KU9heKR9SYZEqGyhQkzhLFO31YZ40e2LqKec5MAdvzP7Xwgj26b66QRVGETt9dhJjzsVo56tzm2T4X00yCZMH6Io',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'payment_method_types[]': 'card',
-          'line_items[0][price_data][currency]': currency,
-          'line_items[0][price_data][product_data][name]':
-              summary['titles']?[0] ?? 'Product',
-          'line_items[0][price_data][unit_amount]':
-              (int.parse(amount) * 100).toString(),
-          'line_items[0][quantity]': '1',
-          'mode': 'payment',
-          'success_url': 'https://yourdomain.com/success',
-          'cancel_url': 'https://yourdomain.com/cancel',
-          'metadata[plans]': jsonEncode(plans),
-        },
-      );
+      var response = await apiService.get('');
+      log('API response: $response');
+      TransactionModel transactionListData =
+          TransactionModel.fromJson(response);
 
-      final Map<String, dynamic> body = jsonDecode(response.body);
-      print(response.body);
+      _transactions = transactionListData.result ?? [];
 
-      if (response.statusCode != 200) {
-        throw Exception('Stripe Error: ${body['error']['message']}');
-      }
+      log('✅ Success: Transaction list fetched successfully. Total records: ${_transactions.length}');
 
-      return body; // You can use body['id'] as the session ID
-    } catch (err) {
-      throw Exception(err.toString());
+      _isLoading = false;
+      notifyListeners();
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
+      _isLoading = false;
+      notifyListeners();
+      log(' BackendException: ${e.message}');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+    } catch (e, stackTrace) {
+      print(stackTrace);
+      _isLoading = false;
+      notifyListeners();
+      log(' Exception: ${e.toString()}');
     }
   }
+
 }

@@ -50,22 +50,23 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCyi6LKiEELcYMibue6T8ecFp8XCzpvd30',
-    appId: '1:160035685335:android:406df374c1134dd7a74192',
-    messagingSenderId: '160035685335',
-    projectId: 'project-green-r5-1-dev',
-    storageBucket: 'project-green-r5-1-dev.firebasestorage.app',
+    apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
+    appId: '1:857135835532:android:ea0526befdfe1691c84ea9',
+    messagingSenderId: '857135835532',
+    projectId: 'project-green-r5-1-qa',
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
   );
 
   /// Config for package: com.example.green
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCstV5UDSN8huvSrp738E9shu6gkltdYN8',
-    appId: '1:160035685335:ios:9aec62c3a48fbf16a74192',
-    messagingSenderId: '160035685335',
-    projectId: 'project-green-r5-1-dev',
-    storageBucket: 'project-green-r5-1-dev.firebasestorage.app',
-    iosClientId: '160035685335-phveajbvmridomq1v4bj8h510ggr799f.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
+    appId: '1:857135835532:ios:646781baac94f7c1c84ea9',
+    messagingSenderId: '857135835532',
+    projectId: 'project-green-r5-1-qa',
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
+    iosClientId: '857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com',
     iosBundleId: 'com.zerozilla.green',
   );
 

@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.risksphere.green.app-mergeDebugResources-76:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "/Users/naveen/.gradle/caches/transforms-4/2bcf3a8bb9258018eececd94da5a388a/transformed/appcompat-1.6.1/res/values-port/values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -35,6 +35,8 @@ import '../../providers/theme_provider.dart';
 import '../../service/language_service.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 
+import '../payments/pricing_list.dart';
+
 class AddLocationScreen extends StatefulWidget {
   final String accountId;
   final String accountName;
@@ -114,16 +116,17 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
           Provider.of<MyLocationListProvider>(context, listen: false);
       _locationNameController.text = (widget.is_conflict!
           ? widget.locationName
-          : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!)!;
+          : provider.locationProfile?.finalAddress?.locationName ??
+              widget.searchQuery!)!;
 
       // _locationNameController.text = ((widget.is_conflict!) ? widget.locationName : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!));
 
       // _locationNameController.text =
       //     provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!;
-      _locationAddressController.text =
-      (widget.is_conflict!
+      _locationAddressController.text = (widget.is_conflict!
           ? widget.locationName
-          : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!)!;
+          : provider.locationProfile?.finalAddress?.locationName ??
+              widget.searchQuery!)!;
 
       // provider.locationProfile?.finalAddress?.address ?? widget.searchQuery!;
       _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
@@ -298,21 +301,33 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                               clipBehavior: Clip.antiAlias,
                                               child: Container(
-                                                height: 180,
-                                                width: double.infinity,
-                                                child: Image.asset(
-                                                  'assets/images/google_map.png',
-                                                  fit: BoxFit.cover,
-                                                ),
-                                                // GoogleMap(
-                                                //   mapType: MapType.satellite,
-                                                //   initialCameraPosition: _defaultLocation,
-                                                //   onMapCreated: (GoogleMapController controller) {
-                                                //     _mapController.complete(controller);
-                                                //   },
-                                                //   markers: Set<Marker>.of(markers.values),
-                                                // ),
-                                              ),
+                                                  height: 180,
+                                                  width: double.infinity,
+                                                  child:
+                                                      _isSelectedFromAutocomplete ==
+                                                              true
+                                                          ? GoogleMap(
+                                                        zoomControlsEnabled: false,
+                                                              mapType: MapType
+                                                                  .satellite,
+                                                              initialCameraPosition:
+                                                                  _defaultLocation,
+                                                              onMapCreated:
+                                                                  (GoogleMapController
+                                                                      controller) {
+                                                                _mapController
+                                                                    .complete(
+                                                                        controller);
+                                                              },
+                                                              markers: Set<
+                                                                      Marker>.of(
+                                                                  markers
+                                                                      .values),
+                                                            )
+                                                          : Image.asset(
+                                                              'assets/images/google_map.png',
+                                                              fit: BoxFit.cover,
+                                                            )),
                                             ),
                                           ),
                                         ],
@@ -342,21 +357,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     recognizer:
                                                         TapGestureRecognizer()
                                                           ..onTap = () {
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                  "Coming Soon!",
-                                                                  style: typography
-                                                                          .Body1
-                                                                      .copyWith(
-                                                                    color: AppColors
-                                                                        .primaryMain,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            );
+                                                            Navigator.of(context).push(
+                                                                MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        PricingListScreen()));
                                                           },
                                                     text: ' Upgrade Now!',
                                                     style: TextStyle(
@@ -1029,6 +1033,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       widget.accountId,
       widget.subAccountId,
       widget.sovId,
+      widget.accountName,
+      widget.subAccountName,
       body,
     );
   }

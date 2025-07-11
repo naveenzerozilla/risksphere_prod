@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:RiskSphere/providers/invoice_provider.dart';
 import 'package:RiskSphere/providers/payment_provider.dart';
 import 'package:RiskSphere/providers/theme_provider.dart';
 import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'design_system/app_themes.dart';
 import 'package:RiskSphere/providers/connectivity_provider.dart';
@@ -61,23 +62,57 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  Stripe.publishableKey =
-      'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
-  await Stripe.instance.applySettings();
+
+  try {
+    Stripe.publishableKey =
+        'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+    await Stripe.instance.applySettings();
+  } catch (e, stackTrace) {
+    debugPrint('Stripe initialization failed: $e');
+    debugPrint('Stack trace: $stackTrace');
+  }
+
   initializeNotifications();
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
       child: AppLifecycleManager(),
-      // child: MyApp(),
     ),
   );
 }
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await EasyLocalization.ensureInitialized();
+//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+//
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//   Stripe.publishableKey =
+//       'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+//   await Stripe.instance.applySettings();
+//   initializeNotifications();
+//   runApp(
+//     EasyLocalization(
+//       supportedLocales: const [Locale('en')],
+//       path: 'assets/translations',
+//       fallbackLocale: const Locale('en'),
+//       child: AppLifecycleManager(),
+//       // child: MyApp(),
+//     ),
+//   );
+// }
 
 class AppLifecycleManager extends StatefulWidget {
   @override
@@ -102,29 +137,23 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     print("🔁 App lifecycle changed: $state");
 
-    // Handle all possible states including 'hidden'
     switch (state) {
       case AppLifecycleState.resumed:
-        // App resumed
         break;
       case AppLifecycleState.inactive:
-        // App inactive
         break;
       case AppLifecycleState.paused:
-        // App paused
         break;
       case AppLifecycleState.detached:
-        // App detached (usually on iOS)
         break;
       case AppLifecycleState.hidden:
-        // App is hidden (e.g., background but not closed)
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MyApp(); // original root widget
+    return MyApp();
   }
 }
 
@@ -167,6 +196,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SubaccountParameterProvider()),
         ChangeNotifierProvider(create: (_) => UploadSovProvider()),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => InvoiceProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
@@ -184,7 +214,6 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
               brightness: Brightness.dark,
             ),
-            // Define your dark theme here
             themeMode: themeProvider.getTheme.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
@@ -196,7 +225,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void initializeNotifications() {
+Future<void> initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -208,16 +237,12 @@ void initializeNotifications() {
     iOS: initializationSettingsIOS,
   );
 
-  flutterLocalNotificationsPlugin.initialize(
+  await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) {
+    onDidReceiveNotificationResponse: (response) {
       if (response.payload != null) {
-        try {
-          final data = jsonDecode(response.payload!);
-          handleNotificationNavigation(data);
-        } catch (e) {
-          print('Error parsing payload: $e');
-        }
+        debugPrint('Notification payload: ${response.payload}');
+        // Navigate or handle logic if needed
       }
     },
   );
@@ -226,57 +251,26 @@ void initializeNotifications() {
 Future<void> showNotification(
     String? title, String? body, String? imageUrl) async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'your_channel_id_test_1',
-    'your_channel_name_test_1',
-    description: 'High importance notifications',
+    'high_importance_channel', // must match your channel ID
+    'High Importance Notifications',
     importance: Importance.high,
   );
 
-  AndroidNotificationDetails androidDetails;
-  if (imageUrl != null && imageUrl.isNotEmpty) {
-    try {
-      final response = await http.get(Uri.parse(imageUrl));
-      final filePath =
-          '${(await getApplicationDocumentsDirectory()).path}/noti_image.jpg';
-      final file = File(filePath)..writeAsBytesSync(response.bodyBytes);
+  final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    channel.id,
+    channel.name,
+    channelDescription: 'Used for important notifications',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
 
-      androidDetails = AndroidNotificationDetails(
-        channel.id,
-        channel.name,
-        channelDescription: channel.description,
-        styleInformation: BigPictureStyleInformation(
-          FilePathAndroidBitmap(file.path),
-          contentTitle: title,
-          summaryText: body,
-        ),
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-    } catch (e) {
-      androidDetails = AndroidNotificationDetails(
-        channel.id,
-        channel.name,
-        channelDescription: channel.description,
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-    }
-  } else {
-    androidDetails = AndroidNotificationDetails(
-      channel.id,
-      channel.name,
-      channelDescription: channel.description,
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-  }
+  final notificationDetails = NotificationDetails(android: androidDetails);
 
   await flutterLocalNotificationsPlugin.show(
     0,
     title,
     body,
-    NotificationDetails(android: androidDetails),
-    payload: jsonEncode({'type': 'event', 'title': title}),
+    notificationDetails,
   );
 }
 
@@ -302,23 +296,33 @@ void handleNotificationNavigation(Map<String, dynamic> data) {
 
 Future<void> initFCM(String userId) async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  NotificationSettings settings =
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
 
   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
     String? token = await messaging.getToken();
     print('FCM Token: $token');
 
     if (token != null) {
+      print("Subscribenotification1");
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
-      if (isSubscribed) {
-        await _subscribeToNotifications(userId, token);
-      }
+      // if (!isSubscribed) {
+      //   print("Subscribenotification2");
+      await _subscribeToNotifications(userId, token);
+      // }
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("📩 Foreground message received: ${message.notification?.title}");
+      CustomToast.showToast(
+        message.notification?.title ?? "Notification",
+        message.notification?.body ?? "You have a new notification",
+      );
       if (message.notification != null) {
         showNotification(
           message.notification!.title,
@@ -329,6 +333,7 @@ Future<void> initFCM(String userId) async {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("📩 Foreground message received: ${message.notification?.title}");
       if (message.data.isNotEmpty) {
         handleNotificationNavigation(message.data);
       }
@@ -355,8 +360,35 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
       body: jsonEncode(
           {'user_id': userId, 'topic': 'general', 'mobile_token': token}),
     );
+    print("Subscribenotification");
     return response.statusCode == 200;
   } catch (_) {
     return false;
+  }
+}
+
+class CustomToast {
+  static void showToast(String title, String message) {
+    print("Foreground notifications");
+    // Example implementation using Flutter's ScaffoldMessenger
+    final context = MyApp.navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(top: 20, left: 16, right: 16),
+          content: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(message),
+              ],
+            ),
+          ),
+          duration: Duration(seconds: 10),
+        ),
+      );
+    }
   }
 }

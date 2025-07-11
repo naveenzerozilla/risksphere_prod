@@ -154,6 +154,7 @@ class CreatedAt {
 class SelectedPlanState {
   String title;
   String planId;
+  String planType;
   String description;
   String? userCount;
   String? priceperuser;
@@ -165,6 +166,7 @@ class SelectedPlanState {
   SelectedPlanState({
     this.title = '',
     this.planId = '',
+    this.planType = '',
     this.description = '',
     this.userCount = '',
     this.priceperuser = '',

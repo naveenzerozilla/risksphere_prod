@@ -194,53 +194,6 @@ class ConflictsTabState extends State<ConflictsTab> {
         const SnackBar(content: Text("Failed to resolve conflict. Try again.")),
       );
     }
-
-    // final success = await provider.resolveConflict(context, selectedData);
-    //
-    // if (success) {
-    //   print("object");
-    //   if (widget.location == null) {
-    //     setState(() {
-    //       conflictResolved = true;
-    //       isResolving = false;
-    //     });
-    //   } else {
-    //     setState(() {
-    //       widget.location!.removeAt(currentIndex);
-    //
-    //       // Reset selected state
-    //       selectedOption = 'none';
-    //       selectedValue = null;
-    //       selectedIndex = null;
-    //
-    //       if (currentIndex >= widget.location!.length) {
-    //         currentIndex =
-    //             widget.location!.isNotEmpty ? widget.location!.length - 1 : 0;
-    //       }
-    //
-    //       if (widget.location!.isEmpty) {
-    //         conflictResolved = true;
-    //       }
-    //
-    //       isResolving = false;
-    //     });
-    //
-    //     _updateMap();
-    //
-    //     if (conflictResolved) {
-    //       ScaffoldMessenger.of(context).showSnackBar(
-    //         const SnackBar(content: Text("All conflicts resolved.")),
-    //       );
-    //     }
-    //   }
-    // } else {
-    //   setState(() {
-    //     isResolving = false;
-    //   });
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text("Failed to resolve conflict. Try again.")),
-    //   );
-    // }
   }
 
   @override
@@ -321,7 +274,6 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   });
 
                                   await Future.delayed(Duration(seconds: 2));
-                                  print("Hello");
                                   Navigator.pop(context, true);
 
                                   setState(() {
@@ -463,7 +415,6 @@ class ConflictsTabState extends State<ConflictsTab> {
   }
 
   bool isRefreshing = false; // Add this to your StatefulWidget
-
   Widget _buildConflictSheet(CustomTypography typography) {
     final hasMultipleLocations =
         widget.location != null && widget.location!.length > 1;
@@ -474,6 +425,22 @@ class ConflictsTabState extends State<ConflictsTab> {
             currentIndex < conflictData.length
         ? conflictData[currentIndex]
         : null;
+
+    // Set default selection
+    if (selectedValue == null) {
+      if (hasMultipleLocations &&
+          currentItem is MyLocation &&
+          currentItem.conflicts != null &&
+          currentItem.conflicts!.isNotEmpty) {
+        selectedIndex = 0;
+        selectedValue = "${currentItem.id}_conflict_0";
+      } else if (!hasMultipleLocations &&
+          widget.conflict != null &&
+          widget.conflict!.isNotEmpty) {
+        selectedValue = widget.conflict!.first.finalAddress?.address ?? '';
+        selectedOption = selectedValue;
+      }
+    }
 
     return DraggableScrollableSheet(
       initialChildSize: 0.53,
@@ -493,9 +460,11 @@ class ConflictsTabState extends State<ConflictsTab> {
                     child: CircularProgressIndicator(),
                   ),
                 )
-              : Column(
+              : ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   children: [
-                    // Header with navigation
+                    // Header
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 2, vertical: 14),
@@ -526,8 +495,8 @@ class ConflictsTabState extends State<ConflictsTab> {
                                         isRefreshing = true;
                                       });
 
-                                      await Future.delayed(const Duration(
-                                          seconds: 1)); // simulate fetch
+                                      await Future.delayed(
+                                          const Duration(seconds: 1));
 
                                       setState(() {
                                         selectedOption = 'none';
@@ -608,8 +577,6 @@ class ConflictsTabState extends State<ConflictsTab> {
                                 hasMultipleLocations
                                     ? (currentItem as MyLocation)
                                             .geocodedAddress ??
-                                        (currentItem as MyLocation)
-                                            .geocodedAddress ??
                                         ''
                                     : (currentItem as Conflicts)
                                             .geocodedAddress ??
@@ -623,19 +590,17 @@ class ConflictsTabState extends State<ConflictsTab> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            // const SizedBox(width: 4),
                             InkWell(
                               onTap: () {
                                 final locationId = hasMultipleLocations
                                     ? (currentItem as MyLocation).id ?? ''
                                     : (currentItem as Conflicts).locationId ??
                                         '';
-                                print(widget.geocodingAddress.toString());
-                                final address = (currentItem as MyLocation)
-                                        .geocodedAddress ??
-                                    widget.geocodingAddress;
-                                print(address.toString());
-                                print("address".toString());
+                                final address = hasMultipleLocations
+                                    ? (currentItem as MyLocation)
+                                        .geocodedAddress
+                                    : widget.geocodingAddress;
 
                                 Navigator.of(context)
                                     .push(MaterialPageRoute(
@@ -662,8 +627,12 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   });
                                 });
                               },
-                              child: const Icon(Icons.edit,
-                                  size: 20, color: Colors.lightBlueAccent),
+                              child: Container(
+                                // color: Colors.red,
+                                padding: const EdgeInsets.all(5),
+                                child: Icon(Icons.edit,
+                                    size: 25, color: Colors.lightBlueAccent),
+                              ),
                             )
                           ],
                         ),
@@ -671,135 +640,495 @@ class ConflictsTabState extends State<ConflictsTab> {
 
                     const SizedBox(height: 10),
 
-                    // Conflict List and Resolve button
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        children: [
-                          hasMultipleLocations == false
-                              ? Column(
-                                  children: widget.conflict!
-                                      .map((option) => RadioListTile<String>(
-                                            title: Text(
-                                                option.finalAddress?.address ??
-                                                    'Unknown'),
-                                            value:
-                                                option.finalAddress?.address ??
-                                                    '',
-                                            groupValue: selectedOption,
-                                            onChanged: (value) {
-                                              setState(() {
-                                                selectedOption = value;
-                                                selectedValue = value;
-                                                // selectedIndex = index;
-                                              });
-                                            },
-                                          ))
-                                      .toList(),
-                                )
-                              : (currentItem != null
-                                  ? Column(
-                                      children: ((hasMultipleLocations
-                                                  ? (currentItem as MyLocation)
-                                                      .conflicts
-                                                  : [
-                                                      (currentItem as Conflicts)
-                                                    ]) ??
-                                              [])
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
-                                        final index = entry.key;
-                                        final conflict = entry.value;
-                                        final address = conflict.finalAddress;
-                                        final locationId = hasMultipleLocations
-                                            ? "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index"
-                                            : "${conflict.locationId ?? 'conflict'}_$index";
+                    // Conflict List
+                    if (!hasMultipleLocations)
+                      Column(
+                        key: ValueKey(selectedOption), // Force rebuild
+                        children: widget.conflict!.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final option = entry.value;
+                          final value =
+                              option.finalAddress?.address ?? 'Unknown';
+                          if (index == 0 && selectedOption == "none") {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              setState(() {
+                                selectedOption = value;
+                                selectedValue = value;
+                              });
+                            });
+                          }
 
-                                        final conflictsList =
-                                            hasMultipleLocations
-                                                ? (currentItem as MyLocation)
-                                                    .conflicts
-                                                : [(currentItem as Conflicts)];
-                                        print("locationId: ${locationId}");
-                                        print(
-                                            "conflictsList length: ${conflictsList?.length}");
+                          return RadioListTile<String>(
+                            title: Text(value),
+                            value: value,
+                            groupValue: selectedOption,
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedOption = newValue;
+                                selectedValue = newValue;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      )
+                    else if (currentItem != null)
+                      Builder(
+                        builder: (context) {
+                          final conflicts = (currentItem as MyLocation).conflicts ?? [];
+                          final defaultId = "${currentItem.id}_conflict_0";
 
-                                        return RadioListTile<String>(
-                                          activeColor: Colors.white,
-                                          title: Text(
-                                            address?.address ?? 'Unknown',
-                                            style: typography.Body2.copyWith(
-                                                color: Colors.white),
-                                          ),
-                                          value: locationId,
-                                          groupValue: selectedValue,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              selectedValue = value;
-                                              selectedIndex = index;
-                                            });
-                                            if (address != null) {
-                                              _navigateToMarker(
-                                                address.latitude ?? 0.0,
-                                                address.longitude ?? 0.0,
-                                              );
-                                            }
-                                            print(selectedValue);
-                                          },
-                                        );
-                                      }).toList(),
-                                    )
-                                  : const SizedBox.shrink()),
-                          const SizedBox(height: 25),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        isResolving ? null : _resolveConflict,
-                                    style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
-                                      foregroundColor: Colors.white,
-                                      backgroundColor: Colors.lightBlueAccent,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 10),
-                                    ),
-                                    child: isResolving
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 3,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                      Colors.white),
-                                            ),
-                                          )
-                                        : Text(
-                                            "Resolve",
-                                            style: CustomTypography(context)
-                                                .ButtonLarge
-                                                .copyWith(color: Colors.black),
-                                          ),
-                                  ),
+                          // Always reset selectedValue if it's not matching currentItem
+                          if (conflicts.isNotEmpty &&
+                              (selectedValue == null || !selectedValue!.startsWith(currentItem.id!))) {
+                            Future.microtask(() {
+                              if (mounted) {
+                                setState(() {
+                                  selectedValue = defaultId;
+                                  selectedIndex = 0;
+                                });
+                              }
+                            });
+                          }
+
+                          return Column(
+                            key: ValueKey(currentItem.id), // forces rebuild on item change
+                            children: conflicts.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final conflict = entry.value;
+                              final address = conflict.finalAddress;
+                              final locationId = "${(currentItem).id}_conflict_$index";
+
+                              return RadioListTile<String>(
+                                activeColor: Colors.white,
+                                title: Text(
+                                  address?.address ?? 'Unknown',
+                                  style: typography.Body2.copyWith(color: Colors.white),
                                 ),
-                              ],
+                                value: locationId,
+                                groupValue: selectedValue,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedValue = value;
+                                    selectedIndex = index;
+                                  });
+                                  if (address != null) {
+                                    _navigateToMarker(
+                                      address.latitude ?? 0.0,
+                                      address.longitude ?? 0.0,
+                                    );
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+
+
+
+                    // Column(,
+                      //   key: ValueKey(selectedValue),
+                      //   children: ((currentItem as MyLocation).conflicts ?? [])
+                      //       .asMap()
+                      //       .entries
+                      //       .map((entry) {
+                      //     final index = entry.key;
+                      //     final conflict = entry.value;
+                      //     final address = conflict.finalAddress;
+                      //     final locationId =
+                      //         "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index";
+                      //
+                      //     return RadioListTile<String>(
+                      //       activeColor: Colors.white,
+                      //       title: Text(
+                      //         address?.address ?? 'Unknown',
+                      //         style: typography.Body2.copyWith(
+                      //             color: Colors.white),
+                      //       ),
+                      //       value: locationId,
+                      //       groupValue: selectedValue,
+                      //       onChanged: (value) {
+                      //         setState(() {
+                      //           selectedValue = value;
+                      //           selectedIndex = index;
+                      //         });
+                      //         if (address != null) {
+                      //           _navigateToMarker(
+                      //             address.latitude ?? 0.0,
+                      //             address.longitude ?? 0.0,
+                      //           );
+                      //         }
+                      //       },
+                      //     );
+                      //   }).toList(),
+                      // ),
+
+                    const SizedBox(height: 25),
+
+                    // Resolve button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isResolving ? null : _resolveConflict,
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.lightBlueAccent,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              child: isResolving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      "Resolve",
+                                      style: CustomTypography(context)
+                                          .ButtonLarge
+                                          .copyWith(color: Colors.black),
+                                    ),
                             ),
                           ),
-                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
         );
       },
     );
   }
+
+// Widget _buildConflictSheet(CustomTypography typography) {
+//   final hasMultipleLocations =
+//       widget.location != null && widget.location!.length > 1;
+//   final conflictData =
+//       hasMultipleLocations ? widget.location : widget.conflict;
+//   final currentItem = conflictData != null &&
+//       conflictData.isNotEmpty &&
+//       currentIndex < conflictData.length
+//       ? conflictData[currentIndex]
+//       : null;
+//   if (selectedValue == null) {
+//     if (hasMultipleLocations &&
+//         currentItem is MyLocation &&
+//         currentItem.conflicts != null &&
+//         currentItem.conflicts!.isNotEmpty) {
+//       selectedIndex = 0;
+//       selectedValue = "${currentItem.id}_conflict_0";
+//     } else if (!hasMultipleLocations &&
+//         widget.conflict != null &&
+//         widget.conflict!.isNotEmpty) {
+//       selectedValue = widget.conflict!.first.finalAddress?.address ?? '';
+//       selectedOption = selectedValue;
+//     }
+//   }
+//   return DraggableScrollableSheet(
+//     initialChildSize: 0.53,
+//     minChildSize: 0.2,
+//     maxChildSize: 0.8,
+//     builder: (context, scrollController) {
+//       return Container(
+//         margin: const EdgeInsets.symmetric(horizontal: 5),
+//         decoration: const BoxDecoration(
+//           color: Colors.black,
+//           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+//         ),
+//         child: isRefreshing
+//             ? const Center(
+//                 child: Padding(
+//                   padding: EdgeInsets.all(20),
+//                   child: CircularProgressIndicator(),
+//                 ),
+//               )
+//             : ListView(
+//                 controller: scrollController,
+//                 padding: const EdgeInsets.symmetric(horizontal: 8),
+//                 children: [
+//                   // Header
+//                   Padding(
+//                     padding: const EdgeInsets.symmetric(
+//                         horizontal: 2, vertical: 14),
+//                     child: Row(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         FloatingActionButton(
+//                           shape: const CircleBorder(),
+//                           mini: true,
+//                           elevation: 0,
+//                           backgroundColor: Theme.of(context)
+//                               .colorScheme
+//                               .surfaceContainerHighest,
+//                           onPressed:
+//                               currentIndex > 0 ? _navigatePrevious : null,
+//                           child: Icon(Icons.chevron_left,
+//                               size: 24, color: AppColors.primaryMain),
+//                         ),
+//                         const SizedBox(width: 4),
+//                         Expanded(
+//                           child: Center(
+//                             child: Row(
+//                               mainAxisAlignment: MainAxisAlignment.center,
+//                               children: [
+//                                 InkWell(
+//                                   onTap: () async {
+//                                     setState(() {
+//                                       isRefreshing = true;
+//                                     });
+//
+//                                     await Future.delayed(
+//                                         const Duration(seconds: 1));
+//
+//                                     setState(() {
+//                                       selectedOption = 'none';
+//                                       selectedValue = null;
+//                                       selectedIndex = null;
+//                                       isRefreshing = false;
+//                                     });
+//                                   },
+//                                   child: const Icon(Icons.refresh,
+//                                       color: Colors.white),
+//                                 ),
+//                                 const SizedBox(width: 5),
+//                                 Text(
+//                                   hasMultipleLocations
+//                                       ? "Resolve Locations "
+//                                       : "Resolve Conflicts ",
+//                                   style: typography.Body1.copyWith(
+//                                       color: Colors.white),
+//                                 ),
+//                                 if (widget.location != null)
+//                                   Container(
+//                                     padding: const EdgeInsets.symmetric(
+//                                         horizontal: 8, vertical: 4),
+//                                     decoration: BoxDecoration(
+//                                       color: Colors.red,
+//                                       borderRadius: BorderRadius.circular(15),
+//                                     ),
+//                                     child: Text(
+//                                       widget.location!.length.toString(),
+//                                       style: typography.Body1.copyWith(
+//                                           color: Colors.white),
+//                                     ),
+//                                   ),
+//                               ],
+//                             ),
+//                           ),
+//                         ),
+//                         FloatingActionButton(
+//                           shape: const CircleBorder(),
+//                           mini: true,
+//                           elevation: 0,
+//                           backgroundColor: Theme.of(context)
+//                               .colorScheme
+//                               .surfaceContainerHighest,
+//                           onPressed: hasMultipleLocations &&
+//                                   currentIndex < widget.location!.length - 1
+//                               ? _navigateNext
+//                               : null,
+//                           child: Icon(Icons.chevron_right,
+//                               size: 24, color: AppColors.primaryMain),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//
+//                   const Divider(),
+//                   const SizedBox(height: 10),
+//
+//                   // Address and edit icon
+//                   if (currentItem != null)
+//                     Padding(
+//                       padding: const EdgeInsets.symmetric(horizontal: 16),
+//                       child: Row(
+//                         crossAxisAlignment: CrossAxisAlignment.start,
+//                         children: [
+//                           Text(
+//                             "${currentIndex + 1} -",
+//                             style: typography.H4.copyWith(
+//                               color: Colors.lightBlueAccent,
+//                               fontSize: 14,
+//                               fontWeight: FontWeight.w500,
+//                             ),
+//                           ),
+//                           const SizedBox(width: 5),
+//                           SizedBox(
+//                             width: MediaQuery.of(context).size.width / 1.4,
+//                             child: Text(
+//                               hasMultipleLocations
+//                                   ? (currentItem as MyLocation)
+//                                           .geocodedAddress ??
+//                                       ''
+//                                   : (currentItem as Conflicts)
+//                                           .geocodedAddress ??
+//                                       widget.geocodingAddress ??
+//                                       '',
+//                               maxLines: 3,
+//                               style: typography.H4.copyWith(
+//                                 color: Colors.lightBlueAccent,
+//                                 fontSize: 14,
+//                                 fontWeight: FontWeight.w500,
+//                               ),
+//                             ),
+//                           ),
+//                           const SizedBox(width: 10),
+//                           InkWell(
+//                             onTap: () {
+//                               final locationId = hasMultipleLocations
+//                                   ? (currentItem as MyLocation).id ?? ''
+//                                   : (currentItem as Conflicts).locationId ??
+//                                       '';
+//                               final address = hasMultipleLocations
+//                                   ? (currentItem as MyLocation)
+//                                       .geocodedAddress
+//                                   : widget.geocodingAddress;
+//
+//                               Navigator.of(context)
+//                                   .push(MaterialPageRoute(
+//                                 builder: (_) => AddLocationScreen(
+//                                   accountId: widget.accountId,
+//                                   subAccountId: widget.subAccountId,
+//                                   sovId: "null",
+//                                   accountName: widget.accountName,
+//                                   subAccountName: widget.subAccountName!,
+//                                   sovName: "widget.sovName!",
+//                                   locationId: locationId,
+//                                   locationName: address,
+//                                   locationIdForRef: locationId,
+//                                   searchQuery: address!,
+//                                   is_conflict: true,
+//                                 ),
+//                               ))
+//                                   .then((_) {
+//                                 setState(() {
+//                                   widget.location!.removeAt(currentIndex);
+//                                   selectedOption = 'none';
+//                                   selectedValue = null;
+//                                   selectedIndex = null;
+//                                 });
+//                               });
+//                             },
+//                             child: const Icon(Icons.edit,
+//                                 size: 20, color: Colors.lightBlueAccent),
+//                           )
+//                         ],
+//                       ),
+//                     ),
+//
+//                   const SizedBox(height: 10),
+//
+//                   // Conflict List
+//                   if (!hasMultipleLocations)
+//                     Column(
+//                       children: widget.conflict!
+//                           .map((option) => RadioListTile<String>(
+//                                 title: Text(option.finalAddress?.address ??
+//                                     'Unknown'),
+//                                 value: option.finalAddress?.address ?? '',
+//                                 groupValue: selectedOption,
+//                                 onChanged: (value) {
+//                                   setState(() {
+//                                     selectedOption = value;
+//                                     selectedValue = value;
+//                                   });
+//                                 },
+//                               ))
+//                           .toList(),
+//                     )
+//                   else if (currentItem != null)
+//                     Column(
+//                       children: ((currentItem as MyLocation).conflicts ?? [])
+//                           .asMap()
+//                           .entries
+//                           .map((entry) {
+//                         final index = entry.key;
+//                         final conflict = entry.value;
+//                         final address = conflict.finalAddress;
+//                         final locationId =
+//                             "${(currentItem as MyLocation).id ?? 'loc'}_conflict_$index";
+//
+//                         return RadioListTile<String>(
+//                           activeColor: Colors.white,
+//                           title: Text(
+//                             address?.address ?? 'Unknown',
+//                             style: typography.Body2.copyWith(
+//                                 color: Colors.white),
+//                           ),
+//                           value: locationId,
+//                           groupValue: selectedValue,
+//                           onChanged: (value) {
+//                             setState(() {
+//                               selectedValue = value;
+//                               selectedIndex = index;
+//                             });
+//                             if (address != null) {
+//                               _navigateToMarker(
+//                                 address.latitude ?? 0.0,
+//                                 address.longitude ?? 0.0,
+//                               );
+//                             }
+//                           },
+//                         );
+//                       }).toList(),
+//                     ),
+//
+//                   const SizedBox(height: 25),
+//
+//                   // Resolve button
+//                   Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 16),
+//                     child: Row(
+//                       children: [
+//                         Expanded(
+//                           child: ElevatedButton(
+//                             onPressed: isResolving ? null : _resolveConflict,
+//                             style: ElevatedButton.styleFrom(
+//                               shape: RoundedRectangleBorder(
+//                                   borderRadius: BorderRadius.circular(8)),
+//                               foregroundColor: Colors.white,
+//                               backgroundColor: Colors.lightBlueAccent,
+//                               padding:
+//                                   const EdgeInsets.symmetric(vertical: 10),
+//                             ),
+//                             child: isResolving
+//                                 ? const SizedBox(
+//                                     width: 20,
+//                                     height: 20,
+//                                     child: CircularProgressIndicator(
+//                                       strokeWidth: 3,
+//                                       valueColor:
+//                                           AlwaysStoppedAnimation<Color>(
+//                                               Colors.white),
+//                                     ),
+//                                   )
+//                                 : Text(
+//                                     "Resolve",
+//                                     style: CustomTypography(context)
+//                                         .ButtonLarge
+//                                         .copyWith(color: Colors.black),
+//                                   ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                   const SizedBox(height: 20),
+//                 ],
+//               ),
+//       );
+//     },
+//   );
+// }
 }

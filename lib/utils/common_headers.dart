@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 /// Helper class for creating common HTTP headers.
 class CommonHeaders {
+
   /// Creates and returns a map of common HTTP headers, including authorization headers.
   /// This method is asynchronous and returns a Future containing the headers.
   static Future<Map<String, String>> createHeaders() async {

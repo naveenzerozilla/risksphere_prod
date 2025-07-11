@@ -1,8 +1,7 @@
 import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:RiskSphere/screens/event/notification_map_screen.dart';
-import 'package:RiskSphere/screens/listings/hazard_proto.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
@@ -20,13 +19,15 @@ import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../screens/listings/news_feed_screen.dart';
-import '../../screens/listings/pricing_list.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
+import '../../screens/listings/widgets/message_card.dart';
 import '../../screens/onboarding/splash_screen.dart';
+import '../../screens/payments/pricing_list.dart';
+import '../../screens/payments/transaction_summary.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/debouncer.dart';
-import '../primitives/app_colors.dart'; // Import the provider
+import '../primitives/app_colors.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
@@ -38,6 +39,7 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
+  final ScrollController _scrollController = ScrollController();
   bool showCorporateManagementTab = true;
   bool showNonCorporateManagementTab = true;
   bool showEmployeeManagementTab = true;
@@ -45,22 +47,105 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showCorporateUserListDropdown = true;
   bool showCorporateVerificationTab = true;
   bool showCorporateProfile = true;
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
+  bool isLoggingOut = false;
+
+  bool showTotalCorporates = false;
+  bool showAllUsers = false;
+  bool showConnectionRequests = false;
+  bool showCompanyOnboardingStats = false;
+  bool showUserOnboardingStats = false;
+  bool showVerificationRequests = false;
+  String isMaintenance = "";
 
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer =
       Debouncer(milliseconds: 200); // Debouncer with 300ms delay
 
-  late ScrollController _scrollController;
-
   @override
   void initState() {
-    _scrollController = ScrollController();
-    _getClaims();
     super.initState();
+    _setClaims();
+    _getClaims();
   }
 
+  Future<void> _initializeData() async {
+    await Future.wait([
+      _setClaims(),
+    ]);
+  }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
+
+    print(results.toString());
+    print(isIndivudual);
+
+    showTotalCorporates = results[0] ?? false;
+    showAllUsers = results[1] ?? false;
+    showConnectionRequests = results[2] ?? false;
+    showCompanyOnboardingStats = results[3] ?? false;
+    showUserOnboardingStats = results[4] ?? false;
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+
+    showVerificationRequests =
+        showCorporateVerificationRequests || showUserVerificationRequests;
+
+    _getMaintainancePeriod();
+    setState(() {});
+  }
+
+  Future<void> _getMaintainancePeriod() async {
+    isMaintenance =
+        await SharedPreferenceService.getScheduleInProgress() ?? "false";
+  }
+
+// In initState()
+//   @override
+//   void initState() {
+//     _scrollController = ScrollController();
+//     _setClaims();
+//     _getClaims();
+//     super.initState();
+//   }
+
+// In dispose()
   @override
-  dispose() {
+  void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
@@ -95,7 +180,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
         showCorporateProfile;
   }
 
-  bool isLoggingOut = false; // Add this to your widget's state
+// Add this to your widget's state
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +207,58 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   const SizedBox(height: 20),
                   // Search bar added
+                  Consumer<UserProfileProvider>(
+                    builder: (context, userProfile, child) {
+                      final trialStatus = userProfile.trialInfo['status'] ?? '';
+
+                      if (trialStatus.contains('Expired')) {
+                        return Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withOpacity(0.95),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(height: 10),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: MessageCard(
+                                  messageTextSpans: [
+                                    TextSpan(
+                                      text:
+                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                      style: typography.Body1,
+                                    ),
+                                    // tappable
+                                    TextSpan(
+                                      text: ' Upgrade Now!',
+                                      style: typography.Body1.copyWith(
+                                        color: AppColors.primaryMain,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      PricingListScreen()));
+                                        },
+                                    ),
+                                  ],
+                                  isError: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return SizedBox.shrink();
+                    },
+                  ),
                   Column(
                     children: [
                       TextField(
@@ -148,7 +285,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               Theme.of(context).brightness == Brightness.dark
                                   ? Colors.grey[800]
                                   : Colors.grey[200],
-                          // Use a lighter color for light theme
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
@@ -179,66 +315,121 @@ class _CustomDrawerState extends State<CustomDrawer> {
             Expanded(
               child: Scrollbar(
                 controller: _scrollController,
+                thumbVisibility: true,
                 child: Consumer<DrawerSelectionProvider>(
                   builder: (context, provider, child) {
-                    return provider.isLoading
-                        ? Center(
-                            child: CircularProgressIndicator()) // Show Loader
-                        : ListView(
-                            physics: ClampingScrollPhysics(),
-                            padding: EdgeInsets.only(top: 0),
-                            children: <Widget>[
-                              _buildDrawerItem(
+                    if (provider.isLoading) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    return ListView(
+                      controller: _scrollController,
+                      physics: ClampingScrollPhysics(),
+                      padding: EdgeInsets.only(top: 0),
+                      children: <Widget>[
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Dashboard",
+                          icon: Icons.home,
+                          onTap: () {
+                            provider.setSelectedItem("dashboard");
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => DashboardScreen()),
+                            );
+                          },
+                          isSelected: provider.selectedItem == "dashboard",
+                        ),
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Accounts",
+                          icon: Icons.account_balance_wallet,
+                          onTap: () {
+                            provider.setSelectedItem("accounts");
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => AccountListScreen()),
+                            );
+                          },
+                          isSelected: provider.selectedItem == "accounts",
+                        ),
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "News Feed",
+                          icon: Icons.space_dashboard,
+                          onTap: () {
+                            provider.setSelectedItem("news");
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => NewsFeedScreen()),
+                            );
+                          },
+                          isSelected: provider.selectedItem == "news",
+                        ),
+                        isPgAdmin.toString() == "true"
+                            ? _buildDrawerItem(
                                 context,
                                 provider,
-                                title: "Dashboard",
-                                icon: Icons.home,
+                                title: "Payment History",
+                                icon: Icons.payments_sharp,
                                 onTap: () {
-                                  provider.setSelectedItem("dashboard");
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => DashboardScreen()));
+                                  provider.setSelectedItem("payment_history");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PaymentTransactionsPage(),
+                                    ),
+                                  );
                                 },
                                 isSelected:
-                                    provider.selectedItem == "dashboard",
-                              ),
-                              _buildDrawerItem(
+                                    provider.selectedItem == "Payment History",
+                              )
+                            : Container(),
+                        isPgAdmin.toString() == "true" ||
+                                (isPgAdmin.toString() == "false" &&
+                                    isIndivudual.toString() == "false" &&
+                                    isSuperAdmin.toString() == "false")
+                            ? Container()
+                            : _buildDrawerItem(
                                 context,
                                 provider,
-                                title: "Accounts",
-                                icon: Icons.account_balance_wallet,
+                                title: "Payment History",
+                                icon: Icons.payments_sharp,
                                 onTap: () {
-                                  provider.setSelectedItem("accounts");
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => AccountListScreen()));
+                                  provider.setSelectedItem("payment_history");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PaymentTransactionsPage(),
+                                    ),
+                                  );
                                 },
-                                isSelected: provider.selectedItem == "accounts",
+                                isSelected:
+                                    provider.selectedItem == "Payment History",
                               ),
-                              _buildDrawerItem(
+                        isPgAdmin.toString() == "true" ||
+                                (isPgAdmin.toString() == "false" &&
+                                    isIndivudual.toString() == "false" &&
+                                    isSuperAdmin.toString() == "false")
+                            ? Container()
+                            : _buildDrawerItem(
                                 context,
                                 provider,
-                                title: "News Feed",
-                                icon: Icons.space_dashboard,
+                                title: "Purchase License",
+                                icon: Icons.description,
                                 onTap: () {
-                                  provider.setSelectedItem("news");
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => NewsFeedScreen()));
+                                  provider.setSelectedItem("purchase_license");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PricingListScreen(),
+                                    ),
+                                  );
                                 },
-                                isSelected: provider.selectedItem == "news",
+                                isSelected:
+                                    provider.selectedItem == "purchase_license",
                               ),
-                              _buildDrawerItem(
-                                context,
-                                provider,
-                                title: "Pricing",
-                                icon: Icons.space_dashboard,
-                                onTap: () {
-                                  provider.setSelectedItem("news");
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => PricingListScreen()));
-                                },
-                                isSelected: provider.selectedItem == "news",
-                              ),
-                            ],
-                          );
+                      ],
+                    );
                   },
                 ),
               ),
@@ -253,8 +444,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     initialValue: _getInitialCountry(context),
                     itemBuilder: (Country country) {
                       return Container(
-                        width: 28.0, // Adjust the width as needed
-                        height: 28.0, // Adjust the height as needed
+                        width: 28.0,
+                        height: 28.0,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
                           // Set the desired border radius
@@ -270,7 +461,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                     itemFilter: (Country country) {
-                      // Only include countries with these ISO codes
                       return ['US', 'ES', 'FR', 'JP', 'CN']
                           .contains(country.isoCode);
                     },

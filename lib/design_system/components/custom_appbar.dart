@@ -17,6 +17,7 @@ import 'package:RiskSphere/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/drawer_selection_provider.dart';
+import '../../providers/news_feed_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../screens/listings/hazard_proto.dart';
 import '../../screens/listings/news_feed_screen.dart';
@@ -51,8 +52,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => Size.fromHeight(70);
 
-
-
   @override
   Widget build(BuildContext context) {
     var typography =
@@ -85,9 +84,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onTap: () {
                   //onExpandPressed(!isExpanded);
                 },
-                child:
-                Container(
-
+                child: Container(
                   padding: EdgeInsets.all(8),
                   child: SvgPicture.asset(
                     'assets/images/logoHalf.svg',
@@ -121,7 +118,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 );*/
-                if(canNavigateToNewsFeed??true) {
+                if (canNavigateToNewsFeed ?? true) {
                   Provider.of<DrawerSelectionProvider>(context, listen: false)
                       .setSelectedItem("news");
                   Navigator.of(context).push(
@@ -143,16 +140,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   if (showNotificationDot)
                     Positioned(
-                      top: -5,
-                      right: -3,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.red,
-                        ),
-                      ),
+                      top: -10,
+                      right: -5,
+                      child: Consumer<NewsFeedProvider>(
+                          builder: (context, provider, child) {
+                        return Container(
+                          width: 20,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red,
+                          ),
+                          child: Center(
+                            child: Text(
+                              provider.newsFeed.length.toString(),
+                              style: typography.Caption.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
                 ],
               ),
@@ -250,7 +259,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           },
                     child: Consumer<UserProfileProvider>(
                       builder: (context, userProfile, child) {
-                        final trialStatus = userProfile.trialInfo['status'] ?? '';
+                        final trialStatus =
+                            userProfile.trialInfo['status'] ?? '';
 
                         if (trialStatus.isEmpty) {
                           // Show normal profile icon if no trial period
@@ -258,11 +268,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         }
 
                         return Stack(
-                          clipBehavior: Clip.none,  // Allow overlap outside the container
+                          clipBehavior: Clip.none,
+                          // Allow overlap outside the container
                           children: [
                             Container(
                               constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.3,
+                                maxWidth:
+                                    MediaQuery.of(context).size.width * 0.3,
                               ),
                               padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
                               decoration: BoxDecoration(
@@ -280,9 +292,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                               child: Text(
                                 trialStatus,
                                 maxLines: 2,
-                                style: typography.BottomNavigationActiveLabel.copyWith(color: trialStatus.contains('Trial')
-                                    ? (AppColors.warning)
-                                    : AppColors.warning,
+                                style: typography.BottomNavigationActiveLabel
+                                    .copyWith(
+                                  color: trialStatus.contains('Trial')
+                                      ? (AppColors.warning)
+                                      : AppColors.warning,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 10,
                                 ),
@@ -291,8 +305,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
                             // Profile image overlapping the container
                             Positioned(
-                              right: -6,  // Overlap adjustment
-                              top: -5,     // Slight elevation for better UI
+                              right: -6, // Overlap adjustment
+                              top: -5, // Slight elevation for better UI
                               child: ProfileImageWidget(),
                             ),
                           ],

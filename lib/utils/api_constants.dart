@@ -10,6 +10,7 @@ class AppConstant {
   static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies';
 
   static String get PAYMNET_GATEWAY_URL => '$baseURL/pricing/payment_session';
+  static String get PAYMNET_DETAILS_URL => '$baseURL/pricing/session_status';
 
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
       '$baseURL/user_management_new/companies_list';
@@ -123,6 +124,8 @@ class AppConstant {
   static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
 
   static String get GET_PRICING_LIST => '$baseURL/pricing';
+  static String get GET_Transaction_LIST => '$baseURL/pricing/transactions/details';
+  static String get GET_INVOICE_LIST => '$baseURL/pricing/payment/details';
 
   static String get RENAME_ACCOUNT => '$baseURL/accounts';
 
@@ -290,4 +293,8 @@ class AppConstant {
 
   static String get GET_DATA_PARAMETERS =>
       '$baseURL/data_categories/subaccountparameter/';
+  static String get GET_LOCATION_PARAMETERS =>
+      '$baseURL/data_categories/locationparameter/';
+  static String get GET_HAZARD_LIST =>
+      '$baseURL/vendor_management/hazard_list';
 }

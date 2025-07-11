@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:ui' as BorderType;
 
@@ -8,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+
 // import 'package:RiskSphare/design_system/repo/color_pallets_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
@@ -34,12 +36,14 @@ class DataTab extends StatefulWidget {
   final String? accountName;
   final String? accountId;
   final String? subaccountId;
+  final String? locationId;
 
   const DataTab({
     Key? key,
     this.accountName,
     this.accountId,
     this.subaccountId,
+    this.locationId,
   }) : super(key: key);
 
   @override
@@ -56,7 +60,6 @@ class _DataTabState extends State<DataTab> {
   @override
   void initState() {
     super.initState();
-    print(widget.subaccountId);
     _getData();
   }
 
@@ -64,11 +67,15 @@ class _DataTabState extends State<DataTab> {
     // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubaccountParameterProvider>(context, listen: false)
-          .fetchSubaccountParameters(context, widget.subaccountId);
+          .fetchHazardList(context, widget.subaccountId);
+      Provider.of<SubaccountParameterProvider>(context, listen: false)
+          .fetchSubaccountParameters(context, widget.subaccountId, '', '', '');
     });
   }
 
+  String? selectedHazard;
   String selectedParameter = 'All Parameters';
+  String selectedParameterList = 'Select';
 
   final uniqueResults = <String, Result>{};
 
@@ -115,8 +122,9 @@ class _DataTabState extends State<DataTab> {
   bool isFocused = false;
 
   bool showDropdown = false;
-  bool showDropdown1 = false;
+  bool showDropdownList = false;
   TextEditingController _controller = TextEditingController();
+  TextEditingController _controllerlist = TextEditingController();
   List<String> parameters = [
     'All Parameters',
     'Critical Impact Parameters',
@@ -124,15 +132,19 @@ class _DataTabState extends State<DataTab> {
     'Low Impact Parameters',
     'My Parameters',
   ];
+  List<String> parametersList = [
+    'Sub Account',
+    'Location',
+    'Campus',
+    'Sov',
+  ];
 
   // List<String> parameters = ['Earthquake', 'Riverine Flood', 'Wildfire'];
   List<String> filteredParameters = [];
 
   void _onSearchChanged(String value) {
     setState(() {
-      filteredParameters = parameters
-          .where((item) => item.toLowerCase().contains(value.toLowerCase()))
-          .toList();
+      _searchText = value.toLowerCase(); // ensure case-insensitive search
     });
   }
 
@@ -159,22 +171,19 @@ class _DataTabState extends State<DataTab> {
   List<String> perils = ["Earthquake", "Riverine Flood", "Wildfire"];
   List<String> filteredPerils = [];
 
+  void submitHazard(String hazardName) async {
+    print("🚀 Submitting hazard: $hazardName");
+    await Provider.of<SubaccountParameterProvider>(context, listen: false)
+        .fetchSubaccountParameters(
+            context, widget.subaccountId, hazardName, '', widget.locationId);
+  }
+
+  String _searchText = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      // endDrawer: Drawer(
-      //   child: SafeArea(
-      //     child: DataParameterFilterScreen(
-      //       accountId: widget.accountId ?? "",
-      //       subAccountId: widget.subaccountId ?? "",
-      //       sovId: widget.accountId ?? "",
-      //       searchQuery: "risksphere",
-      //       // You can pass your search query here if needed
-      //       showGeoRatings: false, // Adjust based on your needs
-      //     ),
-      //   ),
-      // ),
       backgroundColor: Colors.transparent,
       body: Consumer<SubaccountParameterProvider>(
         builder: (context, provider, child) {
@@ -187,7 +196,7 @@ class _DataTabState extends State<DataTab> {
           }
 
           // Grouping logic starts here
-          final Map<String, List<Result>> groupedResults = {};
+          Map<String, List<Result>> groupedResults = {};
 
           for (var result in provider.parameters!.result!) {
             final impactType = result.criticality?.impactType.toString() ?? '';
@@ -203,631 +212,685 @@ class _DataTabState extends State<DataTab> {
             }
           }
           final uniqueResultList = uniqueResults.values.toList();
-          return Container(
-            padding: const EdgeInsets.only(right: 10.0, left: 10.0, top: 10),
+          return RefreshIndicator(
+            onRefresh: () async {
+              await Provider.of<SubaccountParameterProvider>(context,
+                      listen: false)
+                  .fetchSubaccountParameters(
+                      context, widget.subaccountId, '', '', '');
+            },
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 5),
-                      Text(
-                        'Configure Sub Account "${widget.accountName}" Data Parameters',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.white,
-                        ),
+                  SizedBox(height: 5),
+                  Container(
+                    margin: const EdgeInsets.only(right: 12, left: 12, top: 10),
+                    child: Text(
+                      'Configure Sub Account "${widget.accountName}" Data Parameters',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.white,
                       ),
-                      const SizedBox(height: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Parameters Dropdown
-                          TextFormField(
-                            controller: _controller,
-                            readOnly: true,
-                            onTap: () {
-                              setState(() => showDropdown = !showDropdown);
-                            },
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Parameters',
-                              labelStyle: TextStyle(color: Colors.white),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                              filled: true,
-                              fillColor: Colors.black,
-                              suffixIcon: Icon(Icons.arrow_drop_down,
-                                  color: Colors.white),
-                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    margin: const EdgeInsets.only(right: 12, left: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Parameters Dropdown
+                        TextFormField(
+                          controller: _controllerlist,
+                          readOnly: true,
+                          onTap: () {
+                            setState(
+                                () => showDropdownList = !showDropdownList);
+                          },
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Select locations',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            filled: true,
+                            fillColor: Colors.black,
+                            suffixIcon: Icon(Icons.arrow_drop_down,
+                                color: Colors.white),
                           ),
+                        ),
 
-                          // Dropdown with search and list
-                          if (showDropdown)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[900],
-                                border: Border.all(color: Colors.white24),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Search within dropdown
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount: parameters.length,
-                                    itemBuilder: (context, index) {
-                                      final item = parameters[index];
-                                      final isSelected =
-                                          selectedParameter == item;
+                        // Dropdown with search and list
+                        if (showDropdownList)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[900],
+                              border: Border.all(color: Colors.white24),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: parametersList.length,
+                                  itemBuilder: (context, index) {
+                                    final item = parametersList[index];
+                                    final isSelected =
+                                        selectedParameterList == item;
 
-                                      return ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        leading: Icon(
-                                          isSelected
-                                              ? Icons.radio_button_checked
-                                              : Icons.radio_button_unchecked,
+                                    return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: Icon(
+                                        isSelected
+                                            ? Icons.radio_button_checked
+                                            : Icons.radio_button_unchecked,
+                                        color: isSelected
+                                            ? Colors.lightBlue
+                                            : Colors.white,
+                                      ),
+                                      title: Text(
+                                        item,
+                                        style: TextStyle(
                                           color: isSelected
                                               ? Colors.lightBlue
                                               : Colors.white,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                         ),
-                                        title: Text(
-                                          item,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.lightBlue
-                                                : Colors.white,
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                      ),
+                                      tileColor: isSelected
+                                          ? Colors.blueGrey[800]
+                                          : Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          selectedParameterList = item;
+                                          _controllerlist.text = item;
+                                          showDropdownList = false;
+                                        });
+                                        print(item);
+                                        print(selectedParameterList);
+                                        Provider.of<SubaccountParameterProvider>(
+                                                context,
+                                                listen: false)
+                                            .fetchSubaccountParameters(
+                                          context,
+                                          widget.subaccountId,
+                                          '',
+                                          selectedParameterList,
+                                          widget.locationId,
+                                        );
+                                      },
+                                    );
+                                  },
+                                )
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _controller,
+                          readOnly: true,
+                          onTap: () {
+                            setState(() => showDropdown = !showDropdown);
+                          },
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Select parameters',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            filled: true,
+                            fillColor: Colors.black,
+                            suffixIcon: Icon(Icons.arrow_drop_down,
+                                color: Colors.white),
+                          ),
+                        ),
+
+                        // Dropdown with search and list
+                        if (showDropdown)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[900],
+                              border: Border.all(color: Colors.white24),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: parameters.length,
+                                  itemBuilder: (context, index) {
+                                    final item = parameters[index];
+                                    final isSelected =
+                                        selectedParameter == item;
+
+                                    return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: Icon(
+                                        isSelected
+                                            ? Icons.radio_button_checked
+                                            : Icons.radio_button_unchecked,
+                                        color: isSelected
+                                            ? Colors.lightBlue
+                                            : Colors.white,
+                                      ),
+                                      title: Text(
+                                        item,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.lightBlue
+                                              : Colors.white,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                      tileColor: isSelected
+                                          ? Colors.blueGrey[800]
+                                          : Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          selectedParameter = item;
+                                          _controller.text = item;
+                                          showDropdown = false;
+                                        });
+                                      },
+                                    );
+                                  },
+                                )
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 10),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  showMissingDataDropdown =
+                                      !showMissingDataDropdown;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 35),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2E3A59),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white30),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    SizedBox(width: 40),
+                                    Text('All Parameters1',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(width: 20),
+                                    Container(
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                                groupedResults.length
+                                                    .toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                           ),
-                                        ),
-                                        tileColor: isSelected
-                                            ? Colors.blueGrey[800]
-                                            : Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        onTap: () {
-                                          setState(() {
-                                            selectedParameter = item;
-                                            _controller.text = item;
-                                            showDropdown = false;
-                                          });
-                                        },
-                                      );
-                                    },
-                                  )
-                                ],
+                                          Icon(Icons.arrow_drop_down_sharp)
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                  ],
+                                ),
                               ),
                             ),
-
-                          const SizedBox(height: 10),
-
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    showMissingDataDropdown =
-                                        !showMissingDataDropdown;
-                                  });
-                                },
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  showMissingDataDropdown1 =
+                                      !showMissingDataDropdown1;
+                                });
+                              },
+                              child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF2E3A59),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: Colors.white30),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      SizedBox(width: 40),
-                                      Text('All Parameters',
-                                          style:
-                                              TextStyle(color: Colors.white)),
-                                      SizedBox(width: 30),
-                                      Container(
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.red,
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: const Text('15',
-                                                  style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.bold)),
+                                  child: const Icon(Icons.filter_alt,
+                                      color: Colors.white)),
+                            ),
+                          ],
+                        ),
+
+                        // Dropdown Panel
+                        if (showMissingDataDropdown)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(16),
+                            width: 320,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 8),
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: groupedResults.length,
+                                    itemBuilder: (context, index) {
+                                      final impactType =
+                                          groupedResults.keys.elementAt(index);
+                                      final resultsForImpactType =
+                                          groupedResults[impactType]!;
+
+                                      // Reorder this group's list: move selected item to the top
+                                      final reorderedResults =
+                                          List.from(resultsForImpactType);
+                                      final selectedIndex =
+                                          reorderedResults.indexWhere(
+                                              (e) => e.name == selectedPeril);
+                                      if (selectedIndex != -1) {
+                                        final selectedItem = reorderedResults
+                                            .removeAt(selectedIndex);
+                                        reorderedResults.insert(
+                                            0, selectedItem);
+                                      }
+
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            impactType.toUpperCase(),
+                                            style: TextStyle(
+                                              color: impactType == "medium"
+                                                  ? Colors.purple
+                                                  : impactType == "high"
+                                                      ? Colors.green
+                                                      : Colors.white,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            Icon(Icons.arrow_drop_down_sharp)
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-                                    ],
+                                          ),
+                                          ...reorderedResults.map((e) {
+                                            final displayName =
+                                                e.name ?? "Unnamed";
+                                            final isSelected =
+                                                displayName == selectedPeril;
+
+                                            return RadioListTile<String>(
+                                              value: displayName,
+                                              groupValue: selectedPeril,
+                                              onChanged: (value) {
+                                                if (value != null) {
+                                                  setState(() {
+                                                    selectedPeril = value;
+                                                    showMissingDataDropdown =
+                                                        false;
+                                                  });
+                                                }
+                                              },
+                                              title: Text(
+                                                displayName,
+                                                style: TextStyle(
+                                                  color: isSelected
+                                                      ? Colors.orange
+                                                      : Colors.white,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                              activeColor: Colors.lightBlue,
+                                            );
+                                          }).toList(),
+                                          const SizedBox(height: 8),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (showMissingDataDropdown1)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(16),
+                            width: 320,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextFormField(
+                                  onChanged: _onSearchChanged,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search parameters',
+                                    hintStyle:
+                                        const TextStyle(color: Colors.white60),
+                                    prefixIcon: const Icon(Icons.search,
+                                        color: Colors.white60),
+                                    filled: true,
+                                    fillColor: Colors.black,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    showMissingDataDropdown1 =
-                                        !showMissingDataDropdown1;
-                                  });
-                                },
-                                child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF2E3A59),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.white30),
-                                    ),
-                                    child: const Icon(Icons.filter_alt,
-                                        color: Colors.white)),
-                              ),
-                            ],
-                          ),
-
-                          // Dropdown Panel
-                          if (showMissingDataDropdown)
-                            Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.all(16),
-                              width: 320,
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white24),
-                              ),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 8),
-
-                                    // ListView with RadioListTiles inside scrollable column
-                                    ListView.builder(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      itemCount: groupedResults.length,
-                                      itemBuilder: (context, index) {
-                                        final impactType = groupedResults.keys
-                                            .elementAt(index);
-                                        final resultsForImpactType =
-                                            groupedResults[impactType]!;
+                                const SizedBox(height: 12),
+                                const Text('Select Peril',
+                                    style: TextStyle(color: Colors.white70)),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 200,
+                                  child: SingleChildScrollView(
+                                    child:
+                                        Consumer<SubaccountParameterProvider>(
+                                      builder: (context, provider, child) {
+                                        final searchQuery =
+                                            _searchText.toLowerCase();
+                                        final hazards = provider.hazardList
+                                            .where((hazard) => hazard.name
+                                                .toLowerCase()
+                                                .contains(searchQuery))
+                                            .toList();
 
                                         return Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              impactType.toUpperCase(),
-                                              style: TextStyle(
-                                                color: impactType == "medium"
-                                                    ? Colors.purple
-                                                    : impactType == "high"
-                                                        ? Colors.green
-                                                        : Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            // ✅ "None" option
+                                            RadioListTile<String>(
+                                              value: '',
+                                              groupValue: selectedHazard ?? '',
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  selectedHazard = value;
+                                                  showMissingDataDropdown1 =
+                                                      false;
+                                                });
+                                                submitHazard(
+                                                    ''); // call with empty
+                                              },
+                                              title: const Text("None",
+                                                  style: TextStyle(
+                                                      color: Colors.white)),
+                                              activeColor: Colors.lightBlue,
                                             ),
-                                            ...resultsForImpactType.map((e) {
-                                              final displayName =
-                                                  e.name ?? "Unnamed";
 
-                                              return RadioListTile<String>(
-                                                value: displayName,
-                                                groupValue: selectedPeril,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    selectedPeril = value!;
-                                                  });
-                                                },
-                                                title: Text(displayName,
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                                activeColor: Colors.lightBlue,
-                                              );
-                                            }).toList(),
-                                            const SizedBox(height: 8),
+                                            // ✅ Dynamic hazard options
+                                            if (hazards.isNotEmpty)
+                                              ...hazards.map((hazard) {
+                                                return RadioListTile<String>(
+                                                  value: hazard.name,
+                                                  groupValue: selectedHazard,
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      selectedHazard = value;
+                                                      showMissingDataDropdown1 =
+                                                          false;
+                                                    });
+
+                                                    if (value != null) {
+                                                      submitHazard(value);
+                                                    }
+                                                  },
+                                                  title: Text(hazard.name,
+                                                      style: const TextStyle(
+                                                          color: Colors.white)),
+                                                  activeColor: Colors.lightBlue,
+                                                );
+                                              }).toList()
+                                            else
+                                              const Center(
+                                                child: Text(
+                                                  "No hazards found",
+                                                  style: TextStyle(
+                                                      color: Colors.white70),
+                                                ),
+                                              )
                                           ],
                                         );
                                       },
                                     ),
-
-                                    const SizedBox(height: 16),
-
-                                    // Submit Button
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              Colors.lightBlue[200],
-                                          foregroundColor: Colors.black,
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 14),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          print(
-                                              "Selected peril: $selectedPeril");
-                                          setState(() =>
-                                              showMissingDataDropdown = false);
-                                        },
-                                        child: const Text("Submit"),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-
-                          if (showMissingDataDropdown1)
-                            Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.all(16),
-                              width: 320,
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white24),
-                              ),
-                              child: Column(
+                          )
+                      ],
+                    ),
+                  ),
+                  Consumer<MyLocationListProvider>(
+                    builder: (context, provider, child) {
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _buildSelectedFilterChips(provider),
+                      );
+                    },
+                  ),
+                  if (groupedResults.isNotEmpty) ...[
+                    SizedBox(height: 10),
+                    provider.parameters!.completeness.toString() == "null"
+                        ? Container()
+                        : Container(
+                            width: MediaQuery.of(context).size.width,
+                            margin: const EdgeInsets.only(right: 12, left: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  offset: const Offset(0, 4),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  TextFormField(
-                                    onChanged: _onSearchChanged,
-                                    style: TextStyle(color: Colors.white),
-                                    decoration: InputDecoration(
-                                      hintText: 'Search parameters',
-                                      hintStyle:
-                                          TextStyle(color: Colors.white60),
-                                      prefixIcon: Icon(Icons.search,
-                                          color: Colors.white60),
-                                      filled: true,
-                                      fillColor: Colors.black,
-                                      border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text('Select Peril',
-                                      style: TextStyle(color: Colors.white70)),
-                                  const SizedBox(height: 8),
-
-                                  // Peril options
-                                  ...perils.map((peril) {
-                                    return RadioListTile<String>(
-                                      value: peril,
-                                      groupValue: selectedPeril,
-                                      onChanged: (value) =>
-                                          setState(() => selectedPeril = value),
-                                      title: Text(peril,
-                                          style: const TextStyle(
-                                              color: Colors.white)),
-                                      activeColor: Colors.lightBlue,
-                                    );
-                                  }),
-
-                                  const SizedBox(height: 12),
-
-                                  // Submit Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.lightBlue[200],
-                                        foregroundColor: Colors.black,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10)),
+                                  Text("Data completeness Score",
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700)),
+                                  SizedBox(height: 5),
+                                  DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: selectedItem == 'data'
+                                          ? null
+                                          : selectedItem,
+                                      hint: Row(
+                                        children: const [
+                                          Text(
+                                            'data',
+                                            style: TextStyle(
+                                                color: Colors.blueAccent),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Icon(Icons.arrow_drop_down_outlined,
+                                              color: Colors.white),
+                                        ],
                                       ),
-                                      onPressed: () {
-                                        print("Selected peril: $selectedPeril");
-                                        setState(() =>
-                                            showMissingDataDropdown1 = false);
+                                      icon: const SizedBox.shrink(),
+                                      dropdownColor: Colors.black,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                      items: items.map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(
+                                            value,
+                                            style: const TextStyle(
+                                                color: Colors.blue),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          selectedItem = newValue!;
+                                        });
                                       },
-                                      child: const Text("Submit"),
+                                      selectedItemBuilder:
+                                          (BuildContext context) {
+                                        return items.map((String value) {
+                                          return Row(
+                                            children: [
+                                              Text(
+                                                value,
+                                                style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.blueAccent),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              const Icon(
+                                                  Icons
+                                                      .arrow_drop_down_outlined,
+                                                  color: Colors.blueAccent),
+                                            ],
+                                          );
+                                        }).toList();
+                                      },
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
+                                  Consumer<SubaccountParameterProvider>(
+                                    builder: (context, provider, child) {
+                                      return SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: Row(
+                                          children: groupedResults.entries
+                                              .map((entry) {
+                                            final impactType = entry.key;
+                                            final resultsForImpactType =
+                                                entry.value;
 
-                      // Column(
-                      //   children: [
-                      //     // Parameters Dropdown
-                      //     Expanded(
-                      //       flex: 0,
-                      //       child: TextFormField(
-                      //         controller: _controller,
-                      //         readOnly: false,
-                      //         onTap: () {
-                      //           setState(() => showDropdown = true);
-                      //         },
-                      //         onChanged: (value) {
-                      //           _onSearchChanged(value);
-                      //           setState(() => showDropdown = true);
-                      //         },
-                      //         style: TextStyle(color: Colors.white),
-                      //         decoration: InputDecoration(
-                      //           labelText: 'Search Parameters',
-                      //           labelStyle: TextStyle(color: Colors.white),
-                      //           border: OutlineInputBorder(
-                      //             borderRadius: BorderRadius.circular(8),
-                      //           ),
-                      //           filled: true,
-                      //           fillColor: Colors.black,
-                      //           suffixIcon: Icon(Icons.arrow_drop_down,
-                      //               color: Colors.white),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     if (showDropdown)
-                      //       Container(
-                      //         margin: const EdgeInsets.only(top: 4),
-                      //         padding:
-                      //             const EdgeInsets.symmetric(horizontal: 8),
-                      //         decoration: BoxDecoration(
-                      //           color: Colors.grey[900],
-                      //           border: Border.all(color: Colors.white30),
-                      //           borderRadius: BorderRadius.circular(8),
-                      //         ),
-                      //         child: ListView.builder(
-                      //           shrinkWrap: true,
-                      //           itemCount: filteredParameters.length,
-                      //           itemBuilder: (context, index) {
-                      //             final item = filteredParameters[index];
-                      //             final isSelected = selectedParameter == item;
-                      //             return ListTile(
-                      //               leading: Icon(
-                      //                 isSelected
-                      //                     ? Icons.radio_button_checked
-                      //                     : Icons.radio_button_unchecked,
-                      //                 color: isSelected
-                      //                     ? Colors.lightBlue
-                      //                     : Colors.white,
-                      //               ),
-                      //               title: Text(
-                      //                 item,
-                      //                 style: TextStyle(
-                      //                   color: isSelected
-                      //                       ? Colors.lightBlue
-                      //                       : Colors.white,
-                      //                   fontWeight: isSelected
-                      //                       ? FontWeight.bold
-                      //                       : FontWeight.normal,
-                      //                 ),
-                      //               ),
-                      //               tileColor: isSelected
-                      //                   ? Colors.blueGrey[800]
-                      //                   : Colors.transparent,
-                      //               shape: RoundedRectangleBorder(
-                      //                 borderRadius: BorderRadius.circular(8),
-                      //               ),
-                      //               onTap: () {
-                      //                 setState(() {
-                      //                   selectedParameter = item;
-                      //                   _controller.text = item;
-                      //                   showDropdown = false;
-                      //                 });
-                      //               },
-                      //             );
-                      //           },
-                      //         ),
-                      //       ),
-                      //   ],
-                      // ),
-                      Consumer<MyLocationListProvider>(
-                        builder: (context, provider, child) {
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: _buildSelectedFilterChips(provider),
-                          );
-                        },
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              offset: const Offset(0, 4),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Data completeness Score",
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w700)),
-                            SizedBox(height: 5),
-                            DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedItem == 'data'
-                                    ? null
-                                    : selectedItem,
-                                hint: Row(
-                                  children: const [
-                                    Text(
-                                      'data',
-                                      style:
-                                          TextStyle(color: Colors.blueAccent),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Icon(Icons.arrow_drop_down_outlined,
-                                        color: Colors.white),
-                                  ],
-                                ),
-                                icon: const SizedBox.shrink(),
-                                // Hide the default icon
-                                dropdownColor: Colors.black,
-                                style: const TextStyle(color: Colors.white),
-                                items: items.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(
-                                      value,
-                                      style:
-                                          const TextStyle(color: Colors.blue),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    selectedItem = newValue!;
-                                  });
-                                },
-                                selectedItemBuilder: (BuildContext context) {
-                                  return items.map((String value) {
-                                    return Row(
-                                      children: [
-                                        Text(
-                                          value,
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blueAccent),
+                                            final dataElements =
+                                                resultsForImpactType
+                                                    .where((e) =>
+                                                        e.name != null &&
+                                                        e.name!.isNotEmpty &&
+                                                        e.parameterType !=
+                                                            null &&
+                                                        e.user != null)
+                                                    .toList();
+
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0),
+                                              child: DataCompletenessCard(
+                                                title: dataElements.isNotEmpty
+                                                    ? dataElements[0].name ??
+                                                        'Unknown'
+                                                    : 'Unknown',
+                                                weightage: provider
+                                                    .parameters!.completeness!,
+                                                parameterType: impactType,
+                                              ),
+                                            );
+                                          }).toList(),
                                         ),
-                                        const SizedBox(height: 4),
-                                        const Icon(
-                                            Icons.arrow_drop_down_outlined,
-                                            color: Colors.blueAccent),
-                                      ],
-                                    );
-                                  }).toList();
-                                },
-                              ),
-                            ),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: groupedResults.entries.map((entry) {
-                                  final impactType = entry.key;
-                                  final resultsForImpactType = entry.value;
-
-                                  final dataElements = resultsForImpactType
-                                      .where((e) =>
-                                          e.name != null &&
-                                          e.name!.isNotEmpty &&
-                                          e.parameterType != null &&
-                                          e.user != null)
-                                      .toList();
-
-                                  final weightage =
-                                      '${(dataElements.length * 10).clamp(0, 100)}%'; // Example logic
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: DataCompletenessCard(
-                                      title: '% Completed',
-                                      weightage: weightage,
-                                      parameterType: impactType,
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-
-                            // SingleChildScrollView(
-                            //   scrollDirection: Axis.horizontal,
-                            //   child: Row(
-                            //     children: const [
-                            //       DataCompletenessCard(
-                            //         title: '% Completed',
-                            //         weightage: '86%',
-                            //         parameterType: 'My Parameters',
-                            //       ),
-                            //       DataCompletenessCard(
-                            //         title: '% Completed',
-                            //         weightage: '8%',
-                            //         parameterType: 'General',
-                            //       ),
-                            //     ],
-                            //   ),
-                            // ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: groupedResults.length,
-                        itemBuilder: (context, index) {
-                          final impactType =
-                              groupedResults.keys.elementAt(index);
-                          final resultsForImpactType =
-                              groupedResults[impactType]!;
-                          final dataElements = resultsForImpactType
-                              .where((e) =>
-                                  e.name != null &&
-                                  e.name!.isNotEmpty &&
-                                  e.parameterType != null &&
-                                  e.user != null)
-                              .map((e) => ImpactDataElement(
-                                    name: e.name!,
-                                    user: e.user!,
-                                    result: e,
-                                    parameterType:
-                                        e.parameterType!, // <-- Fix here
-                                  ))
-                              .toList();
-                          return ImpactDataCard(
+                                      );
+                                    },
+                                  ),
+                                ]),
+                          ),
+                    SizedBox(height: 10),
+                    ListView.builder(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      scrollDirection: Axis.vertical,
+                      itemCount: groupedResults.length,
+                      itemBuilder: (context, index) {
+                        final impactType = groupedResults.keys.elementAt(index);
+                        final resultsForImpactType =
+                            groupedResults[impactType]!;
+                        final dataElements = resultsForImpactType
+                            .where((e) =>
+                                e.name != null &&
+                                e.name!.isNotEmpty &&
+                                e.parameterType != null &&
+                                e.user != null)
+                            .map((e) => ImpactDataElement(
+                                  name: e.name!,
+                                  user: e.user!,
+                                  result: e,
+                                  parameterType:
+                                      e.parameterType!, // <-- Fix here
+                                ))
+                            .toList();
+                        return Container(
+                          padding:
+                              EdgeInsets.only(left: 10, right: 10, bottom: 10),
+                          child: ImpactDataCard(
                             subAccountId: widget.subaccountId,
                             title: impactType,
-                            titleColor: impactType == "medium"
+                            titleColor: impactType == "low"
                                 ? Colors.purple
                                 : impactType == "high"
-                                    ? Colors.green
+                                    ? Colors.red
                                     : Colors.white,
                             dataElements: dataElements,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: 20),
+                  ] else ...[
+                    Container(
+                        height: MediaQuery.of(context).size.height / 2,
+                        child: Center(child: Text("No Data Available")))
+                  ]
                 ],
               ),
             ),
@@ -1007,9 +1070,9 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
                     // Upload button
                     DottedBorder(
-                      radius: Radius.circular(12),
-                      dashPattern: [6, 3],
-                      color: Colors.grey,
+                      // radius: Radius.circular(12),
+                      // dashPattern: [6, 3],
+                      // color: Colors.grey,
                       child: InkWell(
                         onTap: () async {
                           FilePickerResult? result =
@@ -1249,8 +1312,8 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                             SubaccountParameterProvider>(
                                           context,
                                           listen: false,
-                                        ).fetchSubaccountParameters(
-                                            context, widget.subAccountId);
+                                        ).fetchSubaccountParameters(context,
+                                            widget.subAccountId, '', '', '');
                                       });
                                       Navigator.pop(context);
                                     }
@@ -1768,7 +1831,11 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                   context,
                                                   listen: false)
                                               .fetchSubaccountParameters(
-                                                  context, widget.subAccountId);
+                                                  context,
+                                                  widget.subAccountId,
+                                                  '',
+                                                  '',
+                                                  '');
                                         });
                                       },
                                       child: Container(
@@ -2265,7 +2332,7 @@ class ImpactDataElement {
 
 class DataCompletenessCard extends StatelessWidget {
   final String title;
-  final String weightage;
+  final Completeness weightage;
   final String parameterType;
   final IconData icon;
 
@@ -2281,7 +2348,7 @@ class DataCompletenessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 140,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 12, left: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -2316,12 +2383,14 @@ class DataCompletenessCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Weightage %',
+            'Completed %',
             style: TextStyle(color: Colors.white60, fontSize: 13),
           ),
           const SizedBox(height: 4),
           Text(
-            weightage,
+            parameterType.toLowerCase() == 'high'
+                ? weightage!.high.toString()
+                : weightage.low.toString(),
             style: const TextStyle(
               fontSize: 18,
               color: Colors.white,
@@ -2335,7 +2404,7 @@ class DataCompletenessCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            parameterType,
+            '${parameterType[0].toUpperCase()}${parameterType.substring(1).toLowerCase()}',
             style: const TextStyle(
               fontSize: 14,
               color: Colors.purpleAccent,

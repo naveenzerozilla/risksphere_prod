@@ -1,4 +1,3 @@
-
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -8,23 +7,28 @@ import '../design_system/primitives/custom_typography.dart';
 import '../utils/api_constants.dart';
 
 class ConfigurationProvider extends ChangeNotifier {
-
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool value) {
     _isLoading = value;
     notifyListeners();
   }
 
   Map<String, dynamic> _configurations = {};
+
   Map<String, dynamic> get configurations => _configurations;
+
   set configurations(Map<String, dynamic> value) {
     _configurations = value;
     notifyListeners();
   }
 
   Map<String, dynamic> _vendors = {};
+
   Map<String, dynamic> get vendors => _vendors;
+
   set vendors(Map<String, dynamic> value) {
     _vendors = value;
     notifyListeners();
@@ -32,16 +36,29 @@ class ConfigurationProvider extends ChangeNotifier {
 
   // Get API for configuration
   Future<void> getConfiguration(
-      {String? accountId, String? subAccountId}) async {
+      {String? accountId, String? subAccountId, String? updateallflag}) async {
     try {
       isLoading = true;
       ApiService apiService = ApiService(AppConstant.CONFIGURATIONS);
-      if (accountId != null && subAccountId != null) {
+      if (accountId != null &&
+          subAccountId != null &&
+          updateallflag != "false") {
+        print("Welcome");
+        print(accountId);
+        print(subAccountId);
+        print(updateallflag);
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS}?account_id=$accountId&sub_account_id=$subAccountId');
-      } else if (accountId != null) {
-        apiService = ApiService('${AppConstant.CONFIGURATIONS_ACCOUNTS}?account_id=$accountId');
+      } else if (accountId != null && updateallflag != "false") {
+        print("Welcome1");
+        apiService = ApiService(
+            '${AppConstant.CONFIGURATIONS_ACCOUNTS}?account_id=$accountId');
+      } else if (updateallflag == "false") {
+        print("Welcome2");
+        apiService = ApiService(
+            '${AppConstant.CONFIGURATIONS_SUB_ACCOUNTS}?account_id=$accountId&sub_account_id=$subAccountId');
       } else {
+        print("Welcome3");
         apiService = ApiService(AppConstant.CONFIGURATIONS);
       }
 
@@ -63,7 +80,6 @@ class ConfigurationProvider extends ChangeNotifier {
       var response = await apiService.get();
       log(response.toString());
       vendors = response;
-
     } catch (e) {
       print(e);
     } finally {
@@ -72,29 +88,37 @@ class ConfigurationProvider extends ChangeNotifier {
   }
 
   Future<void> updateConfiguration(
-      BuildContext context,
-      String id,
-      String key,
-      String level,
-      bool value,
-      dynamic status,
-
-      {
-        String? accountId,
-        String? subAccountId,
-      }) async {
+    BuildContext context,
+    String id,
+    String key,
+    String level,
+    bool value,
+    dynamic status, {
+    String? accountId,
+    String? subAccountId,
+    String? checklevel,
+  }) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
 
       ApiService apiService = ApiService(AppConstant.UPDATE_CONFIGURATION);
-      var body = {
-        "id": id,
-        "key": key,
-        "value": value,
-        "level": "global", // Include level
-        "update_all": status // Include update_all
-      };
+      var body = checklevel == "local"
+          ? {
+              "account_id": accountId,
+              "id": id,
+              "key": key,
+              "level": level, // Include level
+              "sub_account_id": subAccountId,
+              "value": value,
+            }
+          : {
+              "id": id,
+              "key": key,
+              "level": level, // Include level
+              "update_all": status, // Include update_all
+              "value": value,
+            };
 
       var response = await apiService.patch(body); // Assuming PATCH is correct
       log(response.toString());
@@ -104,24 +128,21 @@ class ConfigurationProvider extends ChangeNotifier {
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Configuration updated successfully!',
-            style: typography.Body1),
+            style: TextStyle(color: Colors.black)),
       ));
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to update configuration: $e',
-            style: typography.Body1),
+        content:
+            Text('Failed to update configuration: $e', style: typography.Body1),
       ));
     } finally {
       isLoading = false;
     }
   }
 
-
-
-
-  String getConfigurationUrl({String? accountId, String? subAccountId, required String level}) {
-    String baseUrl = AppConstant.CONFIGURATIONS;  // Base URL
+  String getConfigurationUrl(
+      {String? accountId, String? subAccountId, required String level}) {
+    String baseUrl = AppConstant.CONFIGURATIONS; // Base URL
     if (level != 'account' && level != 'sub_account' && level != 'global') {
       throw Exception("Invalid level");
     }
@@ -144,6 +165,4 @@ class ConfigurationProvider extends ChangeNotifier {
       return baseUrl;
     }
   }
-
-
 }

@@ -1624,7 +1624,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Use cached token if available
       String? token = await _auth.currentUser!.getIdToken(false);
-      log("Token: $token");
+      log("Token123: $token");
 
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
@@ -1638,9 +1638,26 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final data = response.data as Map<String, dynamic>;
+      print(data['has_any_plan'].toString());
+      print(data['remaining_trial_days'].toString());
+      print(data['remaining_trial_days'].toString());
 
+      print(
+          'has_user_license left_credits: ${data['has_user_license']?['left_credits']}');
+      print(
+          'has_geocoding_license left_credits: ${data['has_geocoding_license']?['left_credits']}');
+      print(
+          'has_hazard_license left_credits: ${data['has_hazard_license']?['left_credits']}');
+      print("data['has_any_plan'].toString()");
       // Batch shared preferences updates
       await Future.wait([
+       SharedPreferenceService.setUserLicense(
+           (data['has_user_license']?['left_credits'] ?? 0).toString()),
+       SharedPreferenceService.setGeocodingLicense(
+           (data['has_geocoding_license']?['left_credits'] ?? 0).toString()),
+       SharedPreferenceService.setHazardLicense(
+           (data['has_hazard_license']?['left_credits'] ?? 0).toString()),
+
         SharedPreferenceService.setScheduleInProgress(
             data['schedule_inprogress'].toString()),
         SharedPreferenceService.setSovUploadTempId(

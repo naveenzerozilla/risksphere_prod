@@ -179,7 +179,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount =
         // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-    (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
+        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
   }
 
@@ -297,7 +297,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 child: Text(widget.accountName.toString(),
                                     style: typography.Base_Bold),
                               ),
-
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10.0),
@@ -339,7 +338,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   ],
                                 ),
                               ),
-
                               SizedBox(height: CustomSpacing.two),
                               Container(
                                 height: 50,
@@ -457,9 +455,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       Tab(
                                                           text:
                                                               'Access Requested'),
-                                                      Tab(
-                                                          text:
-                                                              'Data'),
                                                     ],
                                                   ),
                                                 );
@@ -478,7 +473,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   ),
                                 ),
                               ),
-                              // TabBarView for the tab content
                               Expanded(
                                 child: TabBarView(
                                   controller: _tabController,
@@ -491,34 +485,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       ConfigurationTab(
                                           accountId: widget.accountId),
                                     _getComingSoonUI("request"),
-                                    Consumer2<AccountListProvider, SubAccountListProvider>(
-                                      builder: (context, accountListProvider, subAccountListProvider, _) {
-                                        final accountList = accountListProvider.accountList;
-                                        final subAccountList = subAccountListProvider.subAccountList;
-                                        final accountId = accountList.isNotEmpty ? accountList[0].accountId ?? "" : "";
-                                        final accountName = accountList.isNotEmpty ? accountList[0].accountName ?? "" : "";
-                                        final subaccountId = subAccountList.isNotEmpty ? subAccountList[0].subAccountId ?? "" : "";
-                                        return DataTab(
-                                          accountId: accountId,
-                                          accountName: accountName,
-                                          subaccountId: subaccountId,
-                                        );
-                                      },
-                                    ),
-                                    // Consumer<AccountListProvider>(
-                                    //   builder: (context, accountListProvider, _) {
-                                    //     final accountId = accountListProvider.accountList.isNotEmpty
-                                    //         ? accountListProvider.accountList[0].accountId ?? ""
-                                    //         : "";
-                                    //
-                                    //     return DataTab(
-                                    //       accountName: accountListProvider.accountList[0].accountName ?? "",
-                                    //       accountId: accountId,
-                                    //       subaccountId: subAccountListProvider
-                                    //           .subAccountList[index].subAccountId.toString(),
-                                    //     );
-                                    //   },
-                                    // ),
                                   ],
                                 ),
                               ),

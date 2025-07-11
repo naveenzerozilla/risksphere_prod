@@ -63,7 +63,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
   CustomTileProviderMainHazards? _mainHazardTileProvider;
   bool _isHeatmapMenuOpen = false;
 
-
   @override
   void initState() {
     //_loadMarkers();
@@ -962,10 +961,10 @@ class _LocationListMapViewState extends State<LocationListMapView>
                   GoogleMap(
                     initialCameraPosition: CameraPosition(
                       target: LatLng(38.7946, 106.5348),
-                      zoom: 0,
+                      zoom: -100.0,
                     ),
-                    // markers: _markers,
-                    // markers: _isHeatmapOn ? <Marker>{} : _markers,
+                    zoomControlsEnabled: false,
+                    myLocationEnabled: true,
                     markers: (!_isHeatmapOn && _showPins) ? _markers : {},
                     mapType: _selectedTabIndex == 0
                         ? _currentMapType
@@ -1118,13 +1117,15 @@ class _LocationListMapViewState extends State<LocationListMapView>
                                         child: Switch(
                                           value: _showPins,
                                           // onChanged: (value) {
-                                          onChanged: _isHeatmapMenuOpen ? null : (value) {
-                                            print(value);
-                                            // if (_isHeatmapOn) {
-                                            print("object");
-                                            _togglePinVisibility();
-                                            // }
-                                          },
+                                          onChanged: _isHeatmapMenuOpen
+                                              ? null
+                                              : (value) {
+                                                  print(value);
+                                                  // if (_isHeatmapOn) {
+                                                  print("object");
+                                                  _togglePinVisibility();
+                                                  // }
+                                                },
                                           activeColor: Theme.of(context)
                                               .colorScheme
                                               .primary,

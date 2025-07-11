@@ -10,13 +10,15 @@ class ConfigurationTab extends StatefulWidget {
   final String? accountId;
   final String? subaccountId;
   final String? updateallflag;
+  final String? level;
 
-  const ConfigurationTab({
-    Key? key,
-    this.accountId,
-    this.subaccountId,
-    this.updateallflag,
-  }) : super(key: key);
+  const ConfigurationTab(
+      {Key? key,
+      this.accountId,
+      this.subaccountId,
+      this.updateallflag,
+      this.level})
+      : super(key: key);
 
   @override
   _ConfigurationTabState createState() => _ConfigurationTabState();
@@ -52,6 +54,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       provider.getConfiguration(
         accountId: widget.accountId,
         subAccountId: widget.subaccountId,
+        updateallflag: widget.updateallflag,
       ),
       provider.getVendors()
     ]).then((value) {
@@ -378,6 +381,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         title.toLowerCase().replaceAll(' ', '_'));
                     // Show dialog to save changes
                     if (widget.updateallflag == "false") {
+                      print(widget.level.toString());
                       provider
                           .updateConfiguration(
                         context,
@@ -388,6 +392,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         false,
                         accountId: widget.accountId,
                         subAccountId: widget.subaccountId,
+                        checklevel: widget.level,
                       )
                           .then((_) {
                         loadConfiguration(); // Call only after update is successful
@@ -575,6 +580,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         await provider.getConfiguration(
                           accountId: widget.accountId,
                           subAccountId: widget.subaccountId,
+                          updateallflag: widget.updateallflag,
                         );
                         loadConfiguration();
                       }
@@ -640,6 +646,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       provider.getConfiguration(
                         accountId: widget.accountId,
                         subAccountId: widget.subaccountId,
+                        updateallflag: widget.updateallflag,
                       );
                       loadConfiguration();
                     }
@@ -882,6 +889,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                               setState(() => isLoadingNo = false);
                               if (!provider.isLoading) {
+                                await loadConfiguration();
                                 Navigator.pop(context, false);
                               }
                             },
@@ -1673,6 +1681,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         await provider.getConfiguration(
                           accountId: widget.accountId,
                           subAccountId: widget.subaccountId,
+                          updateallflag: widget.updateallflag,
                         );
                         await provider.getVendors();
 
@@ -1685,13 +1694,17 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       await provider
                           .updateConfiguration(
                         context,
+                        accountId: widget.accountId,
                         mainId,
                         generateRatingKey(title),
-                        level,
+                        "sub_account",
                         value,
-                        "true",
+                        subAccountId: widget.subaccountId,
+                        false,
+                        checklevel: widget.level,
                       )
                           .then((_) {
+                        provider.getVendors();
                         loadConfiguration(); // Call only after update is successful
                       }).catchError((error) {
                         print("Failed to update configuration: $error");
@@ -1944,6 +1957,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   provider.getConfiguration(
                     accountId: widget.accountId,
                     subAccountId: widget.subaccountId,
+                    updateallflag: widget.updateallflag,
                   );
                   provider.getVendors();
                 },

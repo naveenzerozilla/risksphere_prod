@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:RiskSphere/design_system/components/custom_button.dart';
 import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
@@ -23,9 +24,12 @@ import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../providers/configuration_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/news_feed_provider.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../listings/widgets/message_card.dart';
+import '../payments/pricing_list.dart';
+import '../payments/transaction_summary.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
@@ -62,16 +66,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isAdmin = false;
   bool isSuperAdmin = false;
   bool isIndivudual = false;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+
+    _scrollController = ScrollController();
+
     _initializeData();
   }
 
   Future<void> _initializeData() async {
     await Future.wait([
       _setClaims(),
+      Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed(),
     ]);
   }
 
@@ -108,6 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         false;
 
     print(results.toString());
+    print(isIndivudual);
     print(isIndivudual);
 
     showTotalCorporates = results[0] ?? false;
@@ -171,9 +181,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
-    return SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        bool shouldExit = await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text('Exit App'),
+            content: Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Yes'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit) {
+          SystemNavigator.pop(); // Close the app
+          return false; // prevent default pop to avoid double closing
+        }
+        return false; // Stay in the app
+      },
       child: Consumer<ThemeProvider>(builder: (context, themeProvider, child) {
         return Scaffold(
           backgroundColor: themeProvider.getTheme.colorScheme.background,
@@ -196,6 +238,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onRefresh: _handleRefresh,
             child: Stack(
               children: [
+                // Text(isSuperAdmin.toString()),
+                // Text(isPgAdmin.toString()),
+                // Text(isIndivudual.toString()),
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/mesh.png',
@@ -242,18 +287,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text('Coming soon!',
-                                                style:
-                                                    typography.Body1.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .surface,
-                                                )),
-                                          ),
-                                        );
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    PricingListScreen()));
                                       },
                                   ),
                                 ],
@@ -385,97 +422,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // !showVerificationRequests
                     //     ? SizedBox()
                     //     :
+                    // Text(isSuperAdmin.toString()),
+                    // Text(isPgAdmin.toString()),
+                    // Text(isIndivudual.toString()),
+                    // isPgAdmin
+                    //     ?
                     _overviewCardHorizontal(
-                            title: LanguageService.getTranslated(context,
-                                'usermanagement_dash_verification_req'),
-                            amount: ((dashboardProvider.dashboardModel
-                                                ?.verificationCount ??
-                                            0) +
-                                        (dashboardProvider.dashboardModel
-                                                ?.companyUserLeadCount ??
-                                            0))
-                                    .toString() ??
-                                '0',
-                            icon: 'assets/images/verification_req_checks.svg',
-                            bottomWidget: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                CustomButton(
-                                  type: ButtonType.outlined,
-                                  onPressed: () {
-                                    //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
-                                    Provider.of<DrawerSelectionProvider>(
-                                            context,
-                                            listen: false)
-                                        .setSelectedItem('user_management');
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            UserManagementScreen(
-                                          initialIndex: 0,
-                                          subIndex: 0,
-                                          initialScreen:
-                                              Screens.corporateEmployeeAdd,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Add User',
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                      Icon(
-                                        Icons.person_add_alt_1,
-                                        size: 18,
-                                      ),
-                                    ],
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_verification_req'),
+                      amount: ((dashboardProvider
+                                          .dashboardModel?.verificationCount ??
+                                      0) +
+                                  (dashboardProvider.dashboardModel
+                                          ?.companyUserLeadCount ??
+                                      0))
+                              .toString() ??
+                          '0',
+                      icon: 'assets/images/verification_req_checks.svg',
+                      bottomWidget: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () {
+                              //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Provider.of<DrawerSelectionProvider>(context,
+                                      listen: false)
+                                  .setSelectedItem('user_management');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => UserManagementScreen(
+                                    initialIndex: 0,
+                                    subIndex: 0,
+                                    initialScreen: Screens.corporateEmployeeAdd,
                                   ),
                                 ),
-                                SizedBox(width: 10),
-                                CustomButton(
-                                  type: ButtonType.outlined,
-                                  onPressed: () {
-                                    //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
-                                    Provider.of<DrawerSelectionProvider>(
-                                            context,
-                                            listen: false)
-                                        .setSelectedItem('user_management');
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            UserManagementScreen(
-                                          initialIndex: 0,
-                                          subIndex: 0,
-                                          initialScreen:
-                                              Screens.verificationList,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'See All',
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(width: CustomSpacing.two),
-                                      Icon(
-                                        Icons.arrow_forward_ios,
-                                        size: 14,
-                                      ),
-                                    ],
-                                  ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Add User',
+                                  style: typography.Body1,
+                                ),
+                                SizedBox(width: CustomSpacing.two),
+                                Icon(
+                                  Icons.person_add_alt_1,
+                                  size: 18,
                                 ),
                               ],
                             ),
                           ),
+                          SizedBox(width: 10),
+                          CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () {
+                              //Navigate to user management, 1st tab, verification requests from dropdown and 2nd tab users
+                              Provider.of<DrawerSelectionProvider>(context,
+                                      listen: false)
+                                  .setSelectedItem('user_management');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => UserManagementScreen(
+                                    initialIndex: 0,
+                                    subIndex: 0,
+                                    initialScreen: Screens.verificationList,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'See All',
+                                  style: typography.Body1,
+                                ),
+                                SizedBox(width: CustomSpacing.two),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // : Container(),
                     !showConnectionRequests
                         ? SizedBox()
                         : SizedBox(width: CustomSpacing.four),

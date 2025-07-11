@@ -304,7 +304,7 @@ class AccountListProvider extends ChangeNotifier {
       print(stackTrace);
       isLoading = false;
       isNextPageLoading = false;
-      log('❌ BackendException: ${e.message}');
+      log(' BackendException: ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
@@ -315,7 +315,7 @@ class AccountListProvider extends ChangeNotifier {
       print(stackTrace);
       isLoading = false;
       isNextPageLoading = false;
-      log('❌ Exception: ${e.toString()}');
+      log(' Exception: ${e.toString()}');
     }
   }
 

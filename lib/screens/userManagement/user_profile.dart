@@ -1033,10 +1033,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           SizedBox(
                                             height: CustomSpacing.two,
                                           ),
+
+
                                           // If edit is enables user can edit else its disabled fields: Name, Display Name, Roles with bottom sheet selection, Email and phone with country code
                                           // Edit button
-                                          !showEditUser?SizedBox():!isEdit
-                                              ? Row(
+                                          // !showEditUser?SizedBox():!isEdit
+                                          //     ?
+                                          Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.end,
                                                   children: [
@@ -1067,12 +1070,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                     ),
                                                   ],
                                                 )
-                                              : SizedBox(),
-                                          !isEdit
-                                              ? SizedBox(
-                                                  height: CustomSpacing.two,
-                                                )
-                                              : SizedBox(),
+                                              // : SizedBox(),
+                                          // !isEdit
+                                          //     ? SizedBox(
+                                          //         height: CustomSpacing.two,
+                                          //       )
+                                          //     : SizedBox(),
                                         ],
                                       ),
                                     ],
@@ -1163,9 +1166,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               TextField(
                                 readOnly: true,
-                                enabled: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin ,
+                                enabled: !isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin ,
 
-                                onTap: isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin
+                                onTap: !isEdit&&!isSuperAdmin&&!isPgAdmin&&!isAdmin
                                     ? () {
                                   showModalBottomSheet(
                                     context: context,
