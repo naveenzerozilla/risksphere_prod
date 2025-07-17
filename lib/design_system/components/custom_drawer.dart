@@ -39,7 +39,7 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController;
   bool showCorporateManagementTab = true;
   bool showNonCorporateManagementTab = true;
   bool showEmployeeManagementTab = true;
@@ -62,12 +62,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
   String isMaintenance = "";
 
   final TextEditingController searchController = TextEditingController();
-  final Debouncer debouncer =
-      Debouncer(milliseconds: 200); // Debouncer with 300ms delay
+  final Debouncer debouncer = Debouncer(milliseconds: 200);
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _setClaims();
     _getClaims();
   }
@@ -134,16 +134,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
         await SharedPreferenceService.getScheduleInProgress() ?? "false";
   }
 
-// In initState()
-//   @override
-//   void initState() {
-//     _scrollController = ScrollController();
-//     _setClaims();
-//     _getClaims();
-//     super.initState();
-//   }
-
-// In dispose()
   @override
   void dispose() {
     _scrollController.dispose();
@@ -394,27 +384,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             : _buildDrawerItem(
                                 context,
                                 provider,
-                                title: "Payment History",
-                                icon: Icons.payments_sharp,
-                                onTap: () {
-                                  provider.setSelectedItem("payment_history");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PaymentTransactionsPage(),
-                                    ),
-                                  );
-                                },
-                                isSelected:
-                                    provider.selectedItem == "Payment History",
-                              ),
-                        isPgAdmin.toString() == "true" ||
-                                (isPgAdmin.toString() == "false" &&
-                                    isIndivudual.toString() == "false" &&
-                                    isSuperAdmin.toString() == "false")
-                            ? Container()
-                            : _buildDrawerItem(
-                                context,
-                                provider,
                                 title: "Purchase License",
                                 icon: Icons.description,
                                 onTap: () {
@@ -427,6 +396,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                 },
                                 isSelected:
                                     provider.selectedItem == "purchase_license",
+                              ),
+                        isPgAdmin.toString() == "true" ||
+                                (isPgAdmin.toString() == "false" &&
+                                    isIndivudual.toString() == "false" &&
+                                    isSuperAdmin.toString() == "false")
+                            ? Container()
+                            : _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Payment History",
+                                icon: Icons.payments_sharp,
+                                onTap: () {
+                                  provider.setSelectedItem("payment_history");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PaymentTransactionsPage(),
+                                    ),
+                                  );
+                                },
+                                isSelected:
+                                    provider.selectedItem == "Payment History",
                               ),
                       ],
                     );

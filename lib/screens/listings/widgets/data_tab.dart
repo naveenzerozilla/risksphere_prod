@@ -67,7 +67,7 @@ class _DataTabState extends State<DataTab> {
     // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubaccountParameterProvider>(context, listen: false)
-          .fetchHazardList(context, widget.subaccountId);
+          .fetchHazardList(context);
       Provider.of<SubaccountParameterProvider>(context, listen: false)
           .fetchSubaccountParameters(context, widget.subaccountId, '', '', '');
     });

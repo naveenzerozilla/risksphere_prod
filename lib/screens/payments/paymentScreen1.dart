@@ -40,7 +40,6 @@ class _PricingInvoiceState extends State<PricingInvoice> {
       child: Scaffold(
         appBar: CustomAppBar(
           isExpanded: _isExpanded,
-          showDropdown: true,
           showNotificationDot: _showNotificationDot,
           onExpandPressed: (isExpanded) {
             setState(() {
@@ -236,7 +235,6 @@ class _OrderSummaryCard extends StatelessWidget {
     );
   }
 }
-
 
 class _KeyValueRow extends StatelessWidget {
   const _KeyValueRow({

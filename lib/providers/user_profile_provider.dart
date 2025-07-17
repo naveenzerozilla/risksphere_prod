@@ -24,9 +24,10 @@ import '../service/shared_preference_service.dart';
 import '../utils/api_constants.dart';
 
 class UserProfileProvider with ChangeNotifier {
-
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -35,7 +36,9 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   bool _isRolesLoading = false;
+
   bool get isRolesLoading => _isRolesLoading;
+
   set isRolesLoading(bool value) {
     _isRolesLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -44,16 +47,20 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   bool _isImageUploadLoading = false;
+
   bool get isImageUploadLoading => _isImageUploadLoading;
+
   set isImageUploadLoading(bool value) {
     _isImageUploadLoading = value;
 //    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
- //   });
+    notifyListeners();
+    //   });
   }
 
   bool _isAvatarLoading = false;
+
   bool get isAvatarLoading => _isAvatarLoading;
+
   set isAvatarLoading(bool value) {
     _isAvatarLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,7 +69,9 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   bool _isUserTeamLoading = false;
+
   bool get isUserTeamLoading => _isUserTeamLoading;
+
   set isUserTeamLoading(bool value) {
     _isUserTeamLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,7 +80,9 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   bool _isTeamSearchLoading = false;
+
   bool get isTeamSearchLoading => _isTeamSearchLoading;
+
   set isTeamSearchLoading(bool value) {
     _isTeamSearchLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,7 +91,9 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   UserData? _userData = UserData();
+
   UserData get userData => _userData!;
+
   set userData(UserData value) {
     _userData = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -89,27 +102,35 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   Employee _employees = Employee();
+
   Employee get employees => _employees;
 
   List<Roles>? _roles = [];
+
   List<Roles>? get roles => _roles;
 
   List<Avatars?> _avatars = [];
+
   List<Avatars?> get avatars => _avatars;
 
   List<Manager?> _myManager = [];
+
   List<Manager?> get myManager => _myManager;
 
   List<Reportee?> _myReportee = [];
+
   List<Reportee?> get myReportee => _myReportee;
 
   List<Delegate?> _myDeligate = [];
+
   List<Delegate?> get myDeligate => _myDeligate;
 
   List<NetworkingUsers?> _networkingUsers = [];
+
   List<NetworkingUsers?> get networkingUsers => _networkingUsers;
 
   Map<String, dynamic> _trialInfo = {};
+
   Map<String, dynamic> get trialInfo => _trialInfo;
 
   /// Fetches all user data from the API.
@@ -144,12 +165,11 @@ class UserProfileProvider with ChangeNotifier {
       // Catch any errors that occur during the process
       print('Error1: $e'); // Log the error
       // Show a generic error message to the user
-     // if (context.mounted) CustomToast.error(context, e.message);
+      // if (context.mounted) CustomToast.error(context, e.message);
       await fetchTrialInfo();
       isLoading = false;
       return null; // Return an empty list in case of error
-    }
-    catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       // Catch any errors that occur during the process
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error2: $e'); // Log the error
@@ -159,33 +179,38 @@ class UserProfileProvider with ChangeNotifier {
       await fetchTrialInfo();
       isLoading = false;
       if (!context.mounted) return null;
-     /* CustomToast.error(
+      /* CustomToast.error(
           context, 'Error fetching companies. Please try again later.');*/
       return null; // Return an empty list in case of error
     }
   }
 
   Future<void> fetchTrialInfo() async {
-    bool isTrialApplicable = await SharedPreferenceService.isTrialApplicable() ?? false;
+    bool isTrialApplicable =
+        await SharedPreferenceService.isTrialApplicable() ?? false;
     int trialDays = await SharedPreferenceService.getTrialPeriodDays() ?? 0;
-    int trialSubdestination = await SharedPreferenceService.getTrialSubDestinations() ?? 0;
-    int trialEditLocations = await SharedPreferenceService.getTrialEditLocations() ?? 0;
-    int trialMaxLocations = await SharedPreferenceService.getTrialMaxLocations() ?? 0;
+    int trialSubdestination =
+        await SharedPreferenceService.getTrialSubDestinations() ?? 0;
+    int trialEditLocations =
+        await SharedPreferenceService.getTrialEditLocations() ?? 0;
+    int trialMaxLocations =
+        await SharedPreferenceService.getTrialMaxLocations() ?? 0;
     int trialLocations = await SharedPreferenceService.getTrialLocations() ?? 0;
-    int totalTrialUsers = await SharedPreferenceService.getTotalTrialUsers() ?? 0;
-    int totalTrialUsersVerified = await SharedPreferenceService.getTotalUsersVerified() ?? 0;
+    int totalTrialUsers =
+        await SharedPreferenceService.getTotalTrialUsers() ?? 0;
+    int totalTrialUsersVerified =
+        await SharedPreferenceService.getTotalUsersVerified() ?? 0;
 
     print("trial period details: $isTrialApplicable, $trialDays");
 
     if (isTrialApplicable) {
-
       _trialInfo = {
         'remainingDays': trialDays,
         'status': trialDays <= 0
             ? 'Expired'
             : trialDays <= (trialDays * 0.4)
-            ? '$trialDays days left'
-            : '$trialDays day(s) left',
+                ? '$trialDays days left'
+                : '$trialDays day(s) left',
         'subDestinations': trialSubdestination,
         'editLocations': trialEditLocations,
         'maxLocations': trialMaxLocations,
@@ -194,11 +219,10 @@ class UserProfileProvider with ChangeNotifier {
         'totalUsersVerified': totalTrialUsersVerified,
       };
     } else {
-      _trialInfo = {'status': ''};  // No trial case
+      _trialInfo = {'status': ''}; // No trial case
     }
     notifyListeners();
   }
-
 
   /// Update a employee based on the employee ID and new employee data.
   Future<bool> updateUserData(
@@ -354,38 +378,46 @@ class UserProfileProvider with ChangeNotifier {
         // Parse corporateType from the response
         if (response['users']['my_manager'] != null) {
           managerList = ((response['users']['my_manager'] as List?)
-              ?.map((manager) {
-            if (manager != null) {
-              return Manager.fromJson(manager);
-            }
-            return null;
-          })
-              .where((manager) => manager != null) // Remove null values
-              .toList() ?? []).cast<Manager>();
+                      ?.map((manager) {
+                        if (manager != null) {
+                          return Manager.fromJson(manager);
+                        }
+                        return null;
+                      })
+                      .where((manager) => manager != null) // Remove null values
+                      .toList() ??
+                  [])
+              .cast<Manager>();
         }
 
         if (response['users']['my_reportee'] != null) {
           reporteeList = ((response['users']['my_reportee'] as List?)
-              ?.map((reportee) {
-            if (reportee != null) {
-              return Reportee.fromJson(reportee);
-            }
-            return null;
-          })
-              .where((reportee) => reportee != null) // Remove null values
-              .toList() ?? []).cast<Reportee>();
+                      ?.map((reportee) {
+                        if (reportee != null) {
+                          return Reportee.fromJson(reportee);
+                        }
+                        return null;
+                      })
+                      .where(
+                          (reportee) => reportee != null) // Remove null values
+                      .toList() ??
+                  [])
+              .cast<Reportee>();
         }
 
         if (response['users']['my_deligate'] != null) {
           delegateList = ((response['users']['my_deligate'] as List?)
-              ?.map((delegate) {
-            if (delegate != null) {
-              return Delegate.fromJson(delegate);
-            }
-            return null;
-          })
-              .where((delegate) => delegate != null) // Remove null values
-              .toList() ?? []).cast<Delegate>();
+                      ?.map((delegate) {
+                        if (delegate != null) {
+                          return Delegate.fromJson(delegate);
+                        }
+                        return null;
+                      })
+                      .where(
+                          (delegate) => delegate != null) // Remove null values
+                      .toList() ??
+                  [])
+              .cast<Delegate>();
         }
 
         // Similarly handle my_assignee if needed
@@ -454,14 +486,17 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   /// Search a team member based on name and email
-  Future<List<NetworkingUsers>> getUserSuggestions(BuildContext context, String query) async {
+  Future<List<NetworkingUsers>> getUserSuggestions(
+      BuildContext context, String query) async {
     try {
       // Set loading state to true
       isTeamSearchLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET_NETWORKING_USER_SUGGESTIONS);
+      ApiService apiService =
+          ApiService(AppConstant.GET_NETWORKING_USER_SUGGESTIONS);
       // Send a GET request to the API
-      Map<String, dynamic> response = await apiService.get('?search=$query&within_company=true');
+      Map<String, dynamic> response =
+          await apiService.get('?search=$query&within_company=true');
 
       // Parse the response into a list of employees
       List<NetworkingUsers> networkingUsersLocal = [];
@@ -487,7 +522,8 @@ class UserProfileProvider with ChangeNotifier {
       print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
       log('Error: $e'); // Log the error
       // Show a generic error message to the user
-      String errorMessage = 'Error fetching user suggestions. Please try again later.';
+      String errorMessage =
+          'Error fetching user suggestions. Please try again later.';
       if (e is String) {
         errorMessage = e;
       }
@@ -499,7 +535,8 @@ class UserProfileProvider with ChangeNotifier {
   }
 
   /// Add a team member based on the employee ID.
-  Future<bool> addTeamMember(BuildContext context, String userId, String type) async {
+  Future<bool> addTeamMember(
+      BuildContext context, String userId, String type) async {
     try {
       // Set loading state to true
       isUserTeamLoading = true;
@@ -517,12 +554,10 @@ class UserProfileProvider with ChangeNotifier {
         CustomToast.success(context, response['message']);
         return true;
       } else {
-
         isUserTeamLoading = false;
         await Future.delayed(Duration(seconds: 1), () {
           if (context.mounted)
             CustomToast.success(context, response['message']);
-
         });
 
         return true;

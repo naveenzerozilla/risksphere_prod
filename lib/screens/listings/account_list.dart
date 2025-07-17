@@ -27,6 +27,8 @@ import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
 import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
@@ -47,6 +49,7 @@ import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../../providers/user_profile_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
 import '../../utils/api_constants.dart';
 
 class AccountListScreen extends StatefulWidget {
@@ -64,6 +67,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
+  bool hasAnyPlan = false;
   TabController? _tabController;
   Screens _selectedScreen = Screens.accountList;
   TextEditingController _textEditingController = TextEditingController();
@@ -90,6 +94,10 @@ class _AccountListScreenState extends State<AccountListScreen>
   bool _accountAlreadyExists = false;
   Accounts? _selectedAccount;
   String _autocompleteText = "";
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
 
   ScrollController _scrollController = ScrollController();
 
@@ -164,16 +172,63 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
+  GlobalKey keyFeature1 = GlobalKey();
+  GlobalKey keyFeature2 = GlobalKey();
+  GlobalKey keyFeature3 = GlobalKey();
+  List<TargetFocus> targets = [];
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   var userProfileProvider =
+  //       Provider.of<UserProfileProvider>(context, listen: false);
+  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+  //   int tabCount = (trialStatus.isEmpty) ? 4 : 3;
+  //   _tabController = TabController(length: tabCount, vsync: this);
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _getData();
+  //   });
+  //   _tryShowTutorialOnce();
+  // }
   @override
   void initState() {
     super.initState();
+
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount = (trialStatus.isEmpty) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getData();
+    });
+
+    _tryShowTutorialOnce();
+  }
+
+  void _tryShowTutorialOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hasShownTutorial = prefs.getBool('accountList') ?? false;
+
+    // If already shown, skip
+    if (hasShownTutorial) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(Duration(milliseconds: 500));
+      await WidgetsBinding.instance.endOfFrame;
+
+      initTargets();
+
+      if (targets.isNotEmpty) {
+        await Future.delayed(Duration(milliseconds: 300));
+        if (mounted) {
+          showTutorial(); // Show tutorial
+          await prefs.setBool('accountList', true); // ✅ Mark as shown
+        }
+      } else {
+        print('No targets were set. Skipping tutorial.');
+      }
     });
   }
 
@@ -184,11 +239,78 @@ class _AccountListScreenState extends State<AccountListScreen>
     super.dispose();
   }
 
+  void showTutorial() {
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.transparent,
+      opacityShadow: 0.9,
+      paddingFocus: 5,
+      textSkip: "Skip",
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+      onFinish: () {
+        print("Tutorial Finished");
+      },
+      onClickTarget: (target) {
+        print("Clicked on target: ${target.identify}");
+      },
+    ).show(context: context);
+  }
+
+  void initTargets() {
+    targets.addAll([
+      TargetFocus(
+        identify: "Add User",
+        keyTarget: keyFeature1,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
+              child: Text(
+                "This is where you create a new account. Click here to add a new account.",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+    ]);
+  }
+
   _getData() async {
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
     accountListProvider.page = 1;
     await accountListProvider.fetchAccountList(context, "", 1, 5);
+    setState(() {
+      hasAnyPlan = hasAnyPlans ?? false;
+      isPgAdmin = isPgAdmin;
+      isSuperAdmin = isSuperAdmin;
+      _selectedScreen = Screens.accountList;
+    });
   }
 
   @override
@@ -208,7 +330,6 @@ class _AccountListScreenState extends State<AccountListScreen>
             backgroundColor: themeProvider.getTheme.colorScheme.background,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
-              showDropdown: true,
               showNotificationDot: _showNotificationDot,
               onExpandPressed: (isExpanded) {
                 setState(() {
@@ -250,6 +371,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                     : _tabController?.index != 0
                         ? SizedBox()
                         : Container(
+                            key: keyFeature1,
                             margin: EdgeInsets.only(bottom: 42.0),
                             child: FloatingActionButton(
                               backgroundColor: AppColors.primaryMain,
@@ -417,20 +539,14 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           ),
                                                         ),
                                                         Tab(text: 'Shared'),
-                                                        if (userProfileProvider
-                                                                .trialInfo[
-                                                                    'status']
-                                                                ?.isEmpty ??
-                                                            true)
+                                                        if (isSuperAdmin ||
+                                                            isPgAdmin)
                                                           Tab(
                                                               text:
                                                                   'Configuration'),
                                                         Tab(
                                                             text:
                                                                 'Access Requested'),
-                                                        // Tab(
-                                                        //     text:
-                                                        //         'Data'),
                                                       ],
                                                     ),
                                                   ),
@@ -456,9 +572,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     children: [
                                       _getAccountUI(),
                                       _getComingSoonUI("shared"),
-                                      if (userProfileProvider
-                                              .trialInfo['status']?.isEmpty ??
-                                          true) ...[
+                                      if (isSuperAdmin || isPgAdmin) ...[
                                         ConfigurationTab(),
                                       ],
                                       _getComingSoonUI("request"),
