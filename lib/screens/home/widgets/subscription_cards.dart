@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../listings/widgets/message_card.dart';
+import '../../payments/pricing_list.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final String title;
@@ -313,18 +314,10 @@ class SubscriptionCard extends StatelessWidget {
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              // Handle subscription logic
-                              //Coming soon Snackbar
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Coming soon!',
-                                      style: typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                      )),
-                                ),
-                              );
+                              Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          PricingListScreen()));
                             },
                         ),
                       ],

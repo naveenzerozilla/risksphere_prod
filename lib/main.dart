@@ -1,10 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
-
+import 'package:RiskSphere/providers/invoice_provider.dart';
+import 'package:RiskSphere/providers/payment_provider.dart';
+import 'package:RiskSphere/providers/theme_provider.dart';
+import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'design_system/app_themes.dart';
 import 'package:RiskSphere/providers/connectivity_provider.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
-import 'package:RiskSphere/screens/onboarding/create_account_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:RiskSphere/firebase_options.dart';
 import 'package:RiskSphere/providers/configuration_provider.dart';
 import 'package:RiskSphere/providers/drawer_selection_provider.dart';
@@ -15,7 +18,6 @@ import 'package:RiskSphere/screens/event/notification_map_screen.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -41,492 +43,352 @@ import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/providers/verification_provider.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:provider/provider.dart';
-
-import 'design_system/app_themes.dart';
 import 'design_system/primitives/app_colors.dart';
 
-import 'providers/theme_provider.dart';
-import 'screens/onboarding/splash_screen.dart';
-
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
-void initializeNotifications() {
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  final DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-    requestSoundPermission: true,
-    requestBadgePermission: true,
-    requestAlertPermission: true,
-  );
-
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsIOS, // Add this for iOS
-  );
-
-  flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-    onDidReceiveNotificationResponse:
-        (NotificationResponse notificationResponse) {
-      final String? payload = notificationResponse.payload;
-      if (payload != null) {
-        try {
-          print('Received notification payload: $payload');
-          final Map<String, dynamic> data = jsonDecode(payload);
-          handleNotificationNavigation(data);
-        } catch (e) {
-          print('Error parsing notification payload: $e');
-        }
-      }
-    },
-  );
-}
-
-// void initializeNotifications() {
-//   const AndroidInitializationSettings initializationSettingsAndroid =
-//       AndroidInitializationSettings('@mipmap/ic_launcher');
-//
-//   final InitializationSettings initializationSettings = InitializationSettings(
-//     android: initializationSettingsAndroid,
-//   );
-//
-//   flutterLocalNotificationsPlugin.initialize(
-//     initializationSettings,
-//     onDidReceiveNotificationResponse:
-//         (NotificationResponse notificationResponse) {
-//       final String? payload = notificationResponse.payload;
-//       if (payload != null) {
-//         try {
-//           print('Received notification payload top: $payload');
-//           final Map<String, dynamic> data = jsonDecode(payload);
-//           print('Received notification payload: $data');
-//           handleNotificationNavigation(data);
-//         } catch (e) {
-//           print('Error parsing notification payload: $e');
-//         }
-//       }
-//     },
-//   );
-// }
-
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
-
-  if (message.notification == null) {
-    return;
-  }
-  String imageUrl = message.notification!.android?.imageUrl ??
-      message.notification!.apple?.imageUrl ??
-      message.notification!.android?.imageUrl ??
-      "";
-  showNotification(
-      message.notification!.title, message.notification!.body, imageUrl);
-}
-
-void checkForInitialMessage() async {
-  print('Checking for initial message');
-  RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
-  print('Initial message: $initialMessage');
-
-  if (initialMessage != null) {
-    // Handle the notification that opened the app
-    print('App launched by a notification: ${initialMessage.messageId}');
-    print('Notification data: ${initialMessage.data}');
-    print('Notification title: ${initialMessage.notification?.title}');
-    print('Notification body: ${initialMessage.notification?.body}');
-    print(
-        'Notification imageUrl: ${initialMessage.notification?.android?.imageUrl}');
-    print('Notification sent time: ${initialMessage.sentTime}');
-    // Process the initial notification data here
-    if (initialMessage != null && initialMessage.data.isNotEmpty) {
-      print('App launched by a notification');
-      print('Notification data: ${initialMessage.data}');
-      handleNotificationNavigation(initialMessage.data);
-    }
-  }
-}
-
-// Clean up the Firebase message handlers
-setupFirebaseMessaging() {
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
-
-    if (message.notification != null) {
-      print('Foreground Notification Title: ${message.notification!.title}');
-      print('Foreground Notification Body: ${message.notification!.body}');
-      showNotification(
-        message.notification!.title,
-        message.notification!.body,
-        message.notification?.android?.imageUrl ?? "",
-      );
-    }
-  });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('Notification opened app from background state');
-    if (message.data.isNotEmpty) {
-      handleNotificationNavigation(message.data);
-    }
-  });
-}
-
-void handleNotificationNavigation(Map<String, dynamic> data) {
-  print('Handling notification navigation: $data');
-  String? type = data['type'];
-  print('event id: ${data['title']}');
-
-  // Ensure we're in a valid context before navigating
-  if (MyApp.navigatorKey.currentContext == null) {
-    print('No valid context for navigation');
-    return;
-  }
-
-  switch (type) {
-    case 'event':
-      Navigator.push(
-        MyApp.navigatorKey.currentContext!,
-        MaterialPageRoute(
-          builder: (context) => NotificationMapScreen(
-            notificationData: {'eventId': data['title']},
-          ),
-        ),
-      );
-      break;
-    case 'score':
-      if (data['payload'] != null) {
-        var provider = Provider.of<NewsFeedProvider>(
-          MyApp.navigatorKey.currentContext!,
-          listen: false,
-        );
-        provider.updateHazardData(
-          MyApp.navigatorKey.currentContext!,
-          jsonDecode(data['payload']!),
-        );
-      }
-      break;
-    default:
-      print('Unknown notification type: $type');
-  }
-}
-
-Future<void> initFCM(String userId) async {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
-
-  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    print('User granted permission');
-    String? token = await messaging.getToken();
-    print('FCM Token: $token');
-
-    if (token != null) {
-      SharedPreferenceService.saveFcmToken(token);
-      bool isSubscribed =
-          await SharedPreferenceService.getNotificationSubscription();
-print(userId);
-      print("isSubscribed: $isSubscribed");
-      if (isSubscribed) {
-        print("TestA");
-        // Call the subscription API
-        bool success = await _subscribeToNotifications(userId, token);
-
-        if (success) {
-          SharedPreferenceService.saveNotificationSubscription(true);
-          print('Subscribed to topic: general');
-        }
-      } else {
-        print("TestB");
-      }
-    }
-  } else {
-    print('User declined or has not accepted permission');
-  }
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('onMessage received: ${message.messageId}');
-    print('Foreground message received: ${message.notification?.title}');
-    print('Message data: ${message.data}');
-    print('Message notification: ${message.notification}');
-    print('Message sent time: ${message.sentTime}');
-    print('Message ttl: ${message.ttl}');
-    print('Message collapse key: ${message.collapseKey}');
-    print('Message messageId: ${message.messageId}');
-    print('Message messageType: ${message.messageType}');
-    print('Message from: ${message.from}');
-
-    if (message.notification != null) {
-      showNotification(
-        message.notification!.title,
-        message.notification!.body,
-        message.notification?.android?.imageUrl ?? "",
-      );
-    }
-  });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('Notification opened app');
-    print('Message data: ${message.data}');
-    print('Message notification: ${message.notification}');
-    print('Message sent time: ${message.sentTime}');
-    print('Message ttl: ${message.ttl}');
-    print('Message collapse key: ${message.collapseKey}');
-    print('Message messageId: ${message.messageId}');
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Notification opened app');
-      if (message.data.isNotEmpty) {
-        print('Notification data: ${message.data}');
-        handleNotificationNavigation(message.data);
-      }
-    });
-  });
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-}
-
-Future<bool> _subscribeToNotifications(String userId, String token) async {
-  try {
-    print("object");
-    var url = Uri.parse('${AppConstant.SUBSCRIBE_NOTIFICATION}');
-    var body = jsonEncode({
-      'user_id': userId,
-      'topic': 'general',
-      'mobile_token': token,
-    });
-
-    print(body);
-    var response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200) {
-      print('Successfully subscribed to notification');
-      return true;
-    } else {
-      print('Failed to subscribe: ${response.body}');
-      return false;
-    }
-  } catch (error) {
-    print('Error subscribing to notifications: $error');
-    return false;
-  }
-}
-
-Future<void> showNotification(
-    String? title, String? body, String? imageUrl) async {
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'your_channel_id_test_1',
-    'your_channel_name_test_1',
-    description: 'This is your channel description',
-    importance: Importance.high,
-  );
-
-  // Create the notification payload
-  final Map<String, dynamic> payload = {
-    'type': 'event', // Or whatever type you need
-    'title': title,
-    'body': body,
-    'imageUrl': imageUrl,
-  };
-
-  AndroidNotificationDetails androidPlatformChannelSpecifics;
-
-  // If imageUrl is not null or empty, download the image
-  if (imageUrl != null && imageUrl.isNotEmpty) {
-    try {
-      print('Downloading image for notification: $imageUrl');
-      final http.Response response = await http.get(Uri.parse(imageUrl));
-
-      final Directory directory = await getApplicationDocumentsDirectory();
-      final String filePath = '${directory.path}/notification_image.jpg';
-      final File file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
-
-      print('Image downloaded and saved at: $filePath');
-
-      final BigPictureStyleInformation bigPicture = BigPictureStyleInformation(
-        FilePathAndroidBitmap(filePath),
-        largeIcon: const FilePathAndroidBitmap('ic_launcher'),
-        contentTitle: title,
-        summaryText: body,
-        htmlFormatContentTitle: true,
-        htmlFormatSummaryText: true,
-      );
-
-      androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'your_channel_id_test_1',
-        'your_channel_name_test_1',
-        icon: 'ic_launcher',
-        styleInformation: bigPicture,
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-    } catch (e) {
-      print('Error downloading image: $e');
-      androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'your_channel_id_test_1',
-        'your_channel_name_test_1',
-        icon: 'ic_launcher',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-    }
-  } else {
-    androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'your_channel_id_test_1',
-      'your_channel_name_test_1',
-      icon: 'ic_launcher',
-      importance: Importance.max,
-      priority: Priority.high,
+  await Firebase.initializeApp();
+  if (message.notification != null) {
+    showNotification(
+      message.notification!.title,
+      message.notification!.body,
+      message.notification?.android?.imageUrl ?? "",
     );
   }
-
-  final NotificationDetails platformChannelSpecifics = NotificationDetails(
-    android: androidPlatformChannelSpecifics,
-  );
-
-  // Ensure the channel is created
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    title,
-    body,
-    platformChannelSpecifics,
-    payload: jsonEncode(payload),
-  );
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  initializeNotifications();
-  await setupFirebaseMessaging();
-
-  String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
-
-  // Ensure APNS token is set before fetching FCM token
-  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-  if (apnsToken != null) {
-    await initFCM(userId);
-  } else {
-    print("APNS token not available yet. Retrying later...");
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
   }
 
-  // Check if the app was opened by a notification
-  checkForInitialMessage();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final themeProvider =
-      ThemeProvider(AppThemes.darkTheme); // Default to dark theme
-  await themeProvider.loadTheme(); // Load the saved theme
+  try {
+    Stripe.publishableKey =
+        'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+    await Stripe.instance.applySettings();
+  } catch (e, stackTrace) {
+    debugPrint('Stripe initialization failed: $e');
+    debugPrint('Stack trace: $stackTrace');
+  }
+
+  initializeNotifications();
 
   runApp(
     EasyLocalization(
-      supportedLocales: [
-        Locale('en'),
-        Locale('es'),
-        Locale('fr'),
-        Locale('ja'),
-        Locale('zh')
-      ],
+      supportedLocales: const [Locale('en')],
       path: 'assets/translations',
-      // Path to translation files
-      fallbackLocale: Locale('en'),
-      saveLocale: true,
-      child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthNotifier()),
-          ChangeNotifierProvider(
-              create: (_) => ThemeProvider(AppThemes.darkTheme)),
-          ChangeNotifierProvider(create: (_) => CompanyProvider()),
-          ChangeNotifierProvider(create: (_) => FeatureProvider()),
-          ChangeNotifierProvider(create: (_) => RoleProvider()),
-          ChangeNotifierProvider(create: (_) => EmailProvider()),
-          ChangeNotifierProvider(create: (_) => EmployeeProvider()),
-          ChangeNotifierProvider(create: (_) => VerificationProvider()),
-          ChangeNotifierProvider(create: (_) => UserProfileProvider()),
-          ChangeNotifierProvider(create: (_) => DashboardProvider()),
-          ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
-          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
-          ChangeNotifierProvider(create: (_) => CorporateProvider()),
-          ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
-          ChangeNotifierProvider(create: (_) => AccountListProvider()),
-          ChangeNotifierProvider(create: (_) => SubAccountListProvider()),
-          ChangeNotifierProvider(create: (_) => SOVListProvider()),
-          ChangeNotifierProvider(create: (_) => LocationListProvider()),
-          ChangeNotifierProvider(create: (_) => LocationProfileProvider()),
-          ChangeNotifierProvider(create: (_) => UploadSovProvider()),
-          ChangeNotifierProvider(create: (_) => JobMonitoringProvider()),
-          ChangeNotifierProvider(create: (_) => MyLocationListProvider()),
-          ChangeNotifierProvider(create: (_) => DrawerSelectionProvider()),
-          ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
-          ChangeNotifierProvider(create: (_) => NewsFeedProvider()),
-          ChangeNotifierProvider(create: (_) => SubaccountParameterProvider()),
-          ChangeNotifierProvider(create: (_) => UploadSovProvider()),
-        ],
-        child: MyApp(),
-      ),
+      fallbackLocale: const Locale('en'),
+      child: AppLifecycleManager(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  MyApp({super.key});
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await EasyLocalization.ensureInitialized();
+//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+//
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//   Stripe.publishableKey =
+//       'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+//   await Stripe.instance.applySettings();
+//   initializeNotifications();
+//   runApp(
+//     EasyLocalization(
+//       supportedLocales: const [Locale('en')],
+//       path: 'assets/translations',
+//       fallbackLocale: const Locale('en'),
+//       child: AppLifecycleManager(),
+//       // child: MyApp(),
+//     ),
+//   );
+// }
 
+class AppLifecycleManager extends StatefulWidget {
+  @override
+  State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
+}
+
+class _AppLifecycleManagerState extends State<AppLifecycleManager>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print("🔁 App lifecycle changed: $state");
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        break;
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.paused:
+        break;
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MyApp();
+  }
+}
+
+class MyApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
-
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-
-        return MaterialApp(
-          scaffoldMessengerKey: scaffoldMessengerKey,
-          debugShowCheckedModeBanner: false,
-          navigatorKey: navigatorKey,
-          title: 'Risk Sphere',
-          locale: context.locale,
-          supportedLocales: context.supportedLocales,
-          localizationsDelegates: context.localizationDelegates,
-          theme: themeProvider.getTheme,
-          darkTheme: ThemeData(
-            colorSchemeSeed: AppColors.primaryMain,
-            useMaterial3: true,
-            brightness: Brightness.dark,
-          ),
-          // Define your dark theme here
-          themeMode: themeProvider.getTheme.brightness == Brightness.dark
-              ? ThemeMode.dark
-              : ThemeMode.light,
-          home: SplashScreen(),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthNotifier()),
+        ChangeNotifierProvider(
+            create: (_) => ThemeProvider(AppThemes.darkTheme)),
+        ChangeNotifierProvider(create: (_) => CompanyProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureProvider()),
+        ChangeNotifierProvider(create: (_) => RoleProvider()),
+        ChangeNotifierProvider(create: (_) => EmailProvider()),
+        ChangeNotifierProvider(create: (_) => EmployeeProvider()),
+        ChangeNotifierProvider(create: (_) => VerificationProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (_) => CorporateProvider()),
+        ChangeNotifierProvider(create: (_) => NonCorporateProvider()),
+        ChangeNotifierProvider(create: (_) => AccountListProvider()),
+        ChangeNotifierProvider(create: (_) => SubAccountListProvider()),
+        ChangeNotifierProvider(create: (_) => SOVListProvider()),
+        ChangeNotifierProvider(create: (_) => LocationListProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProfileProvider()),
+        ChangeNotifierProvider(create: (_) => UploadSovProvider()),
+        ChangeNotifierProvider(create: (_) => JobMonitoringProvider()),
+        ChangeNotifierProvider(create: (_) => MyLocationListProvider()),
+        ChangeNotifierProvider(create: (_) => DrawerSelectionProvider()),
+        ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
+        ChangeNotifierProvider(create: (_) => NewsFeedProvider()),
+        ChangeNotifierProvider(create: (_) => SubaccountParameterProvider()),
+        ChangeNotifierProvider(create: (_) => UploadSovProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => InvoiceProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
+            title: 'Risk Sphere',
+            locale: context.locale,
+            supportedLocales: context.supportedLocales,
+            localizationsDelegates: context.localizationDelegates,
+            theme: themeProvider.getTheme,
+            darkTheme: ThemeData(
+              colorSchemeSeed: AppColors.primaryMain,
+              useMaterial3: true,
+              brightness: Brightness.dark,
+            ),
+            themeMode: themeProvider.getTheme.brightness == Brightness.dark
+                ? ThemeMode.dark
+                : ThemeMode.light,
+            home: SplashScreen(),
+          );
+        },
+      ),
     );
+  }
+}
+
+Future<void> initializeNotifications() async {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final DarwinInitializationSettings initializationSettingsIOS =
+      DarwinInitializationSettings();
+
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (response) {
+      if (response.payload != null) {
+        debugPrint('Notification payload: ${response.payload}');
+        // Navigate or handle logic if needed
+      }
+    },
+  );
+}
+
+Future<void> showNotification(
+    String? title, String? body, String? imageUrl) async {
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'high_importance_channel', // must match your channel ID
+    'High Importance Notifications',
+    importance: Importance.high,
+  );
+
+  final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    channel.id,
+    channel.name,
+    channelDescription: 'Used for important notifications',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+
+  final notificationDetails = NotificationDetails(android: androidDetails);
+
+  await flutterLocalNotificationsPlugin.show(
+    0,
+    title,
+    body,
+    notificationDetails,
+  );
+}
+
+void handleNotificationNavigation(Map<String, dynamic> data) {
+  final context = MyApp.navigatorKey.currentContext;
+  if (context == null) return;
+
+  switch (data['type']) {
+    case 'event':
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NotificationMapScreen(
+                notificationData: {'eventId': data['title']}),
+          ));
+      break;
+    case 'score':
+      final provider = Provider.of<NewsFeedProvider>(context, listen: false);
+      provider.updateHazardData(context, jsonDecode(data['payload'] ?? '{}'));
+      break;
+  }
+}
+
+Future<void> initFCM(String userId) async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    String? token = await messaging.getToken();
+    print('FCM Token: $token');
+
+    if (token != null) {
+      print("Subscribenotification1");
+      SharedPreferenceService.saveFcmToken(token);
+      bool isSubscribed =
+          await SharedPreferenceService.getNotificationSubscription();
+      // if (!isSubscribed) {
+      //   print("Subscribenotification2");
+      await _subscribeToNotifications(userId, token);
+      // }
+    }
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("📩 Foreground message received: ${message.notification?.title}");
+      CustomToast.showToast(
+        message.notification?.title ?? "Notification",
+        message.notification?.body ?? "You have a new notification",
+      );
+      if (message.notification != null) {
+        showNotification(
+          message.notification!.title,
+          message.notification!.body,
+          message.notification?.android?.imageUrl ?? "",
+        );
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("📩 Foreground message received: ${message.notification?.title}");
+      if (message.data.isNotEmpty) {
+        handleNotificationNavigation(message.data);
+      }
+    });
+
+    checkForInitialMessage();
+  }
+}
+
+void checkForInitialMessage() async {
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage?.data.isNotEmpty ?? false) {
+    handleNotificationNavigation(initialMessage!.data);
+  }
+}
+
+Future<bool> _subscribeToNotifications(String userId, String token) async {
+  try {
+    final url = Uri.parse(AppConstant.SUBSCRIBE_NOTIFICATION);
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+          {'user_id': userId, 'topic': 'general', 'mobile_token': token}),
+    );
+    print("Subscribenotification");
+    return response.statusCode == 200;
+  } catch (_) {
+    return false;
+  }
+}
+
+class CustomToast {
+  static void showToast(String title, String message) {
+    print("Foreground notifications");
+    // Example implementation using Flutter's ScaffoldMessenger
+    final context = MyApp.navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(top: 20, left: 16, right: 16),
+          content: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(message),
+              ],
+            ),
+          ),
+          duration: Duration(seconds: 10),
+        ),
+      );
+    }
   }
 }

@@ -267,49 +267,50 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   child: Consumer<NewsFeedProvider>(
                     builder: (context, provider, child) {
                       return DropdownButtonHideUnderline(
-                        child:
-                        DropdownButton<String>(
-                          isExpanded: true,
-                          value: ['All', 'Geocoding', 'Hazard'].contains(provider.selectedHazard)
-                              ? provider.selectedHazard
-                              : 'All', // Fallback if selectedHazard is invalid
-                          onChanged: (String? newValue) {
-                            provider.updateSelectedHazard(newValue!);
-                            Future.microtask(() => provider.fetchNewsFeed());
-                          },
-                          items: ['All', 'Geocoding', 'Hazard']
-                              .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: Text(value, style: typography.Body2),
-                              ),
-                            );
-                          }).toList(),
-                        )
+                          child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: ['All', 'Geocoding', 'Hazard']
+                                .contains(provider.selectedHazard)
+                            ? provider.selectedHazard
+                            : 'All',
+                        // Fallback if selectedHazard is invalid
+                        onChanged: (String? newValue) {
+                          provider.updateSelectedHazard(newValue!);
+                          Future.microtask(() => provider.fetchNewsFeed());
+                        },
+                        items: ['All', 'Geocoding', 'Hazard']
+                            .map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Text(value, style: typography.Body2),
+                            ),
+                          );
+                        }).toList(),
+                      )
 
-
-                        // DropdownButton<String>(
-                        //   isExpanded: true,
-                        //   value: provider.selectedHazard ?? 'All',
-                        //   onChanged: (String? newValue) {
-                        //     provider.updateSelectedHazard(newValue!);
-                        //     provider.fetchNewsFeed();
-                        //   },
-                        //   items: ['All', 'Geocoding', 'Hazard']
-                        //       .map<DropdownMenuItem<String>>((String value) {
-                        //     return DropdownMenuItem<String>(
-                        //       value: value,
-                        //       child: Padding(
-                        //         padding: const EdgeInsets.symmetric(
-                        //             horizontal: 16.0),
-                        //         child: Text(value, style: typography.Body2),
-                        //       ),
-                        //     );
-                        //   }).toList(),
-                        // ),
-                      );
+                          // DropdownButton<String>(
+                          //   isExpanded: true,
+                          //   value: provider.selectedHazard ?? 'All',
+                          //   onChanged: (String? newValue) {
+                          //     provider.updateSelectedHazard(newValue!);
+                          //     provider.fetchNewsFeed();
+                          //   },
+                          //   items: ['All', 'Geocoding', 'Hazard']
+                          //       .map<DropdownMenuItem<String>>((String value) {
+                          //     return DropdownMenuItem<String>(
+                          //       value: value,
+                          //       child: Padding(
+                          //         padding: const EdgeInsets.symmetric(
+                          //             horizontal: 16.0),
+                          //         child: Text(value, style: typography.Body2),
+                          //       ),
+                          //     );
+                          //   }).toList(),
+                          // ),
+                          );
                     },
                   ),
                 ),
@@ -532,10 +533,9 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
   /// Builds the expandable description with a clickable "More" link
   Widget _buildExpandableDescription(
       String description, CustomTypography typography) {
+    bool isExpanded = false;
     return StatefulBuilder(
       builder: (context, setState) {
-        bool isExpanded = false;
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -779,7 +779,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       // LanguageService.getTranslated(
                       //     context, 'coming_soon_title'),
                       style: typography.H4),
-                 SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_subtitle'),
@@ -793,6 +793,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
       ),
     );
   }
+
   _getNewPendingActionSoonUI() {
     var typography = CustomTypography(context);
     return Center(
@@ -811,7 +812,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       // LanguageService.getTranslated(
                       //     context, 'coming_soon_title'),
                       style: typography.H4),
-                 SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                       LanguageService.getTranslated(
                           context, 'coming_soon_subtitle'),

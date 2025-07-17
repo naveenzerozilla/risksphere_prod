@@ -197,33 +197,52 @@ class DuplicatesTabState extends State<DuplicatesTab> {
                         // Main address marker
                         Marker(
                           markerId: MarkerId('mainAddress'),
-                          position: LatLng(
-                            (provider.duplicateLocations[currentIndex]
-                                        ['duplicates'][0]?['latitude'] !=
-                                    null)
-                                ? double.tryParse(provider
-                                        .duplicateLocations[currentIndex]
-                                            ['duplicates'][0]!['latitude']
-                                        .toString()) ??
-                                    0.0
+                          position:
+                          LatLng(
+                            provider.duplicateLocations[currentIndex]['duplicates'] != null &&
+                                provider.duplicateLocations[currentIndex]['duplicates'].isNotEmpty &&
+                                provider.duplicateLocations[currentIndex]['duplicates'][0]?['latitude'] != null
+                                ? double.tryParse(
+                                provider.duplicateLocations[currentIndex]['duplicates'][0]['latitude'].toString()) ??
+                                0.0
                                 : 0.0,
-                            (provider.duplicateLocations[currentIndex]
-                                        ['duplicates'][0]?['longitude'] !=
-                                    null)
-                                ? double.tryParse(provider
-                                        .duplicateLocations[currentIndex]
-                                            ['duplicates'][0]!['longitude']
-                                        .toString()) ??
-                                    0.0
+                            provider.duplicateLocations[currentIndex]['duplicates'] != null &&
+                                provider.duplicateLocations[currentIndex]['duplicates'].isNotEmpty &&
+                                provider.duplicateLocations[currentIndex]['duplicates'][0]?['longitude'] != null
+                                ? double.tryParse(
+                                provider.duplicateLocations[currentIndex]['duplicates'][0]['longitude'].toString()) ??
+                                0.0
                                 : 0.0,
                           ),
+
+                          // LatLng(
+                          //   (provider.duplicateLocations[currentIndex]
+                          //               ['duplicates'][0]?['latitude'] !=
+                          //           null)
+                          //       ? double.tryParse(provider
+                          //               .duplicateLocations[currentIndex]
+                          //                   ['duplicates'][0]!['latitude']
+                          //               .toString()) ??
+                          //           0.0
+                          //       : 0.0,
+                          //   (provider.duplicateLocations[currentIndex]
+                          //               ['duplicates'][0]?['longitude'] !=
+                          //           null)
+                          //       ? double.tryParse(provider
+                          //               .duplicateLocations[currentIndex]
+                          //                   ['duplicates'][0]!['longitude']
+                          //               .toString()) ??
+                          //           0.0
+                          //       : 0.0,
+                          // ),
                           infoWindow: InfoWindow(
                             title: '',
-                            snippet: provider.duplicateLocations[currentIndex]
-                                            ['duplicates'][0]
-                                        ?['geocode_input_address']
-                                    ?['formatted_address'] ??
-                                "",
+                            snippet:'',
+                            // provider.duplicateLocations[currentIndex]
+                            //                 ['duplicates'][0]
+                            //             ?['geocode_input_address']
+                            //         ?['formatted_address'] ??
+                            //     "",
                           ),
                         ),
                       },

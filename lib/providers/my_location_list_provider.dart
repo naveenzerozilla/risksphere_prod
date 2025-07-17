@@ -860,8 +860,6 @@ class MyLocationListProvider extends ChangeNotifier {
       isAllLocationLoading = true;
 
       var headers = await CommonHeaders.createHeaders();
-
-      print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
       var url;
@@ -956,7 +954,6 @@ class MyLocationListProvider extends ChangeNotifier {
 
       var headers = await CommonHeaders.createHeaders();
 
-      print("Rating for all tab: $_rating. $rating");
       log(headers.toString());
 
       var url;
@@ -2063,7 +2060,6 @@ class MyLocationListProvider extends ChangeNotifier {
 
       var headers = await CommonHeaders.createHeaders();
 
-      print("Rating for all tab: $_rating. $rating");
       print('Location ID: $locationId');
       log(headers.toString());
 
@@ -2260,7 +2256,7 @@ class MyLocationListProvider extends ChangeNotifier {
       String placeId) async {
     var typography = CustomTypography(context);
     try {
-      isLoading = true;
+      // isLoading = true;
       notifyListeners();
 
       String url =
@@ -2277,22 +2273,22 @@ class MyLocationListProvider extends ChangeNotifier {
         subdestinations = [];
       }
 
-      isLoading = false;
+      // isLoading = false;
       notifyListeners();
     } on BackendException catch (e, stackTrace) {
-      isLoading = false;
+      // isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
-      isLoading = false;
+      // isLoading = false;
       print(stackTrace);
       // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       //   content: Text(e.toString(), style: typography.Body1),
       // ));
     } finally {
-      isLoading = false;
+      // isLoading = false;
       notifyListeners();
     }
   }

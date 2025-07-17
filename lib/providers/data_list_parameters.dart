@@ -1,14 +1,14 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
 import '../design_system/primitives/custom_typography.dart';
 import '../models/DataParameterModel.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';
 
 class SubaccountParameterProvider with ChangeNotifier {
-  // List<SubaccountParameter> _parameters = [];
+  List<Hazard> _hazardList = [];
+
+  List<Hazard> get hazardList => _hazardList;
+
   bool _isLoading = false;
   DataParametersModel? _parameters;
 
@@ -20,34 +20,35 @@ class SubaccountParameterProvider with ChangeNotifier {
 
   void setImageUrls(List<String> urls) {
     _imageUrls = urls;
-    notifyListeners(); // This is important
+    notifyListeners();
   }
+
   DataParametersModel? get parameters => _parameters;
 
-  // List<SubaccountParameter> get parameters => _parameters;
-
   Future<void> fetchSubaccountParameters(
-      BuildContext context, String? subaccountId) async {
+    BuildContext context,
+    String? subaccountId,
+    String? peril,
+    String? level,
+    String? locationId,
+  ) async {
     var typography = CustomTypography(context);
     _isLoading = true;
     notifyListeners();
 
     try {
-      ApiService apiService = ApiService(AppConstant.GET_DATA_PARAMETERS);
-      String url = '$subaccountId'; // append subaccountId to base URL
+      ApiService apiService = ApiService(level!.toLowerCase() == 'location'
+          ? AppConstant.GET_LOCATION_PARAMETERS
+          : AppConstant.GET_DATA_PARAMETERS);
+      String url = level.toLowerCase() == 'location'
+          ? '$locationId?peril=$peril'
+          : '$subaccountId?peril=$peril';
 
-      final response =
-          await apiService.get(url); // your ApiService handles decoding
+      final response = await apiService.get(url);
       print(response.toString());
-      debugPrint("✅ Subaccount parameters fetched successfully");
-      print(response['result'].toString());
       DataParametersModel dataParameters =
           DataParametersModel.fromJson(response);
-
       _parameters = dataParameters;
-      // print(dataParameters.result!.length.toString());
-      // print(dataParameters.result![0].criticality!.impactType.toString());
-      print("dataParameters.result.toString()");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,19 +60,40 @@ class SubaccountParameterProvider with ChangeNotifier {
       );
     } catch (e, stackTrace) {
       debugPrint(stackTrace.toString());
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       'Something went wrong: $e',
-      //       style: typography.Body1,
-      //     ),
-      //   ),
-      // );
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
+  Future<void> fetchHazardList(
+      BuildContext context, String? subaccountId) async {
+    var typography = CustomTypography(context);
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      ApiService apiService = ApiService(AppConstant.GET_HAZARD_LIST);
+      final response = await apiService.get();
+      final result = response['result'] as List<dynamic>;
+      _hazardList = result.map((json) => Hazard.fromJson(json)).toList();
+    } on BackendException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message,
+            style: typography.Body1,
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint(stackTrace.toString());
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> submitParameterUpdate({
     required BuildContext context,
     required String subaccountId,
@@ -86,12 +108,10 @@ class SubaccountParameterProvider with ChangeNotifier {
 
       final response = await apiService.patch(updatedFields);
 
-
-      debugPrint("✅ Parameter updated: $response");
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Parameter updated successfully", style: typography.Body1),
+          content:
+              Text("Parameter updated successfully", style: typography.Body1),
         ),
       );
     } on BackendException catch (e) {
@@ -99,60 +119,22 @@ class SubaccountParameterProvider with ChangeNotifier {
         SnackBar(content: Text(e.message, style: typography.Body1)),
       );
     } catch (e, stackTrace) {
-      debugPrint("❌ Error: $e");
+      debugPrint(" Error: $e");
       debugPrint(stackTrace.toString());
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("Something went wrong: $e", style: typography.Body1)),
-      // );
     }
   }
+}
 
+class Hazard {
+  final String id;
+  final String name;
 
-// Future<void> submitParameterUpdate({
-  //   required BuildContext context,
-  //   required String subaccountId,
-  //   required String parameterId,
-  //   required Map<String, dynamic> updatedFields,
-  // }) async {
-  //   var typography = CustomTypography(context);
-  //   _isLoading = true;
-  //   notifyListeners();
-  //
-  //   try {
-  //     // ✅ Make sure this constant points to your PATCH/UPDATE base endpoint
-  //     ApiService apiService = ApiService(
-  //         AppConstant.GET_DATA_PARAMETERS + subaccountId+'/'+parameterId);
-  //
-  //     // 🔧 Construct the final endpoint using subaccountId/parameterId
-  //     String patchUrl = '$subaccountId/$parameterId';
-  //
-  //     // 🛠️ Send the patch request
-  //     final response = await apiService.patch({
-  //       "data": updatedFields,
-  //     });
-  //
-  //     debugPrint("✅ Parameter updated: $response");
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content:
-  //             Text("Parameter updated successfully", style: typography.Body1),
-  //       ),
-  //     );
-  //   } on BackendException catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(e.message, style: typography.Body1)),
-  //     );
-  //   } catch (e, stackTrace) {
-  //     debugPrint("❌ Error: $e");
-  //     debugPrint(stackTrace.toString());
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //           content: Text("Something went wrong: $e", style: typography.Body1)),
-  //     );
-  //   } finally {
-  //     _isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
+  Hazard({required this.id, required this.name});
+
+  factory Hazard.fromJson(Map<String, dynamic> json) {
+    return Hazard(
+      id: json['id'],
+      name: json['hazard_name'],
+    );
+  }
 }

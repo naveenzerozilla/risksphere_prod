@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:RiskSphere/screens/listings/my_location_list.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -21,6 +22,7 @@ import 'package:RiskSphere/models/location_list_model.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 
+import '../screens/listings/widgets/location_data.dart';
 import '../service/language_service.dart';
 
 class LocationListProvider extends ChangeNotifier {
@@ -344,7 +346,6 @@ class LocationListProvider extends ChangeNotifier {
 
       var headers = await CommonHeaders.createHeaders();
 
-      print("Rating for all tab: $_rating");
       log(headers.toString());
       var body = json.encode({
         "data": {
@@ -540,6 +541,8 @@ class LocationListProvider extends ChangeNotifier {
     String accountId,
     String subAccountId,
     String sovId,
+    String accountName,
+    String subAccountName,
     Map<String, dynamic> body,
   ) async {
     try {
@@ -547,9 +550,20 @@ class LocationListProvider extends ChangeNotifier {
       ApiService apiService = ApiService(
           "${AppConstant.GET_LOCATION_PROFILE_NEW + "/addlocation"}");
       var response = await apiService.post(body);
-      log(response.toString());
+      // print("object");
+      // log(response.toString());
+      // Navigator.pop(context);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+              builder: (context) => MyLocationList(
+                    accountID: accountId,
+                    subAccountID: subAccountId,
+                    accountName: accountName,
+                    subAccountName: subAccountName,
+                  )),
+          (route) => false);
       CustomToast.success(context, response['message']);
-      Navigator.pop(context);
       isAddLocationLoading = false;
       return true;
     } on BackendException catch (e) {

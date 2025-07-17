@@ -2,19 +2,24 @@ import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
-
-
+  static Future<void> setBool(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
 
   static const String CAMCL = 'CAMCL'; // Corporate-List
   static const String CAMUL = 'CAMUL'; // User-List
   static const String CAMCC = 'CAMCC'; // Create-Corporate
-  static const String CAMEC = 'CAMEC'; // Edit-Corporate-Profile [reusing create screen]
+  static const String CAMEC =
+      'CAMEC'; // Edit-Corporate-Profile [reusing create screen]
   static const String CAMVC = 'CAMVC'; // View-Corporate-Profile
   static const String CAMDC = 'CAMDC'; // Delete-Corporate-Profile
   static const String CAMED = 'CAMED'; // enable-disable
   static const String CAMLL = 'CAMLL'; // Show corporate verification tab
-  static const String CAMCUM = 'CAMCUM'; // Show Users drop down menu option in corporate management
-  static const String CAMCUL = 'CAMCUL'; // Show Profile drop down menu option in corporate management
+  static const String CAMCUM =
+      'CAMCUM'; // Show Users drop down menu option in corporate management
+  static const String CAMCUL =
+      'CAMCUL'; // Show Profile drop down menu option in corporate management
   static const String CAMVU = 'CAMVU'; // Show User verification tab
   static const String CUMED = 'CUMED'; // edit user
   static const String CUMDU = 'CUMDU'; // delete user
@@ -55,7 +60,10 @@ class SharedPreferenceService {
   static const String NCMMT = 'NCMMT'; // My Teams for NCM
   static const String EMPMT = 'EMPMT'; // My Teams for EMP
   static const String FCMTK = 'FCMTK'; // FCM Token
-  static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS'; // Schedule In Progress
+  static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS';
+  static const String USER_LICENSE = 'USER_LICENSE';
+
+  // Schedule In Progress
   static const String SOV_UPLOAD_TEMP_ID = 'SOV_UPLOAD_TEMP_ID';
   static const String SOV_UPLOAD_PROCESS_ID = 'SOV_UPLOAD_PROCESS_ID';
   static const String SOV_UPLOAD_STATE = 'SOV_UPLOAD_STATE';
@@ -201,9 +209,8 @@ class SharedPreferenceService {
         case IS_ADMIN:
         case IS_SUPER_ADMIN:
         case Is_Indivudual:
-
-          if(value.runtimeType == int) {
-            if(value == 1) {
+          if (value.runtimeType == int) {
+            if (value == 1) {
               prefs.setBool(key, true);
               print('Claim $key set to true');
             } else {
@@ -221,7 +228,6 @@ class SharedPreferenceService {
   }
 
   static Future<Map<String, dynamic>> getAllClaims() async {
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, dynamic> claims = {};
     List<String> staticStrings = [
@@ -305,6 +311,7 @@ class SharedPreferenceService {
       return null;
     }
   }
+
   // static Future<void> setScheduleInProgress(bool value) async {
   //   final prefs = await SharedPreferences.getInstance();
   //   await prefs.setString('schedule_in_progress', value.toString()); // Convert bool to String
@@ -324,6 +331,43 @@ class SharedPreferenceService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SCHEDULE_INPROGRESS);
     print('Schedule in progress $value');
+    return value;
+  }
+
+  static Future<void> setUserLicense(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(USER_LICENSE, value);
+    print('Set user license to $value');
+  }
+
+  static Future<String?> getUserLicense() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(USER_LICENSE);
+    print('Retrieved user license with value $value');
+    return value;
+  }
+  static Future<void> setGeocodingLicense(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('geocoding_license', value);
+    print('Set geocoding license to $value');
+  }
+  static Future<String?> getGeocodingLicense() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('geocoding_license');
+    print('Retrieved geocoding license with value $value');
+    return value;
+  }
+
+
+  static Future<void> setHazardLicense(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('hazard_license', value);
+    print('Set hazard license to $value');
+  }
+  static Future<String?> getHazardLicense() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('hazard_license');
+    print('Retrieved hazard license with value $value');
     return value;
   }
 
@@ -460,7 +504,15 @@ class SharedPreferenceService {
   }
 
   // Save Trial Info with Firebase Timestamp
-  static Future<void> saveTrialInfo(int trialDays, bool isApplicable, int trialSubDestinations, int trialEditLocations, int trialMaxLocations, int trialLocations, int totalTrialUsers, int totalUsersVerified) async {
+  static Future<void> saveTrialInfo(
+      int trialDays,
+      bool isApplicable,
+      int trialSubDestinations,
+      int trialEditLocations,
+      int trialMaxLocations,
+      int trialLocations,
+      int totalTrialUsers,
+      int totalUsersVerified) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(TRIAL_PERIOD_DAYS, trialDays);
     await prefs.setBool(IS_TRIAL_APPLICABLE, isApplicable);
@@ -527,9 +579,15 @@ class SharedPreferenceService {
       int totalTrialUsers = user['total_trial_users'];
       int totalUsersVerified = user['total_users_verified'];
 
-      await SharedPreferenceService.saveTrialInfo(trialDays, isTrialApplicable, trialSubDestinations, trialEditLocations, trialMaxLocations, trialLocations, totalTrialUsers, totalUsersVerified);
+      await SharedPreferenceService.saveTrialInfo(
+          trialDays,
+          isTrialApplicable,
+          trialSubDestinations,
+          trialEditLocations,
+          trialMaxLocations,
+          trialLocations,
+          totalTrialUsers,
+          totalUsersVerified);
     }
   }
-
-
 }

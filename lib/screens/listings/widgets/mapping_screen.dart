@@ -228,25 +228,7 @@ class _MappingScreenState extends State<MappingScreen> {
                 Wrap(
                   spacing: 5,
                   children: [
-                    // FilterChip(
-                    //   label: Text(
-                    //       LanguageService.getTranslated(context, "app_all")),
-                    //   selected: _selectedFilter == 'All',
-                    //   onSelected: (bool selected) {
-                    //     setState(() {
-                    //       _manualappedfields.addAll(_tempfields);
-                    //       for(var i in _tempfields){
-                    //         _unmappedfields.removeWhere((test)=>test["spreadsheet"]==i["spreadsheet"]);
-                    //         _automappedfields.removeWhere((test)=>test["spreadsheet"]==i["spreadsheet"]);
-                    //         _fields.removeWhere((test)=>test["spreadsheet"]==i["spreadsheet"]);
-                    //         _fields.add(i);
-                    //       }
-                    //       _tempfields.clear();
-                    //       _selectedFilter = 'All';
-                    //       _applyPendingReverts(); // Apply revert when switching filter
-                    //     });
-                    //   },
-                    // ),
+
                     FilterChip(
                       label: Text(LanguageService.getTranslated(
                           context, "app_auto_mapped")),
@@ -271,7 +253,7 @@ class _MappingScreenState extends State<MappingScreen> {
                               !_manualappedfields.any((existing) =>
                                   existing["spreadsheet"] ==
                                   item["spreadsheet"])));
-                          // _manualappedfields.addAll(_tempfields);
+
                           for (var i in _tempfields) {
                             _unmappedfields.removeWhere((test) =>
                                 test["spreadsheet"] == i["spreadsheet"]);
@@ -320,48 +302,6 @@ class _MappingScreenState extends State<MappingScreen> {
                             onPressed: _hasChanges
                                 ? () {
                                     setState(() {
-                                      // _unmappedfields.clear();
-                                      // _manualappedfields.clear();
-                                      // _automappedfields.clear();
-                                      // _tempfields.clear();
-                                      // _fields.clear();
-                                      // _fields = provider.sovUploadModel!.result!
-                                      //     .map((result) {
-                                      //   return {
-                                      //     'target': result.targetField,
-                                      //     'spreadsheet':
-                                      //         result.matchedField?.name ?? '',
-                                      //     'initialSpreadsheet':
-                                      //         result.matchedField?.name ?? '',
-                                      //     'status':
-                                      //         result.mappingStatus?.label ??
-                                      //             'Unmapped',
-                                      //     'initialStatus':
-                                      //         result.mappingStatus?.label ??
-                                      //             'Unmapped',
-                                      //     'isChecked': result.isChecked,
-                                      //     'isUserEdited': result.isUserEdited,
-                                      //     'matchPercent':
-                                      //         result.matchedField?.percentage ??
-                                      //             0,
-                                      //   };
-                                      // }).toList();
-                                      // _hasChanges = false;
-                                      // print(_fields.length.toString());
-                                      //
-                                      // _automappedfields = _fields
-                                      //     .where((test) =>
-                                      //         test["status"] == 'Auto Mapped')
-                                      //     .toList();
-                                      // _manualappedfields = _fields
-                                      //     .where((test) =>
-                                      //         test["status"] == 'Manual Mapped')
-                                      //     .toList();
-                                      // _unmappedfields = _fields
-                                      //     .where((test) =>
-                                      //         test["status"] == 'Unmapped')
-                                      //     .toList();
-                                      // print(_unmappedfields.length.toString());
                                       _selectedFilter = 'All';
                                       _hasChanges = false;
                                     });
@@ -547,14 +487,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                             }).toList() ??
                                                             [];
                                                       },
-                                                      // onChanged: (newValue) {
-                                                      // setState(() {
-                                                      //   field['spreadsheet'] =
-                                                      //       newValue!;
-                                                      //   field['status'] =
-                                                      //   'Manual Mapped';
-                                                      //   _hasChanges = true;
-                                                      // });
+
 
                                                       onChanged: (newValue) {
                                                         setState(() {
@@ -567,8 +500,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                         });
                                                         print(
                                                             "Status: ${field['status']}");
-                                                        print(
-                                                            "Selected Value: $newValue");
+
 
                                                         print(
                                                             "Selected Value1: $newValue");
@@ -640,41 +572,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                           });
                                                         }
                                                       : null,
-                                                  // TextButton(
-                                                  // onPressed: field['status'] ==
-                                                  //         'Manual Mapped'
-                                                  //     ? () {
-                                                  //         setState(() {
-                                                  //           var originalField =
-                                                  //               _initialfields
-                                                  //                   .firstWhereOrNull((test) =>
-                                                  //                       test[
-                                                  //                           "target"] ==
-                                                  //                       field[
-                                                  //                           "target"]);
-                                                  //
-                                                  //           if (originalField !=
-                                                  //               null) {
-                                                  //             field["spreadsheet"] =
-                                                  //                 originalField[
-                                                  //                     "spreadsheet"];
-                                                  //             field['status'] =
-                                                  //                 originalField[
-                                                  //                     'status'];
-                                                  //           }
-                                                  //
-                                                  //           _tempfields.removeWhere(
-                                                  //               (test) =>
-                                                  //                   test[
-                                                  //                       "spreadsheet"] ==
-                                                  //                   field[
-                                                  //                       "spreadsheet"]);
-                                                  //           _pendingReverts[field[
-                                                  //                   'target']] =
-                                                  //               true;
-                                                  //         });
-                                                  //       }
-                                                  //     : null,
+
                                                   child: Row(
                                                     children: [
                                                       Text(
@@ -691,56 +589,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                     ],
                                                   ),
                                                 ),
-                                                // TextButton(
-                                                //   onPressed: field[
-                                                //   'status'] ==
-                                                //       'Manual Mapped'
-                                                //       ? () {
-                                                //     setState(() {
-                                                //       field['status'] =
-                                                //       "All";
-                                                //       var originalField =
-                                                //       _initialfields.firstWhereOrNull((test) =>
-                                                //       test[
-                                                //       "target"] ==
-                                                //           field[
-                                                //           "target"]);
-                                                //
-                                                //       if (originalField !=
-                                                //           null) {
-                                                //         field["spreadsheet"] =
-                                                //         originalField[
-                                                //         "spreadsheet"];
-                                                //       }
-                                                //
-                                                //       _tempfields.removeWhere(
-                                                //               (test) =>
-                                                //           test[
-                                                //           "spreadsheet"] ==
-                                                //               field[
-                                                //               "spreadsheet"]);
-                                                //       _pendingReverts[
-                                                //       field[
-                                                //       'target']] =
-                                                //       true;
-                                                //     });
-                                                //   }
-                                                //       : null,
-                                                //   child: Row(
-                                                //     children: [
-                                                //       Text(
-                                                //         'Revert1',
-                                                //         style: TextStyle(
-                                                //           color: field[
-                                                //           'status'] == 'All'
-                                                //               ? AppColors
-                                                //               .primaryMain
-                                                //               : Colors.grey,
-                                                //         ),
-                                                //       ),
-                                                //     ],
-                                                //   ),
-                                                // ),
+
                                               ],
                                             ),
                                             SizedBox(height: 8),
@@ -1008,177 +857,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                   ],
                                                 ),
 
-                                                //                                              Row(
-                                                //                                                children: [
-                                                //                                                  Expanded(
-                                                //                                                    child: Container(
-                                                //                                                      decoration:
-                                                //                                                          BoxDecoration(
-                                                //                                                        border: Border.all(
-                                                //                                                            color:
-                                                //                                                                Colors.grey),
-                                                //                                                        borderRadius:
-                                                //                                                            BorderRadius
-                                                //                                                                .circular(8),
-                                                //                                                      ),
-                                                //                                                      child: DropdownButton<
-                                                //                                                          String>(
-                                                //                                                        isExpanded: true,
-                                                //                                                        padding: EdgeInsets
-                                                //                                                            .symmetric(
-                                                //                                                                horizontal:
-                                                //                                                                    10),
-                                                //                                                        menuMaxHeight: 300,
-                                                //                                                        borderRadius:
-                                                //                                                            BorderRadius
-                                                //                                                                .circular(8),
-                                                //                                                        style:
-                                                //                                                            CustomTypography(
-                                                //                                                                    context)
-                                                //                                                                .Subtitle1,
-                                                //                                                        underline: SizedBox(),
-                                                //                                                        menuWidth: 250,
-                                                //                                                        value: field[
-                                                //                                                                    'spreadsheet'] ,
-                                                //                                                        hint: Text(
-                                                //                                                          "Select mapping",
-                                                //                                                          style:
-                                                //                                                              CustomTypography(
-                                                //                                                                      context)
-                                                //                                                                  .Subtitle1,
-                                                //                                                        ),
-                                                //                                                        items: provider.sovUploadModel?.result
-                                                //                                                            ?.firstWhere(
-                                                //                                                              (res) => res.targetField == field['target'],
-                                                //                                                          // Handle cases where no matching result is found
-                                                //                                                        )
-                                                //                                                            .matches
-                                                //                                                            ?.map((match) {
-                                                //                                                          return DropdownMenuItem<String>(
-                                                //                                                            value: match.name,
-                                                //                                                            child: Row(
-                                                //                                                              children: [
-                                                //                                                                Text(
-                                                //                                                                  match.name!, // Handle potential null name
-                                                //                                                                  style: CustomTypography(context).Subtitle2,
-                                                //                                                                ),
-                                                //                                                                Spacer(),
-                                                //                                                                Text(
-                                                //                                                                  '${match.percentage ?? 0}% Match', // Handle potential null percentage
-                                                //                                                                  style: CustomTypography(context).Caption,
-                                                //                                                                ),
-                                                //                                                              ],
-                                                //                                                            ),
-                                                //                                                          );
-                                                //                                                        }).toList() , // Return an empty list if null
-                                                //
-                                                //                                                        selectedItemBuilder:
-                                                //                                                            (context) {
-                                                //                                                          return _dropdownItems
-                                                //                                                              .map((item) {
-                                                //                                                            return Align(
-                                                //                                                              alignment: Alignment
-                                                //                                                                  .centerLeft,
-                                                //                                                              child: Text(
-                                                //
-                                                //                                                                '${item['label']}',
-                                                //                                                                style: CustomTypography(
-                                                //                                                                        context)
-                                                //                                                                    .Subtitle1,
-                                                //                                                              ),
-                                                //                                                            );
-                                                //                                                          }).toList();
-                                                //                                                        },
-                                                //                                                        onChanged:
-                                                //                                                            (newValue) {
-                                                //                                                          setState(() {
-                                                //                                                            field['spreadsheet'] =
-                                                //                                                                newValue!;
-                                                //
-                                                //                                                            field['status'] =
-                                                //                                                                'Manual Mapped';
-                                                //
-                                                //                                                            _tempfields
-                                                //                                                                .add(field);
-                                                //                                                          });
-                                                //                                                          print(newValue);
-                                                //                                                        },
-                                                //                                                      ),
-                                                //                                                    ),
-                                                //                                                  ),
-                                                //                                                  SizedBox(width: 10),
-                                                //                                                  TextButton(
-                                                //                                                    onPressed: field[
-                                                //                                                                'status'] ==
-                                                //                                                            'Manual Mapped'
-                                                //                                                        ? () {
-                                                //                                                            setState(() {
-                                                //                                                              field['status'] =
-                                                //                                                                  "Auto Mapped";
-                                                //
-                                                //                                                            List oList=  _initialfields.where((test)=>test["target"]==field["target"]).toList();
-                                                // print(oList[0]["spreadsheet"]);
-                                                //                                                              _tempfields.removeWhere(
-                                                //                                                                  (test) =>
-                                                //                                                                      test[
-                                                //                                                                          "spreadsheet"] ==
-                                                //                                                                      field[
-                                                //                                                                          "spreadsheet"]);
-                                                //                                                              field["spreadsheet"]=oList[0]["spreadsheet"];
-                                                //
-                                                //                                                              _pendingReverts[
-                                                //                                                                      field[
-                                                //                                                                          'target']] =
-                                                //                                                                  true; // Mark field for revert
-                                                //                                                            });
-                                                //                                                          }
-                                                //                                                        : null,
-                                                //                                                    // Disable button if not manually mapped
-                                                //                                                    child: Row(
-                                                //                                                      children: [
-                                                //                                                        Text(
-                                                //                                                          'Revert',
-                                                //                                                          style: TextStyle(
-                                                //                                                              color: field[
-                                                //                                                                          'status'] ==
-                                                //                                                                      'Manual Mapped'
-                                                //                                                                  ? AppColors
-                                                //                                                                      .primaryMain
-                                                //                                                                  : Colors
-                                                //                                                                      .grey),
-                                                //                                                        ),
-                                                //                                                      ],
-                                                //                                                    ),
-                                                //                                                  ),
-                                                //
-                                                //                                                  // TextButton(
-                                                //                                                  //   onPressed: () {
-                                                //                                                  //     setState(() {
-                                                //                                                  //       field['status'] = 'Submitted';
-                                                //                                                  //     });
-                                                //                                                  //   },
-                                                //                                                  //   child: Row(
-                                                //                                                  //     children: [
-                                                //                                                  //       Icon(Icons.check_circle_outline,
-                                                //                                                  //           color: field['status'] ==
-                                                //                                                  //                   'Unmapped'
-                                                //                                                  //               ? Colors.grey
-                                                //                                                  //               : AppColors.primaryMain),
-                                                //                                                  //       SizedBox(width: 5),
-                                                //                                                  //       Text(
-                                                //                                                  //         'Submit',
-                                                //                                                  //         style: TextStyle(
-                                                //                                                  //             color: field['status'] ==
-                                                //                                                  //                     'Unmapped'
-                                                //                                                  //                 ? Colors.grey
-                                                //                                                  //                 : AppColors
-                                                //                                                  //                     .primaryMain),
-                                                //                                                  //       ),
-                                                //                                                  //     ],
-                                                //                                                  //   ),
-                                                //                                                  // ),
-                                                //                                                ],
-                                                //                                              ),
                                                 SizedBox(height: 8),
                                               ],
                                             ),
@@ -1207,7 +885,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                     child: Column(
                                       children:
 
-                                          // _manualappedfields.map((field)
 
                                           _manualappedfields
                                               .where((field) =>
@@ -1761,189 +1438,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                       ],
                                                     ),
 
-                                                    // Row(
-                                                    //   children: [
-                                                    //     Expanded(
-                                                    //       child: Container(
-                                                    //         decoration:
-                                                    //             BoxDecoration(
-                                                    //           border: Border.all(
-                                                    //               color: Colors
-                                                    //                   .grey),
-                                                    //           borderRadius:
-                                                    //               BorderRadius
-                                                    //                   .circular(
-                                                    //                       8),
-                                                    //         ),
-                                                    //         child:
-                                                    //             DropdownButton<
-                                                    //                 String>(
-                                                    //           isExpanded: true,
-                                                    //           padding: EdgeInsets
-                                                    //               .symmetric(
-                                                    //                   horizontal:
-                                                    //                       10),
-                                                    //           menuMaxHeight:
-                                                    //               300,
-                                                    //           borderRadius:
-                                                    //               BorderRadius
-                                                    //                   .circular(
-                                                    //                       8),
-                                                    //           style: CustomTypography(
-                                                    //                   context)
-                                                    //               .Subtitle1,
-                                                    //           underline:
-                                                    //               SizedBox(),
-                                                    //           menuWidth: 250,
-                                                    //           value: field[
-                                                    //                       'spreadsheet'] !=
-                                                    //                   ''
-                                                    //               ? field[
-                                                    //                   'spreadsheet']
-                                                    //               : null,
-                                                    //           hint: Text(
-                                                    //             "Select mapping",
-                                                    //             style: CustomTypography(
-                                                    //                     context)
-                                                    //                 .Subtitle1,
-                                                    //           ),
-                                                    //           items: provider
-                                                    //               .sovUploadModel!
-                                                    //               .result!
-                                                    //               .firstWhere((res) =>
-                                                    //                   res.targetField ==
-                                                    //                   field[
-                                                    //                       'target'])
-                                                    //               .matches!
-                                                    //               .map((match) {
-                                                    //             return DropdownMenuItem<
-                                                    //                 String>(
-                                                    //               value: match
-                                                    //                   .name,
-                                                    //               child: Row(
-                                                    //                 children: [
-                                                    //                   Text(
-                                                    //                     match
-                                                    //                         .name!,
-                                                    //                     style: CustomTypography(context)
-                                                    //                         .Subtitle2,
-                                                    //                   ),
-                                                    //                   Spacer(),
-                                                    //                   Text(
-                                                    //                     '${match.percentage}% Match',
-                                                    //                     style: CustomTypography(context)
-                                                    //                         .Caption,
-                                                    //                   ),
-                                                    //                 ],
-                                                    //               ),
-                                                    //             );
-                                                    //           }).toList(),
-                                                    //           selectedItemBuilder:
-                                                    //               (context) {
-                                                    //             return _dropdownItems
-                                                    //                 .map(
-                                                    //                     (item) {
-                                                    //               return Align(
-                                                    //                 alignment:
-                                                    //                     Alignment
-                                                    //                         .centerLeft,
-                                                    //                 child: Text(
-                                                    //                   '${item['label']}',
-                                                    //                   style: CustomTypography(
-                                                    //                           context)
-                                                    //                       .Subtitle1,
-                                                    //                 ),
-                                                    //               );
-                                                    //             }).toList();
-                                                    //           },
-                                                    //           onChanged:
-                                                    //               (newValue) {
-                                                    //             setState(() {
-                                                    //               field['spreadsheet'] =
-                                                    //                   newValue!;
-                                                    //
-                                                    //               field['status'] =
-                                                    //                   'Manual Mapped';
-                                                    //
-                                                    //               _tempfields
-                                                    //                   .add(
-                                                    //                       field);
-                                                    //             });
-                                                    //             print(field[
-                                                    //                 'status']);
-                                                    //             print(newValue);
-                                                    //           },
-                                                    //         ),
-                                                    //       ),
-                                                    //     ),
-                                                    //     SizedBox(width: 10),
-                                                    //     TextButton(
-                                                    //       onPressed: field[
-                                                    //                   'status'] ==
-                                                    //               'Manual Mapped'
-                                                    //           ? () {
-                                                    //               setState(() {
-                                                    //                 field['status'] =
-                                                    //                     'Unmapped';
-                                                    //                 _tempfields.removeWhere((test) =>
-                                                    //                     test[
-                                                    //                         "spreadsheet"] ==
-                                                    //                     field[
-                                                    //                         "spreadsheet"]);
-                                                    //
-                                                    //                 field['spreadsheet'] =
-                                                    //                     '';
-                                                    //                 _pendingReverts[
-                                                    //                         field['target']] =
-                                                    //                     true; // Mark field for revert
-                                                    //               });
-                                                    //             }
-                                                    //           : null,
-                                                    //       // Disable button if not manually mapped
-                                                    //       child: Row(
-                                                    //         children: [
-                                                    //           Text(
-                                                    //             'Revert',
-                                                    //             style: TextStyle(
-                                                    //                 color: field['status'] ==
-                                                    //                         'Manual Mapped'
-                                                    //                     ? AppColors
-                                                    //                         .primaryMain
-                                                    //                     : Colors
-                                                    //                         .grey),
-                                                    //           ),
-                                                    //         ],
-                                                    //       ),
-                                                    //     ),
-                                                    //
-                                                    //     // TextButton(
-                                                    //     //   onPressed: () {
-                                                    //     //     setState(() {
-                                                    //     //       field['status'] = 'Submitted';
-                                                    //     //     });
-                                                    //     //   },
-                                                    //     //   child: Row(
-                                                    //     //     children: [
-                                                    //     //       Icon(Icons.check_circle_outline,
-                                                    //     //           color: field['status'] ==
-                                                    //     //                   'Unmapped'
-                                                    //     //               ? Colors.grey
-                                                    //     //               : AppColors.primaryMain),
-                                                    //     //       SizedBox(width: 5),
-                                                    //     //       Text(
-                                                    //     //         'Submit',
-                                                    //     //         style: TextStyle(
-                                                    //     //             color: field['status'] ==
-                                                    //     //                     'Unmapped'
-                                                    //     //                 ? Colors.grey
-                                                    //     //                 : AppColors
-                                                    //     //                     .primaryMain),
-                                                    //     //       ),
-                                                    //     //     ],
-                                                    //     //   ),
-                                                    //     // ),
-                                                    //   ],
-                                                    // ),
                                                     SizedBox(height: 8),
                                                   ],
                                                 ),

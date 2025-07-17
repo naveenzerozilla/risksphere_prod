@@ -1,7 +1,9 @@
 class DataParametersModel {
   List<Result>? result;
 
-  DataParametersModel({this.result});
+  Completeness? completeness;
+
+  DataParametersModel({this.result, this.completeness});
 
   DataParametersModel.fromJson(Map<String, dynamic> json) {
     if (json['result'] != null) {
@@ -10,6 +12,9 @@ class DataParametersModel {
         result!.add(new Result.fromJson(v));
       });
     }
+    completeness = json['completeness'] != null
+        ? new Completeness.fromJson(json['completeness'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -17,10 +22,16 @@ class DataParametersModel {
     if (this.result != null) {
       data['result'] = this.result!.map((v) => v.toJson()).toList();
     }
+    if (this.completeness != null) {
+      data['completeness'] = this.completeness!.toJson();
+    }
     return data;
   }
 }
+
 class Result {
+  String? id;
+  String? hazardName;
   String? name;
   String? parentId;
   ParameterState? parameterState;
@@ -57,56 +68,62 @@ class Result {
   String? currency;
   List<History>? history;
 
-  Result({
-    this.name,
-    this.parentId,
-    this.parameterState,
-    this.private,
-    this.dataCategoryId,
-    this.paramConfig,
-    this.helpDocumantion,
-    this.criticality,
-    this.parameterNameA,
-    this.parameterNameB,
-    this.parameterType,
-    this.selectedParameterType,
-    this.unitName,
-    this.tooltip,
-    this.status,
-    this.ratingStyle,
-    this.fileType,
-    this.isList,
-    this.isMultiSelectionList,
-    this.isMultiFiles,
-    this.isDisplayListing,
-    this.isItRangeParameter,
-    this.moduleName,
-    this.categoryType,
-    this.pdElement,
-    this.date,
-    this.startDate,
-    this.endDate,
-    this.dataGroupRef,
-    this.version,
-    this.stateManager,
-    this.user,
-    this.parameterValue,
-    this.currency,
-    this.history
-  });
+  Result(
+      {this.id,
+      this.hazardName,
+      this.name,
+      this.parentId,
+      this.parameterState,
+      this.private,
+      this.dataCategoryId,
+      this.paramConfig,
+      this.helpDocumantion,
+      this.criticality,
+      this.parameterNameA,
+      this.parameterNameB,
+      this.parameterType,
+      this.selectedParameterType,
+      this.unitName,
+      this.tooltip,
+      this.status,
+      this.ratingStyle,
+      this.fileType,
+      this.isList,
+      this.isMultiSelectionList,
+      this.isMultiFiles,
+      this.isDisplayListing,
+      this.isItRangeParameter,
+      this.moduleName,
+      this.categoryType,
+      this.pdElement,
+      this.date,
+      this.startDate,
+      this.endDate,
+      this.dataGroupRef,
+      this.version,
+      this.stateManager,
+      this.user,
+      this.parameterValue,
+      this.currency,
+      this.history});
 
   Result.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    hazardName = json['hazard_name'];
     name = json['name'];
     parentId = json['parent_id'];
     parameterState = json['parameter_state'] != null
         ? ParameterState.fromJson(json['parameter_state'])
         : null;
-    private = json['private'] != null ? Private.fromJson(json['private']) : null;
+    private =
+        json['private'] != null ? Private.fromJson(json['private']) : null;
     dataCategoryId = json['data_category_id'];
     paramConfig = json['param_config'] != null
         ? ParamConfig.fromJson(json['param_config'])
         : null;
-    helpDocumantion = json['help_documantion'] != null ? new HelpDocumantion.fromJson(json['help_documantion']) : null;
+    helpDocumantion = json['help_documantion'] != null
+        ? new HelpDocumantion.fromJson(json['help_documantion'])
+        : null;
 
     criticality = json['criticality'] != null
         ? Criticality.fromJson(json['criticality'])
@@ -134,22 +151,29 @@ class Result {
     startDate = json['startDate'];
     endDate = json['endDate'];
     dataGroupRef = json['data_group_ref'];
-    version = json['version'] != null ? Version.fromJson(json['version']) : null;
+    version =
+        json['version'] != null ? Version.fromJson(json['version']) : null;
     stateManager = json['state_manager'] != null
         ? StateManager.fromJson(json['state_manager'])
         : null;
     user = json['user'] != null ? User.fromJson(json['user']) : null;
 
-    parameterValue = json['parameter_value'] != null ? new ParameterValue.fromJson(json['parameter_value']) : null;
+    parameterValue = json['parameter_value'] != null
+        ? new ParameterValue.fromJson(json['parameter_value'])
+        : null;
     currency = json['currency'];
     if (json['history'] != null) {
       history = <History>[];
-      json['history'].forEach((v) { history!.add(new History.fromJson(v)); });
+      json['history'].forEach((v) {
+        history!.add(new History.fromJson(v));
+      });
     }
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
+    data['id'] = this.id;
+    data['hazard_name'] = this.hazardName;
     data['name'] = this.name;
     data['parent_id'] = this.parentId;
     if (this.parameterState != null) {
@@ -210,8 +234,9 @@ class Result {
     return data;
   }
 }
+
 class History {
-  dynamic value;
+  dynamic? value;
   String? paramType;
   List<Reference>? reference;
   String? userName;
@@ -219,10 +244,10 @@ class History {
 
   History(
       {this.value,
-        this.paramType,
-        this.reference,
-        this.userName,
-        this.updatedAt});
+      this.paramType,
+      this.reference,
+      this.userName,
+      this.updatedAt});
 
   History.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -241,6 +266,7 @@ class History {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
+
     data['value'] = this.value;
     data['param_type'] = this.paramType;
     if (this.reference != null) {
@@ -250,6 +276,28 @@ class History {
     if (this.updatedAt != null) {
       data['updated_at'] = this.updatedAt!.toJson();
     }
+    return data;
+  }
+}
+
+class Value {
+  String? parameterA;
+  Null? parameterB;
+  String? unit;
+
+  Value({this.parameterA, this.parameterB, this.unit});
+
+  Value.fromJson(Map<String, dynamic> json) {
+    parameterA = json['parameterA'];
+    parameterB = json['parameterB'];
+    unit = json['unit'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['parameterA'] = this.parameterA;
+    data['parameterB'] = this.parameterB;
+    data['unit'] = this.unit;
     return data;
   }
 }
@@ -485,17 +533,26 @@ class ParameterValue {
   String? userName;
   UpdatedAt? updatedAt;
 
-  ParameterValue({this.value, this.paramType, this.reference, this.userName, this.updatedAt});
+  ParameterValue(
+      {this.value,
+      this.paramType,
+      this.reference,
+      this.userName,
+      this.updatedAt});
 
   ParameterValue.fromJson(Map<String, dynamic> json) {
     value = json['value'];
     paramType = json['param_type'];
     if (json['reference'] != null) {
       reference = <Reference>[];
-      json['reference'].forEach((v) { reference!.add(new Reference.fromJson(v)); });
+      json['reference'].forEach((v) {
+        reference!.add(new Reference.fromJson(v));
+      });
     }
     userName = json['user_name'];
-    updatedAt = json['updated_at'] != null ? new UpdatedAt.fromJson(json['updated_at']) : null;
+    updatedAt = json['updated_at'] != null
+        ? new UpdatedAt.fromJson(json['updated_at'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -512,6 +569,7 @@ class ParameterValue {
     return data;
   }
 }
+
 class UpdatedAt {
   int? iSeconds;
   int? iNanoseconds;
@@ -531,15 +589,12 @@ class UpdatedAt {
   }
 }
 
-
 class Data {
   dynamic value;
   String? paramType;
   List<Reference>? reference;
 
-  Data({this.value, this.paramType,
-    this.reference
-  });
+  Data({this.value, this.paramType, this.reference});
 
   Data.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -552,7 +607,6 @@ class Data {
     } else {
       reference = []; // fallback if it's a string or null
     }
-
   }
 
   Map<String, dynamic> toJson() {
@@ -565,12 +619,13 @@ class Data {
     return data;
   }
 }
+
 class Reference {
   dynamic url;
   dynamic tags;
   String? name;
 
-  Reference({this.url, this.tags,this.name});
+  Reference({this.url, this.tags, this.name});
 
   Reference.fromJson(Map<String, dynamic> json) {
     url = json['url'];
@@ -756,6 +811,25 @@ class Criticality {
     // if (this.advisory != null) {
     //   data['advisory'] = this.advisory!.toJson();
     // }
+    return data;
+  }
+}
+
+class Completeness {
+  int? high;
+  int? low;
+
+  Completeness({this.high, this.low});
+
+  Completeness.fromJson(Map<String, dynamic> json) {
+    high = json['high'];
+    low = json['low'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['high'] = this.high;
+    data['low'] = this.low;
     return data;
   }
 }

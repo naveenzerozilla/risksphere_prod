@@ -5,6 +5,7 @@ import '../../../constants/enums.dart';
 import '../../../design_system/components/custom_button.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
+import '../../payments/pricing_list.dart';
 
 class MessageCard extends StatelessWidget {
   final List<InlineSpan> messageTextSpans;
@@ -201,12 +202,10 @@ class MessageCard1 extends StatelessWidget {
                           ],
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  Text('Coming soon!', style: typography.Body1),
-                            ),
-                          );
+                          Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      PricingListScreen()));
                         },
                         type: ButtonType.filled,
                       ),

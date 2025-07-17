@@ -77,6 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
       await SharedPreferenceService.getAllClaims();
 
       final isUserRegistered = claims['isIndividual'] != null;
+
       if (isUserRegistered) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(

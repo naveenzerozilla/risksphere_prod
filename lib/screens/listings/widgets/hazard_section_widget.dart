@@ -61,9 +61,12 @@ class HazardsSection extends StatelessWidget {
                       ),
                     ),
                   ]
-                : hazards.entries.toList().sorted((a, b) {
-                    final orderA =
-                        hazardOrder[a.key] ?? 999; // If not found, put at end
+                : hazards.entries
+                    .toList()
+                    .where((entry) =>
+                        entry.key != "Overall") // 👈 filter out "Overall"
+                    .sorted((a, b) {
+                    final orderA = hazardOrder[a.key] ?? 999;
                     final orderB = hazardOrder[b.key] ?? 999;
                     return orderA.compareTo(orderB);
                   }).map((entry) {
@@ -85,7 +88,8 @@ class HazardsSection extends StatelessWidget {
                           Text(
                             hazardName,
                             style: typography.Body2.copyWith(
-                                fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           Container(
                             padding: EdgeInsets.symmetric(
@@ -97,7 +101,9 @@ class HazardsSection extends StatelessWidget {
                             child: Text(
                               rating != 0 ? rating.toString() : 'N/A',
                               style: typography.Body2.copyWith(
-                                color: Colors.white,
+                                color: rating == 3
+                                    ? Colors.black
+                                    : Colors.white,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -129,6 +135,75 @@ class HazardsSection extends StatelessWidget {
                       ],
                     );
                   }).toList(),
+
+            // hazards.entries.toList().sorted((a, b) {
+            //         final orderA =
+            //             hazardOrder[a.key] ?? 999; // If not found, put at end
+            //         final orderB = hazardOrder[b.key] ?? 999;
+            //         return orderA.compareTo(orderB);
+            //       }).map((entry) {
+            //         final hazardName = entry.key;
+            //         final hazard = entry.value;
+            //         final rating = hazard.rating ?? 0;
+            //         final color = rating >= 0 && rating < scoreColors.length
+            //             ? scoreColors[rating]
+            //             : Colors.grey;
+            //
+            //         return ExpansionTile(
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(12),
+            //           ),
+            //           tilePadding: const EdgeInsets.symmetric(horizontal: 12.0),
+            //           title: Row(
+            //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //             children: [
+            //               Text(
+            //                 hazardName,
+            //                 style: typography.Body2.copyWith(
+            //                     fontWeight: FontWeight.w500),
+            //               ),
+            //               Container(
+            //                 padding: EdgeInsets.symmetric(
+            //                     horizontal: 12, vertical: 8),
+            //                 decoration: BoxDecoration(
+            //                   color: color,
+            //                   borderRadius: BorderRadius.circular(8),
+            //                 ),
+            //                 child: Text(
+            //                   rating != 0 ? rating.toString() : 'N/A',
+            //                   style: typography.Body2.copyWith(
+            //                     color: Colors.white,
+            //                     fontWeight: FontWeight.w500,
+            //                   ),
+            //                 ),
+            //               ),
+            //             ],
+            //           ),
+            //           trailing: Icon(Icons.arrow_drop_down,
+            //               color: Theme.of(context).colorScheme.onSurface),
+            //           children: [
+            //             Container(
+            //               padding: const EdgeInsets.all(12.0),
+            //               decoration: BoxDecoration(
+            //                 color: Theme.of(context)
+            //                     .colorScheme
+            //                     .surfaceContainerHighest,
+            //                 borderRadius: BorderRadius.circular(12),
+            //                 boxShadow: [
+            //                   BoxShadow(
+            //                     color: Colors.black12,
+            //                     blurRadius: 4,
+            //                     offset: Offset(0, 2),
+            //                   ),
+            //                 ],
+            //               ),
+            //               child: SingleChildScrollView(
+            //                 child: _buildVendorDetails(hazard, typography),
+            //               ),
+            //             ),
+            //           ],
+            //         );
+            //       }).toList(),
           ),
 
           // Column(

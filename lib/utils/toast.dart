@@ -42,3 +42,15 @@ successToast(String successText, BuildContext context,
     fontSize: 14,
   );
 }
+
+notificationToast(String successText,
+    {isShortDurationText = false}) {
+  Fluttertoast.showToast(
+    msg: successText,
+    toastLength: isShortDurationText ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG,
+    gravity: ToastGravity.TOP,
+    backgroundColor: Colors.white,
+    textColor: Colors.black,
+    fontSize: 14,
+  );
+}

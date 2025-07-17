@@ -1,0 +1,2 @@
+/Users/naveen/Anshay-qa/android/app/.cxx/Debug/k6w646jq/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/naveen/Anshay-qa/android/app/.cxx/Debug/k6w646jq/armeabi-v7a/CMakeFiles/rebuild_cache.dir
