@@ -36,6 +36,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
@@ -117,6 +119,10 @@ class _MyLocationListState extends State<MyLocationList>
   bool showSelectAll = false;
   bool isAllSelected = false;
   bool _isHazardLoading = false;
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
 
   Timer? deBouncer;
   List<MyLocation> selectedLocations = [];
@@ -144,9 +150,15 @@ class _MyLocationListState extends State<MyLocationList>
   bool addToSOVCheck = false;
   bool isLoading = false;
   var conflictLocations;
+  bool hasAnyPlan = false;
   String? hasLicenseStatus = "1";
   String? hasGeocodingStatus = "1";
   String? hasHazardLicenseStatus = "1";
+  List<TargetFocus> targets = [];
+  GlobalKey keyFeature1 = GlobalKey();
+  GlobalKey keyFeature2 = GlobalKey();
+  GlobalKey keyFeature3 = GlobalKey();
+  GlobalKey keyFeature4 = GlobalKey();
 
   String selectedSovId = "";
   TextEditingController sovController = TextEditingController();
@@ -192,6 +204,7 @@ class _MyLocationListState extends State<MyLocationList>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData(); // Load all data after first render
     });
+    _tryShowTutorialOnce();
   }
 
   void _initializeData() {
@@ -213,6 +226,145 @@ class _MyLocationListState extends State<MyLocationList>
     //   "widget.sovId!",
     // );
     // _fetchTabData(0); // Load default tab data
+  }
+
+  void _tryShowTutorialOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool isFirstTime = prefs.getBool('myLocation') ?? true;
+
+    // ✅ If it's NOT the first time, skip the tutorial
+    if (!isFirstTime) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(Duration(milliseconds: 500));
+      await WidgetsBinding.instance.endOfFrame;
+
+      initTargets();
+
+      if (targets.isNotEmpty) {
+        await Future.delayed(Duration(milliseconds: 300));
+        if (mounted) {
+          showTutorial(); // Run the tutorial
+          await prefs.setBool('myLocation', false); // ✅ Mark as shown
+        }
+      } else {
+        print('No targets were set. Skipping tutorial.');
+      }
+    });
+  }
+
+  void showTutorial() {
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.transparent,
+      opacityShadow: 0.9,
+      paddingFocus: 5,
+      textSkip: "Skip",
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+      onFinish: () {
+        print("Tutorial Finished");
+      },
+      onClickTarget: (target) {
+        print("Clicked on target: ${target.identify}");
+      },
+    ).show(context: context);
+  }
+
+  void initTargets() {
+    targets.addAll([
+      TargetFocus(
+        identify: "Location list",
+        keyTarget: keyFeature1,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
+              child: Text(
+                "View all your added property locations in one place. Get a quick overview of geocoding accuracy, hazard risk score, data completeness, & more. ",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+      TargetFocus(
+        identify: "Overall Score Table",
+        keyTarget: keyFeature2,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 10, 10, 30),
+              child: Text(
+                "View the hazard risk score for each property from 1 to 5. 1 means highest risk, 5 means lowest risk to the property. ",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+      TargetFocus(
+        identify: "Map View",
+        keyTarget: keyFeature3,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 10, 10, 40),
+              child: Text(
+                "See property locations and nearby hazards like fire, cyclone, earthquake & more at a glance. Get the full context for better risk evaluation. ",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+      TargetFocus(
+        identify: "Add location, Import locations adn export locations",
+        keyTarget: keyFeature4,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 50, 10, 60),
+              child: Text(
+                "You can add new locations, import locations from a file, or export the current list of locations. Use the buttons below to perform these actions.",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+    ]);
   }
 
   void _onTabChanged() {
@@ -468,6 +620,29 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   Future<void> _getData() async {
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+    String? geoCodingStatus =
+        await SharedPreferenceService.getGeocodingLicense();
+    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
+    String? hazardLicenseStatus =
+        await SharedPreferenceService.getHazardLicense();
+    print("geoCodingStatus: $geoCodingStatus");
+    print("userLicenseStatus: $userLicenseStatus");
+    print("hazardLicenseStatus: $hazardLicenseStatus");
+    setState(() {
+      isPgAdmin = isPgAdmin;
+      isSuperAdmin = isSuperAdmin;
+      hasAnyPlan = hasAnyPlans ?? false;
+      hasLicenseStatus = userLicenseStatus ?? "1";
+      hasGeocodingStatus = geoCodingStatus ?? "1";
+      hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
+    });
     final myLocationProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
     final sovListProvider =
@@ -481,7 +656,7 @@ class _MyLocationListState extends State<MyLocationList>
             context,
             "",
             1,
-            100,
+            20,
             widget.accountID,
             widget.subAccountID,
             widget.initialProcessId,
@@ -494,7 +669,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        20,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -553,14 +728,6 @@ class _MyLocationListState extends State<MyLocationList>
     String? tempProcessId = await SharedPreferenceService.getSovUploadTempId();
     String? accountId = await SharedPreferenceService.getSovAccountId();
 
-    String? geoCodingStatus = await SharedPreferenceService.getGeocodingLicense();
-    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
-    String? hazardLicenseStatus =
-    await SharedPreferenceService.getHazardLicense();
-    print("geoCodingStatus: $geoCodingStatus");
-    print("userLicenseStatus: $userLicenseStatus");
-    print("hazardLicenseStatus: $hazardLicenseStatus");
-
     String? subAccountId =
         await SharedPreferenceService.getSovSubAccountId() ?? "";
 
@@ -570,10 +737,6 @@ class _MyLocationListState extends State<MyLocationList>
     }
 
     setState(() {
-      hasLicenseStatus = userLicenseStatus ?? "";
-      hasGeocodingStatus = geoCodingStatus ?? "";
-      hasHazardLicenseStatus = hazardLicenseStatus ?? "";
-
       isUploadInProgress = tempProcessId.isNotEmpty &&
           widget.accountID == accountId &&
           widget.subAccountID == subAccountId;
@@ -602,6 +765,7 @@ class _MyLocationListState extends State<MyLocationList>
                 backgroundColor:
                     themeProvider.getTheme.colorScheme.surfaceContainerLowest,
                 appBar: CustomAppBar(
+                  hasAnyPlan: hasAnyPlan,
                   isExpanded: _isExpanded,
                   showNotificationDot: _showNotificationDot,
                   onExpandPressed: (isExpanded) {
@@ -618,6 +782,7 @@ class _MyLocationListState extends State<MyLocationList>
                 drawer: CustomDrawer(),
                 floatingActionButton: Builder(builder: (context) {
                   return Container(
+                    key: keyFeature4,
                     margin: EdgeInsets.only(bottom: 42.0),
                     child: SpeedDial(
                       animatedIcon: AnimatedIcons.menu_close,
@@ -881,7 +1046,6 @@ class _MyLocationListState extends State<MyLocationList>
                                       tempProcessId,
                                       state);
                             } else {
-                              print("TestB");
                               _showUploadBottomSheet(
                                   widget.accountID!, widget.subAccountID!, "");
                             }
@@ -1174,8 +1338,10 @@ class _MyLocationListState extends State<MyLocationList>
                                   ],
                                 ),
                               ),
-                              // Text("hasLicenseStatus".toString()),
-                              Text(hasLicenseStatus.toString()),
+                              // Text(hasLicenseStatus.toString()),
+                              // Text(hasGeocodingStatus!.toString()),
+                              // Text(hasHazardLicenseStatus.toString()),
+
                               SizedBox(height: CustomSpacing.four),
                               // Master TabBar
                               Container(
@@ -1239,10 +1405,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                       text: 'SOVs',
                                                     ),
                                                     Tab(text: 'Shared'),
-                                                    if (userProfileProvider
-                                                            .trialInfo['status']
-                                                            ?.isEmpty ??
-                                                        true)
+                                                    if (isSuperAdmin ||
+                                                        isPgAdmin)
                                                       Tab(
                                                           text:
                                                               'Configuration'),
@@ -1326,21 +1490,13 @@ class _MyLocationListState extends State<MyLocationList>
                                         );
                                       },
                                     ),
-
                                     Container(
                                       margin: EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
                                       child: sovBody(typography),
                                     ),
-                                    // _getComingSoonUI(),
                                     _getSharedComingSoonUI("shared"),
-                                    // DataTab(
-                                    //   accountId: widget.accountID,
-                                    //   subaccountId: widget.subAccountID,
-                                    // ),
-                                    if (userProfileProvider
-                                            .trialInfo['status']?.isEmpty ??
-                                        true)
+                                    if (isSuperAdmin || isPgAdmin)
                                       ConfigurationTab(
                                         accountId: widget.accountID,
                                         subaccountId: widget.subAccountID,
@@ -2036,14 +2192,17 @@ class _MyLocationListState extends State<MyLocationList>
                 },
                 tabs: [
                   GButton(
+                    key: keyFeature1,
                     icon: Remix.file_list_3_line,
                     text: 'Location List',
                   ),
                   GButton(
+                    key: keyFeature2,
                     icon: Remix.bar_chart_box_ai_line,
                     text: 'Overall Score',
                   ),
                   GButton(
+                    key: keyFeature3,
                     icon: Remix.road_map_line,
                     text: 'Map View',
                   ),
@@ -5101,6 +5260,8 @@ class _MyLocationListState extends State<MyLocationList>
             builder: (context, StateSetter setState) {
               return Padding(
                 padding: EdgeInsets.only(
+                  left: 6,
+                  right: 6,
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: SingleChildScrollView(
@@ -5226,39 +5387,46 @@ class _MyLocationListState extends State<MyLocationList>
                                 ),
                               ),
                         SizedBox(height: 20),
-                        if (trialStatus.isNotEmpty)
-                          Column(
-                            children: [
-                              MessageCard(
-                                  isError: locations < 1,
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text:
-                                          '$locations of $total locations left to upload.',
-                                    ),
-                                    TextSpan(
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      PricingListScreen()));
-                                        },
-                                      text: ' Upgrade Now!',
-                                      style: TextStyle(
-                                        color: AppColors.primaryMain,
-                                      ),
-                                    ),
-                                  ]),
-                              SizedBox(height: 16),
-                              if (!(locations < 1))
-                                Text(
-                                  'The system will only process the first ${locations} locations.',
-                                  style: typography.Body1,
-                                ),
-                              SizedBox(height: 16),
-                            ],
-                          ),
+                        // if (trialStatus.isNotEmpty)
+                        Column(
+                          children: [
+                            MessageCard(
+                                isError: hasAnyPlan.toString() == 'true'
+                                    ? locations > 1
+                                    : locations < 1,
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text: hasAnyPlan.toString() == 'true'
+                                        ? 'Available Credits: ${hasGeocodingStatus} locations.'
+                                        : '$locations of $total locations left to upload.',
+                                  ),
+                                  hasAnyPlan.toString() == 'true'
+                                      ? TextSpan(
+                                          text: ' ',
+                                        )
+                                      : TextSpan(
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          PricingListScreen()));
+                                            },
+                                          text: ' Upgrade Now!',
+                                          style: TextStyle(
+                                            color: AppColors.primaryMain,
+                                          ),
+                                        ),
+                                ]),
+                            SizedBox(height: 16),
+                            if (!(locations < 1))
+                              Text(
+                                'The system will only process the first ${locations} locations.',
+                                style: typography.Body1,
+                              ),
+                            SizedBox(height: 16),
+                          ],
+                        ),
                         if (!addToSOVCheck) ...[
                           TextField(
                             controller: tagController,

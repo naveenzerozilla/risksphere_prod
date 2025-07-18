@@ -56,10 +56,9 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
               .setSelectedItem("dashboard");
         },
         child: Scaffold(
+
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
-            showDropdown: true,
-            canNavigateToNewsFeed: false,
             showNotificationDot: _showNotificationDot,
             onExpandPressed: (isExpanded) {
               setState(() {

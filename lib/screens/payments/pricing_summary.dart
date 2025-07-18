@@ -8,8 +8,15 @@ import '../../providers/payment_provider.dart';
 class PricingSummary extends StatefulWidget {
   final List<String>? title;
   final Map<String, dynamic> summary;
+  final String? hazardName;
+  final String? vendorName;
 
-  PricingSummary({super.key, this.title, required this.summary});
+  PricingSummary(
+      {super.key,
+      this.title,
+      required this.summary,
+      this.hazardName,
+      this.vendorName});
 
   @override
   State<PricingSummary> createState() => _PricingSummaryState();
@@ -25,7 +32,6 @@ class _PricingSummaryState extends State<PricingSummary> {
       child: Scaffold(
         appBar: CustomAppBar(
           isExpanded: _isExpanded,
-          showDropdown: true,
           showNotificationDot: _showNotificationDot,
           onExpandPressed: (isExpanded) {
             setState(() {
@@ -74,11 +80,13 @@ class _PricingSummaryState extends State<PricingSummary> {
                     onPressed: provider.isLoading
                         ? null
                         : () async {
-                            await provider.makePayment(
+                         await provider.makePayment(
                               context: context,
                               amount: widget.summary['total'].toString(),
                               currency: 'usd',
                               summary: widget.summary,
+                              hazardName: widget.hazardName,
+                              vendorName: widget.vendorName,
                             );
                           },
                     style: ElevatedButton.styleFrom(
@@ -155,10 +163,20 @@ class _PricingSummaryState extends State<PricingSummary> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildRow("User count", item['usercount'][index]),
+                    if (item['usercount'] != null &&
+                        item['usercount'].length > index)
+                      _buildRow("User count", item['usercount'][index]),
                     _buildRow("Billing", item['selectedPlanType'][index]),
-                    _buildRow("License pricing",
-                        "\$${item['licenseprice'][index]} / user"),
+                    if (item['licenseprice'] != null &&
+                        item['licenseprice'].length > index)
+                      _buildRow("License pricing",
+                          "\$${item['licenseprice'][index]} / user"),
+                    const SizedBox(height: 3),
+                    if (widget.vendorName != "") ...[
+                      _buildRow("Vendor", "${widget.vendorName} "),
+                      const SizedBox(height: 3),
+                      _buildRow("Hazard", "${widget.hazardName}"),
+                    ],
                     Container(
                       padding: EdgeInsets.only(top: 10),
                       child: Divider(),

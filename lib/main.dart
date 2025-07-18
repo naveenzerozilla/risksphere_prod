@@ -3,8 +3,10 @@ import 'package:RiskSphere/providers/invoice_provider.dart';
 import 'package:RiskSphere/providers/payment_provider.dart';
 import 'package:RiskSphere/providers/theme_provider.dart';
 import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
+import 'package:RiskSphere/utils/backgroundhandler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'design_system/app_themes.dart';
 import 'package:RiskSphere/providers/connectivity_provider.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
@@ -92,6 +94,39 @@ void main() async {
     ),
   );
 }
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await EasyLocalization.ensureInitialized();
+//   try {
+//     await Firebase.initializeApp(
+//       options: DefaultFirebaseOptions.currentPlatform,
+//     );
+//   } catch (e) {
+//     debugPrint('Firebase initialization error: $e');
+//   }
+//
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//
+//   try {
+//     Stripe.publishableKey =
+//         'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+//     await Stripe.instance.applySettings();
+//   } catch (e, stackTrace) {
+//     debugPrint('Stripe initialization failed: $e');
+//     debugPrint('Stack trace: $stackTrace');
+//   }
+//
+//   initializeNotifications();
+//
+//   runApp(
+//     EasyLocalization(
+//       supportedLocales: const [Locale('en')],
+//       path: 'assets/translations',
+//       fallbackLocale: const Locale('en'),
+//       child: AppLifecycleManager(),
+//     ),
+//   );
+// }
 
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
@@ -217,7 +252,10 @@ class MyApp extends StatelessWidget {
             themeMode: themeProvider.getTheme.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            home: SplashScreen(),
+            home: GlobalBackHandler(
+              child: SplashScreen(),
+            ),
+            // home: SplashScreen(),
           );
         },
       ),
@@ -316,20 +354,24 @@ Future<void> initFCM(String userId) async {
       await _subscribeToNotifications(userId, token);
       // }
     }
-
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("📩 Foreground message received: ${message.notification?.title}");
-      CustomToast.showToast(
-        message.notification?.title ?? "Notification",
-        message.notification?.body ?? "You have a new notification",
+      final notification = message.notification;
+
+      print("📩 Foreground message received: ${notification?.title}");
+
+      // Show toast only at top (if this is what you want)
+      Fluttertoast.showToast(
+        msg: notification?.title ?? "Notification",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0,
+        timeInSecForIosWeb: 1, // works on some platforms
       );
-      if (message.notification != null) {
-        showNotification(
-          message.notification!.title,
-          message.notification!.body,
-          message.notification?.android?.imageUrl ?? "",
-        );
-      }
+
+      // If you want notification instead of toast, comment the above and use this
+      // showNotification(notification.title, notification.body, ...);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {

@@ -26,6 +26,8 @@ import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
 import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
@@ -47,6 +49,7 @@ import '../../providers/upload_sov_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
 import '../../utils/api_constants.dart';
 import 'my_location_list.dart';
 import 'widgets/auto_complete_options.dart';
@@ -96,6 +99,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   bool _subAccountAlreadyExists = false;
   SubAccounts? _selectedSubAccount;
   String _autocompleteText = "";
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
+  List<TargetFocus> targets = [];
+  GlobalKey keyFeature1 = GlobalKey();
 
   Timer? autoCompleteDeBouncer;
 
@@ -181,14 +190,105 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
         (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
+    _tryShowTutorialOnce();
+  }
+
+  void _tryShowTutorialOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hasShownTutorial = prefs.getBool('subAccount') ?? false;
+
+    // ✅ Skip if tutorial was already shown
+    if (hasShownTutorial) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(Duration(milliseconds: 500));
+      await WidgetsBinding.instance.endOfFrame;
+
+      initTargets();
+
+      if (targets.isNotEmpty) {
+        await Future.delayed(Duration(milliseconds: 300));
+        if (mounted) {
+          showTutorial(); // Show the guide
+          await prefs.setBool('subAccount', true); // ✅ Mark as shown
+        }
+      } else {
+        print('No targets were set. Skipping tutorial.');
+      }
+    });
+  }
+
+  void showTutorial() {
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.transparent,
+      opacityShadow: 0.9,
+      paddingFocus: 5,
+      textSkip: "Skip",
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+      onFinish: () {
+        print("Tutorial Finished");
+      },
+      onClickTarget: (target) {
+        print("Clicked on target: ${target.identify}");
+      },
+    ).show(context: context);
+  }
+
+  void initTargets() {
+    targets.addAll([
+      TargetFocus(
+        identify: "Add User",
+        keyTarget: keyFeature1,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
+              child: Text(
+                "Create multiple portfolios under a single primary client entity. Perfect for managing different regions, teams, or buildings separately. ",
+                maxLines: 3,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          )
+        ],
+      ),
+    ]);
   }
 
   _getData() async {
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
           .fetchSubAccountList(context, widget.accountId, "", 1, 5);
+    });
+    setState(() {
+      isPgAdmin = isPgAdmin;
+      isSuperAdmin = isSuperAdmin;
+      _selectedScreen = Screens.accountList;
     });
   }
 
@@ -203,7 +303,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           backgroundColor: themeProvider.getTheme.colorScheme.background,
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
-            showDropdown: true,
             showNotificationDot: _showNotificationDot,
             onExpandPressed: (isExpanded) {
               setState(() {
@@ -217,42 +316,42 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
             },
           ),
           drawer: CustomDrawer(),
-          floatingActionButton: _selectedScreen == Screens.subAccountList
-              ? showCheckbox
-                  ? Builder(builder: (contextLocal) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FloatingActionButton(
-                            onPressed: () {
-                              // On export button click
-                            },
-                            child: Icon(CupertinoIcons.tray_arrow_down),
-                          ),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          FloatingActionButton(
-                            onPressed: () {
-                              _tabController?.animateTo(1);
-                              _selectedScreen = Screens.networkList;
-                            },
-                            child: Icon(Icons.add),
-                          ),
-                        ],
-                      );
-                    })
-                  : Container(
-                      padding: EdgeInsets.only(bottom: 43),
-                      child: FloatingActionButton(
+          floatingActionButton: showCheckbox
+              ? Builder(builder: (contextLocal) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton(
                         onPressed: () {
-                          // Add sub account dialog with autocomplete from api and create account
-                          _showAddSubAccountDialog(context);
+                          // On export button click
+                        },
+                        child: Icon(CupertinoIcons.tray_arrow_down),
+                      ),
+                      SizedBox(
+                        height: CustomSpacing.two,
+                      ),
+                      FloatingActionButton(
+                        onPressed: () {
+                          _tabController?.animateTo(1);
+                          _selectedScreen = Screens.networkList;
                         },
                         child: Icon(Icons.add),
                       ),
-                    )
-              : SizedBox(),
+                    ],
+                  );
+                })
+              : Container(
+                  key: keyFeature1,
+                  padding: EdgeInsets.only(bottom: 43),
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      // Add sub account dialog with autocomplete from api and create account
+                      _showAddSubAccountDialog(context);
+                    },
+                    child: Icon(Icons.add),
+                  ),
+                ),
+          // : SizedBox(),
           body: Consumer<UserProfileProvider>(
               builder: (context, userProfileProvider, child) {
             return PopScope(
@@ -444,11 +543,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         ),
                                                       ),
                                                       Tab(text: 'Shared'),
-                                                      if (userProfileProvider
-                                                              .trialInfo[
-                                                                  'status']
-                                                              ?.isEmpty ??
-                                                          true)
+                                                      if (isSuperAdmin ||
+                                                          isPgAdmin)
                                                         Tab(
                                                             text:
                                                                 'Configuration'),
@@ -479,9 +575,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   children: [
                                     _getSubAccountUI(),
                                     _getComingSoonUI("shared"),
-                                    if (userProfileProvider
-                                            .trialInfo['status']?.isEmpty ??
-                                        true)
+                                    if (isSuperAdmin || isPgAdmin)
                                       ConfigurationTab(
                                           accountId: widget.accountId),
                                     _getComingSoonUI("request"),

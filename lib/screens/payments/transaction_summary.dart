@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/primitives/app_colors.dart';
@@ -13,6 +14,7 @@ import '../../models/invoice_model.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../listings/widgets/message_card.dart';
+import 'invoice_webview.dart';
 
 class PaymentTransactionsPage extends StatefulWidget {
   const PaymentTransactionsPage({super.key});
@@ -105,7 +107,6 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
         child: Scaffold(
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
-            showDropdown: true,
             showNotificationDot: _showNotificationDot,
             onExpandPressed: (isExpanded) {
               setState(() {
@@ -268,6 +269,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         child: Row(
+
                           children: [
                             Container(
                               padding:
@@ -282,11 +284,11 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                 style: const TextStyle(color: Colors.white),
                                 items: [
                                   'All License',
-                                  'Event Cost',
-                                  'Location (Geocoding)',
-                                  'Location (Hazard)',
+                                  'Event Count Cost',
+                                  'Location Count(Geocoding)',
+                                  'Location Count(Hazard)',
                                   'Location Improvement Cost',
-                                  'User Cost'
+                                  'User License'
                                 ].map<DropdownMenuItem<String>>((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
@@ -301,13 +303,14 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
 
                                     final valueMap = {
                                       'All License': '',
-                                      'Event Cost': 'event_cost',
-                                      'Location (Geocoding)':
+                                      'Event Count Cost': 'event_cost',
+                                      'Location Count(Geocoding)':
                                           'location_geocoding',
-                                      'Location (Hazard)': 'location_hazard',
+                                      'Location Count(Hazard)':
+                                          'location_hazard',
                                       'Location Improvement Cost':
                                           'location_improvement_cost',
-                                      'User Cost': 'user_cost',
+                                      'User License': 'user_cost',
                                     };
                                     setState(() {
                                       filterItem = valueMap[newValue] ?? '';
@@ -316,11 +319,11 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                     // Find the selected index
                                     int selectedIndex = [
                                       'All License',
-                                      'Event Cost',
-                                      'Location (Geocoding)',
-                                      'Location (Hazard)',
+                                      'Event Count Cost',
+                                      'Location Count(Geocoding)',
+                                      'Location Count(Hazard)',
                                       'Location Improvement Cost',
-                                      'User Cost'
+                                      'User License'
                                     ].indexOf(newValue);
 
                                     if (_tabController.index == 0) {
@@ -357,10 +360,11 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                             ),
                             SizedBox(width: 10),
                             Container(
+                              width: 160,
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
+                                // color: Theme.of(context)
+                                //     .colorScheme
+                                //     .surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                     color: Colors.blue,
@@ -452,6 +456,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                       padding: const EdgeInsets.all(16),
                       itemCount: transactions.length,
                       itemBuilder: (context, outerIndex) {
+                        const double inrToUsdRate = 1 / 100;
                         final transaction = transactions[outerIndex];
 
                         return Column(
@@ -500,39 +505,85 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                       .size
                                                       .width /
                                                   1.70,
-                                              child: Text(
-                                                  "Inv# ${invoice.invoiceId ?? 'N/A'}",
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w500)),
+                                              child: InkWell(
+                                                onTap: () {
+                                                  // Navigate to invoice details
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          InvoiceWebViewPage(
+                                                        url: invoice
+                                                                .stripeInvoice
+                                                                ?.hostedInvoiceUrl ??
+                                                            '',
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Text(
+                                                    "Inv# ${invoice.invoiceId ?? 'N/A'}",
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        decoration:
+                                                            TextDecoration
+                                                                .underline,
+                                                        fontWeight:
+                                                            FontWeight.w500)),
+                                              ),
                                             ),
                                             Text(
-                                                "\$${double.tryParse(invoice.plans![0].price.toString() ?? '0')?.toStringAsFixed(2) ?? '0.00'}",
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14)),
+                                              NumberFormat.currency(
+                                                      locale: 'en_US',
+                                                      symbol: '\$')
+                                                  .format(
+                                                (double.tryParse(invoice.amount
+                                                            .toString()) ??
+                                                        0.0) *
+                                                    inrToUsdRate,
+                                              ),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                            _capitalizeFirstLetter(
-                                                invoice.plans![0].planType ??
-                                                    "N/A"),
-                                            style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 13)),
+                                          invoice.plans != null &&
+                                                  invoice.plans!.isNotEmpty
+                                              ? invoice.plans!
+                                                  .map((e) =>
+                                                      _capitalizeFirstLetter(
+                                                          e.planType ?? "N/A"))
+                                                  .join(", ")
+                                              : "No plans",
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                         const SizedBox(height: 4),
                                         Text(
-                                            invoice.plans![0].planName ??
-                                                "License Info",
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14)),
+                                          invoice.plans != null &&
+                                                  invoice.plans!.isNotEmpty
+                                              ? invoice.plans!
+                                                  .map((e) =>
+                                                      e.planName ??
+                                                      "License Info")
+                                                  .join(", ")
+                                              : "License Info",
+                                          maxLines: 2,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          ),
+                                        ),
                                         const SizedBox(height: 14),
                                         Row(
                                           children: [
@@ -781,7 +832,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                         CrossAxisAlignment.end,
                                                     children: [
                                                       Text(
-                                                        '\$${(deduction.totalCost ?? 0).toStringAsFixed(2)}',
+                                                        '\$${double.parse(deduction.totalCost.toString() ?? "0")}',
                                                         style: const TextStyle(
                                                           color: Colors.white,
                                                           fontWeight:
@@ -791,7 +842,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                       ),
                                                       const SizedBox(height: 4),
                                                       Text(
-                                                        '\$${(deduction.unitCost ?? 0).toStringAsFixed(2)}/ user',
+                                                        '\$${(deduction.unitCost ?? 0)}/ user',
                                                         style: const TextStyle(
                                                           fontSize: 13,
                                                           color: Colors.grey,

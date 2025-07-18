@@ -35,6 +35,7 @@ import '../../providers/theme_provider.dart';
 import '../../service/language_service.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 
+import '../../service/shared_preference_service.dart';
 import '../payments/pricing_list.dart';
 
 class AddLocationScreen extends StatefulWidget {
@@ -86,6 +87,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   TextEditingController _locationDescriptionController =
       TextEditingController();
   String _selectedCountry = "United States";
+  bool hasAnyPlan = false;
+  String? hasLicenseStatus = "1";
+  String? hasGeocodingStatus = "1";
+  String? hasHazardLicenseStatus = "1";
 
   final Completer<GoogleMapController> _mapController = Completer();
   static const CameraPosition _defaultLocation = CameraPosition(
@@ -109,6 +114,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   @override
   initState() {
     super.initState();
+    _initPgAdmin();
     if (widget.locationId.isNotEmpty) {
       _getData();
       // get location details
@@ -179,6 +185,25 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
     print("account name: ${widget.accountName}");
     print("sub account name: ${widget.subAccountName}");
+  }
+
+  Future<void> _initPgAdmin() async {
+    hasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
+    String? geoCodingStatus =
+        await SharedPreferenceService.getGeocodingLicense();
+    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
+    String? hazardLicenseStatus =
+        await SharedPreferenceService.getHazardLicense();
+    print("geoCodingStatus: $geoCodingStatus");
+    print("userLicenseStatus: $userLicenseStatus");
+    print("hazardLicenseStatus: $hazardLicenseStatus");
+    if (mounted)
+      setState(() {
+        hasAnyPlan = hasAnyPlan;
+        hasLicenseStatus = userLicenseStatus ?? "";
+        hasGeocodingStatus = geoCodingStatus ?? "";
+        hasHazardLicenseStatus = hazardLicenseStatus ?? "";
+      });
   }
 
   Future<void> _getData() async {
@@ -307,7 +332,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                       _isSelectedFromAutocomplete ==
                                                               true
                                                           ? GoogleMap(
-                                                        zoomControlsEnabled: false,
+                                                              zoomControlsEnabled:
+                                                                  false,
                                                               mapType: MapType
                                                                   .satellite,
                                                               initialCameraPosition:
@@ -343,31 +369,51 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   : "Edit Location",
                                               style: typography.H5_Regular),
                                         ),
-                                        if (trialStatus.isNotEmpty)
+                                        // Text(hasGeocodingStatus.toString()),
+                                        // Text(userProfileProvider
+                                        //     .trialInfo['status']
+                                        //     .toString()),
+                                        if (trialStatus.isNotEmpty ||
+                                            hasGeocodingStatus!.isNotEmpty)
                                           Padding(
                                             padding: const EdgeInsets.all(8.0),
-                                            child: MessageCard(
-                                                isError: locations < 1,
-                                                messageTextSpans: [
+                                            child:
+                                                // hasAnyPlan.toString() == 'true' ?Container(child: Text("data")):
+                                                MessageCard(
+                                                    isError:
+                                                        hasAnyPlan.toString() ==
+                                                                'true'
+                                                            ? locations > 1
+                                                            : locations < 1,
+                                                    messageTextSpans: [
                                                   TextSpan(
-                                                    text:
-                                                        '$locations of $total locations left.',
+                                                    text: hasAnyPlan
+                                                                .toString() ==
+                                                            'true'
+                                                        ? 'Available Credits: ${hasGeocodingStatus} locations.'
+                                                        : 'Available Credits: $locations of $total locations.',
                                                   ),
-                                                  TextSpan(
-                                                    recognizer:
-                                                        TapGestureRecognizer()
-                                                          ..onTap = () {
-                                                            Navigator.of(context).push(
-                                                                MaterialPageRoute(
-                                                                    builder: (_) =>
-                                                                        PricingListScreen()));
-                                                          },
-                                                    text: ' Upgrade Now!',
-                                                    style: TextStyle(
-                                                      color:
-                                                          AppColors.primaryMain,
-                                                    ),
-                                                  ),
+                                                  hasAnyPlan.toString() ==
+                                                          'true'
+                                                      ? TextSpan(
+                                                          text: ' ',
+                                                        )
+                                                      : TextSpan(
+                                                          recognizer:
+                                                              TapGestureRecognizer()
+                                                                ..onTap = () {
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .push(MaterialPageRoute(
+                                                                          builder: (_) =>
+                                                                              PricingListScreen()));
+                                                                },
+                                                          text: ' Upgrade Now!',
+                                                          style: TextStyle(
+                                                            color: AppColors
+                                                                .primaryMain,
+                                                          ),
+                                                        ),
                                                 ]),
                                           ),
                                         Padding(
@@ -385,7 +431,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         SizedBox(
                                           height: CustomSpacing.four,
                                         ),
-
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Autocomplete<Suggestion>(
@@ -925,7 +970,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           if (widget.locationId
                                                               .isEmpty) {
                                                             print("Start");
-                                                            // Add Location
+
                                                             await _handleAddLocation(
                                                                 context, body);
                                                           } else {
@@ -1152,8 +1197,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     var trialStatus = provider.trialInfo['status'] ?? '';
     var locations = provider.trialInfo['locations'] ?? 0;
     var total = provider.trialInfo['maxLocations'] ?? 0;
+    var hasanyPlan = hasAnyPlan;
     bool isAdd = widget.locationId.isEmpty;
-    return trialStatus.isNotEmpty && locations < 1 && isAdd;
+    return trialStatus.isNotEmpty && locations < 1 && isAdd && !hasanyPlan;
   }
 
   String? getCountryCodeFromName(String countryName) {

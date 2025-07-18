@@ -23,6 +23,7 @@ class Invoicemodel {
     return data;
   }
 }
+
 class Result {
   String? month;
   Plans? plans;
@@ -76,8 +77,8 @@ class O9L3mwHAJ6RuXPPEepCl {
   List<Deductions>? deductions;
   String? planId;
   Plan? plan;
-  String? allCredits;
-  int? availableCredits;
+  var allCredits;
+  var availableCredits;
   String? userName;
   String? userEmail;
   String? userId;
@@ -204,13 +205,21 @@ class Deductions {
   String? initiatedBy;
   String? initiatedByUserName;
   String? initiatedByUserEmail;
-  int? unitCost;
-  int? totalCost;
+  var unitCost;
+  var totalCost;
 
-  Deductions({this.deductionDate, this.counts, this.initiatedBy, this.initiatedByUserName, this.initiatedByUserEmail, this.unitCost, this.totalCost});
+  Deductions(
+      {this.deductionDate,
+      this.counts,
+      this.initiatedBy,
+      this.initiatedByUserName,
+      this.initiatedByUserEmail,
+      this.unitCost,
+      this.totalCost});
 
   Deductions.fromJson(Map<String, dynamic> json) {
-    if (json['deduction_date'] != null && json['deduction_date'] is Map<String, dynamic>) {
+    if (json['deduction_date'] != null &&
+        json['deduction_date'] is Map<String, dynamic>) {
       deductionDate = DeductionDate.fromJson(json['deduction_date']);
     } else {
       deductionDate = null;

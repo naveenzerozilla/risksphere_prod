@@ -82,11 +82,13 @@ class PaymentProvider extends ChangeNotifier {
     required String amount,
     required String currency,
     required Map<String, dynamic> summary,
+    String? hazardName,
+    String? vendorName,
   }) async {
     _setLoading(true);
     try {
-      final paymentIntentData =
-          await _createPaymentIntent(amount, currency, summary);
+      final paymentIntentData = await _createPaymentIntent(
+          amount, currency, summary, hazardName!, vendorName);
       if (paymentIntentData != null &&
           paymentIntentData['session'] != null &&
           paymentIntentData['session']['url'] != null &&
@@ -115,12 +117,16 @@ class PaymentProvider extends ChangeNotifier {
     String amount,
     String currency,
     Map<String, dynamic> summary,
+    String hazardName,
+    String? vendorName,
   ) async {
     try {
       final sessionData = await _createCheckoutSession(
         amount: amount,
         currency: currency,
         summary: summary,
+        hazardName: hazardName,
+        vendorName: vendorName,
       );
 
       return sessionData;
@@ -139,6 +145,8 @@ class PaymentProvider extends ChangeNotifier {
     required String amount,
     required String currency,
     required Map<String, dynamic> summary,
+    String? hazardName,
+    String? vendorName,
   }) async {
     final Uri url = Uri.parse(AppConstant.PAYMNET_GATEWAY_URL);
     final headers = await CommonHeaders.createHeaders();
@@ -150,15 +158,17 @@ class PaymentProvider extends ChangeNotifier {
         "plans": List.generate(
             summary['planId']?.length ?? 0,
             (i) => {
+                  "event_type": hazardName ?? "",
                   "plan_id": summary['planId']?[i] ?? "",
+                  "plan_name": summary['titles']?[i] ?? "",
                   "plan_type": summary['selectedPlanType']?[i]
                           ?.toString()
                           .toLowerCase() ??
                       "",
                   "plan_type_id": summary['planType']?[i] ?? "",
-                  "selected_plan": summary['usercount']?[i] ?? "",
-                  "plan_name": summary['titles']?[i] ?? "",
                   "price": summary['licenseprice']?[i] ?? "",
+                  "selected_plan": summary['usercount']?[i] ?? "",
+                  "vendor": vendorName ?? "",
                 }),
       }
     };
@@ -266,5 +276,4 @@ class PaymentProvider extends ChangeNotifier {
       log(' Exception: ${e.toString()}');
     }
   }
-
 }

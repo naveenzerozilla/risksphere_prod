@@ -67,7 +67,7 @@ class SubaccountParameterProvider with ChangeNotifier {
   }
 
   Future<void> fetchHazardList(
-      BuildContext context, String? subaccountId) async {
+      BuildContext context) async {
     var typography = CustomTypography(context);
     _isLoading = true;
     notifyListeners();
