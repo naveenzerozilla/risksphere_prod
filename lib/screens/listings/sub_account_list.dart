@@ -252,7 +252,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
               child: Text(
-                "This is where you create a sub account. You can add a sub account by clicking on the add button.",
+                "Create multiple portfolios under a single primary client entity. Perfect for managing different regions, teams, or buildings separately. ",
                 maxLines: 3,
                 style: TextStyle(
                     color: Colors.white,

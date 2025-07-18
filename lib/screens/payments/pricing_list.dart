@@ -526,7 +526,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                     filled: true,
                     labelText: "Subscription Type",
                   ),
-                  hint: const Text("Select"),
+                  hint: const Text("Subscription Type"),
                   items: ['Monthly', 'Yearly'].map((value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -535,87 +535,111 @@ class _PricingListScreenState extends State<PricingListScreen>
                   }).toList(),
                   onChanged: (value) {
                     if (value != null) {
+                      print(value);
+                      print("value");
                       setState(() {
                         selection.selectedPlanType = value;
                         selection.selectedUserCount = '';
                         selection.totalPrice = null;
+
+                        item.planName == "Event Count Cost"
+                            ? value == 'Monthly'
+                                ? selection.totalPrice =
+                                    item.rangeMonth![0].rangePrice
+                                : selection.totalPrice =
+                                    item.rangeYear![0].rangePrice
+                            : "";
+                        item.planName == "Event Count Cost"
+                            ? selection.title = "Event Count Cost"
+                            : "";
+                        item.planName == "Event Count Cost"
+                            ? selection.planId = item.planId!
+                            : '';
+                        item.planName == "Event Count Cost"
+                            ? selection.planType = item.planType!
+                            : '';
                       });
                     }
                   },
                 ),
-
                 const SizedBox(height: 16),
+                item.planName == "Event Count Cost"
+                    ? SizedBox()
+                    : DropdownButtonFormField<String>(
+                        value: userCountOptions
+                                .contains(selection.selectedUserCount)
+                            ? selection.selectedUserCount
+                            : null,
+                        decoration: InputDecoration(
+                          labelText: item.planName == "User License"
+                              ? "Select User"
+                              : "Select Locations",
+                          border: OutlineInputBorder(),
+                          filled: true,
+                        ),
+                        items: userCountOptions.map((rangeLabel) {
+                          return DropdownMenuItem<String>(
+                              value: rangeLabel,
+                              child: Text(
+                                  '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              // Set the selected user count from dropdown value
+                              selection.selectedUserCount = value;
 
-                /// User Count Dropdown
-                DropdownButtonFormField<String>(
-                  value: userCountOptions.contains(selection.selectedUserCount)
-                      ? selection.selectedUserCount
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: "Select",
-                    border: OutlineInputBorder(),
-                    filled: true,
-                  ),
-                  items: userCountOptions.map((rangeLabel) {
-                    return DropdownMenuItem<String>(
-                        value: rangeLabel,
-                        child: Text(
-                            '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        // Set the selected user count from dropdown value
-                        selection.selectedUserCount = value;
+                              // Set title from the item
+                              selection.title =
+                                  item.planName ?? "Location Count (Hazard)";
 
-                        // Set title from the item
-                        selection.title =
-                            item.planName ?? "Location Count (Hazard)";
+                              // Find the selected range from the list
+                              final selectedRange =
+                                  selectedRangeList.firstWhere(
+                                (range) =>
+                                    '${range.startCount}-${range.endCount}' ==
+                                    value,
+                                orElse: () => RangeYear(
+                                  startCount: '0',
+                                  endCount: '0',
+                                  pricePerUser: "0",
+                                  rangePrice: 0,
+                                ),
+                              );
+                              // Reformat selected user count (for consistency)
+                              selection.selectedUserCount =
+                                  '${selectedRange.startCount}-${selectedRange.endCount}';
+                              selection.planId = item.planId ?? '';
+                              selection.planType = item.planType ?? '';
 
-                        // Find the selected range from the list
-                        final selectedRange = selectedRangeList.firstWhere(
-                          (range) =>
-                              '${range.startCount}-${range.endCount}' == value,
-                          orElse: () => RangeYear(
-                            startCount: '0',
-                            endCount: '0',
-                            pricePerUser: "0",
-                            rangePrice: 0,
-                          ),
-                        );
-                        // Reformat selected user count (for consistency)
-                        selection.selectedUserCount =
-                            '${selectedRange.startCount}-${selectedRange.endCount}';
-                        selection.planId = item.planId ?? '';
-                        selection.planType = item.planType ?? '';
+                              // Parse start and end counts
+                              int start = int.tryParse(
+                                      selectedRange.startCount.toString()) ??
+                                  0;
+                              int end = int.tryParse(
+                                      selectedRange.endCount.toString()) ??
+                                  0;
+                              int numberOfUsers = end - 0;
+                              selection.userCount =
+                                  start.toString() + '-' + end.toString();
 
-                        // Parse start and end counts
-                        int start =
-                            int.tryParse(selectedRange.startCount.toString()) ??
-                                0;
-                        int end =
-                            int.tryParse(selectedRange.endCount.toString()) ??
-                                0;
-                        int numberOfUsers = end - 0;
-                        selection.userCount =
-                            start.toString() + '-' + end.toString();
+                              print(
+                                  'Selected Range → Start: $start, End: $end');
+                              print(selection.planType.toString());
 
-                        print('Selected Range → Start: $start, End: $end');
-                        print(selection.planType.toString());
-
-                        // Calculate total price
-                        int pricePerUser = int.tryParse(
-                                selectedRange.pricePerUser.toString()) ??
-                            0;
-                        selection.totalPrice = numberOfUsers * pricePerUser;
-                        selection.licensePrice =
-                            selection.totalPrice!.toString();
-                        selection.priceperuser = pricePerUser.toString();
-                        // Store total price as license price  ;
-                      });
-                    }
-                  },
-                ),
+                              // Calculate total price
+                              int pricePerUser = int.tryParse(
+                                      selectedRange.pricePerUser.toString()) ??
+                                  0;
+                              selection.totalPrice =
+                                  numberOfUsers * pricePerUser;
+                              selection.licensePrice =
+                                  selection.totalPrice!.toString();
+                              selection.priceperuser = pricePerUser.toString();
+                            });
+                          }
+                        },
+                      ),
                 SizedBox(height: 2),
                 if (item.planName == "Event Count Cost" ||
                     item.planName!.contains('event')) ...[
@@ -657,7 +681,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                       ),
                     ),
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 20),
                   SizedBox(
                     height: 80,
                     child: Consumer<SubaccountParameterProvider>(
@@ -687,61 +711,150 @@ class _PricingListScreenState extends State<PricingListScreen>
                                 ? selectedHazard
                                 : null;
 
-                        if (hazardCommercials == null ||
-                            hazardCommercials.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              "",
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          );
-                        }
                         final uniqueHazardsMap =
                             <String, Map<String, dynamic>>{};
-                        for (final hazard in hazardCommercials) {
-                          final name = hazard['hazard_name'];
-                          if (name != null &&
-                              !uniqueHazardsMap.containsKey(name)) {
-                            uniqueHazardsMap[name] = hazard;
+                        if (hazardCommercials != null) {
+                          for (final hazard in hazardCommercials) {
+                            final name = hazard['hazard_name'];
+                            if (name != null &&
+                                !uniqueHazardsMap.containsKey(name)) {
+                              uniqueHazardsMap[name] = hazard;
+                            }
                           }
                         }
+
                         return DropdownButtonFormField<String>(
-                            value: validSelectedHazard,
-                            dropdownColor: Colors.grey[850],
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.grey[800],
-                              labelText: 'Select Hazard',
-                              labelStyle: TextStyle(color: Colors.white),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          value: validSelectedHazard,
+                          dropdownColor: Colors.grey[850],
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.grey[800],
+                            labelText: 'Select Hazard',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Colors.white),
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'Select Hazard',
+                                style: const TextStyle(color: Colors.white),
                               ),
                             ),
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.white),
-                            items: uniqueHazardsMap.entries.map((entry) {
+                            ...uniqueHazardsMap.entries.map((entry) {
                               final hazard = entry.value;
                               return DropdownMenuItem<String>(
                                 value: entry.key, // hazard_name
                                 child: Text(
-                                  hazard['hazard_name_label'] ?? entry.key,
+                                  hazard['hazard_name_label'] ?? '',
                                   style: const TextStyle(color: Colors.white),
                                 ),
                               );
                             }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedHazard = value;
-                                showMissingDataDropdown1 = false;
-                                vendorName = selectedVendorData != null
-                                    ? selectedVendorData['vendor_name_label'] ?? 'Unknown'
-                                    : 'Unknown';
-                                hazardName = uniqueHazardsMap[value]?['hazard_name_label'] ?? value ?? 'Unknown';
-                              });
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedHazard = value;
+                              showMissingDataDropdown1 = false;
+                              vendorName = selectedVendorData != null
+                                  ? selectedVendorData['vendor_name_label'] ??
+                                      'Unknown'
+                                  : 'Unknown';
+                              hazardName = value != null
+                                  ? (uniqueHazardsMap[value]
+                                          ?['hazard_name_label'] ??
+                                      value)
+                                  : '';
                             });
+                          },
+                        );
                       },
                     ),
                   ),
+                  // SizedBox(
+                  //   height: 80,
+                  //   child: Consumer<SubaccountParameterProvider>(
+                  //     builder: (context, provider, child) {
+                  //       final selectedVendorData = vendorList.firstWhere(
+                  //         (vendor) => vendor['vendor_id'] == selectedVendor,
+                  //         orElse: () => null,
+                  //       );
+                  //
+                  //       final hazardCommercials = selectedVendorData != null
+                  //           ? (selectedVendorData['hazard_commercials']
+                  //               as List<dynamic>?)
+                  //           : null;
+                  //
+                  //       // Build the list of hazard values
+                  //       final hazardValues = hazardCommercials != null
+                  //           ? hazardCommercials
+                  //               .map((hazard) =>
+                  //                   hazard['hazard_name'] as String?)
+                  //               .where((name) => name != null)
+                  //               .toSet()
+                  //               .toList()
+                  //           : <String>[];
+                  //
+                  //       final validSelectedHazard =
+                  //           hazardValues.contains(selectedHazard)
+                  //               ? selectedHazard
+                  //               : null;
+                  //
+                  //
+                  //       final uniqueHazardsMap =
+                  //           <String, Map<String, dynamic>>{};
+                  //       for (final hazard in hazardCommercials!) {
+                  //         final name = hazard['hazard_name'];
+                  //         if (name != null &&
+                  //             !uniqueHazardsMap.containsKey(name)) {
+                  //           uniqueHazardsMap[name] = hazard;
+                  //         }
+                  //       }
+                  //       return DropdownButtonFormField<String>(
+                  //           value: validSelectedHazard,
+                  //           dropdownColor: Colors.grey[850],
+                  //           decoration: InputDecoration(
+                  //             filled: true,
+                  //             fillColor: Colors.grey[800],
+                  //             labelText: 'Select Hazard',
+                  //             labelStyle: TextStyle(color: Colors.white),
+                  //             border: OutlineInputBorder(
+                  //               borderRadius: BorderRadius.circular(8),
+                  //             ),
+                  //           ),
+                  //           icon: const Icon(Icons.arrow_drop_down,
+                  //               color: Colors.white),
+                  //           items: uniqueHazardsMap.entries.map((entry) {
+                  //             final hazard = entry.value;
+                  //             return DropdownMenuItem<String>(
+                  //               value: entry.key, // hazard_name
+                  //               child: Text(
+                  //                 hazard['hazard_name_label'] ?? entry.key,
+                  //                 style: const TextStyle(color: Colors.white),
+                  //               ),
+                  //             );
+                  //           }).toList(),
+                  //           onChanged: (value) {
+                  //             setState(() {
+                  //               selectedHazard = value;
+                  //               showMissingDataDropdown1 = false;
+                  //               vendorName = selectedVendorData != null
+                  //                   ? selectedVendorData['vendor_name_label'] ??
+                  //                       'Unknown'
+                  //                   : 'Unknown';
+                  //               hazardName = uniqueHazardsMap[value]
+                  //                       ?['hazard_name_label'] ??
+                  //                   value ??
+                  //                   'Unknown';
+                  //             });
+                  //           });
+                  //     },
+                  //   ),
+                  // ),
                 ],
               ],
             ],

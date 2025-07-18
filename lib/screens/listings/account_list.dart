@@ -273,7 +273,7 @@ class _AccountListScreenState extends State<AccountListScreen>
               margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
               child: Text(
-                "This is where you create a new account. Click here to add a new account.",
+                "Set up a primary account for your client or commercial entity. Add key company info to start building their digital risk data. ",
                 maxLines: 3,
                 style: TextStyle(
                     color: Colors.white,

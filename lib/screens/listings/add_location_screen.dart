@@ -380,7 +380,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             child:
                                                 // hasAnyPlan.toString() == 'true' ?Container(child: Text("data")):
                                                 MessageCard(
-                                                    isError: locations < 1,
+                                                    isError:
+                                                        hasAnyPlan.toString() ==
+                                                                'true'
+                                                            ? locations > 1
+                                                            : locations < 1,
                                                     messageTextSpans: [
                                                   TextSpan(
                                                     text: hasAnyPlan
@@ -1193,7 +1197,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     var trialStatus = provider.trialInfo['status'] ?? '';
     var locations = provider.trialInfo['locations'] ?? 0;
     var total = provider.trialInfo['maxLocations'] ?? 0;
-     var hasanyPlan = hasAnyPlan;
+    var hasanyPlan = hasAnyPlan;
     bool isAdd = widget.locationId.isEmpty;
     return trialStatus.isNotEmpty && locations < 1 && isAdd && !hasanyPlan;
   }

@@ -287,7 +287,7 @@ class _MyLocationListState extends State<MyLocationList>
               margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
               child: Text(
-                "This is where you can view the list of locations. ",
+                "View all your added property locations in one place. Get a quick overview of geocoding accuracy, hazard risk score, data completeness, & more. ",
                 maxLines: 3,
                 style: TextStyle(
                     color: Colors.white,
@@ -309,7 +309,7 @@ class _MyLocationListState extends State<MyLocationList>
               margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(10.0, 10, 10, 30),
               child: Text(
-                "This table provides an overview of the overall scores for each location. You can see how each location is performing based on various criteria.",
+                "View the hazard risk score for each property from 1 to 5. 1 means highest risk, 5 means lowest risk to the property. ",
                 maxLines: 3,
                 style: TextStyle(
                     color: Colors.white,
@@ -331,7 +331,7 @@ class _MyLocationListState extends State<MyLocationList>
               margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(10.0, 10, 10, 40),
               child: Text(
-                "This is the map view of the locations. You can visualize the locations on a map, making it easier to understand their geographical distribution.",
+                "See property locations and nearby hazards like fire, cyclone, earthquake & more at a glance. Get the full context for better risk evaluation. ",
                 maxLines: 3,
                 style: TextStyle(
                     color: Colors.white,
@@ -5260,6 +5260,8 @@ class _MyLocationListState extends State<MyLocationList>
             builder: (context, StateSetter setState) {
               return Padding(
                 padding: EdgeInsets.only(
+                  left: 6,
+                  right: 6,
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: SingleChildScrollView(
@@ -5385,44 +5387,46 @@ class _MyLocationListState extends State<MyLocationList>
                                 ),
                               ),
                         SizedBox(height: 20),
-                        if (trialStatus.isNotEmpty)
-                          Column(
-                            children: [
-                              MessageCard(
-                                  isError: locations < 1,
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text: hasAnyPlan.toString() == 'true'
-                                          ? 'Available Credits: ${hasGeocodingStatus} locations.'
-                                          : '$locations of $total locations left to upload.',
-                                    ),
-                                    hasAnyPlan.toString() == 'true'
-                                        ? TextSpan(
-                                            text: ' ',
-                                          )
-                                        : TextSpan(
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                        builder: (_) =>
-                                                            PricingListScreen()));
-                                              },
-                                            text: ' Upgrade Now!',
-                                            style: TextStyle(
-                                              color: AppColors.primaryMain,
-                                            ),
+                        // if (trialStatus.isNotEmpty)
+                        Column(
+                          children: [
+                            MessageCard(
+                                isError: hasAnyPlan.toString() == 'true'
+                                    ? locations > 1
+                                    : locations < 1,
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text: hasAnyPlan.toString() == 'true'
+                                        ? 'Available Credits: ${hasGeocodingStatus} locations.'
+                                        : '$locations of $total locations left to upload.',
+                                  ),
+                                  hasAnyPlan.toString() == 'true'
+                                      ? TextSpan(
+                                          text: ' ',
+                                        )
+                                      : TextSpan(
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          PricingListScreen()));
+                                            },
+                                          text: ' Upgrade Now!',
+                                          style: TextStyle(
+                                            color: AppColors.primaryMain,
                                           ),
-                                  ]),
-                              SizedBox(height: 16),
-                              if (!(locations < 1))
-                                Text(
-                                  'The system will only process the first ${locations} locations.',
-                                  style: typography.Body1,
-                                ),
-                              SizedBox(height: 16),
-                            ],
-                          ),
+                                        ),
+                                ]),
+                            SizedBox(height: 16),
+                            if (!(locations < 1))
+                              Text(
+                                'The system will only process the first ${locations} locations.',
+                                style: typography.Body1,
+                              ),
+                            SizedBox(height: 16),
+                          ],
+                        ),
                         if (!addToSOVCheck) ...[
                           TextField(
                             controller: tagController,
