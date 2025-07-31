@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:RiskSphere/models/hazard_data.dart';
 import 'package:RiskSphere/providers/custom_tile_providers.dart';
@@ -15,7 +14,6 @@ import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart' show DateFormat;
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +49,7 @@ import '../../providers/sub_account_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
+import '../../utils/toast.dart';
 
 class LocationProfile extends StatefulWidget {
   const LocationProfile({
@@ -69,6 +68,7 @@ class LocationProfile extends StatefulWidget {
     this.hazardProcess,
     this.onConfirmCallback,
     this.onNavigateBack,
+    this.tab,
   });
 
   final String accountId;
@@ -85,6 +85,7 @@ class LocationProfile extends StatefulWidget {
   final bool? hazardProcess;
   final VoidCallback? onConfirmCallback;
   final VoidCallback? onNavigateBack;
+  final int? tab;
 
   @override
   State<LocationProfile> createState() => _LocationProfileState();
@@ -104,7 +105,7 @@ class _LocationProfileState extends State<LocationProfile>
   bool isLoadingAddToMultiple = false;
   bool showViewMore = true;
 
-  int tabIndex = 0;
+  late int tabIndex = widget.tab ?? 0;
   bool isLoading = false;
   bool addCampusLoading = false;
   bool addCampusLoading1 = false;
@@ -177,15 +178,14 @@ class _LocationProfileState extends State<LocationProfile>
       _fetchAllData();
       // Only run if not initialized
       _searchController = TextEditingController();
-      _tabController = TabController(length: 3, vsync: this);
+      _tabController =
+          TabController(length: 3, vsync: this, initialIndex: widget.tab ?? 0);
       super.initState();
       _totalPages = widget.totalPages!;
       _campusScrollController = ScrollController();
       _pageController =
           PageController(viewportFraction: 0.9, initialPage: selectedIndex);
-
       _isInitialized = true; // Mark as initialized
-
       _tabController!.addListener(() {
         setState(() {
           tabIndex = _tabController!.index;
@@ -244,6 +244,7 @@ class _LocationProfileState extends State<LocationProfile>
     // Check if the page already exists in the navigation stack
     bool alreadyExists = false;
     Navigator.popUntil(context, (route) {
+      print("DUPLICATE1");
       if (route.settings.name == 'LocationProfile$pageToNavigate') {
         alreadyExists = true;
       }
@@ -413,6 +414,15 @@ class _LocationProfileState extends State<LocationProfile>
         return BitmapDescriptor.hueCyan;
     }
   }
+
+  List<Color> scoreColors = [
+    Colors.grey[300]!, // Default color for unfilled bars
+    Colors.red[900]!, // Dark Red for 1
+    Colors.red[300]!, // Light Red for 2
+    Colors.yellow[300]!, // Light Yellow for 3
+    Colors.green[300]!, // Light Green for 4
+    Colors.green[600]!, // Green for 5
+  ];
 
   Color _getColorFromScore(int score) {
     switch (score) {
@@ -742,7 +752,6 @@ class _LocationProfileState extends State<LocationProfile>
                             return Expanded(
                               child: Row(
                                 children: [
-                                  // Previous Button
                                   Expanded(
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
@@ -780,7 +789,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                   strokeWidth: 2),
                                             )
                                           : Text(
-                                              'Pre Locations',
+                                              'Prev Locations',
                                               style: typography.ButtonLarge
                                                   .copyWith(
                                                 color: canNavigatePrevious
@@ -790,31 +799,7 @@ class _LocationProfileState extends State<LocationProfile>
                                             ),
                                     ),
                                   ),
-
                                   const SizedBox(width: 12),
-                                  // if ((int.tryParse(widget.page) ?? 1) <
-                                  //     (widget.locationId.isNotEmpty
-                                  //         ? locationProfileProvider.resetTotalPage! - 1
-                                  //         : (int.tryParse(widget.totalPages!) ?? 1)))
-                                  //   Positioned(
-                                  //     right: 16,
-                                  //     top: 0,
-                                  //     bottom: 0,
-                                  //     child: Align(
-                                  //       alignment: Alignment.centerRight,
-                                  //       child: FloatingActionButton(
-                                  //         mini: true,
-                                  //         shape: CircleBorder(),
-                                  //         backgroundColor:
-                                  //             Theme.of(context).brightness == Brightness.light
-                                  //                 ? AppColors.paperElavation25Light
-                                  //                 : AppColors.paperElavation25,
-                                  //         onPressed: _isLoading ? null : _navigateRight,
-                                  //         child: Icon(Icons.chevron_right, size: 30),
-                                  //       ),
-                                  //     ),
-                                  //   ),
-                                  // Next Button
                                   Expanded(
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
@@ -868,84 +853,6 @@ class _LocationProfileState extends State<LocationProfile>
                       ),
                     ),
                   ),
-
-            //   bottomNavigationBar: BottomAppBar(
-            //       color: Theme
-            //           .of(context)
-            //           .primaryColor,
-            //       shape: CircularNotchedRectangle(),
-            //       // Optional, for a rounded edge look
-            //       child: Padding(
-            //           padding: const EdgeInsets.symmetric(horizontal: 2),
-            //           child: Row(
-            //               children: [
-            //           if ((int.tryParse(widget.page) ?? 1) > 1 &&
-            //           (widget.locationId.isNotEmpty
-            //               ? locationProfileProvider.resetTotalPage! - 1
-            //               : int.tryParse(widget.totalPages!) ?? 0) >
-            //               0)
-            //   Expanded(
-            // child: ElevatedButton(
-            // style: ElevatedButton.styleFrom(
-            // shape: RoundedRectangleBorder(
-            // side: BorderSide(
-            // color: AppColors.primaryMain,
-            //   width: 1,
-            // ),
-            // borderRadius: BorderRadius.circular(8),
-            // ),
-            // padding: const EdgeInsets.symmetric(vertical: 10),
-            // ),
-            // onPressed: () {
-            // _navigateLeft();
-            // },
-            // child: Text(
-            // 'Pre Locations',
-            // style: typography.ButtonLarge.copyWith(
-            // color: AppColors.primaryMain,
-            // ),
-            // ),
-            // ),
-            // ),
-            // const SizedBox(width: 12),
-            //
-            // Expanded(
-            // child: ElevatedButton(
-            // style: ElevatedButton.styleFrom(
-            // shape: RoundedRectangleBorder(
-            // side: BorderSide(
-            // color: AppColors.primaryMain,
-            // width: 1,
-            // ),
-            // borderRadius: BorderRadius.circular(8),
-            // ),
-            // padding: const EdgeInsets.symmetric(vertical: 10),
-            // ),
-            // onPressed:
-            // if ((int.tryParse(widget.page) ?? 1) <
-            // (widget.locationId.isNotEmpty
-            // ? locationProfileProvider.resetTotalPage! - 1
-            //     : (int.tryParse(widget.totalPages!) ?? 1)))
-            // ? () async {
-            // _navigateRight();
-            // }
-            //     : null,
-            //
-            //
-            // child: locationProfileProvider.isLoading
-            // ? Center(child: CircularProgressIndicator())
-            //     : Text(
-            // 'Next Locations',
-            // style: typography.ButtonLarge.copyWith(
-            // color: AppColors.primaryMain,
-            // ),
-            // ),
-            // ),
-            // ),
-            // ],
-            // ),
-            // ),
-            // ),
             body: LayoutBuilder(builder: (context, constraints) {
               return Stack(
                 children: [
@@ -957,6 +864,8 @@ class _LocationProfileState extends State<LocationProfile>
                             BoxConstraints(minHeight: constraints.maxHeight),
                         child: IntrinsicHeight(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -964,7 +873,7 @@ class _LocationProfileState extends State<LocationProfile>
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     // Left Column
                                     Expanded(
@@ -972,124 +881,89 @@ class _LocationProfileState extends State<LocationProfile>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          InkWell(
-                                              onTap: () {
-                                                !bottomsheetopened
-                                                    ? Navigator.pop(
-                                                        context, false)
-                                                    : null;
-                                              },
-                                              child: Container(
-                                                height: 35,
-                                                width: 43,
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(80),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  if (!bottomsheetopened) Navigator.pop(context, false);
+                                                },
+                                                child: Container(
+                                                  alignment: Alignment.centerLeft,
+                                                  height: 35,
+                                                  width: 35,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Icon(Icons.arrow_back_ios_new, size: 18),
                                                 ),
-                                                child: Icon(
-                                                    Icons.arrow_back_ios_new,
-                                                    size: 20),
-                                              )),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 4.0),
-                                            child: Row(
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 2.0, bottom: 6),
+                                              ),
+                                              // SizedBox(width: 8),
+                                              Expanded(
+                                                child: Container(
+                                                  alignment: Alignment.center,
+                                                  padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 0),
                                                   child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
                                                     children: [
-                                                      InkWell(
-                                                        onTap: () {
-                                                          !bottomsheetopened
-                                                              ? Navigator
-                                                                  .pushAndRemoveUntil(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                      builder:
-                                                                          (context) =>
-                                                                              AccountListScreen()),
-                                                                  (route) =>
-                                                                      false, // This removes all previous routes
-                                                                ).then((_) {
-                                                                  // Optional: Add any actions to perform after navigation
-                                                                })
-                                                              : null;
-                                                        },
-                                                        child: Text(
-                                                            widget.accountName,
-                                                            style: typography
-                                                                .InputLabel),
-                                                      ),
-                                                      Text(' > ',
-                                                          style: typography
-                                                              .InputLabel),
-                                                      InkWell(
-                                                        onTap: () {
-                                                          !bottomsheetopened
-                                                              ? Navigator
-                                                                  .pushAndRemoveUntil(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            SubAccountListScreen(
-                                                                      accountId:
-                                                                          widget.accountId ??
-                                                                              "",
-                                                                      accountName:
-                                                                          widget.subAccountName ??
-                                                                              "",
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(top: 5.0, bottom: 6),
+                                                        child: Row(
+                                                          children: [
+                                                            InkWell(
+                                                              onTap: () {
+                                                                if (!bottomsheetopened) {
+                                                                  Navigator.pushAndRemoveUntil(
+                                                                    context,
+                                                                    MaterialPageRoute(
+                                                                        builder: (context) => AccountListScreen()),
+                                                                    (route) => false,
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Text(
+                                                                widget.accountName,
+                                                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                                                              ),
+                                                            ),
+                                                            Text(' > ',
+                                                                style: TextStyle(fontSize: 12, color: Colors.white70)),
+                                                            InkWell(
+                                                              onTap: () {
+                                                                if (!bottomsheetopened) {
+                                                                  Navigator.pushAndRemoveUntil(
+                                                                    context,
+                                                                    MaterialPageRoute(
+                                                                      builder: (context) => SubAccountListScreen(
+                                                                        accountId: widget.accountId ?? "",
+                                                                        accountName: widget.subAccountName ?? "",
+                                                                      ),
                                                                     ),
-                                                                  ),
-                                                                  (route) =>
-                                                                      false, // This removes all previous routes
-                                                                ).then((_) {
-                                                                  // Optional: Add any actions to perform after navigation
-                                                                })
-                                                              : null;
-                                                        },
-                                                        child: Text(
-                                                            widget
-                                                                .subAccountName,
-                                                            style: typography
-                                                                .InputLabel),
+                                                                    (route) => false,
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Text(
+                                                                widget.subAccountName,
+                                                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                                                              ),
+                                                            ),
+                                                            Text(' > ',
+                                                                style: TextStyle(fontSize: 12, color: Colors.white70)),
+                                                            Text(
+                                                              "Location Profile",
+                                                              style: TextStyle(fontSize: 12, color: Colors.white),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
-                                                      Text(' > ',
-                                                          style: typography
-                                                              .InputLabel),
-                                                      InkWell(
-                                                        onTap: () {
-                                                          !bottomsheetopened
-                                                              ? Navigator.pop(
-                                                                  context)
-                                                              : null;
-                                                        },
-                                                        child: Text(
-                                                            widget.accountName,
-                                                            style: typography
-                                                                .InputLabel),
-                                                      ),
-                                                      Text(' > ',
-                                                          style: TextStyle(
-                                                              fontSize: 12,
-                                                              color: Colors
-                                                                  .white70)),
-                                                      Text("Location Profile",
-                                                          style: TextStyle(
-                                                              fontSize: 12,
-                                                              color: Colors
-                                                                  .white)),
                                                     ],
                                                   ),
                                                 ),
-                                                // Container(
-                                                //   child: MaintenanceUI(isMaintenance: isMaintenance),
-                                                // ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                           Row(
                                             children: [
@@ -1106,6 +980,9 @@ class _LocationProfileState extends State<LocationProfile>
                                                       overflow: TextOverflow
                                                           .ellipsis, // Handle overflow
                                                     ),
+                                                    SizedBox(
+                                                        height:
+                                                            CustomSpacing.two),
                                                     Text(
                                                       locationProfileProvider
                                                               .locationProfile
@@ -1126,8 +1003,6 @@ class _LocationProfileState extends State<LocationProfile>
                                                   ],
                                                 ),
                                               ),
-                                              // Text(_isBottomSheetFullScreen.toString()),
-                                              // Text(bottomsheetopened.toString()),
                                               IconButton(
                                                   splashRadius: 1,
                                                   padding: EdgeInsets.zero,
@@ -1185,24 +1060,89 @@ class _LocationProfileState extends State<LocationProfile>
                               Padding(
                                 padding: EdgeInsets.only(left: 16, right: 24),
                                 child: Row(
-                                  // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    VerticalBarIndicator(
-                                        score: context
-                                                .read<MyLocationListProvider>()
-                                                .locationProfile
-                                                ?.geocodingScore ??
-                                            0),
-                                    SizedBox(width: 8),
-                                    (locationProfileProvider.locationProfile
-                                                    ?.finalAddress?.score ??
-                                                0) ==
-                                            5
-                                        ? SvgPicture.asset(
-                                            'assets/images/certified_five.svg',
-                                            width: 24,
-                                            height: 24)
-                                        : SizedBox.shrink(),
+                                    Consumer<MyLocationListProvider>(
+                                      builder: (context,
+                                          locationProfileProvider, child) {
+                                        int rating = 0;
+                                        if (tabIndex == 0) {
+                                          rating = int.tryParse(
+                                                  locationProfileProvider
+                                                          .locationProfile
+                                                          ?.geocodingScore
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0;
+                                        } else if (tabIndex == 1) {
+                                          rating = (locationProfileProvider
+                                                          .locationProfile
+                                                          ?.overallScore ??
+                                                      0) ==
+                                                  0
+                                              ? 5
+                                              : (locationProfileProvider
+                                                      .locationProfile
+                                                      ?.overallScore ??
+                                                  0);
+                                        } else {
+                                          rating = scoreToStar(
+                                              (locationProfileProvider
+                                                              .locationProfile
+                                                              ?.dataCompleteness ==
+                                                          null ||
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.dataCompleteness ==
+                                                          0)
+                                                  ? 1
+                                                  : locationProfileProvider
+                                                      .locationProfile
+                                                      ?.dataCompleteness);
+                                        }
+                                        return Row(
+                                          children: [
+                                            VerticalBarIndicator(
+                                              score: rating,
+                                            ),
+                                            SizedBox(width: 8),
+                                            rating == 0
+                                                ? SizedBox.shrink()
+                                                : rating == 5
+                                                    ? SvgPicture.asset(
+                                                        'assets/images/certified_five.svg',
+                                                        width: 24,
+                                                        height: 24,
+                                                      )
+                                                    : Container(
+                                                        width: 18,
+                                                        height: 18,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: scoreColors[
+                                                              rating.clamp(
+                                                                  0,
+                                                                  scoreColors
+                                                                          .length -
+                                                                      1)],
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Text(
+                                                          rating.toString(),
+                                                          style: TextStyle(
+                                                            color: Colors.black,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ),
+                                          ],
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ),
@@ -1220,9 +1160,10 @@ class _LocationProfileState extends State<LocationProfile>
                                       Align(
                                         alignment: Alignment.centerLeft,
                                         child: TabBar(
+                                          controller: _tabController,
                                           tabAlignment: TabAlignment.start,
                                           isScrollable: true,
-                                          padding: EdgeInsets.only(right: 20),
+                                          padding: EdgeInsets.only(right: 40),
                                           labelPadding: EdgeInsets.symmetric(
                                               horizontal: 20),
                                           indicatorPadding:
@@ -1250,6 +1191,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                     .height *
                                                 0.55,
                                         child: TabBarView(
+                                          controller: _tabController,
                                           physics:
                                               NeverScrollableScrollPhysics(),
                                           children: [
@@ -1462,7 +1404,7 @@ class _LocationProfileState extends State<LocationProfile>
           child: Column(
             children: [
               SizedBox(height: 2),
-              if (!_isBottomSheetExpanded) ...[
+              if (!_isBottomSheetExpanded && tabIndex == 0) ...[
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -1836,11 +1778,11 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               Container(
                                 constraints: BoxConstraints(
-                                    minHeight: 8,
-                                    maxHeight: isSwitched
-                                        ? MediaQuery.of(context).size.height / 3
-                                        : MediaQuery.of(context).size.height /
-                                            7),
+                                  minHeight: 8,
+                                  maxHeight: isSwitched
+                                      ? MediaQuery.of(context).size.height / 3
+                                      : MediaQuery.of(context).size.height / 7,
+                                ),
                                 child: PageView.builder(
                                   key: const ValueKey('campus_page_view'),
                                   controller: _pageController,
@@ -1848,17 +1790,6 @@ class _LocationProfileState extends State<LocationProfile>
                                   itemBuilder: (context, index) {
                                     int totalItems =
                                         filteredSubdestinations.length;
-
-                                    int addedSelectedCount =
-                                        filteredSubdestinations.where((item) {
-                                      final id = item.id ?? '';
-                                      final status =
-                                          (item?.status ?? '').toLowerCase();
-                                      final isSelected =
-                                          selectedIds.contains(id);
-                                      return isSelected && status == 'added';
-                                    }).length;
-
                                     var subdestination =
                                         filteredSubdestinations[index];
                                     final id = subdestination.id ?? '';
@@ -1867,44 +1798,76 @@ class _LocationProfileState extends State<LocationProfile>
                                             .toLowerCase();
                                     final isSelected = selectedIds.contains(id);
                                     final canSelect = status != 'added';
-                                    return
-                                        // status == 'added'?
-                                        GestureDetector(
+
+                                    return GestureDetector(
                                       onTap: () {
-                                        if (isSelectionMode && canSelect) {
-                                          setState(() {
-                                            if (isSelected) {
-                                              selectedIds.remove(id);
-                                            } else {
-                                              selectedIds.add(id);
-                                            }
-                                            if (selectedIds.isEmpty) {
-                                              isSelectionMode = false;
-                                            }
-                                          });
-                                        } else {
-                                          _focusOnSubdestination(
-                                              subdestination!);
-                                        }
+                                        if (!canSelect) return;
+
+                                        final currentPage =
+                                            _pageController?.page?.round() ?? 0;
+
+                                        setState(() {
+                                          isSelectionMode = true;
+
+                                          if (isSelected) {
+                                            selectedIds.remove(id);
+                                          } else {
+                                            selectedIds.add(id);
+                                          }
+
+                                          selectedIndex = index;
+
+                                          if (selectedIds.isEmpty) {
+                                            isSelectionMode = false;
+                                          }
+                                        });
+
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (_pageController?.hasClients ??
+                                              false) {
+                                            _pageController?.jumpToPage(index);
+                                          }
+                                        });
                                       },
                                       onLongPress: () {
-                                        if (canSelect) {
-                                          setState(() {
-                                            isSelectionMode = true;
-                                            if (isSelected) {
-                                              selectedIds.remove(id);
-                                            } else {
-                                              selectedIds.add(id);
-                                            }
-                                            if (selectedIds.isEmpty) {
-                                              isSelectionMode = false;
-                                            }
-                                          });
-                                        }
+                                        if (!canSelect) return;
+
+                                        final currentPage =
+                                            _pageController?.page?.round() ?? 0;
+
+                                        setState(() {
+                                          isSelectionMode = true;
+
+                                          if (isSelected) {
+                                            selectedIds.remove(id);
+                                          } else {
+                                            selectedIds.add(id);
+                                          }
+
+                                          selectedIndex = index;
+
+                                          if (selectedIds.isEmpty) {
+                                            isSelectionMode = false;
+                                          }
+                                        });
+
+                                        // Always jump to the selected index, even the first time
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (_pageController?.hasClients ??
+                                              false) {
+                                            _pageController?.jumpToPage(index);
+                                          }
+                                        });
                                       },
                                       onDoubleTap: () {
                                         setState(() {
                                           selectedIndex = index;
+                                          if (_pageController?.page?.round() !=
+                                              index) {
+                                            _pageController?.jumpToPage(index);
+                                          }
                                         });
                                       },
                                       child: Card(
@@ -1937,25 +1900,52 @@ class _LocationProfileState extends State<LocationProfile>
                                               children: [
                                                 SizedBox(height: 3),
                                                 ListTile(
-                                                  // leading: isSelectionMode &&
-                                                  //         canSelect
                                                   leading: canSelect
                                                       ? Checkbox(
                                                           value: isSelected,
                                                           onChanged:
                                                               (bool? checked) {
+                                                            if (!canSelect)
+                                                              return;
+
+                                                            final currentPage =
+                                                                _pageController
+                                                                        ?.page
+                                                                        ?.round() ??
+                                                                    0;
+
                                                             setState(() {
-                                                              if (checked ==
-                                                                  true) {
-                                                                selectedIds
-                                                                    .add(id);
-                                                              } else {
+                                                              isSelectionMode =
+                                                                  true;
+
+                                                              if (isSelected) {
                                                                 selectedIds
                                                                     .remove(id);
+                                                              } else {
+                                                                selectedIds
+                                                                    .add(id);
                                                               }
-                                                              isSelectionMode =
-                                                                  selectedIds
-                                                                      .isNotEmpty;
+
+                                                              selectedIndex =
+                                                                  index;
+
+                                                              if (selectedIds
+                                                                  .isEmpty) {
+                                                                isSelectionMode =
+                                                                    false;
+                                                              }
+                                                            });
+                                                            WidgetsBinding
+                                                                .instance
+                                                                .addPostFrameCallback(
+                                                                    (_) {
+                                                              if (_pageController
+                                                                      ?.hasClients ??
+                                                                  false) {
+                                                                _pageController
+                                                                    ?.jumpToPage(
+                                                                        index);
+                                                              }
                                                             });
                                                           },
                                                         )
@@ -2013,9 +2003,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                             ? null
                                                             : (value) async {
                                                                 if (value ==
-                                                                    null)
-                                                                  return;
-                                                                if (!mounted)
+                                                                        null ||
+                                                                    !mounted)
                                                                   return;
                                                                 setState(() {
                                                                   occupancy =
@@ -2049,6 +2038,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                           ?.locationId ??
                                                                       "",
                                                                 );
+
                                                                 if (!mounted)
                                                                   return;
                                                                 setState(() {
@@ -2091,9 +2081,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                             ? null
                                                             : (value) async {
                                                                 if (value ==
-                                                                    null)
-                                                                  return;
-                                                                if (!mounted)
+                                                                        null ||
+                                                                    !mounted)
                                                                   return;
                                                                 setState(() {
                                                                   occupancy =
@@ -2127,6 +2116,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                           ?.locationId ??
                                                                       "",
                                                                 );
+
                                                                 if (!mounted)
                                                                   return;
                                                                 setState(() {
@@ -2174,18 +2164,19 @@ class _LocationProfileState extends State<LocationProfile>
                                         ),
                                       ),
                                     );
-                                    // :Container();
                                   },
                                   onPageChanged: (index) {
                                     setState(() {
                                       selectedIndex = index;
                                     });
+
                                     var subdestination = locationProfileProvider
                                         .subdestinations[index];
                                     _focusOnSubdestination(subdestination);
                                   },
                                 ),
                               ),
+
                               SizedBox(height: 100),
                               if (isSelectionMode &&
                                   // selectedIds.length > 1 &&
@@ -3090,6 +3081,8 @@ class _LocationProfileState extends State<LocationProfile>
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.overallScore ?? 5,
+          dataCompleteness: scoreToStar(
+              location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
           occupancy: location.finalAddress?.placeTypes ?? ["--"],
@@ -3456,6 +3449,7 @@ class _LocationProfileState extends State<LocationProfile>
                                     }
                                   }*/
                                     }),
+
                             // Todo: implement history feature
                             /* IconButton(
                               icon: Icon(Icons.history),
@@ -3469,6 +3463,61 @@ class _LocationProfileState extends State<LocationProfile>
                               },
                             ),*/
                           ],
+                        ),
+                        InkWell(
+                          onTap: () async {
+                            final navigationData = {
+                              'accountId': widget.accountId,
+                              'subAccountId': widget.subAccountId,
+                              'sovId': widget.sovId,
+                              'accountName': widget.accountName,
+                              'subAccountName': widget.subAccountName,
+                              'sovName': widget.sovName,
+                              'locationId':
+                                  locationProfileProvider.locationProfile?.id ??
+                                      "",
+                              'searchQuery': widget.searchQuery,
+                              'page': widget.page,
+                              'totalPages': widget.totalPages,
+                            };
+
+                            var value = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AddLocationScreen(
+                                  accountId: widget.accountId,
+                                  subAccountId: widget.subAccountId,
+                                  sovId: widget.sovId,
+                                  accountName: widget.accountName,
+                                  subAccountName: widget.subAccountName,
+                                  sovName: widget.sovName,
+                                  locationId: locationProfileProvider
+                                          .locationProfile?.id ??
+                                      "",
+                                  locationName: locationProfileProvider
+                                          .locationProfile
+                                          ?.finalAddress
+                                          ?.locationName ??
+                                      "",
+                                  locationIdForRef: locationProfileProvider
+                                          .locationProfile
+                                          ?.finalAddress
+                                          ?.locationIdForRef ??
+                                      "",
+                                  searchQuery: widget.searchQuery ?? "",
+                                  page: widget.page,
+                                  totalPages: widget.locationId.isNotEmpty
+                                      ? (locationProfileProvider
+                                                  .resetTotalPage! -
+                                              1)
+                                          .toString()
+                                      : widget.totalPages!,
+                                ),
+                              ),
+                            );
+
+                            // You can handle the result of navigation here using `value`, if needed
+                          },
+                          child: Icon(Icons.edit),
                         ),
                       ],
                     ),
@@ -3796,10 +3845,21 @@ class _LocationProfileState extends State<LocationProfile>
   Widget _geocodingScore() {
     return Consumer<MyLocationListProvider>(
         builder: (context, locationProfileProvider, child) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final screenHeight = MediaQuery.of(context).size.height;
+      final dynamicTop = screenHeight * 0.17;
+      final dynamicLeft = screenWidth * 0.37;
       double latitude =
           locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
       double longitude =
           locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
+
+      List<Subdestination> filteredSubdestinations =
+          (locationProfileProvider.locationProfile?.subdestinations ?? [])
+              .where((sub) {
+        final status = (sub.status ?? '').toLowerCase();
+        return isSwitched ? status == 'added' : status != 'added';
+      }).toList();
 
       return locationProfileProvider.isLoading
           ? Center(child: CircularProgressIndicator())
@@ -3866,8 +3926,8 @@ class _LocationProfileState extends State<LocationProfile>
                               // ✅ Show this only when `showViewMore == true`
                               if (showViewMore)
                                 Positioned(
-                                  top: 150,
-                                  left: 140,
+                                  top: dynamicTop,
+                                  left: dynamicLeft,
                                   child: Container(
                                     alignment: Alignment.center,
                                     padding: EdgeInsets.symmetric(
@@ -4048,18 +4108,50 @@ class _LocationProfileState extends State<LocationProfile>
                                 .locationProfile?.finalAddress?.placeTypes
                                 ?.contains('premise') ==
                             true)
-                          FloatingActionButton.small(
-                            elevation: 0,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.brightness ==
-                                        Brightness.light
-                                    ? AppColors.paperElevation2Light
-                                    : AppColors.paperElevation2,
-                            onPressed: _handleSubDestinationTap,
-                            child: Icon(Icons.add_location_alt,
-                                color: Colors.white),
-                            tooltip: 'Add Campus',
-                          ),
+                          if (filteredSubdestinations.length > 0)
+                            FloatingActionButton.small(
+                              elevation: 0,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.brightness ==
+                                          Brightness.light
+                                      ? AppColors.paperElevation2Light
+                                      : AppColors.paperElevation2,
+                              onPressed: null,
+                              child: Icon(Icons.add_location_alt,
+                                  color: Colors.grey),
+                              tooltip: 'Add Campus',
+                            )
+                          else
+                            FloatingActionButton.small(
+                              elevation: 0,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.brightness ==
+                                          Brightness.light
+                                      ? AppColors.paperElevation2Light
+                                      : AppColors.paperElevation2,
+                              onPressed: _handleSubDestinationTap,
+                              child: Icon(Icons.add_location_alt,
+                                  color: Colors.white),
+                              tooltip: 'Add Campus',
+                            )
+                        // FloatingActionButton.small(
+                        //   elevation: 0,
+                        //   backgroundColor:
+                        //       Theme.of(context).colorScheme.brightness ==
+                        //               Brightness.light
+                        //           ? AppColors.paperElevation2Light
+                        //           : AppColors.paperElevation2,
+                        //   onPressed: _handleSubDestinationTap,
+                        //   child: Text(filteredSubdestinations.length > 0
+                        //       ? '${filteredSubdestinations.length}'
+                        //       : '0',
+                        //       style: TextStyle(
+                        //           color: Colors.white, fontSize: 16)),
+                        //
+                        //   // Icon(Icons.add_location_alt,
+                        //   //     color: Colors.white),
+                        //   tooltip: 'Add Campus',
+                        // ),
                       ],
                     ),
                   ),

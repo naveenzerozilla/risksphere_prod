@@ -14,6 +14,7 @@ import '../../providers/drawer_selection_provider.dart';
 import '../../providers/news_feed_provider.dart';
 import '../../service/language_service.dart';
 import '../jobMonitoringSystem/job_monitoring_screen.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class NewsFeedScreen extends StatefulWidget {
   const NewsFeedScreen({Key? key}) : super(key: key);
@@ -56,7 +57,6 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
               .setSelectedItem("dashboard");
         },
         child: Scaffold(
-
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
             showNotificationDot: _showNotificationDot,
@@ -257,6 +257,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Hazard Dropdown
+
               Flexible(
                 child: Container(
                   decoration: BoxDecoration(
@@ -266,54 +267,80 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   child: Consumer<NewsFeedProvider>(
                     builder: (context, provider, child) {
                       return DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: ['All', 'Geocoding', 'Hazard']
-                                .contains(provider.selectedHazard)
-                            ? provider.selectedHazard
-                            : 'All',
-                        // Fallback if selectedHazard is invalid
-                        onChanged: (String? newValue) {
-                          provider.updateSelectedHazard(newValue!);
-                          Future.microtask(() => provider.fetchNewsFeed());
-                        },
-                        items: ['All', 'Geocoding', 'Hazard']
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Text(value, style: typography.Body2),
+                        child: DropdownButton2<String>(
+                          isExpanded: true,
+                          dropdownStyleData: DropdownStyleData(
+                            width: MediaQuery.of(context).size.width / 2.2,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          );
-                        }).toList(),
-                      )
-
-                          // DropdownButton<String>(
-                          //   isExpanded: true,
-                          //   value: provider.selectedHazard ?? 'All',
-                          //   onChanged: (String? newValue) {
-                          //     provider.updateSelectedHazard(newValue!);
-                          //     provider.fetchNewsFeed();
-                          //   },
-                          //   items: ['All', 'Geocoding', 'Hazard']
-                          //       .map<DropdownMenuItem<String>>((String value) {
-                          //     return DropdownMenuItem<String>(
-                          //       value: value,
-                          //       child: Padding(
-                          //         padding: const EdgeInsets.symmetric(
-                          //             horizontal: 16.0),
-                          //         child: Text(value, style: typography.Body2),
-                          //       ),
-                          //     );
-                          //   }).toList(),
-                          // ),
-                          );
+                          ),
+                          value: ['All', 'Geocoding', 'Hazard']
+                                  .contains(provider.selectedHazard)
+                              ? provider.selectedHazard
+                              : 'All',
+                          onChanged: (String? newValue) {
+                            provider.updateSelectedHazard(newValue!);
+                            Future.microtask(() => provider.fetchNewsFeed());
+                          },
+                          items: ['All', 'Geocoding', 'Hazard']
+                              .map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
+                                child: Text(value, style: typography.Body2),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
                     },
                   ),
                 ),
               ),
+
+              // Flexible(
+              //   child: Container(
+              //     decoration: BoxDecoration(
+              //       color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              //       borderRadius: BorderRadius.circular(10),
+              //     ),
+              //     child: Consumer<NewsFeedProvider>(
+              //       builder: (context, provider, child) {
+              //         return DropdownButtonHideUnderline(
+              //             child: DropdownButton<String>(
+              //           isExpanded: true,
+              //           value: ['All', 'Geocoding', 'Hazard']
+              //                   .contains(provider.selectedHazard)
+              //               ? provider.selectedHazard
+              //               : 'All',
+              //           // Fallback if selectedHazard is invalid
+              //           onChanged: (String? newValue) {
+              //             provider.updateSelectedHazard(newValue!);
+              //             Future.microtask(() => provider.fetchNewsFeed());
+              //           },
+              //           items: ['All', 'Geocoding', 'Hazard']
+              //               .map<DropdownMenuItem<String>>((String value) {
+              //             return DropdownMenuItem<String>(
+              //               value: value,
+              //               child: Padding(
+              //                 padding:
+              //                     const EdgeInsets.symmetric(horizontal: 16.0),
+              //                 child: Text(value, style: typography.Body2),
+              //               ),
+              //             );
+              //           }).toList(),
+              //         )
+              //
+              //             );
+              //       },
+              //     ),
+              //   ),
+              // ),
               SizedBox(width: 16),
               // Date Range Picker
               Flexible(

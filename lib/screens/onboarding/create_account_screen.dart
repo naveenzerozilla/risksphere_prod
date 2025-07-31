@@ -1,36 +1,23 @@
 import 'dart:async';
 import 'dart:developer';
-
-import 'package:RiskSphere/models/companymodel.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
-
-// import 'package:country_list_picker/country_list_picker.dart';
-import 'package:country_pickers/country_picker_dropdown.dart';
-import 'package:country_pickers/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_autocomplete_label/autocomplete_label.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:RiskSphere/design_system/components/country_picker_flag_name.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/main.dart';
 import 'package:RiskSphere/models/initial_data_model.dart';
 import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
-import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
-
 import '../../constants/enums.dart';
 import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
-import '../../design_system/repo/home.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../service/language_service.dart';
 import '../../utils/utils.dart';

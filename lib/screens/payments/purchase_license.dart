@@ -1,36 +1,21 @@
-import 'dart:async';
-import 'dart:io';
+import '../../utils/global_imports.dart';
 import 'package:RiskSphere/models/PricingModel.dart';
 import 'package:RiskSphere/screens/payments/pricing_summary.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
-import 'package:RiskSphere/providers/account_list_provider.dart';
-import 'package:provider/provider.dart';
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../providers/configuration_provider.dart';
 import '../../providers/data_list_parameters.dart';
-import '../../providers/drawer_selection_provider.dart';
-import '../../providers/theme_provider.dart';
 import '../../utils/readmoreWidget.dart';
 
-class PricingListScreen extends StatefulWidget {
+class PurchaseLicensePage extends StatefulWidget {
   static const String routeName = '/pricingList';
 
-  const PricingListScreen({
+  const PurchaseLicensePage({
     super.key,
   });
 
   @override
-  State<PricingListScreen> createState() => _PricingListScreenState();
+  State<PurchaseLicensePage> createState() => _PurchaseLicensePageState();
 }
 
-class _PricingListScreenState extends State<PricingListScreen>
+class _PurchaseLicensePageState extends State<PurchaseLicensePage>
     with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
@@ -64,13 +49,6 @@ class _PricingListScreenState extends State<PricingListScreen>
   String? hazardName = "";
   String? vendorName = "";
 
-  void submitHazard(String hazardName) async {
-    print("🚀 Submitting hazard: $hazardName");
-    // await Provider.of<SubaccountParameterProvider>(context, listen: false)
-    //     .fetchSubaccountParameters(
-    //     context, widget.subaccountId, hazardName, '', widget.locationId);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -91,8 +69,6 @@ class _PricingListScreenState extends State<PricingListScreen>
     final configurationProvider =
         Provider.of<ConfigurationProvider>(context, listen: false);
     await accountListProvider.fetchPricingList(context, "", 1, 5);
-    Provider.of<SubaccountParameterProvider>(context, listen: false)
-        .fetchHazardList(context);
     configurationProvider.getVendors();
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -110,7 +86,7 @@ class _PricingListScreenState extends State<PricingListScreen>
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
         Map<String, dynamic> getSummary() {
-          int total = 0;
+          dynamic total = 0;
           List<String> titles = [];
           List<String> planId = [];
           List<String> planTypes = [];
@@ -122,7 +98,7 @@ class _PricingListScreenState extends State<PricingListScreen>
           // selection.selectedPlanType
           for (var selection in cardSelections.values) {
             if (selection.totalPrice != null) {
-              total += selection.totalPrice!;
+              total += num.parse(selection.totalPrice.toString());
 
               if (selection.title != null && selection.title!.isNotEmpty) {
                 titles.add(selection.title!);
@@ -130,10 +106,7 @@ class _PricingListScreenState extends State<PricingListScreen>
               if (selection.planId != null && selection.planId!.isNotEmpty) {
                 planId.add(selection.planId!);
               }
-              if (selection.licensePrice != null &&
-                  selection.licensePrice!.isNotEmpty) {
-                licensePrice.add(selection.licensePrice!);
-              }
+
               if (selection.userCount != null &&
                   selection.userCount!.isNotEmpty) {
                 userCounts.add(selection.userCount!);
@@ -147,6 +120,13 @@ class _PricingListScreenState extends State<PricingListScreen>
                   selection.priceperuser!.isNotEmpty) {
                 priceperuser.add(selection.priceperuser!);
               }
+              if (selection.planType == "event_cost") {
+                licensePrice.add(selection.priceperuser!);
+              } else if (selection.licensePrice != null &&
+                  selection.licensePrice!.isNotEmpty) {
+                licensePrice.add(selection.licensePrice!);
+              }
+
               if (selection.planType != null &&
                   selection.planType!.isNotEmpty) {
                 planTypes.add(selection.planType!);
@@ -205,6 +185,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          SizedBox(height: 10),
                           getSummary()['total'] == 0
                               ? Container(height: 0)
                               : Row(
@@ -244,6 +225,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                                 );
                                 return;
                               }
+                              print(summary);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -255,11 +237,14 @@ class _PricingListScreenState extends State<PricingListScreen>
                                   ),
                                 ),
                               ).then((value) {
-                                _getData();
-                                setState(() {
-                                  cardSelections.clear();
-                                  expandedCardIndex = null;
-                                });
+                                if (value == false) {
+                                } else {
+                                  _getData();
+                                  setState(() {
+                                    cardSelections.clear();
+                                    expandedCardIndex = null;
+                                  });
+                                }
                               });
                             },
                             style: ElevatedButton.styleFrom(
@@ -386,8 +371,29 @@ class _PricingListScreenState extends State<PricingListScreen>
                                                                 CustomSpacing
                                                                     .four)
                                                         : Container(),
-                                                    _buildSubscriptionCard(
-                                                        item, index),
+                                                    Consumer<
+                                                        UserProfileProvider>(
+                                                      builder: (context,
+                                                          userProfileProvider,
+                                                          child) {
+                                                        bool isNotIndividual =
+                                                            (userProfileProvider
+                                                                    .userData
+                                                                    .isIndividual ??
+                                                                true);
+
+                                                        if (item.planName ==
+                                                                "User License" &&
+                                                            isNotIndividual) {
+                                                          return AbsorbPointer(
+                                                              absorbing: true,
+                                                              child:
+                                                                  Container());
+                                                        }
+                                                        return _buildSubscriptionCard(
+                                                            item, index);
+                                                      },
+                                                    ),
                                                   ],
                                                 );
                                               },
@@ -458,8 +464,9 @@ class _PricingListScreenState extends State<PricingListScreen>
           : int.tryParse(selectedRange.pricePerUser.toString()) ?? 0;
       print(pricePerUser);
 
-      selection.totalPrice = numberOfUsers * pricePerUser;
+      // selection.totalPrice = numberOfUsers * pricePerUser;
       print(selection.totalPrice);
+      print("selection.totalPrice");
     }
 
     return GestureDetector(
@@ -483,17 +490,22 @@ class _PricingListScreenState extends State<PricingListScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    item.planName ?? "Location Count (Hazard)",
-                    style: typography.Body1.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
+                  Expanded(
+                    child: Text(
+                      item.planName ?? "Location Count (Hazard)",
+                      maxLines: 2,
+                      style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                   Icon(
                     isExpanded
                         ? Icons.arrow_drop_up
                         : Icons.arrow_drop_down_circle_outlined,
+                    color: Colors.white,
+                    size: 28,
                   ),
                 ],
               ),
@@ -539,7 +551,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                       print("value");
                       setState(() {
                         selection.selectedPlanType = value;
-                        selection.selectedUserCount = '';
+                        selection.selectedUserCount = '1-1';
                         selection.totalPrice = null;
 
                         item.planName == "Event Count Cost"
@@ -558,6 +570,26 @@ class _PricingListScreenState extends State<PricingListScreen>
                         item.planName == "Event Count Cost"
                             ? selection.planType = item.planType!
                             : '';
+                        item.planName == "Event Count Cost"
+                            ? value == 'Monthly'
+                                ? selection.priceperuser =
+                                    item.rangeMonth![0].pricePerUser
+                                : selection.priceperuser =
+                                    item.rangeYear![0].pricePerUser
+                            : "";
+                        item.planName == "Event Count Cost"
+                            ? value == 'Monthly'
+                                ? selection.licensePrice =
+                                    item.rangeMonth![0].pricePerUser
+                                : selection.priceperuser =
+                                    item.rangeYear![0].pricePerUser
+                            : "";
+                        selection.userCount = item.planName ==
+                                "Event Count Cost"
+                            ? (value == 'Monthly'
+                                ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
+                                : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
+                            : selection.userCount;
                       });
                     }
                   },
@@ -608,7 +640,7 @@ class _PricingListScreenState extends State<PricingListScreen>
                               );
                               // Reformat selected user count (for consistency)
                               selection.selectedUserCount =
-                                  '${selectedRange.startCount}-${selectedRange.endCount}';
+                                  '${selectedRange.endCount}-${selectedRange.startCount}';
                               selection.planId = item.planId ?? '';
                               selection.planType = item.planType ?? '';
 
@@ -626,16 +658,20 @@ class _PricingListScreenState extends State<PricingListScreen>
                               print(
                                   'Selected Range → Start: $start, End: $end');
                               print(selection.planType.toString());
+                              print(selection.priceperuser.toString());
+                              print(selectedRange.rangePrice.toString());
 
-                              // Calculate total price
                               int pricePerUser = int.tryParse(
                                       selectedRange.pricePerUser.toString()) ??
                                   0;
+                              print(pricePerUser.toString());
                               selection.totalPrice =
-                                  numberOfUsers * pricePerUser;
+                                  selectedRange.rangePrice.toString();
+                              print(totalPrice.toString());
                               selection.licensePrice =
-                                  selection.totalPrice!.toString();
-                              selection.priceperuser = pricePerUser.toString();
+                                  selectedRange.rangePrice.toString();
+                              selection.priceperuser =
+                                  selection.licensePrice.toString();
                             });
                           }
                         },
@@ -644,126 +680,150 @@ class _PricingListScreenState extends State<PricingListScreen>
                 if (item.planName == "Event Count Cost" ||
                     item.planName!.contains('event')) ...[
                   SizedBox(height: 10),
+                  // Vendor Dropdown
+                  // Vendor Dropdown
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: DropdownButtonFormField<String>(
-                        value: selectedVendor,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.grey[800],
-                          labelText: 'Select Vendor',
-                          labelStyle: TextStyle(color: Colors.white),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        dropdownColor: Colors.grey[850],
-                        icon: const Icon(Icons.arrow_drop_down,
-                            color: Colors.white),
-                        items: vendorList.map((vendor) {
-                          String vendorId =
-                              vendor['vendor_id']; // Ensure this is unique
-                          String vendorName =
-                              vendor['vendor_name_label'] ?? 'Unknown';
-                          return DropdownMenuItem<String>(
-                            value: vendorId,
-                            child: Text(vendorName),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedVendor = value;
-                          });
-                          print("selectedVendor" + selectedVendor.toString());
-                        },
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: 0,
+                              maxWidth: constraints.maxWidth,
+                            ),
+                            child: DropdownButtonFormField<String>(
+                              value: selectedVendor,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey[800],
+                                labelText: 'Select Vendor',
+                                labelStyle:
+                                    const TextStyle(color: Colors.white),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              dropdownColor: Colors.grey[850],
+                              icon: const Icon(Icons.arrow_drop_down,
+                                  color: Colors.white),
+                              items: vendorList
+                                  .where((vendor) =>
+                                      vendor['hazard_commercials'] != null &&
+                                      (vendor['hazard_commercials'] as List)
+                                          .isNotEmpty)
+                                  .map((vendor) {
+                                String vendorId = vendor['vendor_id'];
+                                String vendorName =
+                                    vendor['vendor_name_label'] ?? 'Unknown';
+
+                                return DropdownMenuItem<String>(
+                                  value: vendorId,
+                                  child: Text(
+                                    vendorName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                final vendor = vendorList.firstWhere(
+                                  (v) => v['vendor_id'] == value,
+                                  orElse: () => null,
+                                );
+
+                                if (vendor == null) return;
+
+                                setState(() {
+                                  selectedVendor = value;
+                                  selectedHazard = null;
+                                  hazardName = '';
+                                  vendorName = '';
+                                  showMissingDataDropdown1 = false;
+                                });
+
+                                print("selectedVendor: $selectedVendor");
+                              },
+                            ));
+                      },
                     ),
                   ),
-                  SizedBox(height: 20),
-                  SizedBox(
-                    height: 80,
-                    child: Consumer<SubaccountParameterProvider>(
-                      builder: (context, provider, child) {
-                        final selectedVendorData = vendorList.firstWhere(
-                          (vendor) => vendor['vendor_id'] == selectedVendor,
-                          orElse: () => null,
-                        );
 
-                        final hazardCommercials = selectedVendorData != null
-                            ? (selectedVendorData['hazard_commercials']
-                                as List<dynamic>?)
-                            : null;
+                  const SizedBox(height: 20),
 
-                        // Build the list of hazard values
-                        final hazardValues = hazardCommercials != null
-                            ? hazardCommercials
-                                .map((hazard) =>
-                                    hazard['hazard_name'] as String?)
-                                .where((name) => name != null)
-                                .toSet()
-                                .toList()
-                            : <String>[];
+// Conditional Hazard Dropdown
+                  Consumer<SubaccountParameterProvider>(
+                    builder: (context, provider, child) {
+                      final selectedVendorData = vendorList.firstWhere(
+                        (vendor) => vendor['vendor_id'] == selectedVendor,
+                        orElse: () => null,
+                      );
 
-                        final validSelectedHazard =
-                            hazardValues.contains(selectedHazard)
-                                ? selectedHazard
-                                : null;
+                      final hazardCommercials = selectedVendorData != null
+                          ? (selectedVendorData['hazard_commercials']
+                              as List<dynamic>?)
+                          : null;
 
-                        final uniqueHazardsMap =
-                            <String, Map<String, dynamic>>{};
-                        if (hazardCommercials != null) {
-                          for (final hazard in hazardCommercials) {
-                            final name = hazard['hazard_name'];
-                            if (name != null &&
-                                !uniqueHazardsMap.containsKey(name)) {
-                              uniqueHazardsMap[name] = hazard;
-                            }
-                          }
+                      if (hazardCommercials == null ||
+                          hazardCommercials.isEmpty) {
+                        return const SizedBox(); // Skip showing Event Type dropdown
+                      }
+
+                      // Build unique hazard map
+                      final uniqueHazardsMap = <String, Map<String, dynamic>>{};
+                      for (final hazard in hazardCommercials) {
+                        final name = hazard['hazard_name'];
+                        if (name != null &&
+                            !uniqueHazardsMap.containsKey(name)) {
+                          uniqueHazardsMap[name] = hazard;
                         }
+                      }
 
-                        return DropdownButtonFormField<String>(
+                      // If no valid hazard entries, don't show dropdown
+                      if (uniqueHazardsMap.isEmpty) {
+                        return const SizedBox();
+                      }
+
+                      final hazardValues = uniqueHazardsMap.keys.toList();
+                      final validSelectedHazard =
+                          hazardValues.contains(selectedHazard)
+                              ? selectedHazard
+                              : null;
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        child: DropdownButtonFormField<String>(
                           value: validSelectedHazard,
+                          isExpanded: true,
                           dropdownColor: Colors.grey[850],
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.grey[800],
-                            labelText: 'Select Hazard',
-                            labelStyle: TextStyle(color: Colors.white),
+                            labelText: 'Event Type',
+                            labelStyle: const TextStyle(color: Colors.white),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           icon: const Icon(Icons.arrow_drop_down,
                               color: Colors.white),
-                          items: [
-                            DropdownMenuItem<String>(
-                              value: null,
+                          items: uniqueHazardsMap.entries.map((entry) {
+                            final hazard = entry.value;
+                            return DropdownMenuItem<String>(
+                              value: entry.key,
                               child: Text(
-                                'Select Hazard',
+                                hazard['hazard_name_label'] ?? '',
                                 style: const TextStyle(color: Colors.white),
                               ),
-                            ),
-                            ...uniqueHazardsMap.entries.map((entry) {
-                              final hazard = entry.value;
-                              return DropdownMenuItem<String>(
-                                value: entry.key, // hazard_name
-                                child: Text(
-                                  hazard['hazard_name_label'] ?? '',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              );
-                            }).toList(),
-                          ],
+                            );
+                          }).toList(),
                           onChanged: (value) {
                             setState(() {
                               selectedHazard = value;
                               showMissingDataDropdown1 = false;
-                              vendorName = selectedVendorData != null
-                                  ? selectedVendorData['vendor_name_label'] ??
-                                      'Unknown'
-                                  : 'Unknown';
+                              vendorName =
+                                  selectedVendorData?['vendor_name_label'] ??
+                                      '';
                               hazardName = value != null
                                   ? (uniqueHazardsMap[value]
                                           ?['hazard_name_label'] ??
@@ -771,10 +831,60 @@ class _PricingListScreenState extends State<PricingListScreen>
                                   : '';
                             });
                           },
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
+
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  //   child: LayoutBuilder(
+                  //     builder: (context, constraints) {
+                  //       return ConstrainedBox(
+                  //         constraints: BoxConstraints(
+                  //           minWidth: 0,
+                  //           maxWidth: constraints.maxWidth,
+                  //         ),
+                  //         child: DropdownButtonFormField<String>(
+                  //           value: selectedVendor,
+                  //           isExpanded: true,
+                  //           decoration: InputDecoration(
+                  //             filled: true,
+                  //             fillColor: Colors.grey[800],
+                  //             labelText: 'Select Vendor',
+                  //             labelStyle: TextStyle(color: Colors.white),
+                  //             border: OutlineInputBorder(
+                  //               borderRadius: BorderRadius.circular(8),
+                  //             ),
+                  //           ),
+                  //           dropdownColor: Colors.grey[850],
+                  //           icon: const Icon(Icons.arrow_drop_down,
+                  //               color: Colors.white),
+                  //           items: vendorList.map((vendor) {
+                  //             String vendorId = vendor['vendor_id'];
+                  //             String vendorName =
+                  //                 vendor['vendor_name_label'] ?? 'Unknown';
+                  //             return DropdownMenuItem<String>(
+                  //               value: vendorId,
+                  //               child: Text(
+                  //                 vendorName,
+                  //                 overflow: TextOverflow.ellipsis,
+                  //               ),
+                  //             );
+                  //           }).toList(),
+                  //           onChanged: (value) {
+                  //             setState(() {
+                  //               selectedVendor = value;
+                  //             });
+                  //             print(
+                  //                 "selectedVendor" + selectedVendor.toString());
+                  //           },
+                  //         ),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
+                  // SizedBox(height: 20),
                   // SizedBox(
                   //   height: 80,
                   //   child: Consumer<SubaccountParameterProvider>(
@@ -804,54 +914,152 @@ class _PricingListScreenState extends State<PricingListScreen>
                   //               ? selectedHazard
                   //               : null;
                   //
+                  //       final uniqueHazardsMap =
+                  //           <String, Map<String, dynamic>>{};
+                  //       if (hazardCommercials != null) {
+                  //         for (final hazard in hazardCommercials) {
+                  //           final name = hazard['hazard_name'];
+                  //           if (name != null &&
+                  //               !uniqueHazardsMap.containsKey(name)) {
+                  //             uniqueHazardsMap[name] = hazard;
+                  //           }
+                  //         }
+                  //       }
+                  //
+                  //       return DropdownButtonFormField<String>(
+                  //         value: validSelectedHazard,
+                  //         dropdownColor: Colors.grey[850],
+                  //         decoration: InputDecoration(
+                  //           filled: true,
+                  //           fillColor: Colors.grey[800],
+                  //           labelText: 'Event Type',
+                  //           labelStyle: TextStyle(color: Colors.white),
+                  //           border: OutlineInputBorder(
+                  //             borderRadius: BorderRadius.circular(8),
+                  //           ),
+                  //         ),
+                  //         icon: const Icon(Icons.arrow_drop_down,
+                  //             color: Colors.white),
+                  //         items: uniqueHazardsMap.entries.map((entry) {
+                  //           final hazard = entry.value;
+                  //           return DropdownMenuItem<String>(
+                  //             value: entry.key,
+                  //             child: Text(
+                  //               hazard['hazard_name_label'] ?? '',
+                  //               style: const TextStyle(color: Colors.white),
+                  //             ),
+                  //           );
+                  //         }).toList(),
+                  //         onChanged: (value) {
+                  //           setState(() {
+                  //             selectedHazard = value;
+                  //             showMissingDataDropdown1 = false;
+                  //             vendorName = selectedVendorData != null
+                  //                 ? selectedVendorData['vendor_name_label'] ??
+                  //                     'Unknown'
+                  //                 : 'Unknown';
+                  //             hazardName = value != null
+                  //                 ? (uniqueHazardsMap[value]
+                  //                         ?['hazard_name_label'] ??
+                  //                     value)
+                  //                 : '';
+                  //           });
+                  //         },
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
+
+                  // SizedBox(
+                  //   height: 80,
+                  //   child: Consumer<SubaccountParameterProvider>(
+                  //     builder: (context, provider, child) {
+                  //       final selectedVendorData = vendorList.firstWhere(
+                  //         (vendor) => vendor['vendor_id'] == selectedVendor,
+                  //         orElse: () => null,
+                  //       );
+                  //
+                  //       final hazardCommercials = selectedVendorData != null
+                  //           ? (selectedVendorData['hazard_commercials']
+                  //               as List<dynamic>?)
+                  //           : null;
+                  //
+                  //       // Build the list of hazard values
+                  //       final hazardValues = hazardCommercials != null
+                  //           ? hazardCommercials
+                  //               .map((hazard) =>
+                  //                   hazard['hazard_name'] as String?)
+                  //               .where((name) => name != null)
+                  //               .toSet()
+                  //               .toList()
+                  //           : <String>[];
+                  //
+                  //       final validSelectedHazard =
+                  //           hazardValues.contains(selectedHazard)
+                  //               ? selectedHazard
+                  //               : null;
                   //
                   //       final uniqueHazardsMap =
                   //           <String, Map<String, dynamic>>{};
-                  //       for (final hazard in hazardCommercials!) {
-                  //         final name = hazard['hazard_name'];
-                  //         if (name != null &&
-                  //             !uniqueHazardsMap.containsKey(name)) {
-                  //           uniqueHazardsMap[name] = hazard;
+                  //       if (hazardCommercials != null) {
+                  //         for (final hazard in hazardCommercials) {
+                  //           final name = hazard['hazard_name'];
+                  //           if (name != null &&
+                  //               !uniqueHazardsMap.containsKey(name)) {
+                  //             uniqueHazardsMap[name] = hazard;
+                  //           }
                   //         }
                   //       }
+                  //
                   //       return DropdownButtonFormField<String>(
-                  //           value: validSelectedHazard,
-                  //           dropdownColor: Colors.grey[850],
-                  //           decoration: InputDecoration(
-                  //             filled: true,
-                  //             fillColor: Colors.grey[800],
-                  //             labelText: 'Select Hazard',
-                  //             labelStyle: TextStyle(color: Colors.white),
-                  //             border: OutlineInputBorder(
-                  //               borderRadius: BorderRadius.circular(8),
+                  //         value: validSelectedHazard,
+                  //         dropdownColor: Colors.grey[850],
+                  //         decoration: InputDecoration(
+                  //           filled: true,
+                  //           fillColor: Colors.grey[800],
+                  //           labelText: 'Event Type',
+                  //           labelStyle: TextStyle(color: Colors.white),
+                  //           border: OutlineInputBorder(
+                  //             borderRadius: BorderRadius.circular(8),
+                  //           ),
+                  //         ),
+                  //         icon: const Icon(Icons.arrow_drop_down,
+                  //             color: Colors.white),
+                  //         items: [
+                  //           DropdownMenuItem<String>(
+                  //             value: null,
+                  //             child: Text(
+                  //               'Select Hazard',
+                  //               style: const TextStyle(color: Colors.white),
                   //             ),
                   //           ),
-                  //           icon: const Icon(Icons.arrow_drop_down,
-                  //               color: Colors.white),
-                  //           items: uniqueHazardsMap.entries.map((entry) {
+                  //           ...uniqueHazardsMap.entries.map((entry) {
                   //             final hazard = entry.value;
                   //             return DropdownMenuItem<String>(
-                  //               value: entry.key, // hazard_name
+                  //               value: entry.key,
                   //               child: Text(
-                  //                 hazard['hazard_name_label'] ?? entry.key,
+                  //                 hazard['hazard_name_label'] ?? '',
                   //                 style: const TextStyle(color: Colors.white),
                   //               ),
                   //             );
                   //           }).toList(),
-                  //           onChanged: (value) {
-                  //             setState(() {
-                  //               selectedHazard = value;
-                  //               showMissingDataDropdown1 = false;
-                  //               vendorName = selectedVendorData != null
-                  //                   ? selectedVendorData['vendor_name_label'] ??
-                  //                       'Unknown'
-                  //                   : 'Unknown';
-                  //               hazardName = uniqueHazardsMap[value]
-                  //                       ?['hazard_name_label'] ??
-                  //                   value ??
-                  //                   'Unknown';
-                  //             });
+                  //         ],
+                  //         onChanged: (value) {
+                  //           setState(() {
+                  //             selectedHazard = value;
+                  //             showMissingDataDropdown1 = false;
+                  //             vendorName = selectedVendorData != null
+                  //                 ? selectedVendorData['vendor_name_label'] ??
+                  //                     'Unknown'
+                  //                 : 'Unknown';
+                  //             hazardName = value != null
+                  //                 ? (uniqueHazardsMap[value]
+                  //                         ?['hazard_name_label'] ??
+                  //                     value)
+                  //                 : '';
                   //           });
+                  //         },
+                  //       );
                   //     },
                   //   ),
                   // ),

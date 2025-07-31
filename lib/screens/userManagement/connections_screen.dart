@@ -1,29 +1,10 @@
-import 'dart:async';
-
-// import 'package:country_list_picker/country_list_picker.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphere/design_system/components/custom_button.dart';
+import '../../utils/global_imports.dart';
 import 'package:RiskSphere/providers/connections_provider.dart';
-import 'package:provider/provider.dart';
-
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/rating_bar.dart';
-import '../../design_system/components/roles_bottom_sheet.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import '../../providers/role_provider.dart';
-import '../../providers/theme_provider.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
-
-import '../../service/language_service.dart';
 
 class ConnectionsScreen extends StatefulWidget {
   final String userId;
@@ -2135,7 +2116,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           ],
         ),
         SizedBox(height: CustomSpacing.two),
-
         Expanded(
           child: Consumer<ConnectionsProvider>(
               builder: (context, connectionsProvider, child) {
@@ -2143,7 +2123,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
               onRefresh: () async {
                 // Call API to reload data
                 Provider.of<ConnectionsProvider>(context, listen: false)
-                    .getAllConnections(context, widget.userId); //getAllNetworkingUsers(context, widget.userId);
+                    .getAllConnections(
+                        context,
+                        widget
+                            .userId); //getAllNetworkingUsers(context, widget.userId);
               },
               child: connectionsProvider.isNetworkLoading
                   ? Column(
@@ -2174,7 +2157,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       : ListView.builder(
                           itemCount: connectionsProvider.networkingUsers.length,
                           itemBuilder: (context, index) {
-                            return _networkingCardUI(connectionsProvider, index);
+                            return _networkingCardUI(
+                                connectionsProvider, index);
                           },
                         ),
             );
@@ -2491,7 +2475,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               _messageController.clear();
                             }
                           });
-
                         },
                         type: ButtonType.filled,
                         child: Text(

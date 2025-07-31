@@ -75,6 +75,19 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<Map<String, dynamic>> deleteUser() async {
+    var headers = await CommonHeaders.createHeaders();
+    log("DELETE URL: $url");
+
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: headers,
+    );
+
+    log("Response: ${response.body}");
+    return _handleResponse(response);
+  }
+
   /// Sends a PATCH request to the specified [url] with the provided [body].
   /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> patch(Map<String, dynamic> body) async {
@@ -100,7 +113,7 @@ class ApiService {
     print("URL: $url");
 
     var request =
-    http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
+        http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_FILE));
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
     // Add headers to the request
     headers.forEach((key, value) {
@@ -121,19 +134,19 @@ class ApiService {
   /// Sends a MultiPart POST request to the specified [url] with the provided SOV.
   /// Returns a Future containing the decoded JSON response.
   /// The [body] should contain the file in the 'file' key and other form data in the 'data' key.
-  Future<Map<String, dynamic>> postMultiPartSOVAccounts(File filePath, String accountId, String name) async {
+  Future<Map<String, dynamic>> postMultiPartSOVAccounts(
+      File filePath, String accountId, String name) async {
     await FirebaseAuth.instance.currentUser?.reload();
-    IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+    IdTokenResult? token =
+        await FirebaseAuth.instance.currentUser?.getIdTokenResult();
     var headers = {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
-    request.fields.addAll({
-      'sov_name': name,
-      'account_id': accountId,
-      'device': 'mobile'
-    });
+    var request = http.MultipartRequest(
+        'POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
+    request.fields.addAll(
+        {'sov_name': name, 'account_id': accountId, 'device': 'mobile'});
     print("Request Fields: ${request.fields}");
     print("Request Files path: ${filePath.path}");
     request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
@@ -146,29 +159,34 @@ class ApiService {
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
+      return _handleResponse(
+          http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
+      throw BackendException(
+          responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
-  Future<Map<String, dynamic>> postMultiPartSOVSubAccounts(File filePath, String accountId, String subAccountId, String name) async {
+  Future<Map<String, dynamic>> postMultiPartSOVSubAccounts(
+      File filePath, String accountId, String subAccountId, String name) async {
     await FirebaseAuth.instance.currentUser?.reload();
-    IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+    IdTokenResult? token =
+        await FirebaseAuth.instance.currentUser?.getIdTokenResult();
     var headers = {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
+    var request = http.MultipartRequest(
+        'POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
     var body = {
-    //  'data': {
-        'sov_name': name,
-        'account_id': accountId,
-        'sub_account_id': subAccountId,
-        'device': 'mobile'
-   //   }
+      //  'data': {
+      'sov_name': name,
+      'account_id': accountId,
+      'sub_account_id': subAccountId,
+      'device': 'mobile'
+      //   }
     };
     request.fields.addAll(body);
     print("Request Fields: ${request.fields}");
@@ -185,24 +203,34 @@ class ApiService {
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
+      return _handleResponse(
+          http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
+      throw BackendException(
+          responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
-  Future<Map<String, dynamic>> postMultiPartSOVPartial(File filePath, String accountId, String subAccountId, String sovId, String tags, String sovName) async {
+  Future<Map<String, dynamic>> postMultiPartSOVPartial(
+      File filePath,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String tags,
+      String sovName) async {
     await FirebaseAuth.instance.currentUser?.reload();
-    IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+    IdTokenResult? token =
+        await FirebaseAuth.instance.currentUser?.getIdTokenResult();
     var headers = {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_SOV_LOCATIONS));
+    var request = http.MultipartRequest(
+        'POST', Uri.parse(AppConstant.UPLOAD_SOV_LOCATIONS));
     var body;
-    if(sovName.isNotEmpty) {
+    if (sovName.isNotEmpty) {
       body = {
         //  'data': {
         'account_id': accountId,
@@ -235,7 +263,6 @@ class ApiService {
     log("Request headers: ${request.headers}");
     print('url: ${request.url}');
 
-
     http.StreamedResponse streamedResponse = await request.send();
 
     print("Response Code: ${streamedResponse.statusCode}");
@@ -243,28 +270,39 @@ class ApiService {
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
+      return _handleResponse(
+          http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
+      throw BackendException(
+          responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
-  Future<Map<String, dynamic>> postMultiPartLocationProfile(File filePath, String accountId, String subAccountId, String sovId, String locationId, String name) async {
+  Future<Map<String, dynamic>> postMultiPartLocationProfile(
+      File filePath,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String locationId,
+      String name) async {
     await FirebaseAuth.instance.currentUser?.reload();
-    IdTokenResult? token = await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+    IdTokenResult? token =
+        await FirebaseAuth.instance.currentUser?.getIdTokenResult();
     var headers = {
       'Authorization': 'Bearer ${token?.token ?? ""}',
       'Content-Type': 'multipart/form-data',
     };
-    var request = http.MultipartRequest('POST', Uri.parse(AppConstant.UPLOAD_IMAGES_NEW + "/$locationId"));
+    var request = http.MultipartRequest(
+        'POST', Uri.parse(AppConstant.UPLOAD_IMAGES_NEW + "/$locationId"));
     request.fields.addAll({
       'location_id': locationId,
     });
     print("Request Fields: ${request.fields}");
     print("Request Files path: ${filePath.path}");
-    request.files.add(await http.MultipartFile.fromPath('file_${DateTime.now().millisecondsSinceEpoch}', filePath.path));
+    request.files.add(await http.MultipartFile.fromPath(
+        'file_${DateTime.now().millisecondsSinceEpoch}', filePath.path));
     print("Request Files: ${request.files}");
     request.headers.addAll(headers);
     log("Request headers: ${request.headers}");
@@ -274,15 +312,18 @@ class ApiService {
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
-      return _handleResponse(http.Response(responseData, streamedResponse.statusCode));
+      return _handleResponse(
+          http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
-      print("Reason"+responseData);
-      throw BackendException(responseData ?? "An error occurred", streamedResponse.statusCode);
+      print("Reason" + responseData);
+      throw BackendException(
+          responseData ?? "An error occurred", streamedResponse.statusCode);
     }
   }
 
-  Future<http.StreamedResponse> downloadFile(String url, Map<String, dynamic> body) async {
+  Future<http.StreamedResponse> downloadFile(
+      String url, Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createDownloadHeaders();
     log("Headers: $headers");
     var request = http.Request('POST', Uri.parse(url));
@@ -294,7 +335,8 @@ class ApiService {
   /// Handles the HTTP response by checking the status code.
   /// If the status code is in the success range (200-299), decodes and returns the response body.
   /// Otherwise, throws a BackendException with the error message.
-  Future<Map<String, dynamic>> _handleResponse(http.Response response, [bool? isList]) async {
+  Future<Map<String, dynamic>> _handleResponse(http.Response response,
+      [bool? isList]) async {
     final statusCode = response.statusCode;
     final body = response.body;
     log("Status Code: $statusCode");
@@ -321,7 +363,6 @@ class ApiService {
         throw BackendException(body, statusCode);
       }
       throw BackendException(_extractErrorMessage(body), statusCode);
-
     }
   }
 
@@ -340,8 +381,6 @@ class ApiService {
     }
     return 'Something went wrong.';
   }
-
-
 }
 
 /// Exception thrown when an error occurs during backend communication.

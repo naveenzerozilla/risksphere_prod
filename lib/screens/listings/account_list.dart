@@ -1,56 +1,8 @@
-import 'dart:async';
-import 'dart:math';
-import 'dart:io';
-
-// import 'package:country_list_picker/country_list_picker.dart';
-import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:RiskSphere/design_system/components/custom_button.dart';
-import 'package:RiskSphere/design_system/components/roles_dropdown.dart';
-import 'package:RiskSphere/models/account_list_model.dart';
-import 'package:RiskSphere/models/transfer_autocomplete_model.dart';
-import 'package:RiskSphere/models/upload_sov_model.dart';
-import 'package:RiskSphere/providers/account_list_provider.dart';
-import 'package:RiskSphere/providers/connections_provider.dart';
-import 'package:RiskSphere/providers/upload_sov_provider.dart';
-import 'package:RiskSphere/screens/listings/location_list.dart';
-import 'package:RiskSphere/screens/listings/location_profile.dart';
-import 'package:RiskSphere/screens/listings/sub_account_list.dart';
 import 'package:RiskSphere/screens/listings/widgets/auto_complete_options.dart';
-import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
-import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/components/custom_gradient_circular_progress_bar.dart';
-import '../../design_system/components/rating_bar.dart';
-import '../../design_system/components/roles_bottom_sheet.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../design_system/repo/constants.dart';
-import '../../models/initial_data_model.dart';
 import '../../providers/drawer_selection_provider.dart';
-import '../../providers/role_provider.dart';
-import '../../providers/theme_provider.dart';
-import 'package:RiskSphere/models/role_model.dart' as roleModel;
-
-import '../../providers/user_profile_provider.dart';
-import '../../service/api_service.dart';
-import '../../service/language_service.dart';
-import '../../service/shared_preference_service.dart';
-import '../../utils/api_constants.dart';
+import '../../utils/global_imports.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:RiskSphere/models/account_list_model.dart';
 
 class AccountListScreen extends StatefulWidget {
   static const String routeName = '/accountList';
@@ -177,19 +129,6 @@ class _AccountListScreenState extends State<AccountListScreen>
   GlobalKey keyFeature3 = GlobalKey();
   List<TargetFocus> targets = [];
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   var userProfileProvider =
-  //       Provider.of<UserProfileProvider>(context, listen: false);
-  //   final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-  //   int tabCount = (trialStatus.isEmpty) ? 4 : 3;
-  //   _tabController = TabController(length: tabCount, vsync: this);
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _getData();
-  //   });
-  //   _tryShowTutorialOnce();
-  // }
   @override
   void initState() {
     super.initState();
@@ -1128,24 +1067,18 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     type: ButtonType.text,
                                                   ),
                                                 ),
-                                                accountListProvider
-                                                        .isDuplicateLoading
-                                                    ? const Expanded(
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            SizedBox(
-                                                                width: 25,
-                                                                height: 25,
-                                                                child:
-                                                                    CircularProgressIndicator()),
-                                                          ],
-                                                        ),
-                                                      )
-                                                    : Expanded(
-                                                        child: CustomButton(
+                                                Expanded(child: Consumer<
+                                                        AccountListProvider>(
+                                                    builder: (context,
+                                                        accountListProvider,
+                                                        child) {
+                                                  return accountListProvider
+                                                          .isDuplicateLoading
+                                                      ? Center(
+                                                          child:
+                                                              CircularProgressIndicator())
+                                                      : Expanded(
+                                                          child: CustomButton(
                                                           onPressed: () async {
                                                             // Duplicate
                                                             await accountListProvider
@@ -1168,8 +1101,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           ),
                                                           type: ButtonType
                                                               .elevated,
-                                                        ),
-                                                      ),
+                                                        ));
+                                                }))
                                               ],
                                             ),
                                           ],
@@ -1706,7 +1639,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                 LanguageService.getTranslated(
                                                     context,
                                                     "account_list_app_comment_empty_text_error"),
-                                                style: typography.Body1,
                                               )));
                                               return;
                                             }

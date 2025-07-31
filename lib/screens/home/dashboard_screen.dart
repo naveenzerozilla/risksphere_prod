@@ -1,38 +1,9 @@
-import 'dart:convert';
+import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphere/design_system/components/custom_button.dart';
-import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
-import 'package:RiskSphere/models/dashboard_model.dart';
-import 'package:RiskSphere/providers/drawer_selection_provider.dart';
-import 'package:RiskSphere/providers/theme_provider.dart';
-import 'package:RiskSphere/providers/user_profile_provider.dart';
-import 'package:RiskSphere/screens/home/widgets/subscription_cards.dart';
-import 'package:RiskSphere/screens/listings/widgets/maintenance_widget.dart';
-import 'package:mat_month_picker_dialog/mat_month_picker_dialog.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/expandable_card_container.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../providers/configuration_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../providers/news_feed_provider.dart';
-import '../../service/language_service.dart';
-import '../../service/shared_preference_service.dart';
-import '../listings/user_guide.dart';
-import '../listings/widgets/message_card.dart';
-import '../payments/pricing_list.dart';
-import '../payments/transaction_summary.dart';
+import '../payments/purchase_license.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
@@ -438,7 +409,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Navigator.of(context).push(
                                               MaterialPageRoute(
                                                   builder: (_) =>
-                                                      PricingListScreen()));
+                                                      PurchaseLicensePage()));
                                         },
                                     ),
                                   ],
@@ -711,37 +682,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
+
+                    // Text(isPgAdmin.toString()),
+                    // Text(isAdmin.toString()),
+                    // Text(isSuperAdmin.toString()),
                     SizedBox(
                       height: CustomSpacing.one,
                     ),
-                    Consumer2<UserProfileProvider, ConfigurationProvider>(
-                      builder: (context, userProfileProvider, provider, child) {
-                        if (provider.isLoading) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 50),
-                            alignment: Alignment.center,
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.height / 2,
-                            child: const CircularProgressIndicator(),
-                          );
-                        }
+                    // (userProfileProvider.userData.role != null &&
+                    //         userProfileProvider.userData.role!.isNotEmpty &&
+                    //         userProfileProvider.userData.role![0].name
+                    //                 .toString() ==
+                    //             "Admin" &&
+                    //         (isSuperAdmin || isPgAdmin || isAdmin))
+          showAllUsers
+          ? SizedBox()
+              :
+                        Consumer2<UserProfileProvider, ConfigurationProvider>(
+                            builder: (context, userProfileProvider, provider,
+                                child) {
+                              if (provider.isLoading) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 50),
+                                  alignment: Alignment.center,
+                                  width: MediaQuery.of(context).size.width,
+                                  height:
+                                      MediaQuery.of(context).size.height / 2,
+                                  child: const CircularProgressIndicator(),
+                                );
+                              }
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "My Subscriptions",
-                              style: typography.H5_Regular,
-                            ),
-                            SizedBox(
-                              height: CustomSpacing.two,
-                            ),
-                            _subscriptionBody(),
-                            // Show content once loading is complete
-                          ],
-                        );
-                      },
-                    ),
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "My Subscriptions",
+                                    style: typography.H5_Regular,
+                                  ),
+                                  SizedBox(
+                                    height: CustomSpacing.two,
+                                  ),
+                                  _subscriptionBody(),
+                                  // Show content once loading is complete
+                                ],
+                              );
+                            },
+                          ),
                     SizedBox(height: CustomSpacing.one),
                     !showCompanyOnboardingStats
                         ? SizedBox()
@@ -841,8 +828,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               userProfile.trialInfo['status'] ?? '';
 
                           return SubscriptionCard(
-                            title: '${data['hazardLabel']} (${data['vendorName']})',
-                            description: data['description'] ?? "Basic Subscription plan",
+                            title:
+                                '${data['hazardLabel']} (${data['vendorName']})',
+                            description: data['description'] ??
+                                "Basic Subscription plan",
                             iconPath: data['vendorImage'],
                             isSubscribed: data['isSubscribed'],
                             onSubscribe: () async {
@@ -850,7 +839,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 setState(() => loadingSubscriptions
                                     .add(key)); // Show loader
                                 Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (_) => PricingListScreen()));
+                                    builder: (_) => PurchaseLicensePage()));
                                 // await _updateSubscription(
                                 //     key,
                                 //     data['isSubscribed'],
@@ -956,8 +945,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    SizedBox(width: CustomSpacing.two),
-                    SizedBox(height: CustomSpacing.two),
+                    SizedBox(height: CustomSpacing.four),
                     Text(
                       title,
                       style: typography.Body1,

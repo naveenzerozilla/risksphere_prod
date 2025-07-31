@@ -1,51 +1,9 @@
-import 'dart:convert';
-import 'package:RiskSphere/providers/invoice_provider.dart';
-import 'package:RiskSphere/providers/payment_provider.dart';
-import 'package:RiskSphere/providers/theme_provider.dart';
-import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
-import 'package:RiskSphere/utils/backgroundhandler.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'design_system/app_themes.dart';
-import 'package:RiskSphere/providers/connectivity_provider.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
-import 'package:RiskSphere/firebase_options.dart';
-import 'package:RiskSphere/providers/configuration_provider.dart';
-import 'package:RiskSphere/providers/drawer_selection_provider.dart';
-import 'package:RiskSphere/providers/job_monitoring_provier.dart';
-import 'package:RiskSphere/providers/my_location_list_provider.dart';
-import 'package:RiskSphere/providers/news_feed_provider.dart';
-import 'package:RiskSphere/screens/event/notification_map_screen.dart';
-import 'package:RiskSphere/utils/api_constants.dart';
+import '../../utils/global_imports.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'design_system/app_themes.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:RiskSphere/providers/account_list_provider.dart';
-import 'package:RiskSphere/providers/auth_provider.dart';
-import 'package:RiskSphere/providers/company_provider.dart';
-import 'package:RiskSphere/providers/connections_provider.dart';
-import 'package:RiskSphere/providers/corporate_user_provider.dart';
-import 'package:RiskSphere/providers/dashboard_provider.dart';
-import 'package:RiskSphere/providers/email_provider.dart';
-import 'package:RiskSphere/providers/employee_provider.dart';
-import 'package:RiskSphere/providers/feature_provider.dart';
-import 'package:RiskSphere/providers/location_list_provider.dart';
-import 'package:RiskSphere/providers/location_profile_provider.dart';
-import 'package:RiskSphere/providers/non_corporate_user_Provider.dart';
-import 'package:RiskSphere/providers/role_provider.dart';
-import 'package:RiskSphere/providers/sov_list_provider.dart';
-import 'package:RiskSphere/providers/sub_account_list_provider.dart';
-import 'package:RiskSphere/providers/upload_sov_provider.dart';
-import 'package:RiskSphere/providers/user_profile_provider.dart';
-import 'package:RiskSphere/providers/verification_provider.dart';
-import 'package:RiskSphere/service/shared_preference_service.dart';
-import 'package:provider/provider.dart';
-import 'design_system/primitives/app_colors.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -94,60 +52,6 @@ void main() async {
     ),
   );
 }
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await EasyLocalization.ensureInitialized();
-//   try {
-//     await Firebase.initializeApp(
-//       options: DefaultFirebaseOptions.currentPlatform,
-//     );
-//   } catch (e) {
-//     debugPrint('Firebase initialization error: $e');
-//   }
-//
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-//
-//   try {
-//     Stripe.publishableKey =
-//         'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
-//     await Stripe.instance.applySettings();
-//   } catch (e, stackTrace) {
-//     debugPrint('Stripe initialization failed: $e');
-//     debugPrint('Stack trace: $stackTrace');
-//   }
-//
-//   initializeNotifications();
-//
-//   runApp(
-//     EasyLocalization(
-//       supportedLocales: const [Locale('en')],
-//       path: 'assets/translations',
-//       fallbackLocale: const Locale('en'),
-//       child: AppLifecycleManager(),
-//     ),
-//   );
-// }
-
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await EasyLocalization.ensureInitialized();
-//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-//
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-//   Stripe.publishableKey =
-//       'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
-//   await Stripe.instance.applySettings();
-//   initializeNotifications();
-//   runApp(
-//     EasyLocalization(
-//       supportedLocales: const [Locale('en')],
-//       path: 'assets/translations',
-//       fallbackLocale: const Locale('en'),
-//       child: AppLifecycleManager(),
-//       // child: MyApp(),
-//     ),
-//   );
-// }
 
 class AppLifecycleManager extends StatefulWidget {
   @override
@@ -280,7 +184,6 @@ Future<void> initializeNotifications() async {
     onDidReceiveNotificationResponse: (response) {
       if (response.payload != null) {
         debugPrint('Notification payload: ${response.payload}');
-        // Navigate or handle logic if needed
       }
     },
   );
@@ -369,9 +272,6 @@ Future<void> initFCM(String userId) async {
         fontSize: 16.0,
         timeInSecForIosWeb: 1, // works on some platforms
       );
-
-      // If you want notification instead of toast, comment the above and use this
-      // showNotification(notification.title, notification.body, ...);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {

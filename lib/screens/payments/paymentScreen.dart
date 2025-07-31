@@ -1,7 +1,6 @@
 import 'package:RiskSphere/screens/payments/paymentScreen1.dart';
-import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
+import '../../utils/global_imports.dart';
 class Paymentscreen extends StatefulWidget {
   final String paymentUrl;
   final String paymentSuccessUrl;

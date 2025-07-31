@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
 

@@ -24,8 +24,8 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
   DateTime? _startDate;
   DateTime? _endDate;
 
-  String? _editingId;  // Null if creating a new maintenance period.
-  bool _isEditing = false;  // To toggle between create and edit modes.
+  String? _editingId; // Null if creating a new maintenance period.
+  bool _isEditing = false; // To toggle between create and edit modes.
 
   @override
   void initState() {
@@ -154,44 +154,54 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
                   Row(
                     mainAxisSize: MainAxisSize.max,
                     children: [
-
-
                       Expanded(
                         child: jobMonitoringProvider.isAddLoading
                             ? const Center(child: CircularProgressIndicator())
-                            :   CustomButton(
-                          type: ButtonType.elevated,
-                          onPressed: _isButtonEnabled() ? (_isEditing ? _updateMaintenance : _scheduleMaintenance) : null,
-                          child: Text(_isEditing ? 'Update' : 'Schedule Maintenance',
-                              style: CustomTypography(context).ButtonLarge, textAlign: TextAlign.center,),
-                        ),
-
+                            : CustomButton(
+                                type: ButtonType.elevated,
+                                onPressed: _isButtonEnabled()
+                                    ? (_isEditing
+                                        ? _updateMaintenance
+                                        : _scheduleMaintenance)
+                                    : null,
+                                child: Text(
+                                  _isEditing
+                                      ? 'Update'
+                                      : 'Schedule Maintenance',
+                                  style: CustomTypography(context).ButtonLarge,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
                       ),
                     ],
                   ),
                   if (_isEditing)
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: jobMonitoringProvider.isAddLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            :   CustomButton(
-                          type: ButtonType.text,
-                          onPressed: () {
-                            setState(() {
-                              _startDate = null;
-                              _endDate = null;
-                              _isEditing = false;
-                              _editingId = null;
-                            });
-                          },
-                          child: Text('Clear',
-                              style: CustomTypography(context).ButtonLarge, textAlign: TextAlign.center,),
+                    Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Expanded(
+                          child: jobMonitoringProvider.isAddLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : CustomButton(
+                                  type: ButtonType.text,
+                                  onPressed: () {
+                                    setState(() {
+                                      _startDate = null;
+                                      _endDate = null;
+                                      _isEditing = false;
+                                      _editingId = null;
+                                    });
+                                  },
+                                  child: Text(
+                                    'Clear',
+                                    style:
+                                        CustomTypography(context).ButtonLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               );
             },
@@ -229,27 +239,36 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
   }
 
   Future<void> _selectStartDate(BuildContext context) async {
-    DateTime? selectedDate = await showDatePicker(
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: _startDate ?? now,
+      firstDate: now,
       lastDate: DateTime(2100),
     );
 
-    if (selectedDate != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.now(),
+        initialTime: TimeOfDay.fromDateTime(_startDate ?? now),
       );
 
-      if (selectedTime != null) {
-        DateTime selectedDateTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          selectedTime.hour,
-          selectedTime.minute,
+      if (pickedTime != null) {
+        final selectedDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
         );
+
+        if (selectedDateTime.isBefore(now)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Start date must be in the future')),
+          );
+          return;
+        }
+
         setState(() {
           _startDate = selectedDateTime;
         });
@@ -258,29 +277,52 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
   }
 
   Future<void> _selectEndDate(BuildContext context) async {
-    if (_startDate == null) return;
 
-    DateTime? selectedDate = await showDatePicker(
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a start date first')),
+      );
+      return;
+    }
+
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _startDate!,
+      initialDate: _startDate!.add(const Duration(minutes: 1)), // default to after start
       firstDate: _startDate!,
       lastDate: DateTime(2100),
     );
 
-    if (selectedDate != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+    if (pickedDate != null) {
+      // Step 3: Show time picker safely
+      final initialTime = TimeOfDay(
+        hour: _startDate?.hour ?? TimeOfDay.now().hour,
+        minute: _startDate?.minute ?? TimeOfDay.now().minute,
       );
 
-      if (selectedTime != null) {
-        DateTime selectedDateTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          selectedTime.hour,
-          selectedTime.minute,
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: initialTime,
+      );
+
+      if (pickedTime != null) {
+        // Step 4: Construct end DateTime
+        final selectedDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
         );
+
+        // Step 5: Ensure end is after start
+        if (_startDate != null && selectedDateTime.isBefore(_startDate!)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('End date must be after start date')),
+          );
+          return;
+        }
+
+        // Step 6: Set end date
         setState(() {
           _endDate = selectedDateTime;
         });
@@ -288,13 +330,16 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
     }
   }
 
+
   String _formatDate(DateTime date) {
     final format = DateFormat('dd/MM/yyyy hh:mm a');
     return format.format(date);
   }
 
   bool _isButtonEnabled() {
-    return _startDate != null && _endDate != null;
+    return _startDate != null &&
+        _endDate != null &&
+        _endDate!.isAfter(_startDate!);
   }
 
   Future<void> _scheduleMaintenance() async {
@@ -398,74 +443,86 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
                             ),
                             Spacer(),
                             if (period.status != 'completed')
-                            IconButton(
-                              icon: Icon(Icons.edit, color: Colors.grey[600]),
-                              onPressed: () {
-                                // Switch to Plan Maintenance tab and autofill data
-                                setState(() {
-                                  _tabController.index = 0;
-                                  _startDate = period.startTime?.toLocal();
-                                  _endDate = period.endTime?.toLocal();
-                                  _editingId = period.id;
-                                  _isEditing = true;
-                                });
-                              },
-                            ),
-
+                              IconButton(
+                                icon: Icon(Icons.edit, color: Colors.grey[600]),
+                                onPressed: () {
+                                  // Switch to Plan Maintenance tab and autofill data
+                                  setState(() {
+                                    _tabController.index = 0;
+                                    _startDate = period.startTime?.toLocal();
+                                    _endDate = period.endTime?.toLocal();
+                                    _editingId = period.id;
+                                    _isEditing = true;
+                                  });
+                                },
+                              ),
                             if (period.status != 'completed')
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.grey[600]),
-                              onPressed: () async {
-                                // Ask for confirmation before deleting
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text('Delete Maintenance'),
-                                      content: Text(
-                                          'Are you sure you want to delete this maintenance period?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () async {
-                                            Navigator.of(context).pop();
-                                            bool result = await jobMonitoringProvider.deleteMaintainancePeriod(period.id!);
-                                            if (result) {
-                                              Fluttertoast.showToast(
-                                                msg: 'Maintenance deleted successfully.',
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.BOTTOM,
-                                                backgroundColor: Colors.green,
-                                                textColor: Colors.white,
-                                              );
-                                              setState(() {
-                                                jobMonitoringProvider.maintainancePeriods.removeAt(index);  // Remove from the list locally
-                                              });
-                                            } else {
-                                              Fluttertoast.showToast(
-                                                msg: 'Failed to delete maintenance.',
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.BOTTOM,
-                                                backgroundColor: Colors.red,
-                                                textColor: Colors.white,
-                                              );
-                                            }
-                                          },
-                                          child: Text('Delete', style: CustomTypography(context).Body1,),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-
-                              },
-                            ),
-
+                              IconButton(
+                                icon:
+                                    Icon(Icons.delete, color: Colors.grey[600]),
+                                onPressed: () async {
+                                  // Ask for confirmation before deleting
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text('Delete Maintenance'),
+                                        content: Text(
+                                            'Are you sure you want to delete this maintenance period?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              Navigator.of(context).pop();
+                                              bool result =
+                                                  await jobMonitoringProvider
+                                                      .deleteMaintainancePeriod(
+                                                          period.id!);
+                                              if (result) {
+                                                Fluttertoast.showToast(
+                                                  msg:
+                                                      'Maintenance deleted successfully.',
+                                                  toastLength:
+                                                      Toast.LENGTH_SHORT,
+                                                  gravity: ToastGravity.BOTTOM,
+                                                  backgroundColor: Colors.green,
+                                                  textColor: Colors.white,
+                                                );
+                                                setState(() {
+                                                  jobMonitoringProvider
+                                                      .maintainancePeriods
+                                                      .removeAt(
+                                                          index); // Remove from the list locally
+                                                });
+                                              } else {
+                                                Fluttertoast.showToast(
+                                                  msg:
+                                                      'Failed to delete maintenance.',
+                                                  toastLength:
+                                                      Toast.LENGTH_SHORT,
+                                                  gravity: ToastGravity.BOTTOM,
+                                                  backgroundColor: Colors.red,
+                                                  textColor: Colors.white,
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              'Delete',
+                                              style: CustomTypography(context)
+                                                  .Body1,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                           ],
                         ),
                         Row(
@@ -484,7 +541,11 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
                             Spacer(),
                             Chip(
                               label: Text(_getStatus(period.status),
-                                  style: CustomTypography(context).Caption.copyWith(color: _getStatusColor(period.status))),
+                                  style: CustomTypography(context)
+                                      .Caption
+                                      .copyWith(
+                                          color:
+                                              _getStatusColor(period.status))),
                             ),
                           ],
                         ),
@@ -502,7 +563,7 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
 
   Future<void> _updateMaintenance() async {
     var jobMonitoringProvider =
-    Provider.of<JobMonitoringProvider>(context, listen: false);
+        Provider.of<JobMonitoringProvider>(context, listen: false);
     print('Local: ${_startDate!.toIso8601String()}');
     print('Local: ${_endDate!.toIso8601String()}');
     print('UTC: ${_startDate!.toUtc().toIso8601String()}');
@@ -561,5 +622,4 @@ class _MaintainanceBottomSheetState extends State<MaintainanceBottomSheet>
       return Colors.grey;
     }
   }
-
 }

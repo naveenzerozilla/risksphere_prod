@@ -76,10 +76,13 @@ class CorporateProvider with ChangeNotifier {
       notifyListeners();
     });
   }
+
   /// Pagination
   /// Pagination Variables
   int _page = 1;
+
   int get page => _page;
+
   set page(int value) {
     _page = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,7 +91,9 @@ class CorporateProvider with ChangeNotifier {
   }
 
   int _totalPages = 1;
+
   int get totalPages => _totalPages;
+
   set totalPages(int value) {
     _totalPages = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,14 +102,15 @@ class CorporateProvider with ChangeNotifier {
   }
 
   bool _isNextPageLoading = false;
+
   bool get isNextPageLoading => _isNextPageLoading;
+
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
-
 
   CorporateUsers _employees = CorporateUsers();
 
@@ -114,19 +120,18 @@ class CorporateProvider with ChangeNotifier {
 
   UsersCorporate get employeesC => _employeesC;
 
-
   List<Roles>? _roles = [];
-  List<Roles>? get roles => _roles;
 
+  List<Roles>? get roles => _roles;
 
   /// Fetches all employees from the API based on search text and filter criteria.
   Future<List<CorporateUsers>> getCorporateUserList(
-      BuildContext context, {
-        String? companyId,
-        String searchText = "",
-        String roleFilter = "",
-        bool isSearch = false,
-      }) async {
+    BuildContext context, {
+    String? companyId,
+    String searchText = "",
+    String roleFilter = "",
+    bool isSearch = false,
+  }) async {
     try {
       // Handle search and reset pagination if it's a new search
       if (isSearch) {
@@ -170,15 +175,14 @@ class CorporateProvider with ChangeNotifier {
             .toList();
       }
 
-
       // Update pagination
       if (response.containsKey('totalRecords')) {
-        int totalRecords = response['totalRecords'] ?? 0; // Default to 0 if key is missing
+        int totalRecords =
+            response['totalRecords'] ?? 0; // Default to 0 if key is missing
         _totalPages = (totalRecords / 10).ceil(); // Assuming pageSize is 10
       } else {
         _totalPages = 1;
       }
-
 
       // Add employees to the list
       _employeesList?.addAll(employees);
@@ -202,7 +206,6 @@ class CorporateProvider with ChangeNotifier {
     }
   }
 
-
   void handleError(BuildContext context, dynamic e, StackTrace stackTrace) {
     log('Error: $e');
     print('Stack Trace: $stackTrace');
@@ -211,11 +214,9 @@ class CorporateProvider with ChangeNotifier {
     }
   }
 
-
-
   /// Changes status of an employee based on the employee ID and new status.
-  Future<bool> changeCorporateEmployeeStatus(BuildContext context,
-      String employeeId, bool newStatus) async {
+  Future<bool> changeCorporateEmployeeStatus(
+      BuildContext context, String employeeId, bool newStatus) async {
     try {
       // Set loading state to true
       isStatusLoading = true;
@@ -251,55 +252,102 @@ class CorporateProvider with ChangeNotifier {
     }
   }
 
-
-  Future<bool> deleteCompany(BuildContext context,
-      List<String> employeeIds) async {
+  Future<bool> deleteCompany(
+      BuildContext context, List<String> employeeIds) async {
     try {
-      // Set loading state to true
       isDeleteLoading = true;
-      // Use API Service to update company status
-      ApiService apiService = ApiService(AppConstant.DELETE_CORPORATE_EMPLOYEES);
-      print(jsonEncode(employeeIds));
-      print("url: ${AppConstant.DELETE_CORPORATE_EMPLOYEES}");
-      Map<String, dynamic> body = {
-        'data': {
-          'user_id': employeeIds,
-        },
-      };
-      print("Body: $body");
-      // Send a DELETE request to the API
-      Map<String, dynamic> response = await apiService.delete(body);
+
+      // Convert employeeIds list to comma-separated string
+      final ids = employeeIds.join(',');
+
+      // Build the full URL
+      final url = '${AppConstant.DELETE_CORPORATE_EMPLOYEES}$ids';
+      print("DELETE URL: $url");
+
+      // Initialize API service with the final URL
+      ApiService apiService = ApiService(url);
+
+      // Send a DELETE request without body
+      Map<String, dynamic> response = await apiService.deleteUser(); // no body
+
       print("Response: $response");
+
       isDeleteLoading = false;
+
       if (context.mounted) {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if (context.mounted)
+          if (context.mounted) {
             CustomToast.success(context, response['message']);
+          }
         });
       }
+
       return true;
     } on BackendException catch (e, stackTrace) {
-
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: ${e.message}'); // Log the error
-      // Show a generic error message to the user
+      print('Stack Trace: $stackTrace');
+      log('Error: ${e.message}');
       if (context.mounted) CustomToast.error(context, e.toString());
       isDeleteLoading = false;
-      return false; // Return false in case of error
-    }
-    catch (e, stackTrace) {
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error: $e'); // Log the error
-      // Show a generic error message to the user
+      return false;
+    } catch (e, stackTrace) {
+      print('Stack Trace: $stackTrace');
+      log('Error: $e');
       if (context.mounted) CustomToast.error(context, e.toString());
       isDeleteLoading = false;
-      return false; // Return false in case of error
+      return false;
     }
   }
+
+  // Future<bool> deleteCompany(BuildContext context,
+  //     List<String> employeeIds) async {
+  //   try {
+  //     // Set loading state to true
+  //     isDeleteLoading = true;
+  //     // Use API Service to update company status
+  //     ApiService apiService = ApiService('${AppConstant.DELETE_CORPORATE_EMPLOYEES}/$employeeIds');
+  //     print(jsonEncode(employeeIds));
+  //     print("url: ${AppConstant.DELETE_CORPORATE_EMPLOYEES}");
+  //     Map<String, dynamic> body = {
+  //       'data': {
+  //         'user_id': employeeIds,
+  //       },
+  //     };
+  //     print("Body: $body");
+  //     // Send a DELETE request to the API
+  //     Map<String, dynamic> response = await apiService.delete(body);
+  //     print("Response: $response");
+  //     isDeleteLoading = false;
+  //     if (context.mounted) {
+  //       CustomToast.success(context, response['message']);
+  //     } else {
+  //       Future.delayed(Duration(seconds: 1), () {
+  //         if (context.mounted)
+  //           CustomToast.success(context, response['message']);
+  //       });
+  //     }
+  //     return true;
+  //   } on BackendException catch (e, stackTrace) {
+  //
+  //     // Catch any errors that occur during the process
+  //     print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+  //     log('Error: ${e.message}'); // Log the error
+  //     // Show a generic error message to the user
+  //     if (context.mounted) CustomToast.error(context, e.toString());
+  //     isDeleteLoading = false;
+  //     return false; // Return false in case of error
+  //   }
+  //   catch (e, stackTrace) {
+  //     // Catch any errors that occur during the process
+  //     print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+  //     log('Error: $e'); // Log the error
+  //     // Show a generic error message to the user
+  //     if (context.mounted) CustomToast.error(context, e.toString());
+  //     isDeleteLoading = false;
+  //     return false; // Return false in case of error
+  //   }
+  // }
 
 //
 //   /// Delete Multiple Employees based on the employee ID.
@@ -373,7 +421,8 @@ class CorporateProvider with ChangeNotifier {
 //
 //   /// Update a employee based on the employee ID and new employee data.
 
-  Future<bool> updateCorporateEmployee(BuildContext context, Map<String, dynamic> employeeData) async {
+  Future<bool> updateCorporateEmployee(
+      BuildContext context, Map<String, dynamic> employeeData) async {
     try {
       // Set loading state to true
       isLoading = true;
@@ -389,10 +438,10 @@ class CorporateProvider with ChangeNotifier {
         CustomToast.success(context, response['message']);
       } else {
         Future.delayed(Duration(seconds: 1), () {
-          if (context.mounted) CustomToast.success(
-              context, response['message']);
+          if (context.mounted)
+            CustomToast.success(context, response['message']);
         });
-       getCorporateUserList(context);
+        getCorporateUserList(context);
       }
       return true;
     } catch (e, stackTrace) {
@@ -405,6 +454,7 @@ class CorporateProvider with ChangeNotifier {
       return false; // Return false in case of error
     }
   }
+
 //
 //   /// View an employee based on the employee ID.
 //   Future<UsersCorporate> viewCorporateUserEmployee(BuildContext context, String employeeId) async {
@@ -459,17 +509,19 @@ class CorporateProvider with ChangeNotifier {
 //     }
 //   }
 
-  Future<UsersCorporate> viewCorporateUserEmployee(BuildContext context, String employeeId) async {
+  Future<UsersCorporate> viewCorporateUserEmployee(
+      BuildContext context, String employeeId) async {
     try {
       // Set loading state to true
       isEditViewEmployeeLoading = true;
 
       // Use API Service to fetch employee data
       ApiService apiService = ApiService(AppConstant.VIEW_EMPLOYEES);
-      Map<String, dynamic> response = await apiService.get("?user_id=$employeeId");
+      Map<String, dynamic> response =
+          await apiService.get("?user_id=$employeeId");
 
       UsersCorporate user = UsersCorporate();
-        user = UsersCorporate.fromJson(response['user']);
+      user = UsersCorporate.fromJson(response['user']);
       // Notify listeners of changes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -511,7 +563,6 @@ class CorporateProvider with ChangeNotifier {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-
       }
       isLoading = false;
       return rolesList;
@@ -570,7 +621,8 @@ class CorporateProvider with ChangeNotifier {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
+      ApiService apiService =
+          ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get();
       // Parse the response into a list of corporateType
@@ -600,13 +652,16 @@ class CorporateProvider with ChangeNotifier {
       return []; // Return an empty list in case of error
     }
   }
-  Future<List<Roles>> getRolesWithCompanyId(BuildContext context, String companyId) async {
+
+  Future<List<Roles>> getRolesWithCompanyId(
+      BuildContext context, String companyId) async {
     try {
       // Set loading state to true
       isLoading = true;
       // Use API Service to fetch companies
-      ApiService apiService = ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
-      String params = companyId != ""? "&company_id=$companyId" : "";
+      ApiService apiService =
+          ApiService(AppConstant.GET_ROLES_FOR_CORPORATE_EMPLOYEES);
+      String params = companyId != "" ? "&company_id=$companyId" : "";
       // Send a GET request to the API
       Map<String, dynamic> response = await apiService.get(params);
       // Parse the response into a list of corporateType

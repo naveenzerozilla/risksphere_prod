@@ -388,17 +388,18 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
 
       if (response['message'] != null) {
-        Navigator.pushReplacement(context,
+        Navigator.pushReplacement(
+            context,
             MaterialPageRoute(
-          builder: (context) => LocationDataScreen(
-            processId: response['process_id'] ?? "",
-            tempId: tempId,
-            accountId: accountId,
-            accountName: accountName,
-            subAccountName: subAccountName,
-            subAccountId: subAccountId,
-          ),
-        ));
+              builder: (context) => LocationDataScreen(
+                processId: response['process_id'] ?? "",
+                tempId: tempId,
+                accountId: accountId,
+                accountName: accountName,
+                subAccountName: subAccountName,
+                subAccountId: subAccountId,
+              ),
+            ));
       } else {
         throw Exception('Failed to submit data');
       }
@@ -501,7 +502,6 @@ class UploadSovProvider extends ChangeNotifier {
           'is_duplicate': item['is_duplicate'] ?? false,
           'line_no': item['line_no'] ?? '',
           'process_id': item['process_id'] ?? '',
-
 
           'type': item['type'] ?? '',
           // 'duplicates':item['duplicates']?.isNotEmpty == true
@@ -853,7 +853,7 @@ class UploadSovProvider extends ChangeNotifier {
         }).toList();
         return Map.fromEntries(formattedFields);
       }).toList();*/
-print("objectaddsove theing");
+      print("objectaddsove theing");
       final body = {
         'data': {
           // 'account_id': accountId,

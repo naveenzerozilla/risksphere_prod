@@ -1,10 +1,4 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/primitives/custom_typography.dart';
+import '../../utils/global_imports.dart';
 import '../../providers/payment_provider.dart';
 
 class PricingInvoice extends StatefulWidget {
@@ -141,6 +135,18 @@ class _PricingInvoiceState extends State<PricingInvoice> {
                             label: 'License pricing',
                             value: '\$${item.price?.toString() ?? '0'} / user',
                           ),
+                          if (item.vendor != "" && item.eventType != "") ...[
+                            const SizedBox(height: 15),
+                            _KeyValueRow(
+                              label: 'Vendor Name',
+                              value: '${item.vendor?.toString()}',
+                            ),
+                            const SizedBox(height: 15),
+                            _KeyValueRow(
+                              label: 'Event Type',
+                              value: '${item.eventType?.toString()}',
+                            ),
+                          ],
                           const SizedBox(height: 24),
                           if (!isLast) const Divider(thickness: 1, height: 1),
                           if (!isLast) const SizedBox(height: 24),

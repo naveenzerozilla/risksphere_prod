@@ -67,11 +67,73 @@ class _CustomAppBarState extends State<CustomAppBar> {
   String hasHazardLicenseStatus = "1";
   String getTrailUserCount = "0";
   String getTrailLocation = "0";
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
+  bool isLoggingOut = false;
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool showTotalCorporates = false;
+  bool showAllUsers = false;
+  bool showConnectionRequests = false;
+  bool showCompanyOnboardingStats = false;
+  bool showUserOnboardingStats = false;
+  bool showVerificationRequests = false;
 
   @override
   void initState() {
     super.initState();
     _getData();
+    _setClaims();
+  }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
+
+    print(results.toString());
+    print(isIndivudual);
+
+    showTotalCorporates = results[0] ?? false;
+    showAllUsers = results[1] ?? false;
+    showConnectionRequests = results[2] ?? false;
+    showCompanyOnboardingStats = results[3] ?? false;
+    showUserOnboardingStats = results[4] ?? false;
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+
+    showVerificationRequests =
+        showCorporateVerificationRequests || showUserVerificationRequests;
+
+    setState(() {});
   }
 
   Future<void> _getData() async {
@@ -163,27 +225,27 @@ class _CustomAppBarState extends State<CustomAppBar> {
                     ),
                     if (widget.showNotificationDot)
                       Positioned(
-                        top: -10,
-                        right: -6,
+                        top: -4,
+                        right: -4,
                         child: Consumer<NewsFeedProvider>(
                           builder: (context, provider, child) {
+                            final count = provider.newsFeed?.length ?? 0;
+                            if (count == 0) return SizedBox.shrink();
                             return Container(
-                              width: 20,
-                              height: 30,
+                              width: 18,
+                              height: 18,
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.red,
                               ),
-                              child: Center(
-                                child: Text(
-                                  provider.newsFeed.length > 99
-                                      ? '99+'
-                                      : provider.newsFeed.length.toString(),
-                                  style: typography.Caption.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                count > 99 ? '99+' : count.toString(),
+                                textAlign: TextAlign.center,
+                                style: typography.Caption.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             );
@@ -240,7 +302,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       builder: (context, userProfile, child) {
                         final trialStatus =
                             userProfile.trialInfo['status'] ?? '';
-
+                        bool isNotIndividual =
+                            (userProfile.userData.isIndividual ?? true);
                         if (trialStatus.isEmpty) {
                           return ProfileImageWidget();
                         }
@@ -248,16 +311,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                         return Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            // hasAnyPlan == true
-                            //     ? Container(
-                            //         height: 30,
-                            //         constraints: BoxConstraints(
-                            //           maxWidth:
-                            //               MediaQuery.of(context).size.width *
-                            //                   0.1,
-                            //         ),
-                            //       )
-                            //     :
                             Container(
                               constraints: BoxConstraints(
                                 maxWidth:
@@ -282,15 +335,59 @@ class _CustomAppBarState extends State<CustomAppBar> {
                                 duration: Duration(seconds: 6),
                                 onEnd: () {
                                   setState(() {
-                                    _currentIndex = (_currentIndex + 1) % 3;
+                                    final items = [
+                                      trialStatus.isNotEmpty ? trialStatus : '',
+                                      !isNotIndividual
+                                          ? (getTrailUserCount != null &&
+                                                  getTrailUserCount != 'null'
+                                              ? '$getTrailUserCount Users Left'
+                                              : '')
+                                          : '',
+                                      (hasAnyPlan == true
+                                              ? (hasGeocodingStatus != null &&
+                                                      hasGeocodingStatus !=
+                                                          'null'
+                                                  ? hasGeocodingStatus
+                                                  : '')
+                                              : (getTrailLocation != null &&
+                                                      getTrailLocation != 'null'
+                                                  ? getTrailLocation
+                                                  : '')) +
+                                          (hasAnyPlan == true ||
+                                                  getTrailLocation != null
+                                              ? ' Locations Left'
+                                              : ''),
+                                    ].where((item) => item.isNotEmpty).toList();
+                                    _currentIndex = (items.isEmpty
+                                        ? 0
+                                        : ((_currentIndex + 1) % items.length)
+                                            .toInt());
+                                    // _currentIndex = (_currentIndex + 1) % 3;
                                   });
                                 },
                                 builder: (context, value, child) {
                                   final items = [
-                                    trialStatus,
-                                    '$getTrailUserCount Users Left',
-                                    '${hasAnyPlan == true ? hasGeocodingStatus : getTrailLocation} Locations Left',
-                                  ];
+                                    trialStatus.isNotEmpty ? trialStatus : '',
+                                    !isNotIndividual
+                                        ? (getTrailUserCount != null &&
+                                                getTrailUserCount != 'null'
+                                            ? '$getTrailUserCount Users Left'
+                                            : '')
+                                        : '',
+                                    (hasAnyPlan == true
+                                            ? (hasGeocodingStatus != null &&
+                                                    hasGeocodingStatus != 'null'
+                                                ? hasGeocodingStatus
+                                                : '')
+                                            : (getTrailLocation != null &&
+                                                    getTrailLocation != 'null'
+                                                ? getTrailLocation
+                                                : '')) +
+                                        (hasAnyPlan == true ||
+                                                getTrailLocation != null
+                                            ? ' Locations Left'
+                                            : ''),
+                                  ].where((item) => item.isNotEmpty).toList();
                                   return AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 300),
                                     child: Text(
@@ -310,19 +407,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                                   );
                                 },
                               ),
-
-                              // Text(
-                              //   trialStatus,
-                              //   maxLines: 2,
-                              //   style: typography
-                              //       .BottomNavigationActiveLabel.copyWith(
-                              //     color: trialStatus.contains('Trial')
-                              //         ? (AppColors.warning)
-                              //         : AppColors.warning,
-                              //     fontWeight: FontWeight.w500,
-                              //     fontSize: 10,
-                              //   ),
-                              // ),
                             ),
                             Positioned(
                               right: -6,
@@ -341,315 +425,3 @@ class _CustomAppBarState extends State<CustomAppBar> {
     );
   }
 }
-
-// class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-//   final bool? hasAnyPlan;
-//   final bool isExpanded;
-//   final bool showNotificationDot;
-//   final Function(bool) onExpandPressed;
-//   final Function() onSearchPressed;
-//   final bool showDropdown;
-//   final double margin;
-//   final bool? stopNavigateToProfile;
-//   final bool? canNavigateToConnections;
-//   final bool? canNavigateToNewsFeed;
-//
-//   const CustomAppBar({
-//     Key? key,
-//      this.hasAnyPlan,
-//     required this.isExpanded,
-//     required this.showNotificationDot,
-//     required this.onExpandPressed,
-//     required this.onSearchPressed,
-//     this.showDropdown = false,
-//     this.margin = 16.0,
-//     this.stopNavigateToProfile = false,
-//     this.canNavigateToConnections = true,
-//     this.canNavigateToNewsFeed = true,
-//   }) : super(key: key);
-//
-//   @override
-//   Size get preferredSize => Size.fromHeight(70);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     var typography =
-//         CustomTypography(context); // Use context to initialize typography
-//
-//     return Container(
-//       margin: EdgeInsets.fromLTRB(margin, 8, margin, 8),
-//       padding: EdgeInsets.fromLTRB(0, 1, 0, 1),
-//       decoration: BoxDecoration(
-//         borderRadius: BorderRadius.circular(16),
-//         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-//       ),
-//       child: AppBar(
-//         toolbarHeight: 100,
-//         backgroundColor: Colors.transparent,
-//         titleSpacing: 0,
-//         title: isExpanded
-//             ? Container(
-//                 //padding: const EdgeInsets.symmetric(vertical: 8.0),
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: 'Search...',
-//                     hintStyle:
-//                         typography.Subtitle1, // Use the typography instance
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               )
-//             : GestureDetector(
-//                 onTap: () {
-//                   //onExpandPressed(!isExpanded);
-//                 },
-//                 child: Container(
-//                   padding: EdgeInsets.all(8),
-//                   child: SvgPicture.asset(
-//                     'assets/images/logoHalf.svg',
-//                     width: 28,
-//                     height: 28,
-//                   ),
-//                 ),
-//               ),
-//         actions: <Widget>[
-//           /*GestureDetector(
-//             child: Icon(Icons.search, size: 28, color: Colors.grey),
-//             onTap: onSearchPressed,
-//           ),*/
-//           SizedBox(
-//             width: CustomSpacing.two,
-//           ),
-//           Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-//             return InkWell(
-//               onTap: () {
-//                 /* SnackBar snackBar = SnackBar(
-//                   content: Text('Coming Soon!'),
-//                   duration: Duration(seconds: 2),
-//                 );*/
-//                 /*ScaffoldMessenger.of(context).showSnackBar(
-//                   SnackBar(
-//                     content: Text(
-//                       'Coming Soon!',
-//                       style: typography.Body1.copyWith(color: Theme.of(context).brightness == Brightness.dark
-//                           ? Colors.black
-//                           : Colors.white), // Use the typography instance
-//                     ),
-//                   ),
-//                 );*/
-//                 if (canNavigateToNewsFeed ?? true) {
-//                   Provider.of<DrawerSelectionProvider>(context, listen: false)
-//                       .setSelectedItem("news");
-//                   Navigator.of(context).push(
-//                       MaterialPageRoute(builder: (_) => NewsFeedScreen()));
-//                 }
-//               },
-//               child: Stack(
-//                 clipBehavior: Clip.none,
-//                 children: [
-//                   SvgPicture.asset(
-//                     'assets/images/notificationIcon.svg',
-//                     height: 26,
-//                     colorFilter: ColorFilter.mode(
-//                       Theme.of(context).brightness == Brightness.dark
-//                           ? Colors.white
-//                           : Colors.black,
-//                       BlendMode.srcIn, // Blend mode to apply the color
-//                     ),
-//                   ),
-//                   if (showNotificationDot)
-//                     Positioned(
-//                       top: -10,
-//                       right: -6,
-//                       child: Consumer<NewsFeedProvider>(
-//                           builder: (context, provider, child) {
-//                         return Container(
-//                           width: 20,
-//                           height: 30,
-//                           decoration: BoxDecoration(
-//                             shape: BoxShape.circle,
-//                             color: Colors.red,
-//                           ),
-//                           child: Center(
-//                             child:Text(
-//                           provider.newsFeed.length > 99 ? '99+' : provider.newsFeed.length.toString(),
-//                           style: typography.Caption.copyWith(
-//                             color: Colors.white,
-//                             fontSize: 12,
-//                             fontWeight: FontWeight.w700,
-//                           ),
-//                         )
-//                           ),
-//                         );
-//                       }),
-//                     ),
-//                 ],
-//               ),
-//             );
-//           }),
-//           SizedBox(
-//             width: CustomSpacing.two,
-//           ),
-//           IconButton(
-//             padding: EdgeInsets.zero,
-//             tooltip: 'Connections',
-//             icon: Icon(Icons.people_alt_outlined),
-//             onPressed: !(canNavigateToConnections ?? true)
-//                 ? null
-//                 : () async {
-//                     FirebaseAuth auth = FirebaseAuth.instance;
-//                     String uid = auth.currentUser!.uid;
-//                     IdTokenResult token =
-//                         await auth.currentUser!.getIdTokenResult();
-//                     Map<String, dynamic>? claims = token.claims ?? {};
-//                     log(claims.toString());
-//                     log(auth.currentUser.toString());
-//                     String name = claims['name'] ?? ''; //name of the user
-//                     //Provider.of<DrawerSelectionProvider>(context, listen: false).setSelectedItem('user_management');
-//                     Navigator.of(context).push(
-//                       MaterialPageRoute(
-//                         builder: (context) => ConnectionsScreen(
-//                           userId: uid,
-//                           userName: name,
-//                           selectedTabIndex: 0,
-//                         ),
-//                       ),
-//                     );
-//                   },
-//           ),
-//           /*SizedBox(
-//             width: CustomSpacing.four,
-//           ),
-//           CountryPickerDropdown(
-//             initialValue: _getInitialCountry(context),
-//             itemBuilder: (Country country) {
-//               return CircleAvatar(
-//                 radius: 16.0,
-//                 backgroundImage: AssetImage(
-//                   CountryPickerUtils.getFlagImageAssetPath(country.isoCode),
-//                   package: 'country_pickers',
-//                 ),
-//               );
-//             },
-//             itemFilter: (Country country) {
-//               // Only include countries with these ISO codes
-//               return ['US', 'ES', 'FR', 'JP', 'CN'].contains(country.isoCode);
-//             },
-//             icon: SizedBox(),
-//             onValuePicked: (Country country) {
-//               switch (country.isoCode) {
-//                 case 'US':
-//                   context.setLocale(Locale('en'));
-//                   break;
-//                 case 'ES':
-//                   context.setLocale(Locale('es'));
-//                   break;
-//                 case 'FR':
-//                   context.setLocale(Locale('fr'));
-//                   break;
-//                 case 'JP':
-//                   context.setLocale(Locale('ja'));
-//                   break;
-//                 case 'CN':
-//                   context.setLocale(Locale('zh'));
-//                   break;
-//               }
-//             },
-//           ),*/
-//           VerticalDivider(
-//             thickness: 1,
-//             width: 20,
-//             indent: 12,
-//             endIndent: 10,
-//           ),
-//           showDropdown
-//               ? Center(
-//                   child: ProfileMenu(),
-//                 )
-//               : Center(
-//                   child: InkWell(
-//                     onTap: stopNavigateToProfile!
-//                         ? null
-//                         : () {
-//                             Navigator.push(
-//                               context,
-//                               MaterialPageRoute(
-//                                   builder: (_) => ProfileScreen()),
-//                             );
-//                           },
-//                     child: Consumer<UserProfileProvider>(
-//                       builder: (context, userProfile, child) {
-//                         final trialStatus =
-//                             userProfile.trialInfo['status'] ?? '';
-//
-//                         if (trialStatus.isEmpty) {
-//                           // Show normal profile icon if no trial period
-//                           return ProfileImageWidget();
-//                         }
-//
-//                         return
-//                           Stack(
-//                           clipBehavior: Clip.none,
-//                           // Allow overlap outside the container
-//                           children: [
-//                             Container(
-//                               constraints: BoxConstraints(
-//                                 maxWidth:
-//                                     MediaQuery.of(context).size.width * 0.3,
-//                               ),
-//                               padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
-//                               decoration: BoxDecoration(
-//                                 border: Border.all(
-//                                   color: trialStatus.contains('Trial')
-//                                       ? (AppColors.warning)
-//                                       : AppColors.warning,
-//                                   width: 1,
-//                                 ),
-//                                 color:
-//
-//                                 trialStatus.contains('Trial')
-//                                     ? (AppColors.warning.withOpacity(0.1))
-//                                     : AppColors.warning.withOpacity(0.1),
-//                                 borderRadius: BorderRadius.circular(20),
-//                               ),
-//                               child: Text(
-//                                 trialStatus,
-//                                 maxLines: 2,
-//                                 style: typography.BottomNavigationActiveLabel
-//                                     .copyWith(
-//                                   color: trialStatus.contains('Trial')
-//                                       ? (AppColors.warning)
-//                                       : AppColors.warning,
-//                                   fontWeight: FontWeight.w500,
-//                                   fontSize: 10,
-//                                 ),
-//                               ),
-//                             ),
-//
-//                             // Profile image overlapping the container
-//                             Positioned(
-//                               right: -6, // Overlap adjustment
-//                               top: -5, // Slight elevation for better UI
-//                               child: ProfileImageWidget(),
-//                             ),
-//                           ],
-//                         );
-//                       },
-//                     ),
-//                   ),
-//                 ),
-//           SizedBox(width: 8),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   String _getInitialCountry(BuildContext context) {
-//     // ['US', 'ES', 'FR', 'JP', 'CN']
-//     if (context.locale == Locale('es')) return 'ES';
-//     if (context.locale == Locale('fr')) return 'FR';
-//     if (context.locale == Locale('ja')) return 'JP';
-//     if (context.locale == Locale('zh')) return 'CN';
-//     return 'US';
-//   }
-// }

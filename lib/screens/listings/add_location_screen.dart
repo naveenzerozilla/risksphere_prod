@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ import '../../service/language_service.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 
 import '../../service/shared_preference_service.dart';
-import '../payments/pricing_list.dart';
+import '../payments/purchase_license.dart';
 
 class AddLocationScreen extends StatefulWidget {
   final String accountId;
@@ -239,6 +240,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
   }
 
+  final GlobalKey _dropdownKey = GlobalKey();
+  double _dropdownWidth = 0;
+
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
@@ -390,7 +394,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     text: hasAnyPlan
                                                                 .toString() ==
                                                             'true'
-                                                        ? 'Available Credits: ${hasGeocodingStatus} locations.'
+                                                        ? 'Available Credits: ${hasHazardLicenseStatus} locations.'
                                                         : 'Available Credits: $locations of $total locations.',
                                                   ),
                                                   hasAnyPlan.toString() ==
@@ -406,7 +410,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                           context)
                                                                       .push(MaterialPageRoute(
                                                                           builder: (_) =>
-                                                                              PricingListScreen()));
+                                                                              PurchaseLicensePage()));
                                                                 },
                                                           text: ' Upgrade Now!',
                                                           style: TextStyle(
@@ -701,37 +705,107 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         // Location Type Dropdown
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
-                                          child:
-                                              DropdownButtonFormField<String>(
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_location_type"),
-                                              border: OutlineInputBorder(),
-                                            ),
-                                            value: _selectedLocationType,
-                                            onChanged: areFieldsDisabled()
-                                                ? null // Disable dropdown if `areFieldsDisabled` is true
-                                                : (String? newValue) {
-                                                    setState(() {
-                                                      _selectedLocationType =
-                                                          newValue;
-                                                    });
-                                                  },
-                                            items: <String>[
-                                              'Residential',
-                                              'Commercial',
-                                              'Industrial',
-                                            ].map<DropdownMenuItem<String>>(
-                                                (String value) {
-                                              return DropdownMenuItem<String>(
-                                                value: value,
-                                                child: Text(value),
+                                          child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              // Schedule a post-frame callback to capture the width
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback((_) {
+                                                final RenderBox? renderBox =
+                                                    _dropdownKey.currentContext
+                                                            ?.findRenderObject()
+                                                        as RenderBox?;
+                                                if (renderBox != null &&
+                                                    _dropdownWidth !=
+                                                        renderBox.size.width) {
+                                                  setState(() {
+                                                    _dropdownWidth =
+                                                        renderBox.size.width;
+                                                  });
+                                                }
+                                              });
+
+                                              return Container(
+                                                key: _dropdownKey,
+                                                child: DropdownButtonFormField2<
+                                                    String>(
+                                                  decoration: InputDecoration(
+                                                    labelText: LanguageService
+                                                        .getTranslated(context,
+                                                            "addlocation_location_type"),
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                  ),
+                                                  isExpanded: true,
+                                                  value: _selectedLocationType,
+                                                  onChanged: areFieldsDisabled()
+                                                      ? null
+                                                      : (String? newValue) {
+                                                          setState(() {
+                                                            _selectedLocationType =
+                                                                newValue;
+                                                          });
+                                                        },
+                                                  items: [
+                                                    'Residential',
+                                                    'Commercial',
+                                                    'Industrial'
+                                                  ]
+                                                      .map((item) =>
+                                                          DropdownMenuItem<
+                                                              String>(
+                                                            value: item,
+                                                            child: Text(item),
+                                                          ))
+                                                      .toList(),
+                                                  dropdownStyleData:
+                                                      DropdownStyleData(
+                                                    width: _dropdownWidth == 0
+                                                        ? null
+                                                        : _dropdownWidth,
+                                                    // match width
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .surface,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                    ),
+                                                  ),
+                                                ),
                                               );
-                                            }).toList(),
+                                            },
                                           ),
                                         ),
+
+                                        // Padding(
+                                        //   padding: const EdgeInsets.all(8.0),
+                                        //   child: DropdownButtonFormField2<String>(
+                                        //
+                                        //
+                                        //     decoration: InputDecoration(
+                                        //       labelText: LanguageService.getTranslated(
+                                        //           context, "addlocation_location_type"),
+                                        //       border: OutlineInputBorder(),
+                                        //     ),
+                                        //     isExpanded: true,
+                                        //     value: _selectedLocationType,
+                                        //     onChanged: areFieldsDisabled()
+                                        //         ? null
+                                        //         : (String? newValue) {
+                                        //       setState(() {
+                                        //         _selectedLocationType = newValue;
+                                        //       });
+                                        //     },
+                                        //     items: ['Residential', 'Commercial', 'Industrial']
+                                        //         .map((item) => DropdownMenuItem<String>(
+                                        //       value: item,
+                                        //       child: Text(item),
+                                        //     ))
+                                        //         .toList(),
+                                        //
+                                        //   ),
+                                        // ),
 
                                         SizedBox(height: CustomSpacing.three),
                                         // Location City

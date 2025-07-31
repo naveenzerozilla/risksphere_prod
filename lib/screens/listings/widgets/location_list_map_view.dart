@@ -1449,6 +1449,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           locationId: location.id ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.hazard?['Overall']?.rating ?? 0,
+          dataCompleteness: scoreToStar( location.dataCompleteness),
           //location.riskScore ?? 0,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
@@ -1465,4 +1466,12 @@ class _LocationListMapViewState extends State<LocationListMapView>
       },
     );
   }
+}
+int scoreToStar(int? score) {
+  if (score == null) return 0;
+  if (score >= 80) return 5;
+  if (score >= 60) return 4;
+  if (score >= 40) return 3;
+  if (score >= 20) return 2;
+  return 0;
 }

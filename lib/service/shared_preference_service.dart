@@ -429,7 +429,7 @@ class SharedPreferenceService {
   static Future<void> setSovUploadTempId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_TEMP_ID, value);
-    print('Set SOV upload id to $value');
+    // print('Set SOV upload id to $value');
   }
 
   static Future<String?> getSovUploadTempId() async {
@@ -442,7 +442,7 @@ class SharedPreferenceService {
   static Future<void> setSovUploadProcessId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_PROCESS_ID, value);
-    print('Set SOV upload id to $value');
+    // print('Set SOV upload id to $value');
   }
 
   static Future<String?> getSovUploadProcessId() async {
@@ -455,7 +455,7 @@ class SharedPreferenceService {
   static Future<void> setSovUploadState(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_STATE, value);
-    print('Set SOV upload state to $value');
+    // print('Set SOV upload state to $value');
   }
 
   static Future<String?> getSovUploadState() async {

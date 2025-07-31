@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../../utils/global_imports.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class TermsPage extends StatefulWidget {
@@ -54,5 +54,3 @@ class _TermsPageState extends State<TermsPage> {
     );
   }
 }
-
-
