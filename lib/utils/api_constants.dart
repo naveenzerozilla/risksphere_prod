@@ -112,7 +112,7 @@ class AppConstant {
   static String get CREATE_CORPORATE_EMPLOYEES =>
       '$baseURL/new_company_user_create';
 
-  static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/user_management';
+  static String get DELETE_CORPORATE_EMPLOYEES => '$baseURL/delete_user/user/';
 
   static String get TRANSFER_USER_AUTOCOMPLETE =>
       '$baseURL/user_management_new/company_user_list/current';

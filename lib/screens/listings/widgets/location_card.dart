@@ -111,7 +111,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   @override
   Widget build(BuildContext context) {
-    //print("Campus ID: ${widget.campusId}");
     selectionMode = Provider.of<MyLocationListProvider>(context)
         .selectedLocations
         .isNotEmpty;
@@ -150,9 +149,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
             }
           });
         } else {
-          // Handle the tap event
-          print('Tapped on location: ${widget.locationId}');
-          print('Going to page ${widget.index + 1}');
           var locationListProvider =
               Provider.of<MyLocationListProvider>(context, listen: false);
           // Open location details screen
@@ -199,13 +195,13 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   .then((result) {
                   // widget.getData!();
                   if (result == true) {
-                    widget.getData!();
-                    widget.onNavigateStart?.call();
-                    widget.getData?.call();
-                    widget.onNavigateBack?.call();
+                    // widget.getData!();
+                    // widget.onNavigateStart?.call();
+                    // widget.getData?.call();
+                    // widget.onNavigateBack?.call();
                   } else {
-                    widget.getData!();
-                    widget.getData?.call();
+                    // widget.getData!();
+                    // widget.getData?.call();
                   }
                   // widget.onNavigateStart?.call();
                   // widget.getData?.call();
@@ -458,29 +454,108 @@ class _MyLocationCardState extends State<MyLocationCard> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildScoreCard(
-            context,
-            'Geocoding',
-            widget.address,
-            widget.geocodingScore,
-            widget.accountId!,
-            widget.subAccountId!,
-          ),
-          _buildScoreCard(
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LocationProfile(
+                      accountId: widget.accountId!,
+                      accountName: widget.accountName,
+                      subAccountId: widget.subAccountId!,
+                      subAccountName: widget.subAccountName!,
+                      sovId: widget.sovId ?? "",
+                      sovName: widget.sovName ?? "",
+                      searchQuery: widget.locationQuery ?? "",
+                      page: (widget.index + 1).toString(),
+                      totalPages: Provider.of<MyLocationListProvider>(context,
+                              listen: false)
+                          .locationHits
+                          .toString(),
+                      hazardProcess: widget.hazardProcess,
+                      onConfirmCallback: widget.getData,
+                      onNavigateBack: widget.onNavigateBack,
+                      tab: 0,
+                    ),
+                  ));
+            },
+            child: _buildScoreCard(
               context,
-              'Risk Score',
+              'Geocoding',
               widget.address,
-              widget.riskScore == 0 ? 5 : widget.riskScore,
+              widget.geocodingScore,
               widget.accountId!,
-              widget.subAccountId!),
-          //int.parse(widget.overallScore!)),
-          _buildScoreCard(
-            context,
-            'Completeness',
-            widget.address,
-            widget.dataCompletenessScore,
-            widget.accountId!,
-            widget.subAccountId!,
+              widget.subAccountId!,
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LocationProfile(
+                      accountId: widget.accountId!,
+                      accountName: widget.accountName,
+                      subAccountId: widget.subAccountId!,
+                      subAccountName: widget.subAccountName!,
+                      sovId: widget.sovId ?? "",
+                      sovName: widget.sovName ?? "",
+                      searchQuery: widget.locationQuery ?? "",
+                      page: (widget.index + 1).toString(),
+                      totalPages: Provider.of<MyLocationListProvider>(context,
+                              listen: false)
+                          .locationHits
+                          .toString(),
+                      hazardProcess: widget.hazardProcess,
+                      onConfirmCallback: widget.getData,
+                      onNavigateBack: widget.onNavigateBack,
+                      tab: 1,
+                    ),
+                  ));
+            },
+            child: _buildScoreCard(
+                context,
+                'Risk Score',
+                widget.address,
+                widget.riskScore == 0 ? 5 : widget.riskScore,
+                widget.accountId!,
+                widget.subAccountId!),
+          ),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LocationProfile(
+                      accountId: widget.accountId!,
+                      accountName: widget.accountName,
+                      subAccountId: widget.subAccountId!,
+                      subAccountName: widget.subAccountName!,
+                      sovId: widget.sovId ?? "",
+                      sovName: widget.sovName ?? "",
+                      searchQuery: widget.locationQuery ?? "",
+                      page: (widget.index + 1).toString(),
+                      totalPages: Provider.of<MyLocationListProvider>(context,
+                              listen: false)
+                          .locationHits
+                          .toString(),
+                      hazardProcess: widget.hazardProcess,
+                      onConfirmCallback: widget.getData,
+                      onNavigateBack: widget.onNavigateBack,
+                      tab: 2,
+                    ),
+                  ));
+            },
+            child: _buildScoreCard(
+              context,
+              'Completeness',
+              widget.address,
+              widget.dataCompletenessScore == 0
+                  ? 1
+                  : widget.dataCompletenessScore,
+              widget.accountId!,
+              widget.subAccountId!,
+            ),
           ),
         ],
       ),
@@ -553,7 +628,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-
                 if (widget.hazardProcess == true ||
                     title == 'Geocoding' ||
                     title == 'Completeness') ...[
@@ -586,6 +660,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             widget.locationId,
                             widget.geocodingScore,
                             widget.overallScore!,
+                            widget.dataCompletenessScore,
                             widget.hazards,
                             "MAc",
                             widget.accountId!,
@@ -635,6 +710,15 @@ class _MyLocationCardState extends State<MyLocationCard> {
   }
 }
 
+int scoreToStar(int? score) {
+  if (score == null) return 0;
+  if (score >= 80) return 5;
+  if (score >= 60) return 4;
+  if (score >= 40) return 3;
+  if (score >= 20) return 2;
+  return 0;
+}
+
 // Call this function to show the popup on tap
 void showLocationDetailsPopup(
     BuildContext context,
@@ -645,6 +729,7 @@ void showLocationDetailsPopup(
     String locationId,
     int geocodingScore,
     dynamic overallScore,
+    dynamic dataCompleteness,
     Map<String, HazardDetails>? hazards,
     String? professional,
     String accountId,
@@ -666,7 +751,9 @@ void showLocationDetailsPopup(
         address: address ?? 'Unknown Address',
         locationId: locationId ?? 'Unknown ID',
         geocodingScore: geocodingScore,
+
         riskScore: overallScore.toString() ?? "5",
+        dataCompleteness: scoreToStar(dataCompleteness),
         hazards: hazards ?? {},
         geocodedAt: [""],
         occupancy: ["--"],

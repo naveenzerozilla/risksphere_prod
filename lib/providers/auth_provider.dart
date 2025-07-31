@@ -320,7 +320,7 @@ class AuthNotifier extends ChangeNotifier {
             content: Text(
               LanguageService.getTranslated(
                   context1, "login_email_not_verified_error"),
-              style: typography.Body1,
+
             ),
           ),
         );
@@ -663,7 +663,6 @@ class AuthNotifier extends ChangeNotifier {
           content: Text(
             LanguageService.getTranslated(
                 context1, "login_invaild_email_password_error"),
-            style: typography.Body1,
           ),
         ),
       );
@@ -1622,9 +1621,7 @@ class AuthNotifier extends ChangeNotifier {
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('assignClaims');
 
-      // Use cached token if available
       String? token = await _auth.currentUser!.getIdToken(false);
-      log("Token123: $token");
 
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
@@ -1638,32 +1635,11 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final data = response.data as Map<String, dynamic>;
-      print("data['has_any_plan'].toString()");
-      print(data['has_any_plan'].toString());
-      print(data['remaining_trial_days'].toString());
-      print(data['remaining_trial_days'].toString());
-      print(data['trial_locations'].toString());
-      print(data['trial_locations'].toString());
-      print("data['trial_locations'].toString()"+data['total_trial_users'].toString());
-      print(data['total_trial_users'].toString());
 
-      // print(
-      //     'has_user_license left_credits: ${data['has_user_license']?['left_credits']}');
-      // print(
-      //     'has_geocoding_license left_credits: ${data['has_geocoding_license']?['left_credits']}');
-      // print(
-      //     'has_hazard_license left_credits: ${data['has_hazard_license']?['left_credits']}');
-      print("data['has_any_plan'].toString()");
-      // Batch shared preferences updates
       await Future.wait([
-        // SharedPreferenceService.setUserLicense(
-        //     (data['has_user_license']?['left_credits'] ?? 0).toString()),
-        // SharedPreferenceService.setGeocodingLicense(
-        //     (data['has_geocoding_license']?['left_credits'] ?? 0).toString()),
-        // SharedPreferenceService.setHazardLicense(
-        //     (data['has_hazard_license']?['left_credits'] ?? 0).toString()),
         SharedPreferenceService.setUserLicense(
-            (data['has_user_license_count'] != null && data['has_user_license_count'] is Map
+            (data['has_user_license_count'] != null &&
+                        data['has_user_license_count'] is Map
                     ? data['has_user_license_count']['left_credits']
                     : 0)
                 .toString()),
@@ -1679,7 +1655,6 @@ class AuthNotifier extends ChangeNotifier {
                     ? data['has_hazard_license_count']['left_credits']
                     : 0)
                 .toString()),
-
         SharedPreferenceService.setTrialUser(
             data['total_trial_users'].toString()),
         SharedPreferenceService.setTrailLocation(
@@ -1687,7 +1662,6 @@ class AuthNotifier extends ChangeNotifier {
         SharedPreferenceService.setScheduleInProgress(
             data['schedule_inprogress'].toString()),
         SharedPreferenceService.saveHasAnyPlan(data['has_any_plan']),
-
         SharedPreferenceService.setSovUploadTempId(
             data['last_process_temp_id'] ?? ""),
         SharedPreferenceService.setSovUploadProcessId(
@@ -1929,7 +1903,6 @@ class AuthNotifier extends ChangeNotifier {
       // Get the ID token of the current user
       String? idToken = await user.getIdToken();
 
-      // Define the Cloud Function URL
       final url = '${AppConstant.baseURL}/sendEmail_to_client?type=remind';
 
       // Set the headers including the Authorization header with the token
@@ -1943,11 +1916,6 @@ class AuthNotifier extends ChangeNotifier {
         'type': 'remind',
       });
 
-      print('Sending reminder to user: ${user.email}');
-      print('Headers: $headers');
-      print('Body: $body');
-      print('URL: $url');
-      // Make the POST request
       final response =
           await http.post(Uri.parse(url), headers: headers, body: body);
 

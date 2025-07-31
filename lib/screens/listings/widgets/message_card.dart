@@ -5,7 +5,7 @@ import '../../../constants/enums.dart';
 import '../../../design_system/components/custom_button.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
-import '../../payments/pricing_list.dart';
+import '../../payments/purchase_license.dart';
 
 class MessageCard extends StatelessWidget {
   final List<InlineSpan> messageTextSpans;
@@ -205,7 +205,7 @@ class MessageCard1 extends StatelessWidget {
                           Navigator.of(context).push(
                               MaterialPageRoute(
                                   builder: (_) =>
-                                      PricingListScreen()));
+                                      PurchaseLicensePage()));
                         },
                         type: ButtonType.filled,
                       ),

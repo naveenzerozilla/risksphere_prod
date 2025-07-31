@@ -36,7 +36,7 @@ class Result {
   CreatedAt? createdAt;
   String? planId;
   CreatedAt? updatedAt;
-  String? planName;
+  var planName;
 
   Result(
       {this.description,
@@ -46,7 +46,7 @@ class Result {
       this.rangeYear,
       this.rangeMonth,
       this.type,
-        this.planType,
+      this.planType,
       this.createdAt,
       this.planId,
       this.updatedAt,
@@ -110,8 +110,8 @@ class Result {
 class RangeYear {
   var startCount;
   var endCount;
-  var pricePerUser;
-  int? rangePrice;
+  dynamic pricePerUser;
+  dynamic rangePrice;
 
   RangeYear(
       {this.startCount, this.endCount, this.pricePerUser, this.rangePrice});
@@ -151,6 +151,7 @@ class CreatedAt {
     return data;
   }
 }
+
 class SelectedPlanState {
   String title;
   String planId;
@@ -161,7 +162,7 @@ class SelectedPlanState {
   String? selectedPlanType;
   String selectedUserCount;
   String licensePrice;
-  int? totalPrice;
+  var totalPrice;
 
   SelectedPlanState({
     this.title = '',
@@ -176,4 +177,3 @@ class SelectedPlanState {
     this.totalPrice,
   });
 }
-

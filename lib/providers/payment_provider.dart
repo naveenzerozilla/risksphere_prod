@@ -87,6 +87,7 @@ class PaymentProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
+
       final paymentIntentData = await _createPaymentIntent(
           amount, currency, summary, hazardName!, vendorName);
       if (paymentIntentData != null &&
@@ -107,6 +108,7 @@ class PaymentProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint(" Payment Error: ${e.toString()}");
+      print("Invalid payment intent data");
       _showSnackBar(context, "Invalid payment intent data");
     } finally {
       _setLoading(false);
@@ -121,6 +123,7 @@ class PaymentProvider extends ChangeNotifier {
     String? vendorName,
   ) async {
     try {
+      print("createPaymentIntent");
       final sessionData = await _createCheckoutSession(
         amount: amount,
         currency: currency,
@@ -150,7 +153,8 @@ class PaymentProvider extends ChangeNotifier {
   }) async {
     final Uri url = Uri.parse(AppConstant.PAYMNET_GATEWAY_URL);
     final headers = await CommonHeaders.createHeaders();
-
+    print("object");
+    print(summary['planId']);
     final requestBody = {
       "data": {
         "amount": int.parse(amount) * 100,
@@ -158,20 +162,21 @@ class PaymentProvider extends ChangeNotifier {
         "plans": List.generate(
             summary['planId']?.length ?? 0,
             (i) => {
-                  "event_type": hazardName ?? "",
                   "plan_id": summary['planId']?[i] ?? "",
-                  "plan_name": summary['titles']?[i] ?? "",
+                  "plan_type_id": summary['planType']?[i] ?? "",
                   "plan_type": summary['selectedPlanType']?[i]
                           ?.toString()
                           .toLowerCase() ??
                       "",
-                  "plan_type_id": summary['planType']?[i] ?? "",
-                  "price": summary['licenseprice']?[i] ?? "",
                   "selected_plan": summary['usercount']?[i] ?? "",
+                  "plan_name": summary['titles']?[i] ?? "",
+                  "price": summary['licenseprice']?[i] ?? "",
                   "vendor": vendorName ?? "",
+                  "event_type": hazardName ?? "",
                 }),
       }
     };
+    print(requestBody);
 
     final response = await http.post(
       url,

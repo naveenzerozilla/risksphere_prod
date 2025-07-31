@@ -1245,6 +1245,7 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
           locationId: location.id ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.hazard?['Overall']?.rating ?? 0,
+          dataCompleteness: location.dataCompleteness ?? 0,
           //location.riskScore ?? 0,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType??""],

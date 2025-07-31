@@ -1,17 +1,8 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
-
-
-// import 'package:country_list_picker/country_list_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../utils/global_imports.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:RiskSphere/design_system/components/corporate_type_roles_bottom_sheet.dart';
 import 'package:RiskSphere/design_system/components/custom_chip.dart';
-import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:RiskSphere/models/company_model.dart';
 import 'package:RiskSphere/models/company_type_model.dart';
 import 'package:RiskSphere/models/corporate_verification_list_model.dart';
@@ -19,7 +10,6 @@ import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import 'package:RiskSphere/providers/company_provider.dart';
 import 'package:RiskSphere/providers/employee_provider.dart';
 import 'package:RiskSphere/providers/non_corporate_user_Provider.dart';
-import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/providers/verification_provider.dart';
 import 'package:RiskSphere/screens/userManagement/connections_screen.dart';
 import 'package:RiskSphere/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
@@ -27,31 +17,18 @@ import 'package:RiskSphere/screens/userManagement/service/verification_tab_servi
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:phone_input/phone_input_package.dart';
-import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
-import '../../constants/enums.dart';
 import '../../design_system/components/country_picker_flag_name.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_button.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/company_type_model.dart' as companyType;
 import '../../models/initial_data_model.dart';
 import '../../models/user_corporate_model.dart';
 import '../../providers/corporate_user_provider.dart';
-import '../../providers/drawer_selection_provider.dart';
 import '../../providers/role_provider.dart';
-import '../../providers/theme_provider.dart';
-import '../../service/language_service.dart';
-import '../../service/shared_preference_service.dart';
 import '../../utils/utils.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 import 'package:dropdown_button2/dropdown_button2.dart';
-
-import '../listings/widgets/message_card.dart';
 
 class UserManagementScreen extends StatefulWidget {
   final Screens? initialScreen;
@@ -220,8 +197,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
     const String apiUrl =
         "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/companies?role=external";
-        // "https://us-central1-project-green-dev-429104"
-
+    // "https://us-central1-project-green-dev-429104"
 
     try {
       // Get the Firebase Authentication token
@@ -261,7 +237,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             isApplicableForTrial: role["is_applicable_for_trial"] ?? false,
             name: role["name"] ?? "",
             role: role["role"] ?? "",
-            isApplicableForInternal: role["is_applicable_for_internal"] ?? false,
+            isApplicableForInternal:
+                role["is_applicable_for_internal"] ?? false,
             status: role["status"] ?? false,
           );
         }).toList();
@@ -275,7 +252,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           print("Role: ${role.name}, Status: ${role.status}");
         }
       } else {
-        print("Failed to load roles: ${response.statusCode}, Response: ${response.body}");
+        print(
+            "Failed to load roles: ${response.statusCode}, Response: ${response.body}");
       }
     } catch (e) {
       print("Error fetching roles: $e");
@@ -285,7 +263,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       });
     }
   }
-
 
   void _openBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -304,7 +281,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       },
     );
   }
-
 
   void companyDebounce(
     VoidCallback callback, {
@@ -619,35 +595,63 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showMainLoading = false;
     });
   }
+
   Future<void> _setTabs() async {
     final results = await Future.wait([
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.IS_PG_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUM),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMUL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCC),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMEC),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVC),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMDC),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMED),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMLL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMVU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CAMCUL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMED),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMDU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMEU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMCL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.CUMCU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMED),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMDU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMEU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMCL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPED),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPDU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPEU),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPCL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.NCMUL),
-      SharedPreferenceService.getClaimForSubfeature(SharedPreferenceService.EMPUL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMCL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMCUM),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMUL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMCC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMEC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMDC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMED),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMCUL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CUMED),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CUMDU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CUMEU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CUMCL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CUMCU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.NCMED),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.NCMDU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.NCMEU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.NCMCL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.EMPED),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.EMPDU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.EMPEU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.EMPCL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.NCMUL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.EMPUL),
     ]);
 
     // Assign values
@@ -996,13 +1000,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     }
 
     // Parallel API calls for fetching roles
-    var roleFuture = Provider.of<RoleProvider>(context, listen: false)
-        .getAllRoles(context);
-    var employeeRoleFuture = Provider.of<EmployeeProvider>(context, listen: false)
-        .getRoles(context);
+    var roleFuture =
+        Provider.of<RoleProvider>(context, listen: false).getAllRoles(context);
+    var employeeRoleFuture =
+        Provider.of<EmployeeProvider>(context, listen: false).getRoles(context);
 
     // Await all API calls in parallel
-    var results = await Future.wait([...apiCalls, roleFuture, employeeRoleFuture]);
+    var results =
+        await Future.wait([...apiCalls, roleFuture, employeeRoleFuture]);
 
     // Assign results to variables after completion
     filterRoleList = allRoles = results[apiCalls.length];
@@ -1014,7 +1019,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         !showCorporateVerificationTab &&
         !showUserVerificationTab &&
         showCorporateProfile) {
-      var companyProvider = Provider.of<CompanyProvider>(context, listen: false);
+      var companyProvider =
+          Provider.of<CompanyProvider>(context, listen: false);
       await companyProvider.viewCompany(context, "current");
       var company = companyProvider.company;
 
@@ -1044,7 +1050,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       _selectedCountryCode = _adminMobileController.text =
           company.adminCountryCode?.replaceAll('+', '') ?? "1";
       corporateEditMobileController.value = PhoneNumber(
-          isoCode: countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
+          isoCode:
+              countryCodeToIsoCode[_selectedCountryCode]?.first ?? IsoCode.US,
           nsn: company.adminMobile ?? "");
       _enableDomainCheck = company.enableDomainCheck ?? false;
       _selectedCorporateCountryName = company.countryName ?? 'United States';
@@ -2879,49 +2886,287 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   onPressed: () {
                                     selectedCompanyListIndex = index;
                                     // Handle delete by showing dialog
-                                    showDialog(
+                                    showModalBottomSheet(
                                       context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: const Color(0xFF1C1C1E),
+                                      // Dark background
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(20)),
+                                      ),
                                       builder: (context) {
-                                        // delete company name
-                                        return AlertDialog(
-                                          title: Text('Delete Company',
-                                              style: typography.H6),
-                                          content: Text(
-                                              'Are you sure you want to delete ${companyProvider.companies[index].displayName}?',
-                                              style: typography.Body1),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                companyProvider.deleteCompany(
-                                                    context, [
-                                                  companyProvider
-                                                          .companies[index]
-                                                          .id ??
-                                                      ''
-                                                ]).then((value) {
-                                                  if (value) {
-                                                    WidgetsBinding.instance
-                                                        .addPostFrameCallback(
-                                                            (_) {
-                                                      setState(() {
+                                        final name = companyProvider
+                                                .companies[index].displayName ??
+                                            '';
+                                        String selectedUserId = '';
+                                        final eligibleUsers = [
+                                          {
+                                            'name': 'Arslan',
+                                            'email': 'arslan@example.com',
+                                            'avatar': '👨‍🎨'
+                                          },
+                                          {
+                                            'name': 'Amit Didwania',
+                                            'email': 'amit@example.com',
+                                            'avatar': '👨🏾‍💻'
+                                          },
+                                          {
+                                            'name': 'Naveen Aggrawal',
+                                            'email': 'naveen@example.com',
+                                            'avatar': '👨🏻‍💼'
+                                          },
+                                        ];
+
+                                        return StatefulBuilder(
+                                          builder: (context, setModalState) {
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                      24, 32, 24, 32),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Are you sure you want to delete $name',
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  Text(
+                                                    'To ensure continuity, please assign another eligible user to take over their responsibilities.',
+                                                    style: typography.Body1
+                                                        ?.copyWith(
+                                                            color:
+                                                                Colors.white70),
+                                                  ),
+                                                  const SizedBox(height: 16),
+
+                                                  // Search Field (non-functional placeholder)
+                                                  TextField(
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          'Search by name or email ID',
+                                                      hintStyle:
+                                                          const TextStyle(
+                                                              color: Colors
+                                                                  .white54),
+                                                      prefixIcon: const Icon(
+                                                          Icons.search,
+                                                          color:
+                                                              Colors.white60),
+                                                      filled: true,
+                                                      fillColor: Colors.black45,
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        borderSide:
+                                                            BorderSide.none,
+                                                      ),
+                                                    ),
+                                                    style: const TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                  const SizedBox(height: 16),
+
+                                                  // Scrollable user list
+                                                  Container(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            maxHeight: 200),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black54,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    child: ListView.separated(
+                                                      shrinkWrap: true,
+                                                      itemCount:
+                                                          eligibleUsers.length,
+                                                      separatorBuilder:
+                                                          (_, __) =>
+                                                              const Divider(
+                                                                  height: 1,
+                                                                  color: Colors
+                                                                      .white12),
+                                                      itemBuilder:
+                                                          (context, i) {
+                                                        final user =
+                                                            eligibleUsers[i];
+                                                        return ListTile(
+                                                          leading: CircleAvatar(
+                                                              child: Text(user[
+                                                                  'avatar']!)),
+                                                          title: Text(
+                                                              user['name']!,
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white)),
+                                                          subtitle: Text(
+                                                              user['email']!,
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white70)),
+                                                          trailing:
+                                                              Radio<String>(
+                                                            value:
+                                                                user['email']!,
+                                                            groupValue:
+                                                                selectedUserId,
+                                                            onChanged: (val) {
+                                                              setModalState(() {
+                                                                selectedUserId =
+                                                                    val!;
+                                                              });
+                                                            },
+                                                            activeColor:
+                                                                Colors.red,
+                                                          ),
+                                                          onTap: () {
+                                                            setModalState(() {
+                                                              selectedUserId =
+                                                                  user[
+                                                                      'email']!;
+                                                            });
+                                                          },
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(height: 16),
+                                                  Text(
+                                                    "Note: All related Accounts, Sub-Accounts, SOVs, and Location Lists will be transferred and shared via email with the assigned user.",
+                                                    style: typography.Body2
+                                                        ?.copyWith(
+                                                            color:
+                                                                Colors.white60),
+                                                  ),
+                                                  const SizedBox(height: 24),
+
+                                                  // Assign & Delete Button
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
                                                         companyProvider
-                                                            .companies
-                                                            .removeAt(index);
-                                                      });
-                                                    });
-                                                  }
-                                                });
-                                              },
-                                              child: const Text('Delete'),
-                                            ),
-                                          ],
+                                                            .deleteCompany(
+                                                                context, [
+                                                          companyProvider
+                                                                  .companies[
+                                                                      index]
+                                                                  .id ??
+                                                              ''
+                                                        ]).then((value) {
+                                                          if (value) {
+                                                            WidgetsBinding
+                                                                .instance
+                                                                .addPostFrameCallback(
+                                                                    (_) {
+                                                              setState(() {
+                                                                companyProvider
+                                                                    .companies
+                                                                    .removeAt(
+                                                                        index);
+                                                              });
+                                                            });
+                                                          }
+                                                        });
+                                                      },
+                                                      child: const Text(
+                                                          'Assign & Delete',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .white)),
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(height: 12),
+
+                                                  // Download Data Button
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.lightBlue,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        // Add download logic here
+                                                      },
+                                                      child: const Text(
+                                                          'Download Data',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .black)),
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(height: 12),
+
+                                                  // Cancel Button
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: OutlinedButton(
+                                                      style: OutlinedButton
+                                                          .styleFrom(
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        side: const BorderSide(
+                                                            color:
+                                                                Colors.white24),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child:
+                                                          const Text('Cancel'),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
                                         );
                                       },
                                     );
@@ -5295,56 +5540,133 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 color: AppColors.primaryMain,
                                 onPressed: () {
                                   selectedCompanyEmployeeListIndex = index;
-                                  // Handle delete by showing dialog
-                                  showDialog(
+
+                                  showModalBottomSheet(
                                     context: context,
+                                    isScrollControlled: true,
+                                    // Important for full height or custom height
+                                    backgroundColor: Colors.black,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(20)),
+                                    ),
                                     builder: (context) {
-                                      // delete company name
-                                      return AlertDialog(
-                                        title: Text('Delete Employee',
-                                            style: typography.H6),
-                                        content: Text(
-                                            'Are you sure you want to delete '
-                                            '${corporateProvider.employeeList?[index].name}?',
-                                            style: typography.Body1),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              corporateProvider.deleteCompany(
-                                                  context, [
-                                                corporateProvider
-                                                        .employeeList?[index]
-                                                        .userId ??
-                                                    ''
-                                              ]).then((value) {
-                                                if (value) {
-                                                  WidgetsBinding.instance
-                                                      .addPostFrameCallback(
-                                                          (_) {
-                                                    setState(() {
+                                      final name = corporateProvider
+                                              .employeeList?[index].name ??
+                                          '';
+                                      return SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height /
+                                                2.5,
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              24, 32, 24, 32),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "Are you sure you want to delete "
+                                                '$name?',
+                                                style:
+                                                    typography.Body1?.copyWith(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Their data including Account, Sub-Account, SOV, and Location List, will be transferred to the assigned Admin.',
+                                                style:
+                                                    typography.Body1?.copyWith(
+                                                  color: Colors.white70,
+                                                  height: 1.4,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 32),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 16),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.pop(
+                                                        context); // Close sheet
+                                                    corporateProvider
+                                                        .deleteCompany(
+                                                            context, [
                                                       corporateProvider
-                                                          .employeeList
-                                                          ?.removeAt(index);
+                                                              .employeeList?[
+                                                                  index]
+                                                              .userId ??
+                                                          ''
+                                                    ]).then((value) {
+                                                      if (value) {
+                                                        WidgetsBinding.instance
+                                                            .addPostFrameCallback(
+                                                                (_) {
+                                                          setState(() {
+                                                            corporateProvider
+                                                                .employeeList
+                                                                ?.removeAt(
+                                                                    index);
+                                                          });
+                                                        });
+                                                        Provider.of<CorporateProvider>(
+                                                                context,
+                                                                listen: false)
+                                                            .getCorporateUserList(
+                                                                context);
+                                                      }
                                                     });
-                                                  });
-                                                  Provider.of<CorporateProvider>(
-                                                          context,
-                                                          listen: false)
-                                                      .getCorporateUserList(
-                                                          context);
-                                                }
-                                              });
-                                            },
-                                            child: const Text('Delete'),
+                                                  },
+                                                  child: const Text('Delete'),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: OutlinedButton(
+                                                  style:
+                                                      OutlinedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    side: const BorderSide(
+                                                        color: Colors.white24),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 16),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text('Cancel'),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       );
                                     },
                                   );
@@ -5541,68 +5863,70 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     // Role Dropdown
 
-                  Consumer<CorporateProvider>(
-                    builder: (_, employeeProvider, child) {
-                      return Stack(
-                        children: [
-                          TextField(
-                            readOnly: true,
-                            onTap: () async {
-                              await _fetchRoles();
-                              _openBottomSheet(context);
-                            },
-                            controller: _textEditingController,
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, 'usermanagement_cuser_roles_label'),
-                              hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
-                              border: const OutlineInputBorder(),
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.arrow_drop_down),
-                                onPressed: () async {
-                                  await _fetchRoles();
-                                  _openBottomSheet(context);
-                                },
+                    Consumer<CorporateProvider>(
+                      builder: (_, employeeProvider, child) {
+                        return Stack(
+                          children: [
+                            TextField(
+                              readOnly: true,
+                              onTap: () async {
+                                await _fetchRoles();
+                                _openBottomSheet(context);
+                              },
+                              controller: _textEditingController,
+                              decoration: InputDecoration(
+                                labelText: LanguageService.getTranslated(
+                                    context,
+                                    'usermanagement_cuser_roles_label'),
+                                hintText: _selectedRoles.isEmpty
+                                    ? 'Select Roles'
+                                    : "",
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.arrow_drop_down),
+                                  onPressed: () async {
+                                    await _fetchRoles();
+                                    _openBottomSheet(context);
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                          if (_isLoading)
-                            Positioned.fill(
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                                Positioned(
-                                  top: 8.0,
-                                  left: 10.0,
-                                  right: 10.0,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 32.0),
-                                    child: SingleChildScrollView(
+                            if (_isLoading)
+                              Positioned.fill(
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            Positioned(
+                              top: 8.0,
+                              left: 10.0,
+                              right: 10.0,
+                              child: Container(
+                                  margin: const EdgeInsets.only(right: 32.0),
+                                  child: SingleChildScrollView(
                                       scrollDirection: Axis.horizontal,
                                       child: Row(
                                         children: selectedCorporateTypeRole
                                             .map(
                                               (value) => Padding(
-                                                padding:
-                                                    const EdgeInsets.only(right: 8.0),
+                                                padding: const EdgeInsets.only(
+                                                    right: 8.0),
                                                 child: Chip(
                                                   label: Text(value.name ?? ''),
                                                   deleteIcon:
                                                       const Icon(Icons.cancel),
                                                   onDeleted: () =>
-                                                      _removeCorporateChip(value),
+                                                      _removeCorporateChip(
+                                                          value),
                                                 ),
                                               ),
                                             )
                                             .toList(),
-                      )
-                                    )
-                      ),
-
-                                ),
-                        ],
-                      );
-                    },
-                  ),
+                                      ))),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                     // Consumer<CorporateProvider>(
                     //     builder: (_, employeeProvider, child) {
                     //   print(

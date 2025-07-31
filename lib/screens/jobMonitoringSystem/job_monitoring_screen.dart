@@ -235,8 +235,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                             String sovName =
                                 jobData['sov_name'] ?? 'Unknown SOV';
 
-                            return
-                              _buildJobCard(
+                            return _buildJobCard(
                               jobId: jobId,
                               completedTasks: completedTasks,
                               totalTasks: totalTasks,
@@ -296,224 +295,223 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
     }
 
     return Card(
-      key: jobId == widget.initialProcessId ? expansionTileKey : null,
-      color: collapsedColor,
-      // Main card hover color
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-      child:
-      Container()
-      // ExpansionTile(
-      //   shape: RoundedRectangleBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //   ),
-      //   collapsedShape: RoundedRectangleBorder(
-      //     borderRadius: BorderRadius.circular(12),
-      //   ),
-      //   collapsedBackgroundColor: collapsedColor,
-      //   // Collapsed state color
-      //   backgroundColor: expandedColor2,
-      //   // Expanded section hover color
-      //   showTrailingIcon: false,
-      //   maintainState: false,
-      //   tilePadding: EdgeInsets.all(12.0),
-      //   title: Column(
-      //     children: [
-      //       Row(
-      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      //         children: [
-      //           // Left side of the card with title and progress indicator
-      //           Expanded(
-      //             flex: 4,
-      //             child: Column(
-      //               crossAxisAlignment: CrossAxisAlignment.start,
-      //               children: [
-      //                 Tooltip(
-      //                   message: jobId,
-      //                   child: Text(
-      //                     (jobData["process_name"] is Map)
-      //                         ? jobData["process_name"]["filename"].toString()
-      //                         : jobData["process_name"]?.toString() ??
-      //                             "Process",
-      //                     style: typography.Body1.copyWith(
-      //                       fontWeight: FontWeight.w500,
-      //                     ),
-      //                   ),
-      //                   // Text(
-      //                   //   jobData["process_name"]?["filename"].toString() ?? "Process",
-      //                   //   style: typography.Body1.copyWith(
-      //                   //     fontWeight: FontWeight.w500,
-      //                   //   ),
-      //                   // ),
-      //                 ),
-      //                 SizedBox(height: 8),
-      //                 Row(
-      //                   children: [
-      //                     // Progress bar
-      //                     Expanded(
-      //                       child: LinearProgressIndicator(
-      //                         value: completedTasks / totalTasks,
-      //                         minHeight: 4,
-      //                         backgroundColor: Colors.grey[300],
-      //                         color: AppColors.primaryMain,
-      //                         borderRadius: BorderRadius.circular(4),
-      //                       ),
-      //                     ),
-      //                     SizedBox(width: 8),
-      //                     // Progress text
-      //                     Text(
-      //                       '$completedTasks/$totalTasks',
-      //                       style: typography.Subtitle2.copyWith(
-      //                         color: Colors.grey[500],
-      //                       ),
-      //                     ),
-      //                   ],
-      //                 ),
-      //               ],
-      //             ),
-      //           ),
-      //           Spacer(),
-      //           // Right side icons
-      //           IconButton(
-      //             icon: SvgPicture.asset('assets/images/contract.svg'),
-      //             onPressed: () async {
-      //               setState(() {
-      //                 selectedProcessId = jobId;
-      //                 isProcessSummaryOpen = true; // Open summary view
-      //               });
-      //               var provider = Provider.of<JobMonitoringProvider>(context,
-      //                   listen: false);
-      //               Map<String, dynamic>? summaryData =
-      //                   await provider.fetchSummary(selectedProcessId);
-      //
-      //               if (mounted) {
-      //                 // Always check if the widget is still mounted
-      //                 setState(() {
-      //                   if (summaryData != null) {
-      //                     jobSummaryData = summaryData;
-      //                   } else {
-      //                     SnackBar(
-      //                         content: Text('Failed to fetch summary',
-      //                             style: typography.Body1.copyWith(
-      //                                 color: Colors.white)));
-      //
-      //                     isProcessSummaryOpen =
-      //                         false; // Close summary if API fails
-      //                   }
-      //                 });
-      //               }
-      //             },
-      //           ),
-      //           SizedBox(width: 8),
-      //           Padding(
-      //             padding: const EdgeInsets.fromLTRB(4, 0, 8, 0),
-      //             child: Icon(
-      //               expandedJobs[jobId] ?? false
-      //                   ? Icons.remove_circle_outline
-      //                   : Icons.add_circle_outline,
-      //               color: AppColors.primaryMain,
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //       // Expanded content (subprocesses)
-      //       Padding(
-      //         padding:
-      //             const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      //         child: Row(
-      //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      //           children: [
-      //             Row(
-      //               children: [
-      //                 Chip(
-      //                   label: Text("Main Process" //processType,
-      //                       ),
-      //                   backgroundColor: AppColors.primaryMain,
-      //                   labelStyle: typography.Body1.copyWith(
-      //                     color: AppColors.black,
-      //                   ),
-      //                   shape: RoundedRectangleBorder(
-      //                     borderRadius: BorderRadius.circular(16),
-      //                   ),
-      //                 ),
-      //               ],
-      //             ),
-      //             SizedBox(width: 8),
-      //             Flexible(
-      //               child: Column(
-      //                 crossAxisAlignment: CrossAxisAlignment.end,
-      //                 children: [
-      //                   _buildFormattedDate(jobData['created_at']),
-      //                   SizedBox(height: 4),
-      //                   Text('@$ownerName',
-      //                       style: typography.Body2.copyWith(
-      //                         color: Colors.grey[500],
-      //                       )),
-      //                 ],
-      //               ),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //       // Total Locations and Success/Failure Count
-      //       Padding(
-      //         padding:
-      //             const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      //         child: Row(
-      //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      //           children: [
-      //             Column(
-      //               crossAxisAlignment: CrossAxisAlignment.start,
-      //               children: [
-      //                 Text('Total Locations', style: typography.Body2),
-      //                 Text(
-      //                   '$totalLocations',
-      //                   style: TextStyle(
-      //                       fontSize: 16, fontWeight: FontWeight.w600),
-      //                 ),
-      //               ],
-      //             ),
-      //             Row(
-      //               children: [
-      //                 _buildIconWithCount(
-      //                     Icons.check_circle, Colors.green, successCount),
-      //                 SizedBox(width: 4),
-      //                 _buildIconWithCount(
-      //                     Icons.error_outline, Colors.red, failureCount),
-      //               ],
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //     ],
-      //   ),
-      //   children: [
-      //     // Subprocess list
-      //     Container(
-      //       color: expandedColor,
-      //       child: Container(
-      //         color: expandedColor,
-      //         child: Card(
-      //           margin: EdgeInsets.all(0),
-      //           shape: RoundedRectangleBorder(
-      //             borderRadius: BorderRadius.all(Radius.circular(0)),
-      //           ),
-      //           color: expandedColor,
-      //           // Use darker hover color for expanded content
-      //           child: _buildSubprocesses(jobData),
-      //         ),
-      //       ),
-      //     ),
-      //   ],
-      //   onExpansionChanged: (isExpanded) {
-      //     setState(() {
-      //       expandedJobs[jobId] = isExpanded;
-      //     });
-      //   },
-      // ),
-    );
+        key: jobId == widget.initialProcessId ? expansionTileKey : null,
+        color: collapsedColor,
+        // Main card hover color
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        child: Container()
+        // ExpansionTile(
+        //   shape: RoundedRectangleBorder(
+        //     borderRadius: BorderRadius.circular(12),
+        //   ),
+        //   collapsedShape: RoundedRectangleBorder(
+        //     borderRadius: BorderRadius.circular(12),
+        //   ),
+        //   collapsedBackgroundColor: collapsedColor,
+        //   // Collapsed state color
+        //   backgroundColor: expandedColor2,
+        //   // Expanded section hover color
+        //   showTrailingIcon: false,
+        //   maintainState: false,
+        //   tilePadding: EdgeInsets.all(12.0),
+        //   title: Column(
+        //     children: [
+        //       Row(
+        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //         children: [
+        //           // Left side of the card with title and progress indicator
+        //           Expanded(
+        //             flex: 4,
+        //             child: Column(
+        //               crossAxisAlignment: CrossAxisAlignment.start,
+        //               children: [
+        //                 Tooltip(
+        //                   message: jobId,
+        //                   child: Text(
+        //                     (jobData["process_name"] is Map)
+        //                         ? jobData["process_name"]["filename"].toString()
+        //                         : jobData["process_name"]?.toString() ??
+        //                             "Process",
+        //                     style: typography.Body1.copyWith(
+        //                       fontWeight: FontWeight.w500,
+        //                     ),
+        //                   ),
+        //                   // Text(
+        //                   //   jobData["process_name"]?["filename"].toString() ?? "Process",
+        //                   //   style: typography.Body1.copyWith(
+        //                   //     fontWeight: FontWeight.w500,
+        //                   //   ),
+        //                   // ),
+        //                 ),
+        //                 SizedBox(height: 8),
+        //                 Row(
+        //                   children: [
+        //                     // Progress bar
+        //                     Expanded(
+        //                       child: LinearProgressIndicator(
+        //                         value: completedTasks / totalTasks,
+        //                         minHeight: 4,
+        //                         backgroundColor: Colors.grey[300],
+        //                         color: AppColors.primaryMain,
+        //                         borderRadius: BorderRadius.circular(4),
+        //                       ),
+        //                     ),
+        //                     SizedBox(width: 8),
+        //                     // Progress text
+        //                     Text(
+        //                       '$completedTasks/$totalTasks',
+        //                       style: typography.Subtitle2.copyWith(
+        //                         color: Colors.grey[500],
+        //                       ),
+        //                     ),
+        //                   ],
+        //                 ),
+        //               ],
+        //             ),
+        //           ),
+        //           Spacer(),
+        //           // Right side icons
+        //           IconButton(
+        //             icon: SvgPicture.asset('assets/images/contract.svg'),
+        //             onPressed: () async {
+        //               setState(() {
+        //                 selectedProcessId = jobId;
+        //                 isProcessSummaryOpen = true; // Open summary view
+        //               });
+        //               var provider = Provider.of<JobMonitoringProvider>(context,
+        //                   listen: false);
+        //               Map<String, dynamic>? summaryData =
+        //                   await provider.fetchSummary(selectedProcessId);
+        //
+        //               if (mounted) {
+        //                 // Always check if the widget is still mounted
+        //                 setState(() {
+        //                   if (summaryData != null) {
+        //                     jobSummaryData = summaryData;
+        //                   } else {
+        //                     SnackBar(
+        //                         content: Text('Failed to fetch summary',
+        //                             style: typography.Body1.copyWith(
+        //                                 color: Colors.white)));
+        //
+        //                     isProcessSummaryOpen =
+        //                         false; // Close summary if API fails
+        //                   }
+        //                 });
+        //               }
+        //             },
+        //           ),
+        //           SizedBox(width: 8),
+        //           Padding(
+        //             padding: const EdgeInsets.fromLTRB(4, 0, 8, 0),
+        //             child: Icon(
+        //               expandedJobs[jobId] ?? false
+        //                   ? Icons.remove_circle_outline
+        //                   : Icons.add_circle_outline,
+        //               color: AppColors.primaryMain,
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //       // Expanded content (subprocesses)
+        //       Padding(
+        //         padding:
+        //             const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        //         child: Row(
+        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //           children: [
+        //             Row(
+        //               children: [
+        //                 Chip(
+        //                   label: Text("Main Process" //processType,
+        //                       ),
+        //                   backgroundColor: AppColors.primaryMain,
+        //                   labelStyle: typography.Body1.copyWith(
+        //                     color: AppColors.black,
+        //                   ),
+        //                   shape: RoundedRectangleBorder(
+        //                     borderRadius: BorderRadius.circular(16),
+        //                   ),
+        //                 ),
+        //               ],
+        //             ),
+        //             SizedBox(width: 8),
+        //             Flexible(
+        //               child: Column(
+        //                 crossAxisAlignment: CrossAxisAlignment.end,
+        //                 children: [
+        //                   _buildFormattedDate(jobData['created_at']),
+        //                   SizedBox(height: 4),
+        //                   Text('@$ownerName',
+        //                       style: typography.Body2.copyWith(
+        //                         color: Colors.grey[500],
+        //                       )),
+        //                 ],
+        //               ),
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //       // Total Locations and Success/Failure Count
+        //       Padding(
+        //         padding:
+        //             const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        //         child: Row(
+        //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //           children: [
+        //             Column(
+        //               crossAxisAlignment: CrossAxisAlignment.start,
+        //               children: [
+        //                 Text('Total Locations', style: typography.Body2),
+        //                 Text(
+        //                   '$totalLocations',
+        //                   style: TextStyle(
+        //                       fontSize: 16, fontWeight: FontWeight.w600),
+        //                 ),
+        //               ],
+        //             ),
+        //             Row(
+        //               children: [
+        //                 _buildIconWithCount(
+        //                     Icons.check_circle, Colors.green, successCount),
+        //                 SizedBox(width: 4),
+        //                 _buildIconWithCount(
+        //                     Icons.error_outline, Colors.red, failureCount),
+        //               ],
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        //   children: [
+        //     // Subprocess list
+        //     Container(
+        //       color: expandedColor,
+        //       child: Container(
+        //         color: expandedColor,
+        //         child: Card(
+        //           margin: EdgeInsets.all(0),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.all(Radius.circular(0)),
+        //           ),
+        //           color: expandedColor,
+        //           // Use darker hover color for expanded content
+        //           child: _buildSubprocesses(jobData),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        //   onExpansionChanged: (isExpanded) {
+        //     setState(() {
+        //       expandedJobs[jobId] = isExpanded;
+        //     });
+        //   },
+        // ),
+        );
   }
 
   Widget _buildFormattedDate(dynamic timestamp) {

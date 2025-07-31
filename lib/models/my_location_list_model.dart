@@ -88,22 +88,24 @@ class MyLocation with ClusterItem {
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
+  int? dataCompleteness;
 
   MyLocation(
       {this.id,
       this.finalAddress,
       this.geocodingScore,
       this.isSelected = false,
-        this.isConflict,
-        this.conflicts,
-        this.defaultConflictindex,
+      this.isConflict,
+      this.conflicts,
+      this.defaultConflictindex,
       this.tags,
       this.overallScore,
       this.hazard,
       this.geocodedAddress,
       this.subdestinations,
       this.screenshots,
-      this.isHazardProcess});
+      this.isHazardProcess,
+      this.dataCompleteness});
 
   MyLocation.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -116,7 +118,9 @@ class MyLocation with ClusterItem {
     isConflict = json['is_conflict'];
     if (json['conflicts'] != null) {
       conflicts = <Conflicts>[];
-      json['conflicts'].forEach((v) { conflicts!.add(new Conflicts.fromJson(v)); });
+      json['conflicts'].forEach((v) {
+        conflicts!.add(new Conflicts.fromJson(v));
+      });
     }
 
     defaultConflictindex = json['default_conflict_index'] is int
@@ -164,6 +168,9 @@ class MyLocation with ClusterItem {
       });
     }
     isHazardProcess = json['is_hazard_processed'] ?? '';
+    dataCompleteness = json['data_completeness'] is int
+        ? json['data_completeness']
+        : int.tryParse(json['data_completeness']?.toString() ?? '');
   }
 
   Map<String, dynamic> toJson() {
@@ -193,6 +200,7 @@ class MyLocation with ClusterItem {
       data['screen_shots'] = screenshots!.map((v) => v.toJson()).toList();
     }
     data['is_hazard_processed'] = isHazardProcess;
+    data['data_completeness'] = dataCompleteness;
     return data;
   }
 
@@ -208,7 +216,6 @@ class MyLocation with ClusterItem {
       );
 }
 
-
 class Conflicts {
   List<UserAccounts>? userAccounts;
   EmbeddedAddress? embeddedAddress;
@@ -216,26 +223,48 @@ class Conflicts {
   String? processId;
   List<String>? accountIndex;
   List<String>? subAccountIndex;
+
   // EnabledHazards? enabledHazards;
   List<Null>? dataParameters;
   String? geocodedAddress;
   bool? isHazardProcessed;
   String? mappedAddress;
+
   // List<History>? history;
   String? subProcessId;
   String? originalAddress;
+
   // EnabledHazards? dataParamIndex;
   String? locationId;
 
-  Conflicts({this.userAccounts, this.embeddedAddress, this.finalAddress, this.processId, this.accountIndex, this.subAccountIndex,  this.dataParameters, this.geocodedAddress, this.isHazardProcessed, this.mappedAddress,  this.subProcessId, this.originalAddress, this.locationId});
+  Conflicts(
+      {this.userAccounts,
+      this.embeddedAddress,
+      this.finalAddress,
+      this.processId,
+      this.accountIndex,
+      this.subAccountIndex,
+      this.dataParameters,
+      this.geocodedAddress,
+      this.isHazardProcessed,
+      this.mappedAddress,
+      this.subProcessId,
+      this.originalAddress,
+      this.locationId});
 
   Conflicts.fromJson(Map<String, dynamic> json) {
     if (json['userAccounts'] != null) {
       userAccounts = <UserAccounts>[];
-      json['userAccounts'].forEach((v) { userAccounts!.add(new UserAccounts.fromJson(v)); });
+      json['userAccounts'].forEach((v) {
+        userAccounts!.add(new UserAccounts.fromJson(v));
+      });
     }
-    embeddedAddress = json['embedded_address'] != null ? new EmbeddedAddress.fromJson(json['embedded_address']) : null;
-    finalAddress = json['final_address'] != null ? new FinalAddress.fromJson(json['final_address']) : null;
+    embeddedAddress = json['embedded_address'] != null
+        ? new EmbeddedAddress.fromJson(json['embedded_address'])
+        : null;
+    finalAddress = json['final_address'] != null
+        ? new FinalAddress.fromJson(json['final_address'])
+        : null;
     processId = json['process_id'];
     accountIndex = json['account_index'].cast<String>();
     subAccountIndex = json['sub_account_index'].cast<String>();
@@ -292,6 +321,7 @@ class Conflicts {
     return data;
   }
 }
+
 class UserAccounts {
   String? folder;
   String? subaccount;
@@ -332,7 +362,6 @@ class EmbeddedAddress {
     return data;
   }
 }
-
 
 class Hazard {
   int? priority;

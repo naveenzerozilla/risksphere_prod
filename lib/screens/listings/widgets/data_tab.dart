@@ -224,17 +224,6 @@ class _DataTabState extends State<DataTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 5),
-                  Container(
-                    margin: const EdgeInsets.only(right: 12, left: 12, top: 10),
-                    child: Text(
-                      'Configure Sub Account "${widget.accountName}" Data Parameters',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 12),
                   Container(
                     margin: const EdgeInsets.only(right: 12, left: 12),
@@ -242,25 +231,25 @@ class _DataTabState extends State<DataTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Parameters Dropdown
-                        TextFormField(
-                          controller: _controllerlist,
-                          readOnly: true,
-                          onTap: () {
-                            setState(
-                                () => showDropdownList = !showDropdownList);
-                          },
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Select locations',
-                            labelStyle: TextStyle(color: Colors.white),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            filled: true,
-                            fillColor: Colors.black,
-                            suffixIcon: Icon(Icons.arrow_drop_down,
-                                color: Colors.white),
-                          ),
-                        ),
+                        // TextFormField(
+                        //   controller: _controllerlist,
+                        //   readOnly: true,
+                        //   onTap: () {
+                        //     setState(
+                        //         () => showDropdownList = !showDropdownList);
+                        //   },
+                        //   style: TextStyle(color: Colors.white),
+                        //   decoration: InputDecoration(
+                        //     hintText: 'Select locations',
+                        //     labelStyle: TextStyle(color: Colors.white),
+                        //     border: OutlineInputBorder(
+                        //         borderRadius: BorderRadius.circular(8)),
+                        //     filled: true,
+                        //     fillColor: Colors.black,
+                        //     suffixIcon: Icon(Icons.arrow_drop_down,
+                        //         color: Colors.white),
+                        //   ),
+                        // ),
 
                         // Dropdown with search and list
                         if (showDropdownList)
@@ -447,7 +436,7 @@ class _DataTabState extends State<DataTab> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     SizedBox(width: 40),
-                                    Text('All Parameters1',
+                                    Text('All Parameters',
                                         style: TextStyle(color: Colors.white)),
                                     SizedBox(width: 20),
                                     Container(
@@ -745,65 +734,65 @@ class _DataTabState extends State<DataTab> {
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700)),
                                   SizedBox(height: 5),
-                                  DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: selectedItem == 'data'
-                                          ? null
-                                          : selectedItem,
-                                      hint: Row(
-                                        children: const [
-                                          Text(
-                                            'data',
-                                            style: TextStyle(
-                                                color: Colors.blueAccent),
-                                          ),
-                                          SizedBox(height: 4),
-                                          Icon(Icons.arrow_drop_down_outlined,
-                                              color: Colors.white),
-                                        ],
-                                      ),
-                                      icon: const SizedBox.shrink(),
-                                      dropdownColor: Colors.black,
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                      items: items.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(
-                                            value,
-                                            style: const TextStyle(
-                                                color: Colors.blue),
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (String? newValue) {
-                                        setState(() {
-                                          selectedItem = newValue!;
-                                        });
-                                      },
-                                      selectedItemBuilder:
-                                          (BuildContext context) {
-                                        return items.map((String value) {
-                                          return Row(
-                                            children: [
-                                              Text(
-                                                value,
-                                                style: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.blueAccent),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              const Icon(
-                                                  Icons
-                                                      .arrow_drop_down_outlined,
-                                                  color: Colors.blueAccent),
-                                            ],
-                                          );
-                                        }).toList();
-                                      },
-                                    ),
-                                  ),
+                                  // DropdownButtonHideUnderline(
+                                  //   child: DropdownButton<String>(
+                                  //     value: selectedItem == 'data'
+                                  //         ? null
+                                  //         : selectedItem,
+                                  //     hint: Row(
+                                  //       children: const [
+                                  //         Text(
+                                  //           'data',
+                                  //           style: TextStyle(
+                                  //               color: Colors.blueAccent),
+                                  //         ),
+                                  //         SizedBox(height: 4),
+                                  //         Icon(Icons.arrow_drop_down_outlined,
+                                  //             color: Colors.white),
+                                  //       ],
+                                  //     ),
+                                  //     icon: const SizedBox.shrink(),
+                                  //     dropdownColor: Colors.black,
+                                  //     style:
+                                  //         const TextStyle(color: Colors.white),
+                                  //     items: items.map((String value) {
+                                  //       return DropdownMenuItem<String>(
+                                  //         value: value,
+                                  //         child: Text(
+                                  //           value,
+                                  //           style: const TextStyle(
+                                  //               color: Colors.blue),
+                                  //         ),
+                                  //       );
+                                  //     }).toList(),
+                                  //     onChanged: (String? newValue) {
+                                  //       setState(() {
+                                  //         selectedItem = newValue!;
+                                  //       });
+                                  //     },
+                                  //     selectedItemBuilder:
+                                  //         (BuildContext context) {
+                                  //       return items.map((String value) {
+                                  //         return Row(
+                                  //           children: [
+                                  //             Text(
+                                  //               value,
+                                  //               style: const TextStyle(
+                                  //                   fontSize: 14,
+                                  //                   fontWeight: FontWeight.bold,
+                                  //                   color: Colors.blueAccent),
+                                  //             ),
+                                  //             const SizedBox(height: 4),
+                                  //             const Icon(
+                                  //                 Icons
+                                  //                     .arrow_drop_down_outlined,
+                                  //                 color: Colors.blueAccent),
+                                  //           ],
+                                  //         );
+                                  //       }).toList();
+                                  //     },
+                                  //   ),
+                                  // ),
                                   Consumer<SubaccountParameterProvider>(
                                     builder: (context, provider, child) {
                                       return SingleChildScrollView(

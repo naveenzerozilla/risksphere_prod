@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../listings/widgets/message_card.dart';
-import '../../payments/pricing_list.dart';
+import '../../payments/purchase_license.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final String title;
@@ -301,7 +301,7 @@ class SubscriptionCard extends StatelessWidget {
                                     Navigator.of(context).push(
                                         MaterialPageRoute(
                                             builder: (_) =>
-                                                PricingListScreen()));
+                                                PurchaseLicensePage()));
                                   },
                               ),
                             ],

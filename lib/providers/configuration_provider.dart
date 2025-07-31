@@ -43,22 +43,19 @@ class ConfigurationProvider extends ChangeNotifier {
       if (accountId != null &&
           subAccountId != null &&
           updateallflag != "false") {
-        print("Welcome");
-        print(accountId);
-        print(subAccountId);
-        print(updateallflag);
+
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS}?account_id=$accountId&sub_account_id=$subAccountId');
       } else if (accountId != null && updateallflag != "false") {
-        print("Welcome1");
+
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS_ACCOUNTS}?account_id=$accountId');
       } else if (updateallflag == "false") {
-        print("Welcome2");
+
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS_SUB_ACCOUNTS}?account_id=$accountId&sub_account_id=$subAccountId');
       } else {
-        print("Welcome3");
+
         apiService = ApiService(AppConstant.CONFIGURATIONS);
       }
 
@@ -115,15 +112,14 @@ class ConfigurationProvider extends ChangeNotifier {
           : {
               "id": id,
               "key": key,
-              "level": level, // Include level
-              "update_all": status, // Include update_all
+              "level": level,
+              "update_all": status,
               "value": value,
             };
 
       var response = await apiService.patch(body); // Assuming PATCH is correct
       log(response.toString());
 
-      // Refresh Configuration after update
       await getConfiguration(accountId: accountId, subAccountId: subAccountId);
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

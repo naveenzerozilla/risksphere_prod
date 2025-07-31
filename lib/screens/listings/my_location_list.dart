@@ -1,69 +1,10 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'package:RiskSphere/screens/listings/account_list.dart';
-import 'package:RiskSphere/screens/listings/sub_account_list.dart';
-import 'package:RiskSphere/screens/listings/widgets/conflicts_tab.dart';
-import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:RiskSphere/models/my_location_list_model.dart';
-import 'package:RiskSphere/providers/location_list_provider.dart';
-import 'package:RiskSphere/providers/my_location_list_provider.dart';
-import 'package:RiskSphere/providers/user_profile_provider.dart';
-import 'package:RiskSphere/screens/listings/add_location_screen.dart';
-import 'package:RiskSphere/screens/listings/sov_location_list.dart';
-import 'package:RiskSphere/screens/listings/widgets/configurations_tab.dart';
-import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
-import 'package:RiskSphere/screens/listings/widgets/listings_filter_screen.dart';
-import 'package:RiskSphere/screens/listings/widgets/location_card.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
-import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
-import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
-import 'package:RiskSphere/screens/listings/widgets/overall_score_table.dart';
-import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
-import 'package:RiskSphere/service/shared_preference_service.dart';
-import 'package:lottie/lottie.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:provider/provider.dart';
-import 'package:remixicon/remixicon.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_button.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/components/custom_gradient_circular_progress_bar.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../models/sov_list_model.dart';
-import '../../models/transfer_autocomplete_model.dart';
-import '../../providers/account_list_provider.dart';
-import '../../providers/configuration_provider.dart';
-import '../../providers/dashboard_provider.dart';
-import '../../providers/job_monitoring_provier.dart';
-import '../../providers/sov_list_provider.dart';
-import '../../providers/sub_account_list_provider.dart';
-import '../../providers/theme_provider.dart';
-import 'package:RiskSphere/models/role_model.dart' as roleModel;
-import '../../providers/upload_sov_provider.dart';
-import '../../service/api_service.dart';
-import '../../service/language_service.dart';
-import '../../utils/api_constants.dart';
-import '../../utils/common_headers.dart';
-import 'package:http/http.dart' as http;
 
-import '../payments/pricing_list.dart';
+import '../../utils/global_imports.dart';
+import '../../models/sov_list_model.dart';
+import 'package:RiskSphere/models/role_model.dart' as roleModel;
+import 'package:http/http.dart' as http;
+import '../payments/purchase_license.dart';
 
 class MyLocationList extends StatefulWidget {
   final String? accountID;
@@ -232,7 +173,6 @@ class _MyLocationListState extends State<MyLocationList>
     final prefs = await SharedPreferences.getInstance();
     bool isFirstTime = prefs.getBool('myLocation') ?? true;
 
-    // ✅ If it's NOT the first time, skip the tutorial
     if (!isFirstTime) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -244,8 +184,8 @@ class _MyLocationListState extends State<MyLocationList>
       if (targets.isNotEmpty) {
         await Future.delayed(Duration(milliseconds: 300));
         if (mounted) {
-          showTutorial(); // Run the tutorial
-          await prefs.setBool('myLocation', false); // ✅ Mark as shown
+          showTutorial();
+          await prefs.setBool('myLocation', false);
         }
       } else {
         print('No targets were set. Skipping tutorial.');
@@ -568,6 +508,9 @@ class _MyLocationListState extends State<MyLocationList>
       final provider =
           Provider.of<JobMonitoringProvider>(context, listen: false);
       if (mounted && provider.isProcessing) {
+        setState(() {
+          isUploadInProgress = false;
+        });
         _refreshData();
       } else {
         _refreshTimer?.cancel();
@@ -737,9 +680,10 @@ class _MyLocationListState extends State<MyLocationList>
     }
 
     setState(() {
-      isUploadInProgress = tempProcessId.isNotEmpty &&
-          widget.accountID == accountId &&
-          widget.subAccountID == subAccountId;
+      isUploadInProgress = false;
+      // tempProcessId.isNotEmpty &&
+      // widget.accountID == accountId &&
+      // widget.subAccountID == subAccountId;
     });
 
     print("Upload in Progress: $isUploadInProgress");
@@ -829,9 +773,7 @@ class _MyLocationListState extends State<MyLocationList>
 
                                 final result = await Navigator.of(context)
                                     .push(MaterialPageRoute(
-                                        builder: (_) =>
-                                            // StaticDropdownExample()
-                                            AddLocationScreen(
+                                        builder: (_) => AddLocationScreen(
                                               accountId: widget.accountID!,
                                               subAccountId:
                                                   widget.subAccountID!,
@@ -841,7 +783,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                   widget.subAccountName,
                                             )));
 
-                                // ✅ Restore after coming back
                                 _isDisposed = false;
                                 _startRefreshTimer(); // recreate timer
                                 // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
@@ -1109,6 +1050,8 @@ class _MyLocationListState extends State<MyLocationList>
                         ),
                       ),*/
                     Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Column(
@@ -1117,122 +1060,154 @@ class _MyLocationListState extends State<MyLocationList>
                             children: [
                               SizedBox(height: CustomSpacing.one),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10.0),
-                                    child: Text(widget.accountName,
-                                        style: typography.Base_Bold),
+                                  // 70% Width Side - Breadcrumbs (with scroll if overflow)
+                                  Expanded(
+                                    flex: 3,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: [
+                                          SizedBox(width: 10),
+                                          InkWell(
+                                            onTap: () {
+                                              Navigator.pushAndRemoveUntil(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      AccountListScreen(),
+                                                ),
+                                                (route) => false,
+                                              );
+                                            },
+                                            child: Text(widget.accountName,
+                                                style: typography.InputLabel),
+                                          ),
+                                          Text(' > ',
+                                              style: typography.InputLabel),
+                                          InkWell(
+                                            onTap: () {
+                                              Navigator.pushAndRemoveUntil(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      SubAccountListScreen(
+                                                    accountId:
+                                                        widget.accountID ?? "",
+                                                    accountName:
+                                                        widget.accountName ??
+                                                            "",
+                                                  ),
+                                                ),
+                                                (route) => false,
+                                              );
+                                            },
+                                            child: Text(widget.subAccountName,
+                                                style: typography.InputLabel),
+                                          ),
+                                          Text(' > ',
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.white70)),
+                                          Text(
+                                            _masterTabController!.index == 0
+                                                ? "Location list"
+                                                : _masterTabController!.index ==
+                                                        1
+                                                    ? "Sovs"
+                                                    : _masterTabController!
+                                                                .index ==
+                                                            2
+                                                        ? "Shared"
+                                                        : "Configure",
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Consumer<JobMonitoringProvider>(builder:
-                                          (context, jobMonitoringProvider,
-                                              child) {
-                                        return Container(
-                                          child:
-                                              _getLiveUI(jobMonitoringProvider),
-                                        );
-                                      }),
-                                      Consumer<MyLocationListProvider>(
-                                        builder: (context,
-                                            myLocationListProvider, child) {
-                                          return myLocationListProvider
-                                                  .myLocationList.isNotEmpty
-                                              ? IconButton(
-                                                  icon: isLoading
-                                                      ? SizedBox(
-                                                          height: 30,
-                                                          width: 30,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                  strokeWidth:
-                                                                      2),
-                                                        )
-                                                      : SvgPicture.asset(
-                                                          'assets/images/contract.svg'),
-                                                  onPressed: isLoading
-                                                      ? null // Disable button while loading
-                                                      : () async {
-                                                          setState(() {
-                                                            isLoading =
-                                                                true; // Show loader
-                                                          });
 
-                                                          var provider = Provider
-                                                              .of<JobMonitoringProvider>(
-                                                                  context,
-                                                                  listen:
-                                                                      false);
+                                  // 30% Width Side - Actions
+                                  Expanded(
+                                    flex: 3,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Consumer<JobMonitoringProvider>(
+                                          builder: (context,
+                                              jobMonitoringProvider, child) {
+                                            return _getLiveUI(
+                                                jobMonitoringProvider);
+                                          },
+                                        ),
+                                        Consumer<MyLocationListProvider>(
+                                          builder: (context,
+                                              myLocationListProvider, child) {
+                                            if (myLocationListProvider
+                                                .myLocationList.isNotEmpty) {
+                                              return IconButton(
+                                                icon: isLoading
+                                                    ? SizedBox(
+                                                        height: 30,
+                                                        width: 30,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                                strokeWidth: 2),
+                                                      )
+                                                    : SvgPicture.asset(
+                                                        'assets/images/contract.svg'),
+                                                onPressed: isLoading
+                                                    ? null
+                                                    : () async {
+                                                        setState(() =>
+                                                            isLoading = true);
+                                                        var provider = Provider
+                                                            .of<JobMonitoringProvider>(
+                                                                context,
+                                                                listen: false);
+                                                        try {
+                                                          Map<String, dynamic>?
+                                                              summaryData =
+                                                              await provider.fetchLocationSummary(
+                                                                  widget
+                                                                      .accountID!,
+                                                                  widget
+                                                                      .subAccountID!);
 
-                                                          try {
-                                                            Map<String,
-                                                                    dynamic>?
-                                                                summaryData =
-                                                                await provider.fetchLocationSummary(
-                                                                    widget
-                                                                        .accountID!,
-                                                                    widget
-                                                                        .subAccountID!);
-
-                                                            if (summaryData !=
-                                                                null) {
-                                                              showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder:
-                                                                    (context) {
-                                                                  return Dialog(
-                                                                    shape:
-                                                                        RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              16),
-                                                                    ),
-                                                                    child:
-                                                                        Container(
-                                                                      width: MediaQuery.of(context)
-                                                                              .size
-                                                                              .width *
-                                                                          2,
-                                                                      // Set width to 80% of screen width
-                                                                      child: _buildProcessSummary(
-                                                                          summaryData),
-                                                                    ),
-                                                                  );
-                                                                },
-                                                              );
-                                                            } else {
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                  content: Text(
-                                                                    'Failed to fetch summary',
-                                                                    style: Theme.of(
-                                                                            context)
-                                                                        .textTheme
-                                                                        .bodyMedium
-                                                                        ?.copyWith(
-                                                                            color:
-                                                                                Colors.white),
+                                                          if (summaryData !=
+                                                              null) {
+                                                            showDialog(
+                                                              context: context,
+                                                              builder:
+                                                                  (context) {
+                                                                return Dialog(
+                                                                  shape:
+                                                                      RoundedRectangleBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            16),
                                                                   ),
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .red,
-                                                                ),
-                                                              );
-                                                            }
-                                                          } catch (e) {
+                                                                  child:
+                                                                      Container(
+                                                                    width: MediaQuery.of(context)
+                                                                            .size
+                                                                            .width *
+                                                                        0.8,
+                                                                    child: _buildProcessSummary(
+                                                                        summaryData),
+                                                                  ),
+                                                                );
+                                                              },
+                                                            );
+                                                          } else {
                                                             ScaffoldMessenger
                                                                     .of(context)
                                                                 .showSnackBar(
                                                               SnackBar(
                                                                 content: Text(
-                                                                  'Error: $e',
+                                                                  'Failed to fetch summary',
                                                                   style: Theme.of(
                                                                           context)
                                                                       .textTheme
@@ -1245,104 +1220,126 @@ class _MyLocationListState extends State<MyLocationList>
                                                                     Colors.red,
                                                               ),
                                                             );
-                                                          } finally {
-                                                            setState(() {
-                                                              isLoading =
-                                                                  false; // Hide loader after API call
-                                                            });
                                                           }
-                                                        },
-                                                )
-                                              : Container();
-                                        },
-                                      ),
-                                    ],
+                                                        } catch (e) {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                'Error: $e',
+                                                                style: Theme.of(
+                                                                        context)
+                                                                    .textTheme
+                                                                    .bodyMedium
+                                                                    ?.copyWith(
+                                                                        color: Colors
+                                                                            .white),
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors.red,
+                                                            ),
+                                                          );
+                                                        } finally {
+                                                          setState(() =>
+                                                              isLoading =
+                                                                  false);
+                                                        }
+                                                      },
+                                              );
+                                            } else {
+                                              return SizedBox.shrink();
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
 
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10.0),
-                                child: Row(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        InkWell(
-                                          onTap: () {
-                                            Navigator.pushAndRemoveUntil(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      AccountListScreen()),
-                                              (route) =>
-                                                  false, // This removes all previous routes
-                                            ).then((_) {
-                                              // Optional: Add any actions to perform after navigation
-                                            });
-                                          },
-                                          child: Text(widget.accountName,
-                                              style: typography.InputLabel),
-                                        ),
-                                        Text(' > ',
-                                            style: typography.InputLabel),
-                                        InkWell(
-                                          onTap: () {
-                                            Navigator.pushAndRemoveUntil(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    SubAccountListScreen(
-                                                  accountId:
-                                                      widget.accountID ?? "",
-                                                  accountName:
-                                                      widget.accountName ?? "",
-                                                ),
-                                              ),
-                                              (route) =>
-                                                  false, // This removes all previous routes
-                                            ).then((_) {
-                                              // Optional: Add any actions to perform after navigation
-                                            });
-                                          },
-                                          child: Text(widget.subAccountName,
-                                              style: typography.InputLabel),
-                                        ),
-                                        Text(' > ',
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white70)),
-                                        Text(
-                                            _masterTabController!.index
-                                                        .toString() ==
-                                                    "0"
-                                                ? "Location list"
-                                                : _masterTabController!.index
-                                                            .toString() ==
-                                                        "1"
-                                                    ? "Sovs"
-                                                    : _masterTabController!
-                                                                .index
-                                                                .toString() ==
-                                                            "2"
-                                                        ? "Shared"
-                                                        : "Configure",
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white)),
-                                      ],
-                                    ),
-                                    // Container(
-                                    //   child: MaintenanceUI(isMaintenance: isMaintenance),
-                                    // ),
-                                  ],
-                                ),
-                              ),
+                              // Padding(
+                              //   padding: const EdgeInsets.symmetric(
+                              //       horizontal: 10.0),
+                              //   child: Row(
+                              //     children: [
+                              //       Row(
+                              //         children: [
+                              //           InkWell(
+                              //             onTap: () {
+                              //               Navigator.pushAndRemoveUntil(
+                              //                 context,
+                              //                 MaterialPageRoute(
+                              //                     builder: (context) =>
+                              //                         AccountListScreen()),
+                              //                 (route) =>
+                              //                     false, // This removes all previous routes
+                              //               ).then((_) {
+                              //                 // Optional: Add any actions to perform after navigation
+                              //               });
+                              //             },
+                              //             child: Text(widget.accountName,
+                              //                 style: typography.InputLabel),
+                              //           ),
+                              //           Text(' > ',
+                              //               style: typography.InputLabel),
+                              //           InkWell(
+                              //             onTap: () {
+                              //               Navigator.pushAndRemoveUntil(
+                              //                 context,
+                              //                 MaterialPageRoute(
+                              //                   builder: (context) =>
+                              //                       SubAccountListScreen(
+                              //                     accountId:
+                              //                         widget.accountID ?? "",
+                              //                     accountName:
+                              //                         widget.accountName ?? "",
+                              //                   ),
+                              //                 ),
+                              //                 (route) =>
+                              //                     false, // This removes all previous routes
+                              //               ).then((_) {
+                              //                 // Optional: Add any actions to perform after navigation
+                              //               });
+                              //             },
+                              //             child: Text(widget.subAccountName,
+                              //                 style: typography.InputLabel),
+                              //           ),
+                              //           Text(' > ',
+                              //               style: TextStyle(
+                              //                   fontSize: 14,
+                              //                   color: Colors.white70)),
+                              //           Text(
+                              //               _masterTabController!.index
+                              //                           .toString() ==
+                              //                       "0"
+                              //                   ? "Location list"
+                              //                   : _masterTabController!.index
+                              //                               .toString() ==
+                              //                           "1"
+                              //                       ? "Sovs"
+                              //                       : _masterTabController!
+                              //                                   .index
+                              //                                   .toString() ==
+                              //                               "2"
+                              //                           ? "Shared"
+                              //                           : "Configure",
+                              //               style: TextStyle(
+                              //                   fontSize: 14,
+                              //                   color: Colors.white)),
+                              //         ],
+                              //       ),
+                              //       // Container(
+                              //       //   child: MaintenanceUI(isMaintenance: isMaintenance),
+                              //       // ),
+                              //     ],
+                              //   ),
+                              // ),
                               // Text(hasLicenseStatus.toString()),
                               // Text(hasGeocodingStatus!.toString()),
                               // Text(hasHazardLicenseStatus.toString()),
 
-                              SizedBox(height: CustomSpacing.four),
+                              SizedBox(height: CustomSpacing.one),
                               // Master TabBar
                               Container(
                                 height: 50,
@@ -2318,134 +2315,6 @@ class _MyLocationListState extends State<MyLocationList>
             ],
           ),
         ),
-
-        // Expanded(
-        //   child: TabBarView(
-        //     physics: NeverScrollableScrollPhysics(),
-        //     // Prevents scrolling in main TabBarView
-        //     controller: _mainTabController,
-        //     children: [
-        //       Column(
-        //         children: [
-        //           Consumer<MyLocationListProvider>(
-        //             builder: (context, locationListProvider, child) {
-        //               return TabBar(
-        //                 controller: _tabController,
-        //                 labelStyle: typography.BottomNavigationActiveLabel,
-        //                 tabs: [
-        //                   Tab(
-        //                     child: InkWell(
-        //                       onTap: () {
-        //                         _tabController?.animateTo(0);
-        //                         _fetchTabData(0);
-        //                         // _fetchTabData(0);
-        //                       },
-        //                       child: Row(
-        //                         mainAxisAlignment: MainAxisAlignment.center,
-        //                         children: [
-        //                           Text(
-        //                             LanguageService.getTranslated(
-        //                               context,
-        //                               "locationlist_app_connections_tab_all",
-        //                             ),
-        //                           ),
-        //                           SizedBox(width: CustomSpacing.two),
-        //                           SizedBox(
-        //                             height: 25,
-        //                             child: Chip(
-        //                               labelPadding: EdgeInsets.all(0),
-        //                               materialTapTargetSize:
-        //                                   MaterialTapTargetSize.shrinkWrap,
-        //                               label: Text(
-        //                                 locationListProvider.isLoading
-        //                                     ? "0" // Show 0 while loading
-        //                                     : locationListProvider.locationHits
-        //                                         .toString(),
-        //                                 style: typography
-        //                                         .BottomNavigationActiveLabel
-        //                                     .copyWith(height: -0.6),
-        //                               ),
-        //                             ),
-        //                           ),
-        //                         ],
-        //                       ),
-        //                     ),
-        //                   ),
-        //                   Tab(
-        //                     child: InkWell(
-        //                       onTap: () {
-        //                         _tabController?.animateTo(1);
-        //                         _fetchTabData(1);
-        //                       },
-        //                       child: Row(
-        //                         mainAxisAlignment: MainAxisAlignment.center,
-        //                         children: [
-        //                           Text(
-        //                             LanguageService.getTranslated(
-        //                               context,
-        //                               "locationlist_app_connections_tab_certified",
-        //                             ),
-        //                           ),
-        //                           SizedBox(width: CustomSpacing.two),
-        //                           SizedBox(
-        //                             height: 25,
-        //                             child: Chip(
-        //                               labelPadding: EdgeInsets.all(0),
-        //                               materialTapTargetSize:
-        //                                   MaterialTapTargetSize.shrinkWrap,
-        //                               label: Text(
-        //                                 locationListProvider.isLoading
-        //                                     ? "0" // Show 0 while loading
-        //                                     : locationListProvider
-        //                                         .certifiedLocationHits
-        //                                         .toString(),
-        //                                 style: typography
-        //                                         .BottomNavigationActiveLabel
-        //                                     .copyWith(height: -0.6),
-        //                               ),
-        //                             ),
-        //                           ),
-        //                         ],
-        //                       ),
-        //                     ),
-        //                   ),
-        //                 ],
-        //               );
-        //             },
-        //           ),
-        //           SizedBox(height: CustomSpacing.four),
-        //           Expanded(
-        //             child: TabBarView(
-        //               controller: _tabController,
-        //               physics: NeverScrollableScrollPhysics(),
-        //               // Prevents scrolling in nested TabBarView
-        //               children: [
-        //                 _getLocationListAllUI(),
-        //                 _getLocationListCertifiedUI(),
-        //               ],
-        //             ),
-        //           ),
-        //         ],
-        //       ),
-        //
-        //       // Map View
-        //       Consumer<MyLocationListProvider>(
-        //         builder: (context, locationListProvider, child) {
-        //           return locationListProvider.isLoading
-        //               ? Center(
-        //                   child: CircularProgressIndicator(),
-        //                 )
-        //               : LocationTable(
-        //                   locations: locationListProvider.myLocationList);
-        //         },
-        //       ),
-        //       LocationListMapView(
-        //         accountId: widget.accountID!,
-        //         subAccountId: widget.subAccountID!,
-        //       ),
-        //     ],
-        //   ),
-        // ),
       ],
     );
   }
@@ -2493,240 +2362,6 @@ class _MyLocationListState extends State<MyLocationList>
         widget.initialSubProcessId,
       );
     }
-  }
-
-  // Widget _getLiveUI(JobMonitoringProvider provider) {
-  //   var typography = CustomTypography(context);
-  //
-  //   // Define the secondary stream with proper caching
-  //   Stream<QuerySnapshot<Map<String, dynamic>>> processStream;
-  //   print('docids: ${provider.docIds}');
-  //   processStream = FirebaseFirestore.instance
-  //       .collection('processes')
-  //       .where('location_data.account_id', isEqualTo: widget.accountID)
-  //       .where('location_data.sub_account_id', isEqualTo: widget.subAccountID)
-  //       .where('process_type', isEqualTo: 'hazard')
-  //       .orderBy('created_at', descending: true)
-  //       .limit(1)
-  //       .snapshots()
-  //       .distinct()
-  //       .asBroadcastStream();
-  //
-  //   // Cache the subaccount stream
-  //   final subaccountStream = FirebaseFirestore.instance
-  //       .collection('subaccount')
-  //       .doc(widget.subAccountID)
-  //       .snapshots()
-  //       .asBroadcastStream();
-  //
-  //   // Combine streams with debounce to prevent rapid UI updates
-  //   var combinedStream = Rx.combineLatest2<
-  //       DocumentSnapshot<Map<String, dynamic>>,
-  //       QuerySnapshot<Map<String, dynamic>>,
-  //       Map<String, dynamic>>(
-  //     subaccountStream,
-  //     processStream,
-  //     (heatmapSnapshot, processSnapshot) {
-  //       return {
-  //         'heatmapData': heatmapSnapshot.data(),
-  //         'processData': processSnapshot.docs.isNotEmpty
-  //             ? processSnapshot.docs.first.data()
-  //             : null,
-  //       };
-  //     },
-  //   ).debounceTime(const Duration(seconds: 20));
-  //
-  //   return StreamBuilder<Map<String, dynamic>>(
-  //     stream: combinedStream,
-  //     builder: (context, snapshot) {
-  //       if (snapshot.connectionState == ConnectionState.waiting &&
-  //           !snapshot.hasData) {
-  //         return SizedBox(height: CustomSpacing.six);
-  //       }
-  //
-  //       if (snapshot.hasError) {
-  //         return SizedBox.shrink();
-  //       }
-  //
-  //       if (!snapshot.hasData) {
-  //         return SizedBox(height: CustomSpacing.sixteen);
-  //       }
-  //
-  //       var data = snapshot.data!;
-  //       var heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
-  //       var processStatus = data['processData']?['status'] ?? 'completed';
-  //
-  //       // Extract ongoing processes and ensure it's a list
-  //       List<dynamic> onGoingProcesses = data['on_going_processes'] is List
-  //           ? data['on_going_processes']
-  //           : [];
-  //
-  //       print('Ongoing Processes: $onGoingProcesses');
-  //
-  //       // Update Provider's isProcessing state
-  //       bool isCurrentlyProcessing =
-  //           processStatus.toLowerCase() == 'processing';
-  //       String newProcessStatus = data['processData']?['status'] ?? 'completed';
-  //
-  //       // Get the provider instance
-  //       var jobProvider =
-  //           Provider.of<JobMonitoringProvider>(context, listen: false);
-  //
-  //       // Check if status has changed
-  //       if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
-  //         jobProvider.updateProcessStatus(newProcessStatus);
-  //
-  //         if (isCurrentlyProcessing) {
-  //           _startRefreshTimer();
-  //         } else {
-  //           _refreshTimer?.cancel();
-  //           _getData();
-  //         }
-  //       }
-  //
-  //       // if (jobProvider.processStatus != newProcessStatus) {
-  //       //   jobProvider.updateProcessStatus(newProcessStatus);
-  //       //
-  //       //   // Refresh when status changes
-  //       //   // _getData();
-  //       //
-  //       //   if (isCurrentlyProcessing) {
-  //       //     _startRefreshTimer(); // Start timer when processing starts
-  //       //   } else {
-  //       //     _getData();
-  //       //     _refreshTimer?.cancel(); // Stop timer when processing stops
-  //       //   }
-  //       // }
-  //
-  //       print('Heatmap Status: $heatmapStatus');
-  //       print('Process Status: $processStatus');
-  //
-  //       var provider =
-  //           Provider.of<MyLocationListProvider>(context, listen: false);
-  //       provider.isHeatMapGeneratingLive =
-  //           heatmapStatus.toString().toLowerCase() == 'initiated';
-  //
-  //       // Extract process count and calculate percentage
-  //       int totalCompleted =
-  //           data['processData']?['total_processes_completed'] ?? 0;
-  //       var totalProcesses = data['processData']?['total_processes'] ?? 1;
-  //       double percentage = (totalCompleted / totalProcesses) * 100;
-  //
-  //       return AnimatedSwitcher(
-  //         duration: const Duration(milliseconds: 300),
-  //         child: Column(
-  //           key: ValueKey('$processStatus-$heatmapStatus'),
-  //           crossAxisAlignment: CrossAxisAlignment.end,
-  //           children: [
-  //             if (processStatus.toString().toLowerCase() == 'processing')
-  //               GestureDetector(
-  //                 onTap: () {
-  //                   Navigator.push(
-  //                       context,
-  //                       MaterialPageRoute(
-  //                           builder: (context) => ProcessMonitoringScreen(
-  //                                 accountId: widget.accountID,
-  //                                 subAccountId: widget.subAccountID,
-  //                               ))).then((value) => _getData());
-  //                 },
-  //                 child: Padding(
-  //                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-  //                   child: Column(
-  //                     crossAxisAlignment: CrossAxisAlignment.end,
-  //                     children: [
-  //                       Row(
-  //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                         children: [
-  //                           Row(
-  //                             children: [
-  //                               Lottie.asset(
-  //                                 'assets/lottie/loading.json',
-  //                                 width: 20,
-  //                                 height: 20,
-  //                               ),
-  //                               const SizedBox(width: 8.0),
-  //                               Text(
-  //                                 'Processing '
-  //                                 '${percentage.toStringAsFixed(0)}%',
-  //                                 style: typography.Caption.copyWith(
-  //                                   fontWeight: FontWeight.w500,
-  //                                 ),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         ],
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               )
-  //             else if (heatmapStatus.toString().toLowerCase() == 'initiated')
-  //               Row(
-  //                 mainAxisAlignment: MainAxisAlignment.end,
-  //                 children: [
-  //                   Padding(
-  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-  //                     child: Column(
-  //                       children: [
-  //                         Row(
-  //                           children: [
-  //                             Lottie.asset(
-  //                               'assets/lottie/loading.json',
-  //                               width: 20,
-  //                               height: 20,
-  //                             ),
-  //                             const SizedBox(width: 8.0),
-  //                             Text(
-  //                               'Generating Heatmap',
-  //                               style: typography.Caption.copyWith(
-  //                                   fontWeight: FontWeight.w500),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-  Stream<Map<String, dynamic>> _createCombinedStream(
-    Stream<DocumentSnapshot<Map<String, dynamic>>> subaccountStream,
-    Stream<QuerySnapshot<Map<String, dynamic>>> processStream,
-  ) {
-    bool firstEmissionDone = false;
-
-    return Rx.combineLatest2<DocumentSnapshot<Map<String, dynamic>>,
-        QuerySnapshot<Map<String, dynamic>>, Map<String, dynamic>>(
-      subaccountStream,
-      processStream,
-      (heatmapSnapshot, processSnapshot) {
-        return {
-          'heatmapData': heatmapSnapshot.data(),
-          'processData': processSnapshot.docs.isNotEmpty
-              ? processSnapshot.docs.first.data()
-              : null,
-        };
-      },
-    ).transform(
-      StreamTransformer<Map<String, dynamic>, Map<String, dynamic>>.fromBind(
-        (stream) async* {
-          await for (final value in stream) {
-            if (!firstEmissionDone) {
-              firstEmissionDone = true;
-              yield value; // immediate emit on first load
-            } else {
-              await Future.delayed(const Duration(seconds: 20));
-              yield value;
-            }
-          }
-        },
-      ),
-    );
   }
 
   Widget _getLiveUI(JobMonitoringProvider provider) {
@@ -2780,6 +2415,9 @@ class _MyLocationListState extends State<MyLocationList>
               jobProvider.updateProcessStatus(newProcessStatus);
 
               if (isCurrentlyProcessing) {
+                setState(() {
+                  isUploadInProgress = false;
+                });
                 _startRefreshTimer();
               } else {
                 _refreshTimer?.cancel();
@@ -4363,7 +4001,16 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .myLocationList[index]
                                                 .overallScore ??
                                             5,
-                                        dataCompletenessScore: 0,
+                                        dataCompletenessScore: scoreToStar(
+                                            locationListProvider
+                                                        .myLocationList[index]
+                                                        .dataCompleteness ==
+                                                    null
+                                                ? 1
+                                                : locationListProvider
+                                                        .myLocationList[index]
+                                                        .dataCompleteness ??
+                                                    1),
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -4578,7 +4225,15 @@ class _MyLocationListState extends State<MyLocationList>
                                 // locationListProvider
                                 //         .myLocationList[index].overallScore ??
                                 //     0,
-                                dataCompletenessScore: 0,
+                                dataCompletenessScore: scoreToStar(
+                                    locationListProvider.myLocationList[index]
+                                                .dataCompleteness ==
+                                            null
+                                        ? 1
+                                        : locationListProvider
+                                            .myLocationList[index]
+                                            .dataCompleteness),
+
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -4686,6 +4341,15 @@ class _MyLocationListState extends State<MyLocationList>
         );
       },
     );
+  }
+
+  int scoreToStar(int? score) {
+    if (score == null) return 0;
+    if (score >= 80) return 5;
+    if (score >= 60) return 4;
+    if (score >= 40) return 3;
+    if (score >= 20) return 2;
+    return 0;
   }
 
   _getLocationListCertifiedUI() {
@@ -5068,7 +4732,11 @@ class _MyLocationListState extends State<MyLocationList>
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
           locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 0,
+      dataCompletenessScore: scoreToStar(locationListProvider
+                  .certifiedLocationList[index].dataCompleteness ==
+              null
+          ? 1
+          : locationListProvider.certifiedLocationList[index].dataCompleteness),
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -5397,7 +5065,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 messageTextSpans: [
                                   TextSpan(
                                     text: hasAnyPlan.toString() == 'true'
-                                        ? 'Available Credits: ${hasGeocodingStatus} locations.'
+                                        ? 'Available Credits: ${hasHazardLicenseStatus} locations.'
                                         : '$locations of $total locations left to upload.',
                                   ),
                                   hasAnyPlan.toString() == 'true'
@@ -5410,7 +5078,7 @@ class _MyLocationListState extends State<MyLocationList>
                                               Navigator.of(context).push(
                                                   MaterialPageRoute(
                                                       builder: (_) =>
-                                                          PricingListScreen()));
+                                                          PurchaseLicensePage()));
                                             },
                                           text: ' Upgrade Now!',
                                           style: TextStyle(
@@ -5773,8 +5441,11 @@ class _MyLocationListState extends State<MyLocationList>
                                                                                 subAccountId: widget.subAccountID!,
                                                                               ))).then((value) {
                                                                     if (value) {
-                                                                      _getData();
-                                                                      _getSovUploadStatus();
+                                                                      setState(
+                                                                          () {
+                                                                        _getData();
+                                                                        _getSovUploadStatus();
+                                                                      });
                                                                     }
                                                                   });
                                                                 }

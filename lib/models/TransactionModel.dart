@@ -729,6 +729,8 @@ class Plans {
   String? selectedPlan;
   String? planName;
   dynamic price;
+  String? vendor;
+  String? eventType;
   String? productId;
   String? priceId;
 
@@ -739,6 +741,8 @@ class Plans {
       this.selectedPlan,
       this.planName,
       this.price,
+        this.vendor,
+        this.eventType,
       this.productId,
       this.priceId});
 
@@ -751,6 +755,8 @@ class Plans {
     }
     planId = json['plan_id'];
     planType = json['plan_type'];
+    vendor = json['vendor'];
+    eventType = json['event_type'];
     selectedPlan = json['selected_plan'];
     planName = json['plan_name'];
     price = json['price'];
@@ -766,6 +772,8 @@ class Plans {
     }
     data['plan_id'] = this.planId;
     data['plan_type'] = this.planType;
+    data['vendor']= this.vendor;
+    data['event_type']= this.eventType;
     data['selected_plan'] = this.selectedPlan;
     data['plan_name'] = this.planName;
     data['price'] = this.price;

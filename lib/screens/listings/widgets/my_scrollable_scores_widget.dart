@@ -6,11 +6,13 @@ import '../../../design_system/primitives/custom_typography.dart';
 class MyScrollableScoresWidget extends StatelessWidget {
   final int geocodingScore;
   final dynamic riskScore;
+  final dynamic dataCompleteness;
   final bool? hazardProcess;
 
   MyScrollableScoresWidget({
     required this.geocodingScore,
     required this.riskScore,
+    required this.dataCompleteness,
     this.hazardProcess,
   });
 
@@ -31,7 +33,7 @@ class MyScrollableScoresWidget extends StatelessWidget {
               children: [
                 _buildScoreCard(context, 'Geocoding Score', geocodingScore,true),
                 _buildScoreCard(context, 'Risk Score', riskScore,hazardProcess),
-                _buildScoreCard(context, 'Completeness', 0,true),
+                _buildScoreCard(context, 'Completeness', dataCompleteness,true),
                 // _buildScoreCard(context, 'Construction', riskScore),
               ],
             ),

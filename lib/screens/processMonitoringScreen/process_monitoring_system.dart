@@ -1,18 +1,5 @@
-import 'dart:developer';
+import '../../utils/global_imports.dart';
 import 'package:async/async.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:RiskSphere/design_system/primitives/app_colors.dart';
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/providers/job_monitoring_provier.dart';
-import 'package:RiskSphere/screens/listings/my_location_list.dart';
-import 'package:lottie/lottie.dart';
-import 'package:provider/provider.dart';
-import 'package:screenshot/screenshot.dart';
-
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_drawer.dart';
 import '../jobMonitoringSystem/job_monitoring_screen.dart';
 
 class ProcessMonitoringScreen extends StatefulWidget {
@@ -164,12 +151,12 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                                 ?.cast<String, dynamic>() ??
                             {};
 
-                        return
-
-                          _buildProcessCard(
+                        return _buildProcessCard(
                           processId: (processData["process_name"] is Map)
-                              ? processData["process_name"]["filename"].toString()
-                              : processData["process_name"]?.toString() ?? processId,
+                              ? processData["process_name"]["filename"]
+                                  .toString()
+                              : processData["process_name"]?.toString() ??
+                                  processId,
                           companyName: companyName,
                           ownerName: ownerName,
                           totalLocations: totalLocations,
@@ -407,9 +394,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       ?["score"]?["status"] ??
                   "Pending";
 
-              return
-
-                _buildLocationSetCard(
+              return _buildLocationSetCard(
                 locationSetId: locationSetName,
                 locationSetName: locationSetName,
                 assetUploadStatus: assetUploadStatus,

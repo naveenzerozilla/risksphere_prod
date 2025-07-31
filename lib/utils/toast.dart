@@ -54,3 +54,11 @@ notificationToast(String successText,
     fontSize: 14,
   );
 }
+int scoreToStar(int? score) {
+  if (score == null) return 1;
+  if (score >= 80) return 5;
+  if (score >= 60) return 4;
+  if (score >= 40) return 3;
+  if (score >= 20) return 2;
+  return 1;
+}

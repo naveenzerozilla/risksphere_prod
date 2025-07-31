@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/initial_data_model.dart';
 import '../../providers/auth_provider.dart';
+import '../primitives/app_colors.dart';
 import '../primitives/custom_typography.dart';
 import '../primitives/utilities/custom_spacing.dart';
 import '../repo/constants.dart';
@@ -302,12 +303,22 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
             ],
           ),
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('SUBMIT', style: typography.Subtitle1),
+        SizedBox(
+          width: MediaQuery.of(context).size.width/1.1,
+          height: 50,
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            label: Text('SUBMIT', style: typography.ButtonLarge.copyWith(
+                color: Colors.black),),
+
+            backgroundColor: AppColors.primaryMain,
+            foregroundColor:
+            Theme.of(context).colorScheme.onSurface,
+          ),
         ),
+        SizedBox(height: 20)
       ],
     );
   }

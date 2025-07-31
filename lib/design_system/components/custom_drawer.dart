@@ -14,20 +14,24 @@ import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:RiskSphere/screens/listings/account_list.dart';
 import 'package:RiskSphere/screens/userManagement/user_management.dart';
+import '../../constants/enums.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
+import '../../providers/sub_account_list_provider.dart';
 import '../../screens/listings/news_feed_screen.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
 import '../../screens/onboarding/splash_screen.dart';
-import '../../screens/payments/pricing_list.dart';
+import '../../screens/payments/purchase_license.dart';
 import '../../screens/payments/transaction_summary.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/debouncer.dart';
 import '../primitives/app_colors.dart';
+import '../primitives/utilities/custom_spacing.dart';
+import 'custom_button.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({
@@ -235,7 +239,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           Navigator.of(context).push(
                                               MaterialPageRoute(
                                                   builder: (_) =>
-                                                      PricingListScreen()));
+                                                      PurchaseLicensePage()));
                                         },
                                     ),
                                   ],
@@ -303,125 +307,239 @@ class _CustomDrawerState extends State<CustomDrawer> {
               ),
             ),
             Expanded(
-              child: Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: Consumer<DrawerSelectionProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoading) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                    return ListView(
-                      controller: _scrollController,
-                      physics: ClampingScrollPhysics(),
-                      padding: EdgeInsets.only(top: 0),
-                      children: <Widget>[
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "Dashboard",
-                          icon: Icons.home,
-                          onTap: () {
-                            provider.setSelectedItem("dashboard");
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => DashboardScreen()),
-                            );
-                          },
-                          isSelected: provider.selectedItem == "dashboard",
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "Accounts",
-                          icon: Icons.account_balance_wallet,
-                          onTap: () {
-                            provider.setSelectedItem("accounts");
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => AccountListScreen()),
-                            );
-                          },
-                          isSelected: provider.selectedItem == "accounts",
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: "News Feed",
-                          icon: Icons.space_dashboard,
-                          onTap: () {
-                            provider.setSelectedItem("news");
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => NewsFeedScreen()),
-                            );
-                          },
-                          isSelected: provider.selectedItem == "news",
-                        ),
-                        isPgAdmin.toString() == "true"
-                            ? _buildDrawerItem(
-                                context,
-                                provider,
-                                title: "Payment History",
-                                icon: Icons.payments_sharp,
-                                onTap: () {
-                                  provider.setSelectedItem("payment_history");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PaymentTransactionsPage(),
-                                    ),
-                                  );
-                                },
-                                isSelected:
-                                    provider.selectedItem == "Payment History",
-                              )
-                            : Container(),
-                        isPgAdmin.toString() == "true" ||
-                                (isPgAdmin.toString() == "false" &&
-                                    isIndivudual.toString() == "false" &&
-                                    isSuperAdmin.toString() == "false")
-                            ? Container()
-                            : _buildDrawerItem(
-                                context,
-                                provider,
-                                title: "Purchase License",
-                                icon: Icons.description,
-                                onTap: () {
-                                  provider.setSelectedItem("purchase_license");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PricingListScreen(),
-                                    ),
-                                  );
-                                },
-                                isSelected:
-                                    provider.selectedItem == "purchase_license",
-                              ),
-                        isPgAdmin.toString() == "true" ||
-                                (isPgAdmin.toString() == "false" &&
-                                    isIndivudual.toString() == "false" &&
-                                    isSuperAdmin.toString() == "false")
-                            ? Container()
-                            : _buildDrawerItem(
-                                context,
-                                provider,
-                                title: "Payment History",
-                                icon: Icons.payments_sharp,
-                                onTap: () {
-                                  provider.setSelectedItem("payment_history");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PaymentTransactionsPage(),
-                                    ),
-                                  );
-                                },
-                                isSelected:
-                                    provider.selectedItem == "Payment History",
-                              ),
-                      ],
-                    );
-                  },
-                ),
+              child: Consumer2<DrawerSelectionProvider, UserProfileProvider>(
+                builder: (context, provider, userProfileProvider, child) {
+                  if (provider.isLoading) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    physics: ClampingScrollPhysics(),
+                    padding: EdgeInsets.only(top: 0),
+                    children: <Widget>[
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "Dashboard",
+                        icon: Icons.home,
+                        onTap: () {
+                          provider.setSelectedItem("dashboard");
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => DashboardScreen()),
+                          );
+                        },
+                        isSelected: provider.selectedItem == "dashboard",
+                      ),
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "Accounts",
+                        icon: Icons.account_balance_wallet,
+                        onTap: () {
+                          provider.setSelectedItem("accounts");
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => AccountListScreen()),
+                          );
+                        },
+                        isSelected: provider.selectedItem == "accounts",
+                      ),
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "News Feed",
+                        icon: Icons.space_dashboard,
+                        onTap: () {
+                          provider.setSelectedItem("news");
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => NewsFeedScreen()),
+                          );
+                        },
+                        isSelected: provider.selectedItem == "news",
+                      ),
+                      isPgAdmin.toString() == "true"
+                          ? _buildDrawerItem(
+                              context,
+                              provider,
+                              title: "Payment History",
+                              icon: Icons.payments_sharp,
+                              onTap: () {
+                                provider.setSelectedItem("payment_history");
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PaymentTransactionsPage(),
+                                  ),
+                                );
+                              },
+                              isSelected:
+                                  provider.selectedItem == "Payment History",
+                            )
+                          : Container(),
+                      // isPgAdmin.toString() == "true" ||
+                      //         (isPgAdmin.toString() == "false" &&
+                      //             isIndivudual.toString() == "false" &&
+                      //             isSuperAdmin.toString() == "false")
+                      //     ? Container()
+                      //     :
+                      // (userProfileProvider.userData.role != null &&
+                      //         userProfileProvider.userData.role!.isNotEmpty &&
+                      //         userProfileProvider.userData.role![0].name
+                      //                 .toString() ==
+                      //             "Admin" &&
+                      (isSuperAdmin || isPgAdmin || isAdmin)
+                          ? _buildDrawerItem(
+                              context,
+                              provider,
+                              title: "Purchase License",
+                              icon: Icons.description,
+                              onTap: () {
+                                provider.setSelectedItem("purchase_license");
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PurchaseLicensePage(),
+                                  ),
+                                );
+                              },
+                              isSelected:
+                                  provider.selectedItem == "purchase_license",
+                            )
+                          : Container(),
+                      // isPgAdmin.toString() == "true" ||
+                      //         (isPgAdmin.toString() == "false" &&
+                      //             isIndivudual.toString() == "false" &&
+                      //             isSuperAdmin.toString() == "false")
+                      //     ? Container()
+                      //     :
+
+                      // (userProfileProvider.userData.role != null &&
+                      //         userProfileProvider.userData.role!.isNotEmpty &&
+                      //         userProfileProvider.userData.role![0].name
+                      //                 .toString() ==
+                      //             "Admin" &&
+                      (isSuperAdmin || isPgAdmin || isAdmin)
+                          ? _buildDrawerItem(
+                              context,
+                              provider,
+                              title: "Payment History",
+                              icon: Icons.payments_sharp,
+                              onTap: () {
+                                provider.setSelectedItem("payment_history");
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PaymentTransactionsPage(),
+                                  ),
+                                );
+                              },
+                              isSelected:
+                                  provider.selectedItem == "Payment History",
+                            )
+                          : Container(),
+
+                      // IconButton(
+                      //   icon: const Icon(Icons.delete),
+                      //   color: AppColors.primaryMain,
+                      //   onPressed: () {
+                      //     // Show Delete Account dialog
+                      //     showDialog(
+                      //       context: context,
+                      //       builder: (context) {
+                      //         return AlertDialog(
+                      //           title: Text(
+                      //             'Delete Account',
+                      //             style: typography.H5_Regular,
+                      //           ),
+                      //           content: Column(
+                      //             mainAxisSize: MainAxisSize.min,
+                      //             children: [
+                      //               Text(
+                      //                 'Are you sure you want to delete the account?',
+                      //                 style: typography.Body1,
+                      //               ),
+                      //               SizedBox(
+                      //                 height: CustomSpacing.two,
+                      //               ),
+                      //               Row(
+                      //                 children: [
+                      //                   Expanded(
+                      //                     child: CustomButton(
+                      //                       onPressed: () {
+                      //                         // Cancel
+                      //                         Navigator.pop(context);
+                      //                       },
+                      //                       child: Text(
+                      //                         LanguageService.getTranslated(
+                      //                             context,
+                      //                             "account_list_app_duplicate_cancel"),
+                      //                         style: typography.ButtonLarge,
+                      //                       ),
+                      //                       type: ButtonType.text,
+                      //                     ),
+                      //                   ),
+                      //                 Expanded(
+                      //                           child: Consumer<
+                      //                                   SubAccountListProvider>(
+                      //                               builder: (context,
+                      //                                   subAccountListProvider,
+                      //                                   child) {
+                      //                             return subAccountListProvider
+                      //                                     .isDeleteLocationLoading
+                      //                                 ? Center(
+                      //                                     child:
+                      //                                         CircularProgressIndicator())
+                      //                                 : CustomButton(
+                      //                                     onPressed:
+                      //                                         () async {
+                      //                                       setState(() {
+                      //                                         subAccountListProvider
+                      //                                                 .isDeleteLocationLoading =
+                      //                                             true; // Start loader
+                      //                                       });
+                      //
+                      //                                       bool isSuccess =
+                      //                                           false;
+                      //                                       try {
+                      //
+                      //                                       } catch (e) {
+                      //                                         print(
+                      //                                             "Error deleting account: $e"); // Handle error properly
+                      //                                       }
+                      //
+                      //                                       if (isSuccess) {
+                      //                                         Navigator.pop(
+                      //                                             context);
+                      //
+                      //                                       }
+                      //                                       setState(() {
+                      //                                         subAccountListProvider
+                      //                                                 .isDeleteLocationLoading =
+                      //                                             false; // Stop loader
+                      //                                       });
+                      //                                     },
+                      //                                     child: Text(
+                      //                                       "Delete",
+                      //                                       style: typography
+                      //                                           .ButtonLarge,
+                      //                                     ),
+                      //                                     type: ButtonType
+                      //                                         .elevated,
+                      //                                   );
+                      //                           }),
+                      //                         ),
+                      //
+                      //                 ],
+                      //               ),
+                      //             ],
+                      //           ),
+                      //         );
+                      //       },
+                      //     );
+                      //   },
+                      //   tooltip: 'Delete',
+                      //
+                      // ),
+                    ],
+                  );
+                },
               ),
             ),
             Padding(
