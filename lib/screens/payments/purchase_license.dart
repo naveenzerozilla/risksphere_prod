@@ -181,99 +181,102 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(height: 10),
-                          getSummary()['total'] == 0
-                              ? Container(height: 0)
-                              : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Total Pricing',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      '\$${getSummary()['total'] ?? 0}',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                          SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              final summary = getSummary();
-                              final titles =
-                                  List<String>.from(summary['titles'] ?? []);
-                              if (titles.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                    "Please select at least one subscription plan.",
-                                  )),
-                                );
-                                return;
-                              }
-                              print(summary);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PricingSummary(
-                                    title: titles,
-                                    summary: summary,
-                                    hazardName: hazardName ?? "",
-                                    vendorName: vendorName ?? "",
-                                  ),
-                                ),
-                              ).then((value) {
-                                if (value == false) {
-                                } else {
-                                  _getData();
-                                  setState(() {
-                                    cardSelections.clear();
-                                    expandedCardIndex = null;
-                                  });
-                                }
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF99CCFF),
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      child: Platform.isIOS
+                          ? Container(height: 10)
+                          : Column(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  'Next',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                    fontSize: 16,
+                                SizedBox(height: 10),
+                                getSummary()['total'] == 0
+                                    ? Container(height: 0)
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Total Pricing',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            '\$${getSummary()['total'] ?? 0}',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                SizedBox(height: 12),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final summary = getSummary();
+                                    final titles = List<String>.from(
+                                        summary['titles'] ?? []);
+                                    if (titles.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                          "Please select at least one subscription plan.",
+                                        )),
+                                      );
+                                      return;
+                                    }
+                                    print(summary);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PricingSummary(
+                                          title: titles,
+                                          summary: summary,
+                                          hazardName: hazardName ?? "",
+                                          vendorName: vendorName ?? "",
+                                        ),
+                                      ),
+                                    ).then((value) {
+                                      if (value == false) {
+                                      } else {
+                                        _getData();
+                                        setState(() {
+                                          cardSelections.clear();
+                                          expandedCardIndex = null;
+                                        });
+                                      }
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF99CCFF),
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Next',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(Icons.arrow_forward_ios,
+                                          color: Colors.black, size: 16),
+                                    ],
                                   ),
                                 ),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_ios,
-                                    color: Colors.black, size: 16),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
                     );
             }),
             body: Consumer<AccountListProvider>(
@@ -496,6 +499,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                       maxLines: 2,
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Color(0xFF99CCFF),
                         fontSize: 18,
                       ),
                     ),
@@ -522,14 +526,25 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                       trimExpandedText: 'Show less',
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontSize: 15,
+                        fontSize: 16,
                         color: Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (isExpanded) ...[
+              if (Platform.isIOS) ...[
+                SizedBox(height: 16),
+                Container(
+                  child: Text(
+                    "Requires an active license. Please sign in with your licensed account to use this feature.",
+                    style: typography.Body1.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Color(0xFFFDBE71)),
+                  ),
+                )
+              ] else if (isExpanded) ...[
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selection.selectedPlanType,
@@ -539,12 +554,18 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                     labelText: "Subscription Type",
                   ),
                   hint: const Text("Subscription Type"),
-                  items: ['Monthly', 'Yearly'].map((value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+                  items: [
+                    if (item.rangeMonth != null && item.rangeMonth!.isNotEmpty)
+                      DropdownMenuItem<String>(
+                        value: 'Monthly',
+                        child: Text('Monthly'),
+                      ),
+                    if (item.rangeYear != null && item.rangeYear!.isNotEmpty)
+                      DropdownMenuItem<String>(
+                        value: 'Yearly',
+                        child: Text('Yearly'),
+                      ),
+                  ],
                   onChanged: (value) {
                     if (value != null) {
                       print(value);
