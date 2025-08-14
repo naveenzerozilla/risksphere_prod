@@ -60,7 +60,11 @@ class _PricingSummaryState extends State<PricingSummary> {
                     ),
                   ),
                   Text(
-                    "\$" + widget.summary['total'].toString(),
+                    "\$" +
+                        (widget.summary['total'] is num
+                            ? (widget.summary['total'] as num)
+                                .toStringAsFixed(2)
+                            : widget.summary['total'].toString()),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -183,8 +187,8 @@ class _PricingSummaryState extends State<PricingSummary> {
                                       licensePrice =
                                           item['licenseprice'][index];
                                     }
-                                    item['total'] = (int.parse(total) -
-                                        int.parse(licensePrice));
+                                    item['total'] = (double.parse(total) -
+                                        double.parse(licensePrice));
                                     // Remove only the selected item from all lists
                                     final keysToRemove = [
                                       'planId',
@@ -231,11 +235,13 @@ class _PricingSummaryState extends State<PricingSummary> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          if (item['usercount'] != null &&
+                          if (item['usercount'] != null && item['titles'][index].toString() !=
+                        "Event Count Cost" &&
                               item['usercount'].length > index)
                             _buildRow("User count", item['usercount'][index]),
                           _buildRow("Billing", item['selectedPlanType'][index]),
-                          if (item['licenseprice'] != null &&
+                          if (item['licenseprice'] != null && item['titles'][index].toString() !=
+                    "Event Count Cost" &&
                               item['licenseprice'].length > index)
                             _buildRow("License pricing",
                                 "\$${item['licenseprice'][index]} / user"),
