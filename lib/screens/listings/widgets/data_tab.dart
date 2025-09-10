@@ -172,7 +172,7 @@ class _DataTabState extends State<DataTab> {
   List<String> filteredPerils = [];
 
   void submitHazard(String hazardName) async {
-    print("🚀 Submitting hazard: $hazardName");
+    print(" Submitting hazard: $hazardName");
     await Provider.of<SubaccountParameterProvider>(context, listen: false)
         .fetchSubaccountParameters(
             context, widget.subaccountId, hazardName, '', widget.locationId);
@@ -187,7 +187,7 @@ class _DataTabState extends State<DataTab> {
       backgroundColor: Colors.transparent,
       body: Consumer<SubaccountParameterProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
+          if (provider.isLoading == true) {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.parameters == null ||
@@ -199,11 +199,9 @@ class _DataTabState extends State<DataTab> {
           Map<String, List<Result>> groupedResults = {};
 
           for (var result in provider.parameters!.result!) {
-            final impactType = result.criticality?.impactType.toString() ?? '';
+            final impactType = result.criticality?.impactType?.toString() ?? '';
 
-            if (!groupedResults.containsKey(impactType)) {
-              groupedResults[impactType] = [];
-            }
+            groupedResults.putIfAbsent(impactType, () => []);
 
             // Avoid duplicate entries (optional check based on a unique property like name)
             if (!groupedResults[impactType]!
@@ -230,28 +228,6 @@ class _DataTabState extends State<DataTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Parameters Dropdown
-                        // TextFormField(
-                        //   controller: _controllerlist,
-                        //   readOnly: true,
-                        //   onTap: () {
-                        //     setState(
-                        //         () => showDropdownList = !showDropdownList);
-                        //   },
-                        //   style: TextStyle(color: Colors.white),
-                        //   decoration: InputDecoration(
-                        //     hintText: 'Select locations',
-                        //     labelStyle: TextStyle(color: Colors.white),
-                        //     border: OutlineInputBorder(
-                        //         borderRadius: BorderRadius.circular(8)),
-                        //     filled: true,
-                        //     fillColor: Colors.black,
-                        //     suffixIcon: Icon(Icons.arrow_drop_down,
-                        //         color: Colors.white),
-                        //   ),
-                        // ),
-
-                        // Dropdown with search and list
                         if (showDropdownList)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
@@ -412,7 +388,7 @@ class _DataTabState extends State<DataTab> {
                         const SizedBox(height: 10),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             GestureDetector(
@@ -431,8 +407,7 @@ class _DataTabState extends State<DataTab> {
                                   border: Border.all(color: Colors.white30),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
+                                  mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     SizedBox(width: 40),
@@ -590,7 +565,7 @@ class _DataTabState extends State<DataTab> {
                           Container(
                             margin: const EdgeInsets.only(top: 8),
                             padding: const EdgeInsets.all(16),
-                            width: 320,
+                            width: 400,
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(12),
@@ -864,11 +839,16 @@ class _DataTabState extends State<DataTab> {
                           child: ImpactDataCard(
                             subAccountId: widget.subaccountId,
                             title: impactType,
-                            titleColor: impactType == "low"
-                                ? Colors.purple
-                                : impactType == "high"
-                                    ? Colors.red
-                                    : Colors.white,
+                            titleColor: impactType == "high"
+                                ? Color(0xFFEF5350)
+                                : impactType == "low"
+                                    ? const Color(0xFF9C27B0)
+                                    : impactType == "medium"
+                                        ? const Color(0xFFEF6C00)
+                                        : impactType == "general"
+                                            ? const Color.fromARGB(
+                                                255, 41, 182, 246)
+                                            : Colors.white,
                             dataElements: dataElements,
                           ),
                         );
@@ -1975,7 +1955,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       readOnly: config.isDateField,
       keyboardType: config.keyboardType,
       maxLines: isJson ? 5 : 1,
-      // 👈 Show 4 lines for JSON
       decoration: InputDecoration(
         labelText: config.label,
         border: OutlineInputBorder(),

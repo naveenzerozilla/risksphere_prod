@@ -23,6 +23,7 @@ import '../../providers/sub_account_list_provider.dart';
 import '../../screens/listings/news_feed_screen.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
+import '../../screens/onboarding/login_screen.dart';
 import '../../screens/onboarding/splash_screen.dart';
 import '../../screens/payments/purchase_license.dart';
 import '../../screens/payments/transaction_summary.dart';
@@ -67,7 +68,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer = Debouncer(milliseconds: 200);
-
+  bool isHasAnyPlan = false;
   @override
   void initState() {
     super.initState();
@@ -125,7 +126,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
-
+    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
     showVerificationRequests =
         showCorporateVerificationRequests || showUserVerificationRequests;
 
@@ -205,7 +206,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     builder: (context, userProfile, child) {
                       final trialStatus = userProfile.trialInfo['status'] ?? '';
 
-                      if (trialStatus.contains('Expired')) {
+                      // if (trialStatus.contains('Expired'))
+                        if (trialStatus.contains('Expired') &&
+                            isHasAnyPlan == false)
+
+                      {
                         return Container(
                           padding:
                               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -225,7 +230,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   messageTextSpans: [
                                     TextSpan(
                                       text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
                                       style: typography.Body1,
                                     ),
                                     // tappable
@@ -386,38 +391,42 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       //         userProfileProvider.userData.role![0].name
                       //                 .toString() ==
                       //             "Admin" &&
-                      (isSuperAdmin || isPgAdmin || isAdmin)
-                          ? _buildDrawerItem(
-                              context,
-                              provider,
-                              title: "Purchase License",
-                              icon: Icons.description,
-                              onTap: () {
-                                provider.setSelectedItem("purchase_license");
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PurchaseLicensePage(),
-                                  ),
-                                );
-                              },
-                              isSelected:
-                                  provider.selectedItem == "purchase_license",
-                            )
-                          : Container(),
-                      // isPgAdmin.toString() == "true" ||
-                      //         (isPgAdmin.toString() == "false" &&
-                      //             isIndivudual.toString() == "false" &&
-                      //             isSuperAdmin.toString() == "false")
-                      //     ? Container()
-                      //     :
-
-                      // (userProfileProvider.userData.role != null &&
-                      //         userProfileProvider.userData.role!.isNotEmpty &&
-                      //         userProfileProvider.userData.role![0].name
-                      //                 .toString() ==
-                      //             "Admin" &&
-                      (isSuperAdmin || isPgAdmin || isAdmin)
-                          ? _buildDrawerItem(
+                      // Consumer<UserProfileProvider>(
+                      //   builder: (context, userProfileProvider, child) {
+                      //     if (isSuperAdmin ||
+                      //         isPgAdmin ||
+                      //         isAdmin ||
+                      //         userProfileProvider.userData.isIndividual ==
+                      //             true) {
+                      //       return _buildDrawerItem(
+                      //         context,
+                      //         provider,
+                      //         title: "Purchase License",
+                      //         icon: Icons.description,
+                      //         onTap: () {
+                      //           provider.setSelectedItem("purchase_license");
+                      //           Navigator.of(context).push(
+                      //             MaterialPageRoute(
+                      //               builder: (_) => PurchaseLicensePage(),
+                      //             ),
+                      //           );
+                      //         },
+                      //         isSelected:
+                      //             provider.selectedItem == "purchase_license",
+                      //       );
+                      //     } else {
+                      //       return Container();
+                      //     }
+                      //   },
+                      // ),
+                      Consumer<UserProfileProvider>(
+                        builder: (context, userProfileProvider, child) {
+                          if (isSuperAdmin ||
+                              isPgAdmin ||
+                              isAdmin ||
+                              userProfileProvider.userData.isIndividual ==
+                                  true) {
+                            return _buildDrawerItem(
                               context,
                               provider,
                               title: "Payment History",
@@ -432,111 +441,96 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               },
                               isSelected:
                                   provider.selectedItem == "Payment History",
-                            )
-                          : Container(),
+                            );
+                          } else {
+                            return Container();
+                          }
+                        },
+                      ),
 
-                      // IconButton(
-                      //   icon: const Icon(Icons.delete),
-                      //   color: AppColors.primaryMain,
-                      //   onPressed: () {
-                      //     // Show Delete Account dialog
-                      //     showDialog(
-                      //       context: context,
-                      //       builder: (context) {
-                      //         return AlertDialog(
-                      //           title: Text(
-                      //             'Delete Account',
-                      //             style: typography.H5_Regular,
-                      //           ),
-                      //           content: Column(
-                      //             mainAxisSize: MainAxisSize.min,
-                      //             children: [
-                      //               Text(
-                      //                 'Are you sure you want to delete the account?',
-                      //                 style: typography.Body1,
-                      //               ),
-                      //               SizedBox(
-                      //                 height: CustomSpacing.two,
-                      //               ),
-                      //               Row(
-                      //                 children: [
-                      //                   Expanded(
-                      //                     child: CustomButton(
-                      //                       onPressed: () {
-                      //                         // Cancel
-                      //                         Navigator.pop(context);
-                      //                       },
-                      //                       child: Text(
-                      //                         LanguageService.getTranslated(
-                      //                             context,
-                      //                             "account_list_app_duplicate_cancel"),
-                      //                         style: typography.ButtonLarge,
-                      //                       ),
-                      //                       type: ButtonType.text,
-                      //                     ),
-                      //                   ),
-                      //                 Expanded(
-                      //                           child: Consumer<
-                      //                                   SubAccountListProvider>(
-                      //                               builder: (context,
-                      //                                   subAccountListProvider,
-                      //                                   child) {
-                      //                             return subAccountListProvider
-                      //                                     .isDeleteLocationLoading
-                      //                                 ? Center(
-                      //                                     child:
-                      //                                         CircularProgressIndicator())
-                      //                                 : CustomButton(
-                      //                                     onPressed:
-                      //                                         () async {
-                      //                                       setState(() {
-                      //                                         subAccountListProvider
-                      //                                                 .isDeleteLocationLoading =
-                      //                                             true; // Start loader
-                      //                                       });
-                      //
-                      //                                       bool isSuccess =
-                      //                                           false;
-                      //                                       try {
-                      //
-                      //                                       } catch (e) {
-                      //                                         print(
-                      //                                             "Error deleting account: $e"); // Handle error properly
-                      //                                       }
-                      //
-                      //                                       if (isSuccess) {
-                      //                                         Navigator.pop(
-                      //                                             context);
-                      //
-                      //                                       }
-                      //                                       setState(() {
-                      //                                         subAccountListProvider
-                      //                                                 .isDeleteLocationLoading =
-                      //                                             false; // Stop loader
-                      //                                       });
-                      //                                     },
-                      //                                     child: Text(
-                      //                                       "Delete",
-                      //                                       style: typography
-                      //                                           .ButtonLarge,
-                      //                                     ),
-                      //                                     type: ButtonType
-                      //                                         .elevated,
-                      //                                   );
-                      //                           }),
-                      //                         ),
-                      //
-                      //                 ],
-                      //               ),
-                      //             ],
-                      //           ),
-                      //         );
-                      //       },
-                      //     );
-                      //   },
-                      //   tooltip: 'Delete',
-                      //
-                      // ),
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: "Delete Account",
+                        icon: Icons.delete_rounded,
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text(
+                                  'Delete Account',
+                                  style: typography.H5_Regular,
+                                ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Are you sure you want to delete the account?',
+                                      style: typography.Body1,
+                                    ),
+                                    SizedBox(
+                                      height: CustomSpacing.two,
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: CustomButton(
+                                            onPressed: () {
+                                              // Cancel
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "account_list_app_duplicate_cancel"),
+                                              style: typography.ButtonLarge,
+                                            ),
+                                            type: ButtonType.text,
+                                          ),
+                                        ),
+                                        Consumer<AuthNotifier>(builder:
+                                            (context, authNotifier, child) {
+                                          return TextButton(
+                                            onPressed: () async {
+                                              final _googleSignIn =
+                                                  GoogleSignIn();
+                                              var isSignedIn =
+                                                  await _googleSignIn
+                                                      .isSignedIn();
+                                              if (isSignedIn)
+                                                await _googleSignIn
+                                                    .disconnect();
+                                              await authNotifier.signOut();
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          LoginScreen()));
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        "Account deleted Successfully")),
+                                              );
+                                            },
+                                            child: Text(
+                                              "Delete",
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
+                                          );
+                                        }),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        isSelected: provider.selectedItem == "delete_account",
+                      ),
                     ],
                   );
                 },

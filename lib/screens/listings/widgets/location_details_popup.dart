@@ -81,7 +81,7 @@ class LocationDetailsPopup extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: (geocodingScore == 5)
                           ? Image.network(
-                              "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                              "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI",
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
@@ -105,8 +105,9 @@ class LocationDetailsPopup extends StatelessWidget {
                     //   borderRadius: BorderRadius.circular(8),
                     //   child: (geocodingScore == 5)
                     //       ? Image.network(
-                    //     "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                    //     "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI",
                     //     width: 50,
+                    //     height: 50,
                     //     height: 50,
                     //     fit: BoxFit.cover,
                     //   )

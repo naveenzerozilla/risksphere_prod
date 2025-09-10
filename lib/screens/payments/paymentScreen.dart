@@ -1,6 +1,7 @@
-import 'package:RiskSphere/screens/payments/paymentScreen1.dart';
+import 'package:RiskSphere/screens/payments/order_summary.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../utils/global_imports.dart';
+
 class Paymentscreen extends StatefulWidget {
   final String paymentUrl;
   final String paymentSuccessUrl;
@@ -25,7 +26,6 @@ class _PaymentscreenState extends State<Paymentscreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
-
             setState(() {
               isLoading = false;
             });
@@ -37,7 +37,7 @@ class _PaymentscreenState extends State<Paymentscreen> {
                   Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => PricingInvoice(
+                        builder: (context) => OrderSummary(
                           sessionId: widget.paymentSuccessUrl,
                         ),
                       ),

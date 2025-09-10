@@ -1,5 +1,6 @@
 import 'package:RiskSphere/screens/listings/widgets/conflicts_tab.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_details_popup.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -245,30 +246,35 @@ class _MyLocationCardState extends State<MyLocationCard> {
           }
         });
       },
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: isSelected
-            ? Theme.of(context).colorScheme.surfaceContainerLowest
-            : Theme.of(context).cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Text( widget.imageUrl),
-              // Modify the call to _buildTopRow to handle campusId and tags
-              _buildTopRow(
-                context,
-                widget.campusId != null && widget.campusId!.isNotEmpty
-                    ? [widget.campusId!, ...widget.tags]
-                    : widget.tags,
-                isSelected,
-                widget.imageUrl,
-              ),
+      child: Container(
+        color: Colors.grey.withOpacity(0.1),
+        child: Card(
+          elevation: 10,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: isSelected
+              ? Theme.of(context).colorScheme.surfaceContainerLowest
+              : Theme.of(context).cardColor.withOpacity(0.9),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Text( widget.imageUrl),
+                // Modify the call to _buildTopRow to handle campusId and tags
+                _buildTopRow(
+                  context,
+                  widget.campusId != null && widget.campusId!.isNotEmpty
+                      ? [widget.campusId!, ...widget.tags]
+                      : widget.tags,
+                  isSelected,
+                  widget.imageUrl,
+                ),
 
-              SizedBox(height: 16),
-              _buildScrollableScores(context),
-            ],
+                SizedBox(height: 16),
+                _buildScrollableScores(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -309,35 +315,43 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(99),
                     child: (widget.geocodingScore == 5)
-                        ? Image.network(
-                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w",
+                        ? CachedNetworkImage(
+                            imageUrl:
+                                "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                CircularProgressIndicator(strokeWidth: 2),
+                            errorWidget: (context, url, error) =>
+                                Icon(Icons.error),
                           )
                         : image.isNotEmpty
-                            ? Image.network(
-                                image,
+                            ? CachedNetworkImage(
+                                imageUrl: image,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    CircularProgressIndicator(strokeWidth: 2),
+                                errorWidget: (context, url, error) =>
+                                    Icon(Icons.error),
                               )
-                            : Image.asset(
-                                'assets/images/building_image.png',
+                            : Container(
+                                color: Colors.lightBlueAccent,
+                                // Image.asset(
+                                // 'assets/images/building_image.png',
                                 width: 50,
                                 height: 50,
-                                fit: BoxFit.cover,
+                                // fit: BoxFit.cover,
                               ),
                   ),
         SizedBox(width: 8),
-        // Text(widget.isConflict.toString()),
-        // Expanded chip list or single chip
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (chipLabels.length == 1)
-                // Center single chip to take full width
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -383,7 +397,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   fontWeight: FontWeight.w500,
                   color: AppColors.primaryMain,
                 ),
-                maxLines: 3,
+                maxLines: 6,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -453,6 +467,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           InkWell(
             onTap: () {
@@ -488,6 +503,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               widget.subAccountId!,
             ),
           ),
+          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -521,6 +537,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 widget.accountId!,
                 widget.subAccountId!),
           ),
+          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -578,7 +595,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return Container(
       margin: EdgeInsets.only(right: 5),
       padding: EdgeInsets.all(8),
-      width: 130,
+      width: MediaQuery.of(context).size.width < 400 ? 130 : 180,
+      height: MediaQuery.of(context).size.height < 400 ? 80 : 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -590,38 +608,44 @@ class _MyLocationCardState extends State<MyLocationCard> {
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              // Ensures the Row takes minimal space
               children: [
                 Flexible(
                   child: Text(
                     title,
-                    style: typography.InputLabel,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryMain,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    textAlign: TextAlign.justify,
+                    textAlign: MediaQuery.of(context).size.width < 400
+                        ? TextAlign.center
+                        : TextAlign.left,
                   ),
                 ),
-                // SizedBox(width: 1), // Adds spacing between text and icon
+                SizedBox(width: 8),
                 if (title == 'Risk Score' || title == 'Geocoding') ...[
                   InkWell(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => GeocodingDialog(title: title),
-                        );
-                      },
-                      child: Icon(Icons.info)),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => GeocodingDialog(title: title),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
                 ] else ...[
                   Icon(Icons.info, color: Colors.transparent),
                 ]
               ],
             ),
           ),
-
           SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -646,8 +670,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                   height: 24)
                               : const SizedBox(),
                   SizedBox(width: 4),
-                  // Text(widget.hazards.toString()),
-
                   InkWell(
                     onTap: () {
                       if (title == 'Geocoding') {
@@ -674,7 +696,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     },
                     child: VerticalBarIndicator(score: score),
                   ),
-
                   SizedBox(width: 1),
                   isCertified
                       ? SvgPicture.asset('assets/images/certified_five.svg',
@@ -686,13 +707,19 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             backgroundColor:
                                 scoreColors[score].withOpacity(0.6),
                             child: Center(
-                                child: Text(
-                              score.toString(),
-                              style: typography.Body1.copyWith(
+                              child: Text(
+                                score.toString(),
+                                style: typography.Body1.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold),
-                            )),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign:
+                                    MediaQuery.of(context).size.width < 400
+                                        ? TextAlign.center
+                                        : TextAlign.left,
+                              ),
+                            ),
                           ),
                         ),
                 ] else ...[
@@ -701,8 +728,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
               ],
             ),
           ),
-          // Display SVG based on the score
-
           SizedBox(height: 4),
         ],
       ),

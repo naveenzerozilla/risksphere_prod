@@ -10,6 +10,10 @@
 	<string>RiskSphere</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>firebase_performance_collection_enabled</key>
+    <false/>
+    <key>firebase_performance_logcat_enabled</key>
+    <true/>
 	<key>CFBundleIcons~ipad</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
@@ -46,7 +50,10 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc</string>
+			 <string>msauth.com.sonofthunder.risksphere</string>
+			<string>msaleb81a783-765c-482d-8fcb-6440ab1d1201</string>
+			 <string>com.googleusercontent.apps.857135835532-dce11826e3313f03c84ea9</string>
+			 <string>app-1-857135835532-ios-dce11826e3313f03c84ea9</string>
 			</array>
 		</dict>
 	</array>
@@ -64,9 +71,9 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>We need access to your camera to take photos.</string>
-	<key>NSDocumentDirectoryUsageDescription</key>
-	<string>We need access to your documents to pick files.</string>
+    <string>This app needs camera access to take pictures.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs photo library access to save pictures.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>We need access to your documents folder to pick and upload files.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

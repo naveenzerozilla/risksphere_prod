@@ -35,10 +35,14 @@ class _MappingScreenState extends State<MappingScreen> {
   List<Map<String, dynamic>> _unmappedfields = [];
 
   List<Map<String, dynamic>> _dropdownItems = [];
+  final GlobalKey _autoMappedKey = GlobalKey();
+  final GlobalKey _manualMappedKey = GlobalKey();
+  final GlobalKey _unmappedKey = GlobalKey();
 
   String _searchQuery = '';
   String _selectedFilter = 'All';
   bool _hasChanges = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -113,21 +117,6 @@ class _MappingScreenState extends State<MappingScreen> {
     }
   }
 
-  List<Map<String, dynamic>> _filterFields() {
-    return _fields.where((field) {
-      if (_selectedFilter == 'Auto Mapped' && field['status'] != 'Auto Mapped')
-        return false;
-      if (_selectedFilter == 'Manual Mapped' &&
-          field['status'] != 'Manual Mapped') return false;
-      if (_selectedFilter == 'Unmapped' && field['status'] != 'Unmapped')
-        return false;
-      if (_searchQuery.isNotEmpty &&
-          !field['target'].toLowerCase().contains(_searchQuery.toLowerCase()))
-        return false;
-      return true;
-    }).toList();
-  }
-
   Widget _buildStatusChip(String status) {
     Color color;
     switch (status) {
@@ -170,13 +159,44 @@ class _MappingScreenState extends State<MappingScreen> {
     });
   }
 
+  void scrollTo(GlobalKey key) {
+    final context = key.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        alignment: 0.5, // Center the chip if possible
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          LanguageService.getTranslated(context, "app_sov_upload_title"),
-          style: CustomTypography(context).Body1,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("SOV - Upload & Map",
+                style: TextStyle(color: Colors.white, fontSize: 18)),
+            SizedBox(height: 4),
+            Text("Choose columns to map to spreadsheet fields.",
+                style: TextStyle(color: Colors.white, fontSize: 15)),
+          ],
         ),
       ),
       body: Consumer<UploadSovProvider>(
@@ -194,17 +214,7 @@ class _MappingScreenState extends State<MappingScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(LanguageService.getTranslated(
-                      context, "app_jp_morgan_sov")),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(LanguageService.getTranslated(
-                        context, "app_select_columns_to_import")),
-                  ),
-                ),
-                SizedBox(height: 10),
+                SizedBox(height: 5),
                 Row(
                   children: [
                     Expanded(
@@ -214,116 +224,114 @@ class _MappingScreenState extends State<MappingScreen> {
                             _searchQuery = value;
                           });
                         },
+                        style: TextStyle(color: Colors.white), // Text color
                         decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(
+                          hintText: LanguageService.getTranslated(
                               context, "app_search_target_name"),
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          // Placeholder color
+                          filled: true,
+                          fillColor: Colors.black87,
+                          // Dark background
+                          prefixIcon:
+                              Icon(Icons.search, color: Colors.grey[400]),
+                          contentPadding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 30),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: Colors.grey[600]!), // Border color
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.blue[200]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.blueAccent),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: 10),
-                Wrap(
-                  spacing: 5,
-                  children: [
-
-                    FilterChip(
-                      label: Text(LanguageService.getTranslated(
-                          context, "app_auto_mapped")),
-                      selected: _selectedFilter == 'Auto Mapped',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _hasChanges = true;
-                          _selectedFilter = 'Auto Mapped';
-                          _applyPendingReverts(); // Apply revert when switching filter
-                        });
-                      },
-                    ),
-                    FilterChip(
-                      label: Text(LanguageService.getTranslated(
-                          context, "app_manual_mapped")),
-                      selected: _selectedFilter == 'Manual Mapped',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _hasChanges = true;
-                          _tempfields = _tempfields.toSet().toList();
-                          _manualappedfields.addAll(_tempfields.where((item) =>
-                              !_manualappedfields.any((existing) =>
-                                  existing["spreadsheet"] ==
-                                  item["spreadsheet"])));
-
-                          for (var i in _tempfields) {
-                            _unmappedfields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _automappedfields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _fields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _fields.add(i);
-                          }
-                          _tempfields.clear();
-                          _selectedFilter = 'Manual Mapped';
-                          _applyPendingReverts(); // Apply revert when switching filter
-                        });
-                      },
-                    ),
-                    FilterChip(
-                      label: Text(LanguageService.getTranslated(
-                          context, "app_unmapped")),
-                      selected: _selectedFilter == 'Unmapped',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _hasChanges = true;
-                          _hasChanges = true;
-                          _tempfields = _tempfields.toSet().toList();
-                          _manualappedfields.addAll(_tempfields.where((item) =>
-                              !_manualappedfields.any((existing) =>
-                                  existing["spreadsheet"] ==
-                                  item["spreadsheet"])));
-                          // _manualappedfields.addAll(_tempfields);
-                          for (var i in _tempfields) {
-                            _unmappedfields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _automappedfields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _fields.removeWhere((test) =>
-                                test["spreadsheet"] == i["spreadsheet"]);
-                            _fields.add(i);
-                          }
-                          _selectedFilter = 'Unmapped';
-                          _applyPendingReverts(); // Apply revert when switching filter
-                        });
-                      },
-                    ),
-                    _hasChanges
-                        ? TextButton(
-                            onPressed: _hasChanges
-                                ? () {
-                                    setState(() {
-                                      _selectedFilter = 'All';
-                                      _hasChanges = false;
-                                    });
-                                  }
-                                : null, // Disable button if no changes
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.blue, // Blue text color
-                              backgroundColor: Colors.black, // White background
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                    color: Colors.blue), // Blue border
-                              ),
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(height: 2),
+                      FilterChip(
+                        disabledColor: Colors.blue,
+                        key: _autoMappedKey,
+                        label: Text(LanguageService.getTranslated(
+                            context, "app_auto_mapped")),
+                        selected: _selectedFilter == 'Auto Mapped',
+                        onSelected: (bool selected) {
+                          setState(() {
+                            _hasChanges = true;
+                            _selectedFilter = 'Auto Mapped';
+                            _applyPendingReverts();
+                          });
+                          scrollTo(_autoMappedKey);
+                        },
+                      ),
+                      SizedBox(width: 8),
+                      FilterChip(
+                        key: _manualMappedKey,
+                        label: Text(LanguageService.getTranslated(
+                            context, "app_manual_mapped")),
+                        selected: _selectedFilter == 'Manual Mapped',
+                        onSelected: (bool selected) {
+                          setState(() {
+                            _hasChanges = true;
+                            _selectedFilter = 'Manual Mapped';
+                            _applyPendingReverts();
+                          });
+                          scrollTo(_manualMappedKey);
+                        },
+                      ),
+                      SizedBox(width: 8),
+                      FilterChip(
+                        key: _unmappedKey,
+                        label: Text(LanguageService.getTranslated(
+                            context, "app_unmapped")),
+                        selected: _selectedFilter == 'Unmapped',
+                        onSelected: (bool selected) {
+                          setState(() {
+                            _hasChanges = true;
+                            _selectedFilter = 'Unmapped';
+                            _applyPendingReverts();
+                          });
+                          scrollTo(_unmappedKey);
+                        },
+                      ),
+                      SizedBox(width: 8),
+                      if (_hasChanges)
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedFilter = 'All';
+                              _hasChanges = false;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            backgroundColor: Colors.black,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: Colors.blue),
                             ),
-                            child: Text("View all parameters"),
-                          )
-                        : Container(),
-                  ],
+                          ),
+                          child: Text("View all parameters"),
+                        ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 5),
                 _selectedFilter == 'All'
                     ? Builder(builder: (context) {
                         return Expanded(
@@ -365,14 +373,19 @@ class _MappingScreenState extends State<MappingScreen> {
                                                     child: Icon(
                                                       Icons
                                                           .subdirectory_arrow_right,
+                                                      color: Colors.white,
                                                       size: 20,
                                                     )),
 
                                                 SizedBox(width: 8),
                                                 Text(field['target'],
-                                                    style: CustomTypography(
-                                                            context)
-                                                        .Subtitle1),
+                                                    style: TextStyle(
+                                                      color:
+                                                          AppColors.primaryMain,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    )),
                                               ],
                                             ),
                                             SizedBox(height: 8),
@@ -422,7 +435,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                           : null,
 
                                                       hint: Text(
-                                                        "Select mapping",
+                                                        "Ignore",
                                                         style: CustomTypography(
                                                                 context)
                                                             .Subtitle1,
@@ -488,7 +501,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                             [];
                                                       },
 
-
                                                       onChanged: (newValue) {
                                                         setState(() {
                                                           field['spreadsheet'] =
@@ -500,7 +512,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                         });
                                                         print(
                                                             "Status: ${field['status']}");
-
 
                                                         print(
                                                             "Selected Value1: $newValue");
@@ -572,7 +583,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                           });
                                                         }
                                                       : null,
-
                                                   child: Row(
                                                     children: [
                                                       Text(
@@ -589,7 +599,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                     ],
                                                   ),
                                                 ),
-
                                               ],
                                             ),
                                             SizedBox(height: 8),
@@ -662,9 +671,13 @@ class _MappingScreenState extends State<MappingScreen> {
 
                                                     SizedBox(width: 8),
                                                     Text(field['target'],
-                                                        style: CustomTypography(
-                                                                context)
-                                                            .Subtitle1),
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .primaryMain,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ))
                                                   ],
                                                 ),
                                                 SizedBox(height: 8),
@@ -718,7 +731,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                           // Ensure value exists in dropdown
 
                                                           hint: Text(
-                                                            "Select mapping",
+                                                            "Ignore",
                                                             style:
                                                                 CustomTypography(
                                                                         context)
@@ -856,7 +869,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                     ),
                                                   ],
                                                 ),
-
                                                 SizedBox(height: 8),
                                               ],
                                             ),
@@ -883,17 +895,14 @@ class _MappingScreenState extends State<MappingScreen> {
                                 return Expanded(
                                   child: SingleChildScrollView(
                                     child: Column(
-                                      children:
-
-
-                                          _manualappedfields
-                                              .where((field) =>
-                                                  _searchQuery.isEmpty ||
-                                                  field['target']
-                                                      .toLowerCase()
-                                                      .contains(_searchQuery
-                                                          .toLowerCase()))
-                                              .map((field) {
+                                      children: _manualappedfields
+                                          .where((field) =>
+                                              _searchQuery.isEmpty ||
+                                              field['target']
+                                                  .toLowerCase()
+                                                  .contains(_searchQuery
+                                                      .toLowerCase()))
+                                          .map((field) {
                                         return Stack(
                                           clipBehavior: Clip.hardEdge,
                                           children: [
@@ -927,11 +936,16 @@ class _MappingScreenState extends State<MappingScreen> {
                                                             )),
 
                                                         SizedBox(width: 8),
-                                                        Text(field['target'],
-                                                            style:
-                                                                CustomTypography(
-                                                                        context)
-                                                                    .Subtitle1),
+                                                        Text(
+                                                          field['target'],
+                                                          style: TextStyle(
+                                                            color: AppColors
+                                                                .primaryMain,
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
                                                       ],
                                                     ),
                                                     SizedBox(height: 8),
@@ -989,7 +1003,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                   : null,
 
                                                               hint: Text(
-                                                                "Select mapping",
+                                                                "Ignore",
                                                                 style: CustomTypography(
                                                                         context)
                                                                     .Subtitle1,
@@ -1228,10 +1242,14 @@ class _MappingScreenState extends State<MappingScreen> {
 
                                                         SizedBox(width: 8),
                                                         Text(field['target'],
-                                                            style:
-                                                                CustomTypography(
-                                                                        context)
-                                                                    .Subtitle1),
+                                                            style: TextStyle(
+                                                              color: AppColors
+                                                                  .primaryMain,
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            )),
                                                       ],
                                                     ),
                                                     SizedBox(height: 8),
@@ -1289,7 +1307,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                   : null,
 
                                                               hint: Text(
-                                                                "Select mapping",
+                                                                "Ignore",
                                                                 style: CustomTypography(
                                                                         context)
                                                                     .Subtitle1,
@@ -1437,7 +1455,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                         ),
                                                       ],
                                                     ),
-
                                                     SizedBox(height: 8),
                                                   ],
                                                 ),
@@ -1460,28 +1477,42 @@ class _MappingScreenState extends State<MappingScreen> {
                                 );
                               }),
                 Consumer<UploadSovProvider>(
-                    builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return CircularProgressIndicator();
-                  }
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryMain,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8))),
-                          onPressed: _handleNext,
-                          child: Text("Submit All",
-                              style: CustomTypography(context)
-                                  .ButtonLarge
-                                  .copyWith(color: Colors.white)),
-                        ),
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryMain,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed: _handleNext,
+                              child: Text(
+                                "Submit All",
+                                style: CustomTypography(context)
+                                    .ButtonLarge
+                                    .copyWith(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
                       ),
-                    ],
-                  );
-                }),
+                    );
+                  },
+                ),
+                SizedBox(height: 20),
               ],
             ),
           );
@@ -1494,38 +1525,38 @@ class _MappingScreenState extends State<MappingScreen> {
     bool hasUnmappedFields =
         _fields.any((field) => field['status'] == 'Unmapped');
 
-    if (hasUnmappedFields) {
-      // Show a warning if there are unmapped fields
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(LanguageService.getTranslated(
-              context, "app_unmapped_fields_warning")),
-          backgroundColor: Colors.redAccent,
-        ),
+    // if (hasUnmappedFields) {
+    //   // Show a warning if there are unmapped fields
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text(LanguageService.getTranslated(
+    //           context, "app_unmapped_fields_warning")),
+    //       backgroundColor: Colors.redAccent,
+    //     ),
+    //   );
+    // } else {
+    // Proceed with the submission process if all fields are mapped
+    final provider = Provider.of<UploadSovProvider>(context, listen: false);
+    if (widget.accountId != '' && widget.accountName != '') {
+      provider.submitSovHeadersSubAccounts(
+        context,
+        widget.tempId,
+        provider.sovUploadModel?.url ?? "",
+        _fields,
+        widget.accountId,
+        widget.accountName,
+        widget.subAccountName ?? "",
+        widget.subAccountId,
       );
     } else {
-      // Proceed with the submission process if all fields are mapped
-      final provider = Provider.of<UploadSovProvider>(context, listen: false);
-      if (widget.accountId != '' && widget.accountName != '') {
-        provider.submitSovHeadersSubAccounts(
-          context,
-          widget.tempId,
-          provider.sovUploadModel?.url ?? "",
-          _fields,
-          widget.accountId,
-          widget.accountName,
-          widget.subAccountName ?? "",
-          widget.subAccountId,
-        );
-      } else {
-        provider.submitSovHeadersAccounts(
-          context,
-          widget.tempId,
-          provider.sovUploadModel?.url ?? "",
-          _fields,
-          widget.subAccountName ?? "",
-        );
-      }
+      provider.submitSovHeadersAccounts(
+        context,
+        widget.tempId,
+        provider.sovUploadModel?.url ?? "",
+        _fields,
+        widget.subAccountName ?? "",
+      );
     }
+    // }
   }
 }

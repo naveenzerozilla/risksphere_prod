@@ -157,7 +157,7 @@ class PaymentProvider extends ChangeNotifier {
     print(summary['planId']);
     final requestBody = {
       "data": {
-        "amount": int.parse(amount) * 100,
+        "amount": double.parse(amount) * 100,
         "currency": currency,
         "plans": List.generate(
             summary['planId']?.length ?? 0,

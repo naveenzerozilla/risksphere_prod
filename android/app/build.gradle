@@ -1,8 +1,9 @@
 plugins {
     id "com.android.application"
-    id 'com.google.gms.google-services' // Firebase
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"      // Required for Firebase & Google Sign-In
+    id "com.google.firebase.firebase-perf"    // Optional, if using Performance Monitoring
 }
 
 def localProperties = new Properties()
@@ -25,13 +26,13 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '2')
 def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0')
 
 android {
-    namespace "com.risksphere.green"
-    compileSdk 35  // ✅ Updated from 34 to 35
+    namespace "com.zerozilla.risksphere"
+    compileSdk 36
 
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        coreLibraryDesugaringEnabled true  // ✅ Enable Java 8+ features
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -45,36 +46,27 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.risksphere.green"
+        applicationId "com.zerozilla.risksphere"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
-        versionCode 15
+        versionCode flutterVersionCode
         versionName flutterVersionName
         multiDexEnabled true
     }
 
     signingConfigs {
         debug {
-            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
-            storePassword 'risksphere'
-            keyAlias 'alias_name'
-            keyPassword 'risksphere'
+            storeFile file("/Users/naveen/Documents/qa.keystore")
+            storePassword 'projectgreen123'
+            keyAlias 'qaKey'
+            keyPassword 'projectgreen123'
         }
 
         qa {
-            storeFile file(System.getenv("KEYSTORE_FILE") ?: "/Users/naveen/Anshay-qa/my-key.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "risksphere"
-            keyAlias System.getenv("KEY_ALIAS") ?: "alias_name"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "risksphere"
-
-//            storeFile file("/Users/naveen/Anshay-qa/my-key.keystore")
-//            storePassword 'risksphere'
-//            keyAlias 'alias_name'
-//            keyPassword 'risksphere'
-//            storeFile file("/Users/naveen/Documents/qa.keystore")
-//            storePassword 'projectgreen123'
-//            keyAlias 'qaKey'
-//            keyPassword 'projectgreen123'
+            storeFile file(System.getenv("KEYSTORE_FILE") ?: "/Users/naveen/Documents/qa.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "projectgreen123"
+            keyAlias System.getenv("KEY_ALIAS") ?: "qaKey"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "projectgreen123"
         }
     }
 
@@ -84,13 +76,13 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
         }
         qa {
             signingConfig signingConfigs.qa
+            debuggable true
         }
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.qa
         }
     }
 }
@@ -100,6 +92,9 @@ flutter {
 }
 
 dependencies {
-    // ✅ Required for Java 8+ support (Fixes flutter_local_notifications issue)
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+    implementation 'com.google.firebase:firebase-perf:20.5.2'
+
+    // Optional: add Google Sign-In explicitly (usually auto-included via Firebase)
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'
 }

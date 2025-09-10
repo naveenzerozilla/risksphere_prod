@@ -377,49 +377,49 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         // Text(userProfileProvider
                                         //     .trialInfo['status']
                                         //     .toString()),
-                                        if (trialStatus.isNotEmpty ||
-                                            hasGeocodingStatus!.isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child:
-                                                // hasAnyPlan.toString() == 'true' ?Container(child: Text("data")):
-                                                MessageCard(
-                                                    isError:
-                                                        hasAnyPlan.toString() ==
-                                                                'true'
-                                                            ? locations > 1
-                                                            : locations < 1,
-                                                    messageTextSpans: [
-                                                  TextSpan(
-                                                    text: hasAnyPlan
-                                                                .toString() ==
-                                                            'true'
-                                                        ? 'Available Credits: ${hasHazardLicenseStatus} locations.'
-                                                        : 'Available Credits: $locations of $total locations.',
-                                                  ),
-                                                  hasAnyPlan.toString() ==
-                                                          'true'
-                                                      ? TextSpan(
-                                                          text: ' ',
-                                                        )
-                                                      : TextSpan(
-                                                          recognizer:
-                                                              TapGestureRecognizer()
-                                                                ..onTap = () {
-                                                                  Navigator.of(
-                                                                          context)
-                                                                      .push(MaterialPageRoute(
-                                                                          builder: (_) =>
-                                                                              PurchaseLicensePage()));
-                                                                },
-                                                          text: ' Upgrade Now!',
-                                                          style: TextStyle(
-                                                            color: AppColors
-                                                                .primaryMain,
-                                                          ),
-                                                        ),
-                                                ]),
-                                          ),
+                                        // if (trialStatus.isNotEmpty ||
+                                        //     hasGeocodingStatus!.isNotEmpty)
+                                        //   Padding(
+                                        //     padding: const EdgeInsets.all(8.0),
+                                        //     child:
+                                        //         // hasAnyPlan.toString() == 'true' ?Container(child: Text("data")):
+                                        //         MessageCard(
+                                        //             isError:
+                                        //                 hasAnyPlan.toString() ==
+                                        //                         'true'
+                                        //                     ? locations > 1
+                                        //                     : locations < 1,
+                                        //             messageTextSpans: [
+                                        //           TextSpan(
+                                        //             text: hasAnyPlan
+                                        //                         .toString() ==
+                                        //                     'true'
+                                        //                 ? 'Available Credits: ${hasHazardLicenseStatus} locations.'
+                                        //                 : 'Available Credits: $locations of $total locations.',
+                                        //           ),
+                                        //           hasAnyPlan.toString() ==
+                                        //                   'true'
+                                        //               ? TextSpan(
+                                        //                   text: ' ',
+                                        //                 )
+                                        //               : TextSpan(
+                                        //                   recognizer:
+                                        //                       TapGestureRecognizer()
+                                        //                         ..onTap = () {
+                                        //                           Navigator.of(
+                                        //                                   context)
+                                        //                               .push(MaterialPageRoute(
+                                        //                                   builder: (_) =>
+                                        //                                       PurchaseLicensePage()));
+                                        //                         },
+                                        //                   text: ' Upgrade Now!',
+                                        //                   style: TextStyle(
+                                        //                     color: AppColors
+                                        //                         .primaryMain,
+                                        //                   ),
+                                        //                 ),
+                                        //         ]),
+                                        //   ),
                                         Padding(
                                           padding:
                                               const EdgeInsets.only(left: 8.0),

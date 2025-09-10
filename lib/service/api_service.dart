@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:http/http.dart' as http;
 
 import '../providers/auth_provider.dart';
@@ -18,37 +19,149 @@ class ApiService {
 
   /// Sends a GET request to the specified [url] with optional [additionalParams].
   /// Returns a Future containing the decoded JSON response.
+  /// Sends a GET request to the specified [url] with optional [additionalParams].
+  /// Returns a Future containing the decoded JSON response.
+  ///
   Future<Map<String, dynamic>> get(
-      [String? additionalParams, bool? isList]) async {
+      [String? additionalParams, bool? isList]
+      ) async {
     var headers = await CommonHeaders.createHeaders();
-    // log("Headers: $headers");
-    log("URL: $url${additionalParams ?? ''}");
-    final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'),
-        headers: headers);
-    if (isList != null && isList) {
-      return _handleResponse(response, isList);
+    final fullUrl = '$url${additionalParams ?? ''}';
+
+    log("URL: $fullUrl");
+
+    // Create a custom trace
+    final trace = FirebasePerformance.instance.newTrace("get_api_call");
+    await trace.start();
+
+    // Start HTTP metric
+    final metric = FirebasePerformance.instance.newHttpMetric(fullUrl, HttpMethod.Get);
+    await metric.start();
+
+    try {
+      final response = await http.get(Uri.parse(fullUrl), headers: headers);
+
+      // Set metric details
+      metric.httpResponseCode = response.statusCode;
+      metric.requestPayloadSize = 0;
+      metric.responsePayloadSize = response.bodyBytes.length;
+
+      // Add a custom attribute to the trace
+      trace.putAttribute("url", fullUrl);
+      trace.setMetric("response_size", response.bodyBytes.length);
+
+      if (isList != null && isList) {
+        return _handleResponse(response, isList);
+      }
+      return _handleResponse(response);
+    } catch (e) {
+      metric.putAttribute("error", e.toString());
+      trace.putAttribute("error", e.toString());
+      rethrow;
+    } finally {
+      await metric.stop();
+      await trace.stop(); // Stop trace after HTTP metric
     }
-    return _handleResponse(response);
   }
+  // Future<Map<String, dynamic>> get(
+  //     [String? additionalParams, bool? isList]) async {
+  //   var headers = await CommonHeaders.createHeaders();
+  //   final fullUrl = '$url${additionalParams ?? ''}';
+  //
+  //   log("URL: $fullUrl");
+  //
+  //   // Start Firebase Performance metric
+  //   final metric = FirebasePerformance.instance.newHttpMetric(
+  //     fullUrl,
+  //     HttpMethod.Get,
+  //   );
+  //   await metric.start();
+  //
+  //   try {
+  //     final response = await http.get(Uri.parse(fullUrl), headers: headers);
+  //
+  //     metric.httpResponseCode = response.statusCode;
+  //     metric.responsePayloadSize = response.bodyBytes.length;
+  //
+  //     if (isList != null && isList) {
+  //       return _handleResponse(response, isList);
+  //     }
+  //     return _handleResponse(response);
+  //   } catch (e) {
+  //     metric.putAttribute("error", e.toString());
+  //     rethrow;
+  //   } finally {
+  //     await metric.stop();
+  //   }
+  // }
 
   /// Sends a POST request to the specified [url] with the provided [body].
   /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> post(Map<String, dynamic> body,
       [String? additionalParams]) async {
     var headers = await CommonHeaders.createHeaders();
-    // log("Headers: $headers");
-    log("URL: $url");
+    final fullUrl = '$url${additionalParams ?? ""}';
+
+    log("URL: $fullUrl");
     log("Body: ${json.encode(body)}");
-    final response = await http.post(
-      Uri.parse('$url${additionalParams ?? ""}'),
-      body: json.encode(body),
-      headers: headers,
+
+    // Start Firebase Performance metric
+    final metric = FirebasePerformance.instance.newHttpMetric(
+      fullUrl,
+      HttpMethod.Post,
     );
-    print("Response: ${response.body}");
-    print("Response Code: ${response.statusCode}");
-    log("Response: ${response.body}");
-    return _handleResponse(response);
+    await metric.start();
+
+    try {
+      final response = await http.post(
+        Uri.parse(fullUrl),
+        body: json.encode(body),
+        headers: headers,
+      );
+
+      metric.httpResponseCode = response.statusCode;
+      metric.responsePayloadSize = response.bodyBytes.length;
+
+      return _handleResponse(response);
+    } catch (e) {
+      metric.putAttribute("error", e.toString());
+      rethrow;
+    } finally {
+      await metric.stop();
+    }
   }
+
+  // Future<Map<String, dynamic>> get(
+  //     [String? additionalParams, bool? isList]) async {
+  //   var headers = await CommonHeaders.createHeaders();
+  //   // log("Headers: $headers");
+  //   log("URL: $url${additionalParams ?? ''}");
+  //   final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'),
+  //       headers: headers);
+  //   if (isList != null && isList) {
+  //     return _handleResponse(response, isList);
+  //   }
+  //   return _handleResponse(response);
+  // }
+  //
+  // /// Sends a POST request to the specified [url] with the provided [body].
+  // /// Returns a Future containing the decoded JSON response.
+  // Future<Map<String, dynamic>> post(Map<String, dynamic> body,
+  //     [String? additionalParams]) async {
+  //   var headers = await CommonHeaders.createHeaders();
+  //   // log("Headers: $headers");
+  //   log("URL: $url");
+  //   log("Body: ${json.encode(body)}");
+  //   final response = await http.post(
+  //     Uri.parse('$url${additionalParams ?? ""}'),
+  //     body: json.encode(body),
+  //     headers: headers,
+  //   );
+  //   print("Response: ${response.body}");
+  //   print("Response Code: ${response.statusCode}");
+  //   log("Response: ${response.body}");
+  //   return _handleResponse(response);
+  // }
 
   /// Sends a PUT request to the specified [url] with the provided [body].
   /// Returns a Future containing the decoded JSON response.

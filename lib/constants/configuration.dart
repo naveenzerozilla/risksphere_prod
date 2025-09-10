@@ -8,7 +8,7 @@ class Configuration {
     //'project-green-f4d78',//
     Environment.qa: 'project-green-r5-1-qa',
     //'project-green-dev-429104', // 'project-green-r5-1-qa',
-    Environment.prod: 'prod-project-id',
+    Environment.prod: 'project-green-prod',
   };
 
   static String get projectId => projectIds[environment]!;

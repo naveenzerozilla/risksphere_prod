@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -62,12 +65,14 @@ class SubscriptionCard extends StatelessWidget {
                 Container(
                   alignment: Alignment.center,
                   padding: EdgeInsets.all(CustomSpacing.two),
-                  child: Image.network(
-                    iconPath,
+                  child: CachedNetworkImage(
+                    imageUrl: iconPath,
                     alignment: Alignment.center,
                     fit: BoxFit.contain,
                     height: 50,
                     width: 50,
+                    placeholder: (context, url) => CircularProgressIndicator(),
+                    errorWidget: (context, url, error) => Icon(Icons.error),
                   ),
                 ),
                 SizedBox(width: CustomSpacing.two),
@@ -76,7 +81,6 @@ class SubscriptionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
-
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -100,7 +104,10 @@ class SubscriptionCard extends StatelessWidget {
                                     title: Text(title.toString() ==
                                             "Hurricane (Kinetic Analysis Corporation)"
                                         ? "Hurricane Event Monitoring Subscription"
-                                        : "Earthquake Event Monitoring Subscription"),
+                                        : title.toString() ==
+                                                "Earthquake Event Monitoring Subscription"
+                                            ? "Earthquake Event Monitoring Subscription"
+                                            : title.toString()),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment:
@@ -143,7 +150,7 @@ class SubscriptionCard extends StatelessWidget {
                       ),
                       SizedBox(height: CustomSpacing.two),
                       Text(
-                      description,
+                        description,
                         style: typography.Body2.copyWith(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Colors.white70
@@ -165,150 +172,141 @@ class SubscriptionCard extends StatelessWidget {
           ),
 
           // Bottom Section: Subscribed or Subscribe Button
-          Consumer<UserProfileProvider>(builder: (context, userProfile, child) {
-            final trialStatus = userProfile.trialInfo['status'] ?? '';
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: isSubscribed
-                      ? isPgAdmin || isAdmin || isSuperAdmin
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                isPgAdmin || isAdmin || isSuperAdmin
-                                    ? ElevatedButton(
-                                        onPressed: onSubscribe,
-                                        style: ElevatedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4.0),
+          if (Platform.isAndroid) ...[
+            Consumer<UserProfileProvider>(
+                builder: (context, userProfile, child) {
+              final trialStatus = userProfile.trialInfo['status'] ?? '';
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: isSubscribed
+                        ? isPgAdmin || isAdmin || isSuperAdmin
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  isPgAdmin || isAdmin || isSuperAdmin
+                                      ? ElevatedButton(
+                                          onPressed: onSubscribe,
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(4.0),
+                                            ),
+                                            backgroundColor: Colors.grey,
                                           ),
-                                          backgroundColor: Colors.grey,
-                                        ),
-                                        child: Text(
-                                          isSubscribed == true
-                                              ? "subscribed"
-                                              : "Try now",
-                                          style: typography.Body1.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surface,
+                                          child: Text(
+                                            isSubscribed == true
+                                                ? "subscribed"
+                                                : "Try now",
+                                            style: typography.Body1.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surface,
+                                            ),
+                                          ),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: onSubscribe,
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(4.0),
+                                            ),
+                                            backgroundColor: Colors.amber,
+                                          ),
+                                          child: Text(
+                                            trialStatus.isEmpty
+                                                ? "  Unsubscribe  "
+                                                : trialStatus.toLowerCase() ==
+                                                        'expired'
+                                                    ? "  Upgrade Now  "
+                                                    : "  Trial Activated",
+                                            style: typography.Body1.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surface,
+                                            ),
                                           ),
                                         ),
-                                      )
-                                    : ElevatedButton(
-                                        onPressed: onSubscribe,
-                                        style: ElevatedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4.0),
-                                          ),
-                                          backgroundColor: Colors.amber,
-                                        ),
-                                        child: Text(
-                                          trialStatus.isEmpty
-                                              ? "  Unsubscribe  "
-                                              : trialStatus.toLowerCase() ==
-                                                      'expired'
-                                                  ? "  Upgrade Now  "
-                                                  : "  Trial Activated",
-                                          style: typography.Body1.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surface,
-                                          ),
-                                        ),
-                                      ),
-                              ],
-                            )
-                          : ElevatedButton(
-                              onPressed: onSubscribe,
-                              child: Text(
-                                "unSubscribed",
-                                // style: typography.Body1.copyWith(
-                                //   color: Theme.of(context).colorScheme.surface,
-                                // ),
-                              ),
-                            )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            isPgAdmin || isAdmin || isSuperAdmin
-                                ? ElevatedButton(
-                                    onPressed: onSubscribe,
-                                    style: ElevatedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(4.0),
-                                      ),
-                                      backgroundColor: AppColors.primaryMain,
-                                    ),
-                                    child: Text(
-                                      "Subscribe Now",
-                                      style: typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                      ),
-                                    ),
-                                  )
-                                : ElevatedButton(
-                                    onPressed: onSubscribe,
-                                    child: Text(
-                                      "Subscribed",
-                                      // style: typography.Body1.copyWith(
-                                      //   color: Theme.of(context).colorScheme.surface,
-                                      // ),
-                                    ),
+                                ],
+                              )
+                            : ElevatedButton(
+                                onPressed: onSubscribe,
+                                child: Text(
+                                  "unSubscribed",
+                                  // style: typography.Body1.copyWith(
+                                  //   color: Theme.of(context).colorScheme.surface,
+                                  // ),
+                                ),
+                              )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              ElevatedButton(
+                                onPressed: onSubscribe,
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4.0),
                                   ),
-                          ],
-                        ),
-                ),
-              ],
-            );
-          }),
-          isSubscribed == true
-              ? Container()
-              : Consumer<UserProfileProvider>(
-                  builder: (context, userProfile, child) {
-                    final trialStatus = userProfile.trialInfo['status'] ?? '';
-                    if (trialStatus.isEmpty) {
-                      return const SizedBox();
-                    }
-                    return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 8),
-                      child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8.0, 0, 8, 12),
-                          child: MessageCard(
-                            messageTextSpans: [
-                              TextSpan(
-                                text: "For yearly alerts subscription.",
-                                style: typography.Body2.copyWith(
-                                  color: AppColors.warning,
+                                  backgroundColor: AppColors.primaryMain,
                                 ),
-                              ),
-                              TextSpan(
-                                text: " Upgrade Now!",
-                                style: typography.Body2.copyWith(
-                                  color: AppColors.primaryMain,
+                                child: Text(
+                                  "Subscribe Now",
+                                  style: typography.Body1.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.surface,
+                                  ),
                                 ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                PurchaseLicensePage()));
-                                  },
-                              ),
+                              )
                             ],
-                          )),
-                    );
-                  },
-                ),
+                          ),
+                  ),
+                ],
+              );
+            }),
+            isSubscribed == true
+                ? Container()
+                : Consumer<UserProfileProvider>(
+                    builder: (context, userProfile, child) {
+                      final trialStatus = userProfile.trialInfo['status'] ?? '';
+                      if (trialStatus.isEmpty) {
+                        return const SizedBox();
+                      }
+                      return Container(
+                        margin: EdgeInsets.symmetric(horizontal: 8),
+                        child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8.0, 0, 8, 12),
+                            child: MessageCard(
+                              messageTextSpans: [
+                                TextSpan(
+                                  text: "For yearly alerts subscription.",
+                                  style: typography.Body2.copyWith(
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: " Upgrade Now!",
+                                  style: typography.Body2.copyWith(
+                                    color: AppColors.primaryMain,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PurchaseLicensePage()));
+                                    },
+                                ),
+                              ],
+                            )),
+                      );
+                    },
+                  ),
+          ],
         ],
       ),
     );

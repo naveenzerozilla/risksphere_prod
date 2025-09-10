@@ -1,10 +1,16 @@
+import 'package:RiskSphere/main.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
+import 'package:RiskSphere/utils/http_client.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import '../../utils/global_imports.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'design_system/app_themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 
+import 'main.dart';
+
+late PerformanceHttpClient httpClient; // global client
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -19,13 +25,23 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+
+    httpClient = PerformanceHttpClient();
+    bool isEnabled =
+        await FirebasePerformance.instance.isPerformanceCollectionEnabled();
+    debugPrint('Firebase Performance isEnabled: $isEnabled');
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
@@ -52,6 +68,43 @@ void main() async {
     ),
   );
 }
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await EasyLocalization.ensureInitialized();
+//   FirebasePerformance performance = FirebasePerformance.instance;
+//   try {
+//     await Firebase.initializeApp(
+//       options: DefaultFirebaseOptions.currentPlatform,
+//     );
+//     // Enable performance collection
+//     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+//   } catch (e) {
+//     debugPrint('Firebase initialization error: $e');
+//   }
+//
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//
+//   try {
+//     Stripe.publishableKey =
+//         'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+//     await Stripe.instance.applySettings();
+//   } catch (e, stackTrace) {
+//     debugPrint('Stripe initialization failed: $e');
+//     debugPrint('Stack trace: $stackTrace');
+//   }
+//
+//   initializeNotifications();
+//
+//   runApp(
+//     EasyLocalization(
+//       supportedLocales: const [Locale('en')],
+//       path: 'assets/translations',
+//       fallbackLocale: const Locale('en'),
+//       child: AppLifecycleManager(),
+//     ),
+//   );
+// }
 
 class AppLifecycleManager extends StatefulWidget {
   @override
@@ -97,8 +150,8 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 }
 
 class MyApp extends StatelessWidget {
-  static final GlobalKey<NavigatorState> navigatorKey =
-      GlobalKey<NavigatorState>();
+  // static final GlobalKey<NavigatorState> navigatorKey =
+  //     GlobalKey<NavigatorState>();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -140,9 +193,10 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
+            navigatorKey: navigatorKey,
             scaffoldMessengerKey: scaffoldMessengerKey,
             debugShowCheckedModeBanner: false,
-            navigatorKey: navigatorKey,
+            // navigatorKey: navigatorKey,
             title: 'Risk Sphere',
             locale: context.locale,
             supportedLocales: context.supportedLocales,
@@ -216,7 +270,7 @@ Future<void> showNotification(
 }
 
 void handleNotificationNavigation(Map<String, dynamic> data) {
-  final context = MyApp.navigatorKey.currentContext;
+  final context = navigatorKey.currentContext;
   if (context == null) return;
 
   switch (data['type']) {
@@ -302,7 +356,7 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
       body: jsonEncode(
           {'user_id': userId, 'topic': 'general', 'mobile_token': token}),
     );
-    print("Subscribenotification");
+
     return response.statusCode == 200;
   } catch (_) {
     return false;
@@ -313,7 +367,7 @@ class CustomToast {
   static void showToast(String title, String message) {
     print("Foreground notifications");
     // Example implementation using Flutter's ScaffoldMessenger
-    final context = MyApp.navigatorKey.currentContext;
+    final context = navigatorKey.currentContext;
     if (context != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -217,110 +217,349 @@ class MyLocation with ClusterItem {
 }
 
 class Conflicts {
-  List<UserAccounts>? userAccounts;
-  EmbeddedAddress? embeddedAddress;
-  FinalAddress? finalAddress;
-  String? processId;
-  List<String>? accountIndex;
-  List<String>? subAccountIndex;
-
-  // EnabledHazards? enabledHazards;
-  List<Null>? dataParameters;
-  String? geocodedAddress;
-  bool? isHazardProcessed;
-  String? mappedAddress;
-
-  // List<History>? history;
-  String? subProcessId;
-  String? originalAddress;
-
-  // EnabledHazards? dataParamIndex;
+  String? subAccountId;
+  String? countryIsoCode;
+  int? lineNo;
+  int? retryAttempts;
+  bool? leased;
   String? locationId;
+  String? address;
+  String? state;
+  String? pgKey;
+  String? zip;
+  dynamic processingTime;
+  String? county;
+  double? longitude;
+  double? latitude;
+  String? description;
+  bool? usFlag;
+  String? percent;
+  String? companyId;
+  GeocodeInputAddress? geocodeInputAddress;
+  String? ownerEmail;
+  String? city;
+  String? subAccountName;
+  Owner? owner;
+  List<String>? placeTypes;
+  String? locationIdForRef;
+  bool? rented;
+  int? score;
+  String? country;
+  String? ownerId;
+  String? tags;
+  String? placeId;
+  bool? autoCertified;
+  String? accountName;
+  String? locationType;
+  String? ownerName;
+  String? accountId;
+  String? id;
 
   Conflicts(
-      {this.userAccounts,
-      this.embeddedAddress,
-      this.finalAddress,
-      this.processId,
-      this.accountIndex,
-      this.subAccountIndex,
-      this.dataParameters,
-      this.geocodedAddress,
-      this.isHazardProcessed,
-      this.mappedAddress,
-      this.subProcessId,
-      this.originalAddress,
-      this.locationId});
+      {this.subAccountId,
+      this.countryIsoCode,
+      this.lineNo,
+      this.retryAttempts,
+      this.leased,
+      this.locationId,
+      this.address,
+      this.state,
+      this.pgKey,
+      this.zip,
+      this.processingTime,
+      this.county,
+      this.longitude,
+      this.latitude,
+      this.description,
+      this.usFlag,
+      this.percent,
+      this.companyId,
+      this.geocodeInputAddress,
+      this.ownerEmail,
+      this.city,
+      this.subAccountName,
+      this.owner,
+      this.placeTypes,
+      this.locationIdForRef,
+      this.rented,
+      this.score,
+      this.country,
+      this.ownerId,
+      this.tags,
+      this.placeId,
+      this.autoCertified,
+      this.accountName,
+      this.locationType,
+      this.ownerName,
+      this.accountId,
+      this.id});
 
   Conflicts.fromJson(Map<String, dynamic> json) {
-    if (json['userAccounts'] != null) {
-      userAccounts = <UserAccounts>[];
-      json['userAccounts'].forEach((v) {
-        userAccounts!.add(new UserAccounts.fromJson(v));
-      });
-    }
-    embeddedAddress = json['embedded_address'] != null
-        ? new EmbeddedAddress.fromJson(json['embedded_address'])
-        : null;
-    finalAddress = json['final_address'] != null
-        ? new FinalAddress.fromJson(json['final_address'])
-        : null;
-    processId = json['process_id'];
-    accountIndex = json['account_index'].cast<String>();
-    subAccountIndex = json['sub_account_index'].cast<String>();
-    // enabledHazards = json['enabled_hazards'] != null ? new EnabledHazards.fromJson(json['enabled_hazards']) : null;
-    // if (json['data_parameters'] != null) {
-    //   dataParameters = <Null>[];
-    //   json['data_parameters'].forEach((v) { dataParameters!.add(new Null.fromJson(v)); });
-    // }
-    geocodedAddress = json['geocoded_address'];
-    isHazardProcessed = json['is_hazard_processed'];
-    mappedAddress = json['mapped_address'];
-    // if (json['history'] != null) {
-    //   history = <History>[];
-    //   json['history'].forEach((v) { history!.add(new History.fromJson(v)); });
-    // }
-    subProcessId = json['sub_process_id'];
-    originalAddress = json['original_address'];
-    // dataParamIndex = json['data_param_index'] != null ? new EnabledHazards.fromJson(json['data_param_index']) : null;
+    subAccountId = json['sub_account_id'];
+    countryIsoCode = json['country_iso_code'];
+    lineNo = json['line_no'];
+    retryAttempts = json['retry_attempts'];
+    leased = json['leased'];
     locationId = json['location_id'];
+    address = json['address'];
+    state = json['state'];
+    pgKey = json['pg_key'];
+    zip = json['zip'];
+    processingTime = json['processing_time'];
+    county = json['county'];
+    longitude = json['longitude'];
+    latitude = json['latitude'];
+    description = json['description'];
+    usFlag = json['us_flag'];
+    percent = json['percent'];
+    companyId = json['company_id'];
+    geocodeInputAddress = json['geocode_input_address'] != null
+        ? new GeocodeInputAddress.fromJson(json['geocode_input_address'])
+        : null;
+    ownerEmail = json['owner_email'];
+    city = json['city'];
+    subAccountName = json['sub_account_name'];
+    owner = json['owner'] != null ? new Owner.fromJson(json['owner']) : null;
+    placeTypes = json['place_types'].cast<String>();
+    locationIdForRef = json['location_id_for_ref'];
+    rented = json['rented'];
+    score = json['score'];
+    country = json['country'];
+    ownerId = json['owner_id'];
+    tags = json['tags'];
+    placeId = json['place_id'];
+    autoCertified = json['auto_certified'];
+    accountName = json['account_name'];
+    locationType = json['location_type'];
+    ownerName = json['owner_name'];
+    accountId = json['account_id'];
+    id = json['id'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.userAccounts != null) {
-      data['userAccounts'] = this.userAccounts!.map((v) => v.toJson()).toList();
-    }
-    if (this.embeddedAddress != null) {
-      data['embedded_address'] = this.embeddedAddress!.toJson();
-    }
-    if (this.finalAddress != null) {
-      data['final_address'] = this.finalAddress!.toJson();
-    }
-    data['process_id'] = this.processId;
-    data['account_index'] = this.accountIndex;
-    data['sub_account_index'] = this.subAccountIndex;
-    // if (this.enabledHazards != null) {
-    //   data['enabled_hazards'] = this.enabledHazards!.toJson();
-    // }
-    // if (this.dataParameters != null) {
-    //   data['data_parameters'] = this.dataParameters!.map((v) => v.toJson()).toList();
-    // }
-    data['geocoded_address'] = this.geocodedAddress;
-    data['is_hazard_processed'] = this.isHazardProcessed;
-    data['mapped_address'] = this.mappedAddress;
-    // if (this.history != null) {
-    //   data['history'] = this.history!.map((v) => v.toJson()).toList();
-    // }
-    data['sub_process_id'] = this.subProcessId;
-    data['original_address'] = this.originalAddress;
-    // if (this.dataParamIndex != null) {
-    //   data['data_param_index'] = this.dataParamIndex!.toJson();
-    // }
+    data['sub_account_id'] = this.subAccountId;
+    data['country_iso_code'] = this.countryIsoCode;
+    data['line_no'] = this.lineNo;
+    data['retry_attempts'] = this.retryAttempts;
+    data['leased'] = this.leased;
     data['location_id'] = this.locationId;
+    data['address'] = this.address;
+    data['state'] = this.state;
+    data['pg_key'] = this.pgKey;
+    data['zip'] = this.zip;
+    data['processing_time'] = this.processingTime;
+    data['county'] = this.county;
+    data['longitude'] = this.longitude;
+    data['latitude'] = this.latitude;
+    data['description'] = this.description;
+    data['us_flag'] = this.usFlag;
+    data['percent'] = this.percent;
+    data['company_id'] = this.companyId;
+    if (this.geocodeInputAddress != null) {
+      data['geocode_input_address'] = this.geocodeInputAddress!.toJson();
+    }
+    data['owner_email'] = this.ownerEmail;
+    data['city'] = this.city;
+    data['sub_account_name'] = this.subAccountName;
+    if (this.owner != null) {
+      data['owner'] = this.owner!.toJson();
+    }
+    data['place_types'] = this.placeTypes;
+    data['location_id_for_ref'] = this.locationIdForRef;
+    data['rented'] = this.rented;
+    data['score'] = this.score;
+    data['country'] = this.country;
+    data['owner_id'] = this.ownerId;
+    data['tags'] = this.tags;
+    data['place_id'] = this.placeId;
+    data['auto_certified'] = this.autoCertified;
+    data['account_name'] = this.accountName;
+    data['location_type'] = this.locationType;
+    data['owner_name'] = this.ownerName;
+    data['account_id'] = this.accountId;
+    data['id'] = this.id;
     return data;
   }
 }
+
+class GeocodeInputAddress {
+  String? type;
+  int? lineNo;
+  String? propertyAddress;
+  String? locationId;
+  String? state;
+  String? propertyCity;
+  String? country;
+  String? docId;
+  String? locationName;
+  Null? duplicates;
+  bool? isDuplicate;
+  String? postalCode;
+  String? formattedAddress;
+  String? processId;
+  String? id;
+
+  GeocodeInputAddress(
+      {this.type,
+      this.lineNo,
+      this.propertyAddress,
+      this.locationId,
+      this.state,
+      this.propertyCity,
+      this.country,
+      this.docId,
+      this.locationName,
+      this.duplicates,
+      this.isDuplicate,
+      this.postalCode,
+      this.formattedAddress,
+      this.processId,
+      this.id});
+
+  GeocodeInputAddress.fromJson(Map<String, dynamic> json) {
+    type = json['type'];
+    lineNo = json['line_no'];
+    propertyAddress = json['property Address'];
+    locationId = json['location_id'];
+    state = json['State'];
+    propertyCity = json['property City'];
+    country = json['Country'];
+    docId = json['doc_id'];
+    locationName = json['Location Name'];
+    duplicates = json['duplicates'];
+    isDuplicate = json['is_duplicate'];
+    postalCode = json['Postal code'];
+    formattedAddress = json['formatted_address'];
+    processId = json['process_id'];
+    id = json['id'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['type'] = this.type;
+    data['line_no'] = this.lineNo;
+    data['property Address'] = this.propertyAddress;
+    data['location_id'] = this.locationId;
+    data['State'] = this.state;
+    data['property City'] = this.propertyCity;
+    data['Country'] = this.country;
+    data['doc_id'] = this.docId;
+    data['Location Name'] = this.locationName;
+    data['duplicates'] = this.duplicates;
+    data['is_duplicate'] = this.isDuplicate;
+    data['Postal code'] = this.postalCode;
+    data['formatted_address'] = this.formattedAddress;
+    data['process_id'] = this.processId;
+    data['id'] = this.id;
+    return data;
+  }
+}
+// class Conflicts {
+//   List<UserAccounts>? userAccounts;
+//   EmbeddedAddress? embeddedAddress;
+//   FinalAddress? finalAddress;
+//   String? processId;
+//   List<String>? accountIndex;
+//   List<String>? subAccountIndex;
+//
+//   // EnabledHazards? enabledHazards;
+//   List<Null>? dataParameters;
+//   String? geocodedAddress;
+//   bool? isHazardProcessed;
+//   String? mappedAddress;
+//
+//   // List<History>? history;
+//   String? subProcessId;
+//   String? originalAddress;
+//
+//   // EnabledHazards? dataParamIndex;
+//   String? locationId;
+//
+//   Conflicts(
+//       {this.userAccounts,
+//       this.embeddedAddress,
+//       this.finalAddress,
+//       this.processId,
+//       this.accountIndex,
+//       this.subAccountIndex,
+//       this.dataParameters,
+//       this.geocodedAddress,
+//       this.isHazardProcessed,
+//       this.mappedAddress,
+//       this.subProcessId,
+//       this.originalAddress,
+//       this.locationId});
+//
+//   Conflicts.fromJson(Map<String, dynamic> json) {
+//     if (json['userAccounts'] != null) {
+//       userAccounts = <UserAccounts>[];
+//       json['userAccounts'].forEach((v) {
+//         userAccounts!.add(new UserAccounts.fromJson(v));
+//       });
+//     }
+//     embeddedAddress = json['embedded_address'] != null
+//         ? new EmbeddedAddress.fromJson(json['embedded_address'])
+//         : null;
+//     finalAddress = json['final_address'] != null
+//         ? new FinalAddress.fromJson(json['final_address'])
+//         : null;
+//     processId = json['process_id'];
+//     accountIndex = json['account_index'].cast<String>();
+//     subAccountIndex = json['sub_account_index'].cast<String>();
+//     // enabledHazards = json['enabled_hazards'] != null ? new EnabledHazards.fromJson(json['enabled_hazards']) : null;
+//     // if (json['data_parameters'] != null) {
+//     //   dataParameters = <Null>[];
+//     //   json['data_parameters'].forEach((v) { dataParameters!.add(new Null.fromJson(v)); });
+//     // }
+//     geocodedAddress = json['geocoded_address'];
+//     isHazardProcessed = json['is_hazard_processed'];
+//     mappedAddress = json['mapped_address'];
+//     // if (json['history'] != null) {
+//     //   history = <History>[];
+//     //   json['history'].forEach((v) { history!.add(new History.fromJson(v)); });
+//     // }
+//     subProcessId = json['sub_process_id'];
+//     originalAddress = json['original_address'];
+//     // dataParamIndex = json['data_param_index'] != null ? new EnabledHazards.fromJson(json['data_param_index']) : null;
+//     locationId = json['location_id'];
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     if (this.userAccounts != null) {
+//       data['userAccounts'] = this.userAccounts!.map((v) => v.toJson()).toList();
+//     }
+//     if (this.embeddedAddress != null) {
+//       data['embedded_address'] = this.embeddedAddress!.toJson();
+//     }
+//     if (this.finalAddress != null) {
+//       data['final_address'] = this.finalAddress!.toJson();
+//     }
+//     data['process_id'] = this.processId;
+//     data['account_index'] = this.accountIndex;
+//     data['sub_account_index'] = this.subAccountIndex;
+//     // if (this.enabledHazards != null) {
+//     //   data['enabled_hazards'] = this.enabledHazards!.toJson();
+//     // }
+//     // if (this.dataParameters != null) {
+//     //   data['data_parameters'] = this.dataParameters!.map((v) => v.toJson()).toList();
+//     // }
+//     data['geocoded_address'] = this.geocodedAddress;
+//     data['is_hazard_processed'] = this.isHazardProcessed;
+//     data['mapped_address'] = this.mappedAddress;
+//     // if (this.history != null) {
+//     //   data['history'] = this.history!.map((v) => v.toJson()).toList();
+//     // }
+//     data['sub_process_id'] = this.subProcessId;
+//     data['original_address'] = this.originalAddress;
+//     // if (this.dataParamIndex != null) {
+//     //   data['data_param_index'] = this.dataParamIndex!.toJson();
+//     // }
+//     data['location_id'] = this.locationId;
+//     return data;
+//   }
+// }
 
 class UserAccounts {
   String? folder;
@@ -438,7 +677,7 @@ class VendorData {
 class HazardDetails {
   String? vendorName; // Primary vendor providing the data
   dynamic value; // The hazard value (can be String, int, or double)
-  int? rating; // Hazard rating
+  dynamic rating; // Hazard rating
   int? priority; // Hazard priority
   DateTime? date; // Date of hazard information
   Map<String, HazardDetails>? others; // Additional vendor-specific data

@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../utils/global_imports.dart';
 import 'package:RiskSphere/models/networking_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1052,8 +1054,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                               .getTranslated(
                                                                   context,
                                                                   "user_profile_user_management_upload_imamge_btn"),
-                                                          style: typography
-                                                              .ButtonLarge,
+                                                          // style: typography
+                                                          //     .ButtonLarge,
                                                           textAlign:
                                                               TextAlign.center,
                                                         ),
@@ -1819,7 +1821,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       child: Text(
                                         LanguageService.getTranslated(context,
                                             "user_profile_user_management_btn_submit"),
-                                        style: typography.ButtonLarge,
+                                        // style: typography.ButtonLarge,
                                       ),
                                     ),
                                   ),
@@ -2711,8 +2713,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: user.displayImageUrl != null &&
                                     user.displayImageUrl != ''
                                 ? ClipOval(
-                                    child: Image.network(
-                                      user.displayImageUrl!,
+                                    child: CachedNetworkImage(
+                                      imageUrl: user.displayImageUrl!,
                                       fit: BoxFit.cover,
                                     ),
                                   )

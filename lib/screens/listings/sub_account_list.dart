@@ -137,8 +137,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount =
-        // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
+        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
+        // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
     _tryShowTutorialOnce();
   }
@@ -1020,8 +1020,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   .getTranslated(
                                                                       context,
                                                                       "sub_account_list_app_duplicate_duplicate"),
-                                                              style: typography
-                                                                  .ButtonLarge,
+
                                                             ),
                                                             type: ButtonType
                                                                 .elevated,
@@ -1161,8 +1160,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   },
                                                                   child: Text(
                                                                     "Delete",
-                                                                    style: typography
-                                                                        .ButtonLarge,
+
                                                                   ),
                                                                   type: ButtonType
                                                                       .elevated,
@@ -1522,7 +1520,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                               : LanguageService.getTranslated(
                                                   context,
                                                   "sub_account_list_app_submit_text"),
-                                          style: typography.ButtonLarge,
+                                          // style: typography.ButtonLarge,
                                         ),
                                         type: ButtonType.elevated,
                                       );

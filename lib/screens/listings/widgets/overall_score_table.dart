@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../models/my_location_list_model.dart';
 
 class LocationTable extends StatefulWidget {
@@ -73,7 +74,8 @@ class _LocationTableState extends State<LocationTable> {
     final sortedHazardColumns = hazardColumns
         .where((hazard) => hazard != 'Overall') // Exclude "Overall"
         .toList()
-      ..sort((a, b) => (hazardOrder[a] ?? 999).compareTo(hazardOrder[b] ?? 999));
+      ..sort(
+          (a, b) => (hazardOrder[a] ?? 999).compareTo(hazardOrder[b] ?? 999));
 
     return Column(
       children: [
@@ -82,7 +84,16 @@ class _LocationTableState extends State<LocationTable> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("See Risk Score", style: CustomTypography(context).Body1),
+              InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const LocationScoreChart()),
+                    );
+                  },
+                  child: Text("See Risk Score",
+                      style: CustomTypography(context).Body1)),
               Switch(
                 value: showRiskScore,
                 onChanged: (value) {
@@ -122,7 +133,8 @@ class _LocationTableState extends State<LocationTable> {
                 horizontalMargin: 12,
                 bottomMargin: 20,
                 dividerThickness: 1,
-                dataRowHeight: !showRiskScore ? 160 : null, // Enables dynamic height
+                dataRowHeight: !showRiskScore ? 160 : null,
+                // Enables dynamic height
                 border: TableBorder.all(
                   color: Theme.of(context).colorScheme.surface,
                   width: 1,
@@ -135,12 +147,14 @@ class _LocationTableState extends State<LocationTable> {
                     label: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Location', style: CustomTypography(context).InputLabel),
+                        Text('Location',
+                            style: CustomTypography(context).InputLabel),
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
                           onSelected: (String hazard) {
                             setState(() {
-                              columnVisibility[hazard] = !(columnVisibility[hazard] ?? true);
+                              columnVisibility[hazard] =
+                                  !(columnVisibility[hazard] ?? true);
                             });
                           },
                           itemBuilder: (BuildContext context) {
@@ -149,7 +163,8 @@ class _LocationTableState extends State<LocationTable> {
                                 value: "show",
                                 child: ListTile(
                                   leading: const Icon(Icons.visibility),
-                                  title: Text("Show All Hazards", style: CustomTypography(context).Body2),
+                                  title: Text("Show All Hazards",
+                                      style: CustomTypography(context).Body2),
                                   onTap: () {
                                     setState(() {
                                       hazardColumns.forEach((hazard) {
@@ -163,7 +178,8 @@ class _LocationTableState extends State<LocationTable> {
                                 value: "hide",
                                 child: ListTile(
                                   leading: const Icon(Icons.visibility_off),
-                                  title: Text("Hide All Hazards", style: CustomTypography(context).Body2),
+                                  title: Text("Hide All Hazards",
+                                      style: CustomTypography(context).Body2),
                                   onTap: () {
                                     setState(() {
                                       hazardColumns.forEach((hazard) {
@@ -183,12 +199,14 @@ class _LocationTableState extends State<LocationTable> {
                   DataColumn2(
                     fixedWidth: MediaQuery.of(context).size.width * 0.3,
                     size: ColumnSize.L,
-                    label: Text('Geocoding Score', style: CustomTypography(context).InputLabel),
+                    label: Text('Geocoding Score',
+                        style: CustomTypography(context).InputLabel),
                   ),
                   DataColumn2(
                     fixedWidth: MediaQuery.of(context).size.width * 0.3,
                     size: ColumnSize.L,
-                    label: Text('Hazard Score', style: CustomTypography(context).InputLabel),
+                    label: Text('Hazard Score',
+                        style: CustomTypography(context).InputLabel),
                   ),
                   ...sortedHazardColumns.map((hazard) {
                     return DataColumn2(
@@ -196,7 +214,9 @@ class _LocationTableState extends State<LocationTable> {
                       label: Text(
                         hazard,
                         style: CustomTypography(context).InputLabel.copyWith(
-                            color: columnVisibility[hazard] == false ? Colors.grey : null),
+                            color: columnVisibility[hazard] == false
+                                ? Colors.grey
+                                : null),
                       ),
                     );
                   }).toList(),
@@ -215,22 +235,31 @@ class _LocationTableState extends State<LocationTable> {
                       DataCell(_renderRiskScore(location.geocodingScore)),
                       DataCell(_renderRiskScore(location.overallScore)),
                       ...sortedHazardColumns.map((hazard) => DataCell(
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          alignment: Alignment.center,
-                          child: location.hazard?.containsKey(hazard) ?? false
-                              ? (showRiskScore
-                              ? _renderRiskScore(location.hazard?[hazard]?.rating)
-                              : _renderFormattedHazardData(
-                              location.hazard?[hazard],
-                              location.hazard?[hazard]?.rating))
-                              : Text(
-                            "-",
-                            style: CustomTypography(context).Body2.copyWith(color: Colors.grey),
-                          ),
-                        ),
-                      )),
+                            Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              alignment: Alignment.center,
+                              child:
+                                  location.hazard?.containsKey(hazard) ?? false
+                                      ? (showRiskScore
+                                          ? _renderRiskScore(int.tryParse(
+                                              location.hazard?[hazard]?.rating
+                                                      ?.toString() ??
+                                                  ''))
+                                          : _renderFormattedHazardData(
+                                              location.hazard?[hazard],
+                                              int.tryParse(location
+                                                      .hazard?[hazard]?.rating
+                                                      ?.toString() ??
+                                                  '')))
+                                      : Text(
+                                          "-",
+                                          style: CustomTypography(context)
+                                              .Body2
+                                              .copyWith(color: Colors.grey),
+                                        ),
+                            ),
+                          )),
                     ],
                   );
                 }).toList(),
@@ -241,7 +270,6 @@ class _LocationTableState extends State<LocationTable> {
       ],
     );
   }
-
 
   Widget _renderRiskScore(int? score) {
     if (score == null || score == 0) {
@@ -315,7 +343,9 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Risk Score",
         value: mainValue.toString(),
-        vendorName: hazardDetails.vendorName.toString()== "MM FRI" ?"MM FRI **":"MM FRI",//"MM FRI",
+        vendorName: hazardDetails.vendorName.toString() == "MM FRI"
+            ? "MM FRI **"
+            : "MM FRI", //"MM FRI",
         score: score,
       ));
     }
@@ -326,7 +356,9 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "PGA (%g)",
         value: _formatNumber(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "GEM" ?"GEM **":"GEM",//"GEM",
+        vendorName: hazardDetails.vendorName.toString() == "GEM"
+            ? "GEM **"
+            : "GEM", //"GEM",
         score: score,
       ));
     }
@@ -337,7 +369,9 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Wind Speed (mph)",
         value: _formatNumber(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "KinetiCast" ?"KinetiCast **":"Kineticast",
+        vendorName: hazardDetails.vendorName.toString() == "KinetiCast"
+            ? "KinetiCast **"
+            : "Kineticast",
         score: score,
       ));
     }
@@ -347,7 +381,9 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Temp(K) / FRP",
         value: _formatNumber(mainValue),
-        vendorName: hazardDetails.vendorName.toString()== "MODIS" ?"MODIS **":"MODIS", //"MODIS",
+        vendorName: hazardDetails.vendorName.toString() == "MODIS"
+            ? "MODIS **"
+            : "MODIS", //"MODIS",
         score: score,
       ));
     }
@@ -358,11 +394,12 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Flood Depth (ft)",
         value: _formatNumber(mainValue, decimalPlaces: 1),
-        vendorName:hazardDetails.vendorName.toString()== "EU JRC" ?"EU JRC **":"EU JRC", //"EU JRC",
+        vendorName: hazardDetails.vendorName.toString() == "EU JRC"
+            ? "EU JRC **"
+            : "EU JRC", //"EU JRC",
         score: score,
       ));
     }
-
 
     // if (hazardDetails.others!.containsKey("MarshMcLennan")) {
     //   var mainValue = hazardDetails.others!["MarshMcLennan"]!.value;
@@ -381,7 +418,9 @@ class _LocationTableState extends State<LocationTable> {
       vendorDataWidgets.add(_buildVendorDataWidget(
         key: "Risk Index",
         value: formattedValue,
-        vendorName: hazardDetails.vendorName.toString()== "USGS" ?"USGS **":"USGS", //"USGS",
+        vendorName: hazardDetails.vendorName.toString() == "USGS"
+            ? "USGS **"
+            : "USGS", //"USGS",
         score: score,
       ));
     }
@@ -455,4 +494,122 @@ class _LocationTableState extends State<LocationTable> {
       ),
     );
   }
+}
+
+class LocationScoreChart extends StatelessWidget {
+  const LocationScoreChart({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 40),
+            const Text(
+              "Location Score",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              color: Colors.black,
+              child: Expanded(
+                child: SfCircularChart(
+                  margin: EdgeInsets.zero,
+                  legend: Legend(
+                    isVisible: true,
+                    // overflowMode: LegendItemOverflowMode.wrap,
+                    // position: LegendPosition.left,
+                    textStyle: const TextStyle(color: Colors.white),
+                  ),
+                  series: <DoughnutSeries<ChartData, String>>[
+                    // New Outermost ring
+                    DoughnutSeries<ChartData, String>(
+                      dataSource: [
+                        ChartData('A', 40, const Color(0xFF4A148C)),
+                        // Example: Custom outermost
+                        ChartData('B', 40, const Color(0xFF1976D2)),
+                        ChartData('', 40, Colors.transparent),
+                        ChartData('', 25, Colors.transparent),
+                        ChartData('', 25, Colors.transparent),
+                        // Transparent segment/ Transparent segment
+                      ],
+                      xValueMapper: (ChartData data, _) => data.label,
+                      yValueMapper: (ChartData data, _) => data.value,
+                      pointColorMapper: (ChartData data, _) => data.color,
+                      dataLabelMapper: (ChartData data, _) => data.label,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        textStyle: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      radius: '100%',
+                      innerRadius: '85%',
+                    ),
+                    // Outer ring
+                    DoughnutSeries<ChartData, String>(
+                      dataSource: [
+                        ChartData('01', 10, const Color(0xFFB71C1C)),
+                        // R. High
+                        ChartData('M', 10, const Color(0xFF90A4AE)),
+                        // Missing Perils
+                        ChartData('02', 10, const Color(0xFFE57373)),
+                        // R. Moderate
+                        ChartData('03', 10, const Color(0xFFFFEB3B)),
+                        // R. Low
+                        ChartData('04', 20, const Color(0xFF81C784)),
+                        // V. Low
+                      ],
+                      xValueMapper: (ChartData data, _) => data.label,
+                      yValueMapper: (ChartData data, _) => data.value,
+                      pointColorMapper: (ChartData data, _) => data.color,
+                      dataLabelMapper: (ChartData data, _) => data.label,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        textStyle: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      radius: '90%',
+                      innerRadius: '50%',
+                    ),
+
+                    // Inner circle (Complete)
+                    DoughnutSeries<ChartData, String>(
+                      explode: true,
+                      dataSource: [
+                        ChartData('05', 10, const Color(0xFF2E7D32)),
+                        // Complete
+                      ],
+                      xValueMapper: (ChartData data, _) => data.label,
+                      yValueMapper: (ChartData data, _) => data.value,
+                      pointColorMapper: (ChartData data, _) => data.color,
+                      dataLabelMapper: (ChartData data, _) => data.label,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        textStyle: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      radius: '60%',
+                      innerRadius: '0%',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ChartData {
+  final String label;
+  final double value;
+  final Color color;
+
+  ChartData(this.label, this.value, this.color);
 }

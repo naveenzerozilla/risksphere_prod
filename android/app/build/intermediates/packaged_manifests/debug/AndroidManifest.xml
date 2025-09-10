@@ -59,7 +59,7 @@
         android:label="RiskSphere" >
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w" />
+            android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
 
         <activity
             android:name="com.risksphere.green.MainActivity"

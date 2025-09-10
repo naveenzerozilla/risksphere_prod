@@ -104,7 +104,7 @@
 59        android:label="RiskSphere" >
 60        <meta-data
 61            android:name="com.google.android.geo.API_KEY"
-62            android:value="AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w" />
+62            android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
 63
 64        <activity
 65            android:name="com.risksphere.green.MainActivity"

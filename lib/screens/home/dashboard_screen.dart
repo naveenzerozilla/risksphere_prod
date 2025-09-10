@@ -1,3 +1,6 @@
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
@@ -40,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isAdmin = false;
   bool isSuperAdmin = false;
   bool isIndivudual = false;
+  bool isHasAnyPlan = false;
   late ScrollController _scrollController;
   GlobalKey keyFeature1 = GlobalKey();
   GlobalKey keyFeature2 = GlobalKey();
@@ -205,6 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initializeData() async {
     await Future.wait([
+
       _setClaims(),
       Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed(),
     ]);
@@ -241,6 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
             SharedPreferenceService.Is_Indivudual) ??
         false;
+    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
     showTotalCorporates = results[0] ?? false;
     showAllUsers = results[1] ?? false;
     showConnectionRequests = results[2] ?? false;
@@ -249,6 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
 
     showVerificationRequests =
         showCorporateVerificationRequests || showUserVerificationRequests;
@@ -374,8 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Consumer<UserProfileProvider>(
                     builder: (context, userProfile, child) {
                       final trialStatus = userProfile.trialInfo['status'] ?? '';
-
-                      if (trialStatus.contains('Expired')) {
+                      if (trialStatus.contains('Expired') && isHasAnyPlan == false ) {
                         return Container(
                           padding:
                               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -389,13 +395,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(height: CustomSpacing.four),
+                              // Text(isHasAnyPlan.toString()),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: MessageCard(
                                   messageTextSpans: [
                                     TextSpan(
                                       text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
                                       style: typography.Body1,
                                     ),
                                     // tappable
@@ -695,10 +702,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     //                 .toString() ==
                     //             "Admin" &&
                     //         (isSuperAdmin || isPgAdmin || isAdmin))
-          showAllUsers
-          ? SizedBox()
-              :
-                        Consumer2<UserProfileProvider, ConfigurationProvider>(
+                    // InkWell(
+                    //   onTap: () async {
+                    //     final status = await Permission.camera.request();
+                    //     if (status.isGranted) {
+                    //       final pickedFile = await ImagePicker()
+                    //           .pickImage(source: ImageSource.camera);
+                    //       if (pickedFile != null) {
+                    //         // Use pickedFile.path
+                    //         print('Image path: ${pickedFile.path}');
+                    //       }
+                    //     } else {
+                    //       ScaffoldMessenger.of(context).showSnackBar(
+                    //         SnackBar(content: Text('Camera permission denied')),
+                    //       );
+                    //     }
+                    //   },
+                    //   child: Text("Camera", style: typography.H5_Regular),
+                    // ),
+                    showAllUsers
+                        ? SizedBox()
+                        : Consumer2<UserProfileProvider, ConfigurationProvider>(
                             builder: (context, userProfileProvider, provider,
                                 child) {
                               if (provider.isLoading) {
@@ -835,21 +859,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             iconPath: data['vendorImage'],
                             isSubscribed: data['isSubscribed'],
                             onSubscribe: () async {
-                              if (isPgAdmin || isAdmin || isSuperAdmin) {
-                                setState(() => loadingSubscriptions
-                                    .add(key)); // Show loader
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (_) => PurchaseLicensePage()));
-                                // await _updateSubscription(
-                                //     key,
-                                //     data['isSubscribed'],
-                                //     data['mainId'],
-                                //     data['level']);
-                                setState(() => loadingSubscriptions
-                                    .remove(key)); // Remove loader
-                              } else {
-                                // Show dialog if the user doesn't have permission
-                              }
+                              setState(() =>
+                                  loadingSubscriptions.add(key)); // Show loader
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => PurchaseLicensePage()));
+                              // await _updateSubscription(
+                              //     key,
+                              //     data['isSubscribed'],
+                              //     data['mainId'],
+                              //     data['level']);
+                              setState(() => loadingSubscriptions
+                                  .remove(key)); // Remove loader
                             },
                             isPgAdmin: isPgAdmin,
                             isAdmin: isAdmin,

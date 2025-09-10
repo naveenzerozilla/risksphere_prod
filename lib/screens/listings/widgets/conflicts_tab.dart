@@ -104,11 +104,11 @@ class ConflictsTabState extends State<ConflictsTab> {
   void _updateMap() {
     if (widget.conflict!.isNotEmpty && currentIndex < widget.conflict!.length) {
       final currentConflict = widget.conflict![currentIndex];
-      final finalAddress = currentConflict.finalAddress;
+      final finalAddress = currentConflict.address;
       if (finalAddress != null) {
         _navigateToMarker(
-          finalAddress.latitude ?? 0.0,
-          finalAddress.longitude ?? 0.0,
+          currentConflict.latitude ?? 0.0,
+          currentConflict.longitude ?? 0.0,
         );
       }
     }
@@ -383,29 +383,29 @@ class ConflictsTabState extends State<ConflictsTab> {
 
     if (widget.conflict!.isNotEmpty && currentIndex < widget.conflict!.length) {
       final currentConflict = widget.conflict![currentIndex];
-      final finalAddress = currentConflict.finalAddress;
+      final finalAddress = currentConflict.address;
 
       if (finalAddress != null) {
         markers.add(Marker(
           markerId: const MarkerId('mainMarker'),
           position: LatLng(
-              finalAddress.latitude ?? 0.0, finalAddress.longitude ?? 0.0),
+              currentConflict.   latitude ?? 0.0, currentConflict.longitude ?? 0.0),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow:
-              InfoWindow(title: 'Main Location', snippet: finalAddress.address),
+              InfoWindow(title: 'Main Location', snippet: finalAddress),
         ));
       }
 
       for (final conflict in widget.conflict!) {
-        if (conflict.finalAddress != null) {
-          final address = conflict.finalAddress!;
+        if (conflict.address != null) {
+          final address = conflict.address!;
           markers.add(Marker(
             markerId:
                 MarkerId(conflict.locationId ?? 'conflict_${markers.length}'),
-            position: LatLng(address.latitude ?? 0.0, address.longitude ?? 0.0),
+            position: LatLng(conflict.latitude ?? 0.0, conflict.longitude ?? 0.0),
             icon:
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-            infoWindow: InfoWindow(title: address.address),
+            infoWindow: InfoWindow(title: address),
           ));
         }
       }
@@ -437,7 +437,7 @@ class ConflictsTabState extends State<ConflictsTab> {
       } else if (!hasMultipleLocations &&
           widget.conflict != null &&
           widget.conflict!.isNotEmpty) {
-        selectedValue = widget.conflict!.first.finalAddress?.address ?? '';
+        selectedValue = widget.conflict!.first?.address ?? '';
         selectedOption = selectedValue;
       }
     }
@@ -579,7 +579,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                             .geocodedAddress ??
                                         ''
                                     : (currentItem as Conflicts)
-                                            .geocodedAddress ??
+                                            .address ??
                                         widget.geocodingAddress ??
                                         '',
                                 maxLines: 3,
@@ -648,7 +648,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                           final index = entry.key;
                           final option = entry.value;
                           final value =
-                              option.finalAddress?.address ?? 'Unknown';
+                              option.address ?? 'Unknown';
                           if (index == 0 && selectedOption == "none") {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               setState(() {
@@ -695,13 +695,13 @@ class ConflictsTabState extends State<ConflictsTab> {
                             children: conflicts.asMap().entries.map((entry) {
                               final index = entry.key;
                               final conflict = entry.value;
-                              final address = conflict.finalAddress;
+                              final address = conflict.address;
                               final locationId = "${(currentItem).id}_conflict_$index";
 
                               return RadioListTile<String>(
                                 activeColor: Colors.white,
                                 title: Text(
-                                  address?.address ?? 'Unknown',
+                                  address ?? 'Unknown',
                                   style: typography.Body2.copyWith(color: Colors.white),
                                 ),
                                 value: locationId,
@@ -713,8 +713,8 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   });
                                   if (address != null) {
                                     _navigateToMarker(
-                                      address.latitude ?? 0.0,
-                                      address.longitude ?? 0.0,
+                                      conflict.latitude ?? 0.0,
+                                      conflict.longitude ?? 0.0,
                                     );
                                   }
                                 },

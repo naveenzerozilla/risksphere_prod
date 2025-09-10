@@ -806,7 +806,6 @@ class _SovLocationListState extends State<SovLocationList>
                                             2,
                                             18),
                                       ),
-
                                     ],
                                   ),
                                 ),
@@ -928,7 +927,6 @@ class _SovLocationListState extends State<SovLocationList>
                                     controller: _tabController,
                                     children: [
                                       _getLocationListAllUI(),
-
                                       _getLocationListCertifiedUI(),
                                     ],
                                   ),
@@ -940,7 +938,7 @@ class _SovLocationListState extends State<SovLocationList>
                               builder: (context, locationListProvider, child) {
                                 return LocationTable(
                                     locations:
-                                    locationListProvider.myLocationList);
+                                        locationListProvider.myLocationList);
                               },
                             ),
                             // Map View
@@ -948,7 +946,6 @@ class _SovLocationListState extends State<SovLocationList>
                               accountId: widget.accountID,
                               subAccountId: widget.subAccountID,
                             ),
-
                           ],
                         ),
                       ),
@@ -1302,21 +1299,24 @@ class _SovLocationListState extends State<SovLocationList>
                           ),
                         )
                       : RefreshIndicator(
-                onRefresh: () async {
-                  locationListProvider.fetchLocationList(   context,
-                  locationQuery,
-                  1,
-        40,
-        widget.accountID,
-        widget.subAccountID,
-        widget.sovID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,);
-                },
-                        child: ListView.builder(
+                          onRefresh: () async {
+                            locationListProvider.fetchLocationList(
+                              context,
+                              locationQuery,
+                              1,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.sovID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
+                            );
+                          },
+                          child: ListView.builder(
                             physics: ClampingScrollPhysics(),
                             shrinkWrap: true,
-                            itemCount: locationListProvider.myLocationList.length,
+                            itemCount:
+                                locationListProvider.myLocationList.length,
                             itemBuilder: (context, index) {
                               if (index ==
                                   locationListProvider.myLocationList.length -
@@ -1452,7 +1452,8 @@ class _SovLocationListState extends State<SovLocationList>
                                                   locationId);
                                         },
                                         getData: () {
-                                          locationListProvider.fetchLocationList(
+                                          locationListProvider
+                                              .fetchLocationList(
                                             context,
                                             locationQuery,
                                             1,
@@ -1465,23 +1466,29 @@ class _SovLocationListState extends State<SovLocationList>
                                           );
                                         },
                                         lat: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.latitude.toString() ??
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.latitude
+                                                .toString() ??
                                             "",
                                         long: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.longitude.toString() ??
+                                                .myLocationList[index]
+                                                .finalAddress
+                                                ?.longitude
+                                                .toString() ??
                                             "",
                                         overallScore: locationListProvider
-                                            .myLocationList[index].overallScore?.toString() ?? "0",
+                                                .myLocationList[index]
+                                                .overallScore
+                                                ?.toString() ??
+                                            "0",
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Center(
                                           child: Text(
-                                            LanguageService.getTranslated(context,
+                                            LanguageService.getTranslated(
+                                                context,
                                                 "location_list_end_of_list"),
                                             style: typography.Body1,
                                           ),
@@ -1523,8 +1530,10 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .myLocationList[index]
                                                 .screenshots !=
                                             null &&
-                                        locationListProvider.myLocationList[index]
-                                            .screenshots!.isNotEmpty
+                                        locationListProvider
+                                            .myLocationList[index]
+                                            .screenshots!
+                                            .isNotEmpty
                                     ? locationListProvider.myLocationList[index]
                                             .screenshots![0].imageUrl ??
                                         ''
@@ -1589,7 +1598,8 @@ class _SovLocationListState extends State<SovLocationList>
                                               [locationId]);
 
                                       // Refresh the list after deletion
-                                      Provider.of<MyLocationListProvider>(context,
+                                      Provider.of<MyLocationListProvider>(
+                                              context,
                                               listen: false)
                                           .fetchLocationList(
                                         context,
@@ -1611,11 +1621,12 @@ class _SovLocationListState extends State<SovLocationList>
                                 onAddTag: (locationId) {
                                   // Show add tag dialog
                                   // Implement bulk add tag
-                                  locationListProvider.addTagsToSelectedLocations(
-                                      context,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      locationId);
+                                  locationListProvider
+                                      .addTagsToSelectedLocations(
+                                          context,
+                                          widget.accountID,
+                                          widget.subAccountID,
+                                          locationId);
                                 },
                                 getData: () {
                                   locationListProvider.fetchLocationList(
@@ -1633,7 +1644,7 @@ class _SovLocationListState extends State<SovLocationList>
                               );
                             },
                           ),
-                      ),
+                        ),
             ),
           ],
         );
@@ -1827,98 +1838,100 @@ class _SovLocationListState extends State<SovLocationList>
               ),
             ),
             Expanded(
-              child:
-
-        Expanded(
-        child: RefreshIndicator(
-        onRefresh: () async {
-        await locationListProvider.fetchCertifiedLocationList(
-        context,
-        locationQuery,
-        1,
-        40,
-        widget.accountID,
-        widget.subAccountID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-        );
-        },
-                child: locationListProvider.isCertifiedLoading
-                    ? Column(
-                        children: [
-                          SizedBox(height: 100),
-                          Center(child: CircularProgressIndicator()),
-                        ],
-                      )
-                    : locationListProvider.certifiedLocationList.isEmpty
-                        ? Center(
-                            child: Text(
-                                LanguageService.getTranslated(context,
-                                    "location_list_app_no_accounts_text"),
-                                style: typography.Body1),
-                          )
-                        : ListView.builder(
-                            physics: ClampingScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount:
-                                locationListProvider.certifiedLocationList.length,
-                            itemBuilder: (context, index) {
-                              if (index ==
-                                  locationListProvider
-                                          .certifiedLocationList.length -
-                                      1) {
-                                if (locationListProvider
-                                    .isNextPageCertifiedLoading) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Center(
-                                        child: CircularProgressIndicator()),
-                                  );
-                                } else if (locationListProvider.certifiedPage >=
-                                        locationListProvider
-                                            .certifiedTotalPages &&
+              child: Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await locationListProvider.fetchCertifiedLocationList(
+                      context,
+                      locationQuery,
+                      1,
+                      40,
+                      widget.accountID,
+                      widget.subAccountID,
+                      widget.initialProcessId,
+                      widget.initialSubProcessId,
+                    );
+                  },
+                  child: locationListProvider.isCertifiedLoading
+                      ? Column(
+                          children: [
+                            SizedBox(height: 100),
+                            Center(child: CircularProgressIndicator()),
+                          ],
+                        )
+                      : locationListProvider.certifiedLocationList.isEmpty
+                          ? Center(
+                              child: Text(
+                                  LanguageService.getTranslated(context,
+                                      "location_list_app_no_accounts_text"),
+                                  style: typography.Body1),
+                            )
+                          : ListView.builder(
+                              physics: ClampingScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: locationListProvider
+                                  .certifiedLocationList.length,
+                              itemBuilder: (context, index) {
+                                if (index ==
                                     locationListProvider
-                                        .certifiedLocationList.isNotEmpty) {
-                                  return Column(
-                                    children: [
-                                      myLocationCertifiedCard(
-                                          locationListProvider, index, context),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Center(
-                                            child: Text(
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "location_list_end_of_list"),
-                                                style: typography.Body1)),
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  locationListProvider.certifiedPage =
-                                      locationListProvider.certifiedPage + 1;
-                                  locationListProvider.fetchCertifiedLocationList(
-                                    context,
-                                    "",
-                                    locationListProvider.certifiedPage,
-                                    40,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
-                                  return SizedBox();
+                                            .certifiedLocationList.length -
+                                        1) {
+                                  if (locationListProvider
+                                      .isNextPageCertifiedLoading) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                          child: CircularProgressIndicator()),
+                                    );
+                                  } else if (locationListProvider
+                                              .certifiedPage >=
+                                          locationListProvider
+                                              .certifiedTotalPages &&
+                                      locationListProvider
+                                          .certifiedLocationList.isNotEmpty) {
+                                    return Column(
+                                      children: [
+                                        myLocationCertifiedCard(
+                                            locationListProvider,
+                                            index,
+                                            context),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Center(
+                                              child: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "location_list_end_of_list"),
+                                                  style: typography.Body1)),
+                                        ),
+                                      ],
+                                    );
+                                  } else {
+                                    locationListProvider.certifiedPage =
+                                        locationListProvider.certifiedPage + 1;
+                                    locationListProvider
+                                        .fetchCertifiedLocationList(
+                                      context,
+                                      "",
+                                      locationListProvider.certifiedPage,
+                                      40,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                    );
+                                    return SizedBox();
+                                  }
                                 }
-                              }
 
-                              /*return locationListCard(index,
+                                /*return locationListCard(index,
                         locationListProvider.certifiedLocationList);*/
-                              return myLocationCertifiedCard(
-                                  locationListProvider, index, context);
-                            },
-                          ),
+                                return myLocationCertifiedCard(
+                                    locationListProvider, index, context);
+                              },
+                            ),
+                ),
               ),
-            ),
             ),
           ],
         );

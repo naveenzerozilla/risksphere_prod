@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -213,6 +214,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                   );
                 },
               ),
+              if(Platform.isAndroid)...[
               widget.showCorporateSwitch?const Divider():SizedBox(),
               widget.showCorporateSwitch?Container(
                 margin: EdgeInsets.symmetric(horizontal: 24),
@@ -300,6 +302,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                   );
                 },
               ):SizedBox(),
+    ],
             ],
           ),
         ),

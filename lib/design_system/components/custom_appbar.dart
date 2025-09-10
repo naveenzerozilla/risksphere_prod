@@ -289,21 +289,22 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ? Center(child: ProfileMenu())
               : Center(
                   child: InkWell(
-                    onTap: widget.stopNavigateToProfile!
+                    onTap: widget.stopNavigateToProfile == true
                         ? null
                         : () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => ProfileScreen()),
+                                builder: (_) => ProfileScreen(),
+                              ),
                             );
                           },
                     child: Consumer<UserProfileProvider>(
                       builder: (context, userProfile, child) {
                         final trialStatus =
                             userProfile.trialInfo['status'] ?? '';
-                        bool isNotIndividual =
-                            (userProfile.userData.isIndividual ?? true);
+                        bool isIndividual =
+                            userProfile.userData.isIndividual ?? true;
                         if (trialStatus.isEmpty) {
                           return ProfileImageWidget();
                         }
@@ -312,101 +313,133 @@ class _CustomAppBarState extends State<CustomAppBar> {
                           clipBehavior: Clip.none,
                           children: [
                             Container(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.3,
-                              ),
+                              alignment: Alignment.centerLeft,
+                              height: 30,
+                              constraints: BoxConstraints(maxWidth: 30),
                               padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: trialStatus.contains('Trial')
-                                      ? (AppColors.warning)
-                                      : AppColors.warning,
-                                  width: 1,
-                                ),
-                                color: trialStatus.contains('Trial')
-                                    ? (AppColors.warning.withOpacity(0.1))
-                                    : AppColors.warning.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: TweenAnimationBuilder<int>(
-                                key: ValueKey(_currentIndex),
-                                tween: IntTween(begin: 0, end: 100),
-                                duration: Duration(seconds: 6),
-                                onEnd: () {
-                                  setState(() {
-                                    final items = [
-                                      trialStatus.isNotEmpty ? trialStatus : '',
-                                      !isNotIndividual
-                                          ? (getTrailUserCount != null &&
-                                                  getTrailUserCount != 'null'
-                                              ? '$getTrailUserCount Users Left'
-                                              : '')
-                                          : '',
-                                      (hasAnyPlan == true
-                                              ? (hasGeocodingStatus != null &&
-                                                      hasGeocodingStatus !=
-                                                          'null'
-                                                  ? hasGeocodingStatus
-                                                  : '')
-                                              : (getTrailLocation != null &&
-                                                      getTrailLocation != 'null'
-                                                  ? getTrailLocation
-                                                  : '')) +
-                                          (hasAnyPlan == true ||
-                                                  getTrailLocation != null
-                                              ? ' Locations Left'
-                                              : ''),
-                                    ].where((item) => item.isNotEmpty).toList();
-                                    _currentIndex = (items.isEmpty
-                                        ? 0
-                                        : ((_currentIndex + 1) % items.length)
-                                            .toInt());
-                                    // _currentIndex = (_currentIndex + 1) % 3;
-                                  });
-                                },
-                                builder: (context, value, child) {
-                                  final items = [
-                                    trialStatus.isNotEmpty ? trialStatus : '',
-                                    !isNotIndividual
-                                        ? (getTrailUserCount != null &&
-                                                getTrailUserCount != 'null'
-                                            ? '$getTrailUserCount Users Left'
-                                            : '')
-                                        : '',
-                                    (hasAnyPlan == true
-                                            ? (hasGeocodingStatus != null &&
-                                                    hasGeocodingStatus != 'null'
-                                                ? hasGeocodingStatus
-                                                : '')
-                                            : (getTrailLocation != null &&
-                                                    getTrailLocation != 'null'
-                                                ? getTrailLocation
-                                                : '')) +
-                                        (hasAnyPlan == true ||
-                                                getTrailLocation != null
-                                            ? ' Locations Left'
-                                            : ''),
-                                  ].where((item) => item.isNotEmpty).toList();
-                                  return AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    child: Text(
-                                      items[_currentIndex],
-                                      key: ValueKey(_currentIndex),
-                                      // Needed for switch animation
-                                      maxLines: 1,
-                                      style: typography
-                                          .BottomNavigationActiveLabel.copyWith(
-                                        color: trialStatus.contains('Trial')
-                                            ? AppColors.warning
-                                            : AppColors.warning,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                              // decoration: BoxDecoration(
+                              //   border: Border.all(
+                              //     color: trialStatus.contains('Trial')
+                              //         ? (AppColors.warning)
+                              //         : AppColors.warning,
+                              //     width: 1,
+                              //   ),
+                              //   color: trialStatus.contains('Trial')
+                              //       ? (AppColors.warning.withOpacity(0.1))
+                              //       : AppColors.warning.withOpacity(0.1),
+                              //   borderRadius: BorderRadius.circular(20),
+                              // ),
+                              child: Container(),
+                            // Container(
+                            //   constraints: BoxConstraints(
+                            //     maxWidth:
+                            //         MediaQuery.of(context).size.width * 0.3,
+                            //   ),
+                            //   padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
+                            //   decoration: BoxDecoration(
+                            //     border: Border.all(
+                            //       color: trialStatus.contains('Trial')
+                            //           ? AppColors.warning
+                            //           : AppColors.warning,
+                            //       width: 1,
+                            //     ),
+                            //     color: trialStatus.contains('Trial')
+                            //         ? AppColors.warning.withOpacity(0.1)
+                            //         : AppColors.warning.withOpacity(0.1),
+                            //     borderRadius: BorderRadius.circular(20),
+                            //   ),
+                            //   child: TweenAnimationBuilder<int>(
+                            //     key: ValueKey(_currentIndex),
+                            //     tween: IntTween(begin: 0, end: 100),
+                            //     duration: Duration(seconds: 6),
+                            //     onEnd: () {
+                            //       setState(() {
+                            //         final items = [
+                            //           trialStatus.isNotEmpty ? trialStatus : '',
+                            //           !isIndividual
+                            //               ? (getTrailUserCount != null &&
+                            //                       getTrailUserCount != 'null'
+                            //                   ? '$getTrailUserCount Users Left'
+                            //                   : '')
+                            //               : '',
+                            //           (hasAnyPlan == true
+                            //                   ? (hasGeocodingStatus != null &&
+                            //                           hasGeocodingStatus !=
+                            //                               'null'
+                            //                       ? hasGeocodingStatus
+                            //                       : '')
+                            //                   : (getTrailLocation != null &&
+                            //                           getTrailLocation != 'null'
+                            //                       ? getTrailLocation
+                            //                       : '')) +
+                            //               ((hasAnyPlan == true ||
+                            //                       (getTrailLocation != null &&
+                            //                           getTrailLocation !=
+                            //                               'null'))
+                            //                   ? ' Locations Left'
+                            //                   : ''),
+                            //         ].where((item) => item.isNotEmpty).toList();
+                            //         _currentIndex = (items.isEmpty
+                            //             ? 0
+                            //             : ((_currentIndex + 1) % items.length));
+                            //       });
+                            //     },
+                            //     builder: (context, value, child) {
+                            //       final items = [
+                            //         if (trialStatus.isNotEmpty) trialStatus,
+                            //         if (!isIndividual && getTrailUserCount != null && getTrailUserCount != 'null' && getTrailUserCount != '0')
+                            //           '$getTrailUserCount Users Left',
+                            //         if ((hasAnyPlan == true && hasGeocodingStatus != null && hasGeocodingStatus != 'null' && hasGeocodingStatus != '0') ||
+                            //             (hasAnyPlan != true && getTrailLocation != null && getTrailLocation != 'null' && getTrailLocation != '0'))
+                            //           ((hasAnyPlan == true
+                            //               ? hasGeocodingStatus
+                            //               : getTrailLocation) ?? '') +
+                            //               ' Locations Left',
+                            //       ].where((item) => item.isNotEmpty).toList();
+                            //       // final items = [
+                            //       //   trialStatus.isNotEmpty ? trialStatus : '',
+                            //       //   !isIndividual
+                            //       //       ? (getTrailUserCount != null &&
+                            //       //               getTrailUserCount != 'null'
+                            //       //           ? '$getTrailUserCount Users Left'
+                            //       //           : '')
+                            //       //       : '',
+                            //       //   (hasAnyPlan == true
+                            //       //           ? (hasGeocodingStatus != null &&
+                            //       //                   hasGeocodingStatus != 'null'
+                            //       //               ? hasGeocodingStatus
+                            //       //               : '')
+                            //       //           : (getTrailLocation != null &&
+                            //       //                   getTrailLocation != 'null'
+                            //       //               ? getTrailLocation
+                            //       //               : '')) +
+                            //       //       ((hasAnyPlan == true ||
+                            //       //               (getTrailLocation != null &&
+                            //       //                   getTrailLocation != 'null'))
+                            //       //           ? ' Locations Left'
+                            //       //           : ''),
+                            //       // ].where((item) => item.isNotEmpty).toList();
+                            //       return AnimatedSwitcher(
+                            //         duration: const Duration(milliseconds: 300),
+                            //         child: Text(
+                            //           items.isNotEmpty
+                            //               ? items[_currentIndex % items.length]
+                            //               : '',
+                            //           key: ValueKey(_currentIndex),
+                            //           maxLines: 1,
+                            //           style: typography
+                            //               .BottomNavigationActiveLabel.copyWith(
+                            //             color: trialStatus.contains('Trial')
+                            //                 ? AppColors.warning
+                            //                 : AppColors.warning,
+                            //             fontWeight: FontWeight.w500,
+                            //             fontSize: 10,
+                            //           ),
+                            //         ),
+                            //       );
+                            //     },
+                            //   ),
+
                             ),
                             Positioned(
                               right: -6,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -587,18 +588,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                 companyType
                                                     .isApplicableForTrial;
                                           })
-                                              ? "Start your ${(authNotifier.companyTypeList ?? []).where((companyType) {
-                                                  log("Processing companyType for trial days: ${companyType.type}");
-                                                  return companyType.type
-                                                              .toLowerCase() ==
-                                                          'individual_account' &&
-                                                      companyType
-                                                          .isApplicableForTrial;
-                                                }).map((companyType) {
-                                                  log("Free trial days: ${companyType.trialPeriodDays}");
-                                                  return companyType
-                                                      .trialPeriodDays;
-                                                }).first}-day free trial"
+                                              ? Platform.isIOS
+                                                  ? "Register"
+                                                  : "Start your"
+                                                      " ${(authNotifier.companyTypeList ?? []).where((companyType) {
+                                                      log("Processing companyType for trial days: ${companyType.type}");
+                                                      return companyType.type
+                                                                  .toLowerCase() ==
+                                                              'individual_account' &&
+                                                          companyType
+                                                              .isApplicableForTrial;
+                                                    }).map((companyType) {
+                                                      log("Free trial days: ${companyType.trialPeriodDays}");
+                                                      return companyType
+                                                          .trialPeriodDays;
+                                                    }).first}-day free trial"
                                               : LanguageService.getTranslated(
                                                   context,
                                                   "usermanagement_cuser_create_account_btn"),
@@ -685,21 +689,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   },
                 ),
               ),
-              Expanded(
-                child: RadioListTile<SignUpOptions>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(LanguageService.getTranslated(
-                      context, "register_non_corporate_radio_Corporate")),
-                  value: SignUpOptions.corporate,
-                  groupValue: _selectedOption,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedOption = value;
-                      _removeAllChips();
-                    });
-                  },
+              if (Platform.isAndroid)
+                Expanded(
+                  child: RadioListTile<SignUpOptions>(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(LanguageService.getTranslated(
+                        context, "register_non_corporate_radio_Corporate")),
+                    value: SignUpOptions.corporate,
+                    groupValue: _selectedOption,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedOption = value;
+                        _removeAllChips();
+                      });
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
           SizedBox(height: CustomSpacing.four),
@@ -737,52 +742,54 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   _individualAccountUI() {
     var typography = CustomTypography(context);
+    bool _rolesBottomSheetOpen = false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Social Media Buttons
-        Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-          return SocialMediaButton(
-            onPressed: () async {
-              try {
-                await authNotifier.signInWithGoogle(context: context);
+        if (Platform.isAndroid)
+          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+            return SocialMediaButton(
+              onPressed: () async {
+                try {
+                  await authNotifier.signInWithGoogle(context: context);
 
-                if (authNotifier.user != null) {
-                  // Fetch user data only if user exists
-                  Provider.of<UserProfileProvider>(context, listen: false)
-                      .getAllUserData(context, '', '');
+                  if (authNotifier.user != null) {
+                    // Fetch user data only if user exists
+                    Provider.of<UserProfileProvider>(context, listen: false)
+                        .getAllUserData(context, '', '');
 
-                  // Navigate to Dashboard if not a new user
-                  if (!authNotifier.isNewUser) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DashboardScreen(),
-                      ),
+                    // Navigate to Dashboard if not a new user
+                    if (!authNotifier.isNewUser) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DashboardScreen(),
+                        ),
+                      );
+                    }
+                  } else {
+                    // Handle sign-in failure
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text("Google sign-in failed. Please try again.")),
                     );
                   }
-                } else {
-                  // Handle sign-in failure
+                } catch (e) {
+                  // Catch any errors during sign-in
+                  debugPrint("Error during Google sign-in: $e");
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content:
-                            Text("Google sign-in failed. Please try again.")),
+                        content: Text("An error occurred. Please try again.")),
                   );
                 }
-              } catch (e) {
-                // Catch any errors during sign-in
-                debugPrint("Error during Google sign-in: $e");
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text("An error occurred. Please try again.")),
-                );
-              }
-            },
-            buttonText:
-                LanguageService.getTranslated(context, "login_googlebutton"),
-            iconPath: 'assets/images/googleLogo.svg',
-          );
-        }),
+              },
+              buttonText:
+                  LanguageService.getTranslated(context, "login_googlebutton"),
+              iconPath: 'assets/images/googleLogo.svg',
+            );
+          }),
         // SizedBox(
         //   height: CustomSpacing.one,
         // ),
@@ -794,35 +801,37 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //       LanguageService.getTranslated(context, "login_microsoft_button"),
         //   iconPath: 'assets/images/microsoftLogo.svg',
         // ),
-        SizedBox(height: CustomSpacing.eight),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Divider(
-                thickness: 1,
-                color: Colors.white.withOpacity(0.11999999731779099),
+        SizedBox(height: CustomSpacing.four),
+        if (Platform.isAndroid) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.white.withOpacity(0.11999999731779099),
+                ),
               ),
-            ),
-            SizedBox(width: CustomSpacing.three),
-            Text(
-              LanguageService.getTranslated(
-                  context, "register_non_corporate_register_manually"),
-              style: typography.Subtitle1.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface),
-            ),
-            SizedBox(width: CustomSpacing.three),
-            Expanded(
-              child: Divider(
-                thickness: 1,
-                color: Colors.white.withOpacity(0.11999999731779099),
+              SizedBox(width: CustomSpacing.three),
+              Text(
+                LanguageService.getTranslated(
+                    context, "register_non_corporate_register_manually"),
+                style: typography.Subtitle1.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface),
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: CustomSpacing.eight),
+              SizedBox(width: CustomSpacing.three),
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.white.withOpacity(0.11999999731779099),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: CustomSpacing.eight),
+        ],
         // Name
         TextFormField(
           decoration: InputDecoration(
@@ -1286,6 +1295,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       readOnly: true,
                       controller: TextEditingController(text: ""),
                       onTap: () {
+                        setState(() => _rolesBottomSheetOpen = true);
                         showModalBottomSheet(
                           context: context,
                           useSafeArea: true,
@@ -1335,27 +1345,38 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             );
                           },
                         );
+                        setState(() => _rolesBottomSheetOpen = false);
                       },
                       decoration: InputDecoration(
-                        label: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                    "register_non_corporate_role_field_label"),
-                              ),
-                              TextSpan(
-                                text: " *",
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                        label: _selectedRoles.isEmpty && !_rolesBottomSheetOpen
+                            ? RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: LanguageService.getTranslated(
+                                          context,
+                                          "register_non_corporate_role_field_label"),
+                                    ),
+                                    TextSpan(
+                                      text: " *",
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RichText(
+                                text: TextSpan(
+                                  text: '',
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+                        hintText:
+                            _selectedRoles.isEmpty && !_rolesBottomSheetOpen
+                                ? 'Select Roles'
+                                : "",
                         border: const OutlineInputBorder(),
                         errorText: fieldState.errorText,
                         suffixIcon: IconButton(

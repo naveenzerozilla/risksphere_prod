@@ -1,4 +1,3 @@
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:external_path/external_path.dart';
 import 'package:open_file/open_file.dart';
@@ -27,6 +26,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
   late TabController _tabController;
   int? _tabIndex;
   String filterItem = "";
+  bool isHasAnyPlan = false;
 
   PaymentProvider get paymentProvider =>
       Provider.of<PaymentProvider>(context, listen: false);
@@ -40,7 +40,9 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getData();
+      _setClaims();
     });
+
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         // Only run when tab has changed
@@ -62,6 +64,10 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
         }
       }
     });
+  }
+
+  Future<void> _setClaims() async {
+    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
   }
 
   Future<void> _getData() async {
@@ -154,7 +160,8 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                   ),
                 ),
                 const SizedBox(height: 14),
-                if (trialStatus.contains('Expired')) ...[
+                if (trialStatus.contains('Expired') &&
+                    isHasAnyPlan == false) ...[
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
@@ -173,7 +180,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                             messageTextSpans: [
                               TextSpan(
                                 text:
-                                    'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2024. After this date, we will need to delete your data. Thank you for being with us!',
+                                    'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
                                 style: typography.Body1,
                               ),
                               // tappable
@@ -509,7 +516,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                       "License Info")
                                                   .join(", ")
                                               : "License Info",
-                                          maxLines: 2,
+                                          maxLines: 1,
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,
@@ -563,166 +570,174 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                 ],
                                               ),
                                             ),
-                                            IconButton(
-                                              icon: Icon(Icons.download,
-                                                  size: 16),
-                                              onPressed: () async {
-                                                final url =
-                                                    invoice.invoicePdfUrl ?? '';
-                                                if (url.isEmpty) {
+                                            if (Platform.isIOS)
+                                              IconButton(
+                                                icon: Icon(Icons.download,
+                                                    size: 16),
+                                                onPressed: () async {
+                                                  final url =
+                                                      invoice.invoicePdfUrl ??
+                                                          '';
+                                                  if (url.isEmpty) {
+                                                    debugPrint(
+                                                        "Empty invoice URL.");
+                                                    return;
+                                                  }
+
                                                   debugPrint(
-                                                      "Empty invoice URL.");
-                                                  return;
-                                                }
+                                                      "Invoice URL: $url");
 
-                                                debugPrint("Invoice URL: $url");
+                                                  try {
+                                                    Directory? directory;
 
-                                                try {
-                                                  Directory? directory;
-
-                                                  if (Platform.isAndroid) {
-                                                    if (await Permission
-                                                            .manageExternalStorage
-                                                            .request()
-                                                            .isGranted ||
-                                                        await Permission.storage
-                                                            .request()
-                                                            .isGranted) {
-                                                      if (Platform.version
-                                                          .contains('30')) {
-                                                        directory =
-                                                            await getExternalStorageDirectory(); // Scoped
-                                                      } else {
-                                                        directory = Directory(
-                                                            '/storage/emulated/0/Download'); // Legacy
-                                                      }
-                                                    } else {
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        SnackBar(
-                                                            content: Text(
-                                                                'Storage permission denied')),
-                                                      );
-                                                      return;
+                                                    // if (Platform.isAndroid) {
+                                                    //   if (await Permission
+                                                    //           .manageExternalStorage
+                                                    //           .request()
+                                                    //           .isGranted ||
+                                                    //       await Permission.storage
+                                                    //           .request()
+                                                    //           .isGranted) {
+                                                    //     if (Platform.version
+                                                    //         .contains('30')) {
+                                                    //       directory =
+                                                    //           await getExternalStorageDirectory(); // Scoped
+                                                    //     } else {
+                                                    //       directory = Directory(
+                                                    //           '/storage/emulated/0/Download'); // Legacy
+                                                    //     }
+                                                    //   } else {
+                                                    //     ScaffoldMessenger.of(
+                                                    //             context)
+                                                    //         .showSnackBar(
+                                                    //       SnackBar(
+                                                    //           content: Text(
+                                                    //               'Storage permission denied')),
+                                                    //     );
+                                                    //     return;
+                                                    //   }
+                                                    // } else
+                                                    if (Platform.isIOS) {
+                                                      directory =
+                                                          await getApplicationDocumentsDirectory();
                                                     }
-                                                  } else if (Platform.isIOS) {
-                                                    directory =
-                                                        await getApplicationDocumentsDirectory();
-                                                  }
 
-                                                  if (directory == null) {
-                                                    throw Exception(
-                                                        "❌ Cannot determine save directory.");
-                                                  }
+                                                    if (directory == null) {
+                                                      throw Exception(
+                                                          "❌ Cannot determine save directory.");
+                                                    }
 
-                                                  final filename =
-                                                      'invoice_${invoice.invoiceId ?? DateTime.now().millisecondsSinceEpoch}.pdf';
-                                                  final filePath = path.join(
-                                                      directory.path, filename);
+                                                    final filename =
+                                                        'invoice_${invoice.invoiceId ?? DateTime.now().millisecondsSinceEpoch}.pdf';
+                                                    final filePath = path.join(
+                                                        directory.path,
+                                                        filename);
 
-                                                  debugPrint(
-                                                      "📁 Will save file to: $filePath");
+                                                    debugPrint(
+                                                        "📁 Will save file to: $filePath");
 
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Row(
-                                                        children: [
-                                                          CircularProgressIndicator(),
-                                                          SizedBox(width: 10),
-                                                          Text(
-                                                              'Downloading invoice...'),
-                                                        ],
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Row(
+                                                          children: [
+                                                            CircularProgressIndicator(),
+                                                            SizedBox(width: 10),
+                                                            Text(
+                                                                'Downloading invoice...'),
+                                                          ],
+                                                        ),
+                                                        duration: Duration(
+                                                            seconds: 2),
                                                       ),
-                                                      duration:
-                                                          Duration(seconds: 2),
-                                                    ),
-                                                  );
+                                                    );
 
-                                                  final dio = Dio();
-                                                  await dio.download(
-                                                    url,
-                                                    filePath,
-                                                    onReceiveProgress:
-                                                        (received, total) {
-                                                      if (total != -1) {
-                                                        debugPrint(
-                                                            '⬇️ Progress: ${(received / total * 100).toStringAsFixed(0)}%');
-                                                      }
-                                                    },
-                                                  );
+                                                    final dio = Dio();
+                                                    await dio.download(
+                                                      url,
+                                                      filePath,
+                                                      onReceiveProgress:
+                                                          (received, total) {
+                                                        if (total != -1) {
+                                                          debugPrint(
+                                                              '⬇️ Progress: ${(received / total * 100).toStringAsFixed(0)}%');
+                                                        }
+                                                      },
+                                                    );
 
-                                                  debugPrint(
-                                                      " File downloaded to: $filePath");
+                                                    debugPrint(
+                                                        " File downloaded to: $filePath");
 
-                                                  final file = File(filePath);
-                                                  if (!await file.exists()) {
-                                                    throw Exception(
-                                                        "File not found at $filePath after download.");
-                                                  }
+                                                    final file = File(filePath);
+                                                    if (!await file.exists()) {
+                                                      throw Exception(
+                                                          "File not found at $filePath after download.");
+                                                    }
 
-                                                  final fileSize =
-                                                      await file.length();
-                                                  debugPrint(
-                                                      " File size: $fileSize bytes");
+                                                    final fileSize =
+                                                        await file.length();
+                                                    debugPrint(
+                                                        " File size: $fileSize bytes");
 
-                                                  if (fileSize == 0) {
-                                                    throw Exception(
-                                                        " File is empty. Invalid or broken download.");
-                                                  }
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                          'Invoice downloaded successfully'),
-                                                      action: SnackBarAction(
-                                                        label: 'OPEN',
-                                                        onPressed: () async {
-                                                          try {
-                                                            final result =
-                                                                await OpenFile
-                                                                    .open(
-                                                                        filePath);
-                                                            debugPrint(
-                                                                " OpenFile result: ${result.message}");
-                                                            if (result.type !=
-                                                                ResultType
-                                                                    .done) {
-                                                              throw Exception(
-                                                                  "Failed to open file: ${result.message}");
+                                                    if (fileSize == 0) {
+                                                      throw Exception(
+                                                          " File is empty. Invalid or broken download.");
+                                                    }
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                            'Invoice downloaded successfully'),
+                                                        action: SnackBarAction(
+                                                          label: 'OPEN',
+                                                          onPressed: () async {
+                                                            try {
+                                                              final result =
+                                                                  await OpenFile
+                                                                      .open(
+                                                                          filePath);
+                                                              debugPrint(
+                                                                  " OpenFile result: ${result.message}");
+                                                              if (result.type !=
+                                                                  ResultType
+                                                                      .done) {
+                                                                throw Exception(
+                                                                    "Failed to open file: ${result.message}");
+                                                              }
+                                                            } catch (e) {
+                                                              debugPrint(
+                                                                  " Open file error: $e");
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
+                                                                SnackBar(
+                                                                    content: Text(
+                                                                        'Could not open file: $e')),
+                                                              );
                                                             }
-                                                          } catch (e) {
-                                                            debugPrint(
-                                                                " Open file error: $e");
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                  content: Text(
-                                                                      'Could not open file: $e')),
-                                                            );
-                                                          }
-                                                        },
+                                                          },
+                                                        ),
+                                                        duration: Duration(
+                                                            seconds: 4),
                                                       ),
-                                                      duration:
-                                                          Duration(seconds: 4),
-                                                    ),
-                                                  );
-                                                } catch (e) {
-                                                  debugPrint(" Error: $e");
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                          'Download failed: ${e.toString()}'),
-                                                      duration:
-                                                          Duration(seconds: 4),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            ),
+                                                    );
+                                                  } catch (e) {
+                                                    debugPrint(" Error: $e");
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                            'Download failed: ${e.toString()}'),
+                                                        duration: Duration(
+                                                            seconds: 4),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                              ),
                                           ],
                                         ),
                                       ],

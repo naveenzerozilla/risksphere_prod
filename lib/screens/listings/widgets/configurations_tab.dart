@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../design_system/primitives/custom_typography.dart';
@@ -1868,12 +1869,13 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              // crossAxisAlignment: CrossAxisAlignment.,
               children: [
-                Image.network(
-                  iconPath,
+                CachedNetworkImage(
+                  imageUrl: iconPath,
                   width: 40,
                   height: 40,
+                  placeholder: (context, url) => CircularProgressIndicator(),
+                  errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
                 GestureDetector(
                   onTap: () {

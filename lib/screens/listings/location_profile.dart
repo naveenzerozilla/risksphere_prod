@@ -10,6 +10,7 @@ import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_card.dart'
     show GeocodingDialog;
 import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart' show DateFormat;
 import 'package:file_picker/file_picker.dart';
@@ -882,79 +883,131 @@ class _LocationProfileState extends State<LocationProfile>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
                                             children: [
                                               InkWell(
                                                 onTap: () {
-                                                  if (!bottomsheetopened) Navigator.pop(context, false);
+                                                  if (!bottomsheetopened)
+                                                    Navigator.pop(
+                                                        context, false);
                                                 },
                                                 child: Container(
-                                                  alignment: Alignment.centerLeft,
+                                                  alignment:
+                                                      Alignment.centerLeft,
                                                   height: 35,
                                                   width: 35,
                                                   decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(10),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
                                                   ),
-                                                  child: Icon(Icons.arrow_back_ios_new, size: 18),
+                                                  child: Icon(
+                                                      Icons.arrow_back_ios_new,
+                                                      size: 18),
                                                 ),
                                               ),
                                               // SizedBox(width: 8),
                                               Expanded(
                                                 child: Container(
                                                   alignment: Alignment.center,
-                                                  padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 0),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      vertical: 5.0,
+                                                      horizontal: 0),
                                                   child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.start,
-                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
                                                     children: [
                                                       Padding(
-                                                        padding: const EdgeInsets.only(top: 5.0, bottom: 6),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                top: 5.0,
+                                                                bottom: 6),
                                                         child: Row(
                                                           children: [
                                                             InkWell(
                                                               onTap: () {
                                                                 if (!bottomsheetopened) {
-                                                                  Navigator.pushAndRemoveUntil(
+                                                                  Navigator
+                                                                      .pushAndRemoveUntil(
                                                                     context,
                                                                     MaterialPageRoute(
-                                                                        builder: (context) => AccountListScreen()),
-                                                                    (route) => false,
+                                                                        builder:
+                                                                            (context) =>
+                                                                                AccountListScreen()),
+                                                                    (route) =>
+                                                                        false,
                                                                   );
                                                                 }
                                                               },
                                                               child: Text(
-                                                                widget.accountName,
-                                                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                                                                widget
+                                                                    .accountName,
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .white70),
                                                               ),
                                                             ),
                                                             Text(' > ',
-                                                                style: TextStyle(fontSize: 12, color: Colors.white70)),
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .white70)),
                                                             InkWell(
                                                               onTap: () {
                                                                 if (!bottomsheetopened) {
-                                                                  Navigator.pushAndRemoveUntil(
+                                                                  Navigator
+                                                                      .pushAndRemoveUntil(
                                                                     context,
                                                                     MaterialPageRoute(
-                                                                      builder: (context) => SubAccountListScreen(
-                                                                        accountId: widget.accountId ?? "",
-                                                                        accountName: widget.subAccountName ?? "",
+                                                                      builder:
+                                                                          (context) =>
+                                                                              SubAccountListScreen(
+                                                                        accountId:
+                                                                            widget.accountId ??
+                                                                                "",
+                                                                        accountName:
+                                                                            widget.subAccountName ??
+                                                                                "",
                                                                       ),
                                                                     ),
-                                                                    (route) => false,
+                                                                    (route) =>
+                                                                        false,
                                                                   );
                                                                 }
                                                               },
                                                               child: Text(
-                                                                widget.subAccountName,
-                                                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                                                                widget
+                                                                    .subAccountName,
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .white70),
                                                               ),
                                                             ),
                                                             Text(' > ',
-                                                                style: TextStyle(fontSize: 12, color: Colors.white70)),
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .white70)),
                                                             Text(
                                                               "Location Profile",
-                                                              style: TextStyle(fontSize: 12, color: Colors.white),
+                                                              style: TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Colors
+                                                                      .white),
                                                             ),
                                                           ],
                                                         ),
@@ -1185,11 +1238,18 @@ class _LocationProfileState extends State<LocationProfile>
                                             ? MediaQuery.of(context)
                                                     .size
                                                     .height *
-                                                0.58
-                                            : MediaQuery.of(context)
+                                                0.65
+                                            :
+                                        tabIndex == 1 ?
+                                            MediaQuery.of(context)
                                                     .size
                                                     .height *
-                                                0.55,
+                                                0.70
+                                            :
+                                        MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.60,
                                         child: TabBarView(
                                           controller: _tabController,
                                           physics:
@@ -3798,10 +3858,17 @@ class _LocationProfileState extends State<LocationProfile>
                                         return GestureDetector(
                                           onTap: () => _showImagePreviewFromUrl(
                                               screenshot?.imageUrl ?? ''),
-                                          child: Image.network(
-                                            screenshot?.imageUrl ?? '',
+                                          child: CachedNetworkImage(
+                                            imageUrl:
+                                                screenshot?.imageUrl ?? '',
                                             fit: BoxFit.cover,
                                             width: 150,
+                                            placeholder: (context, url) => Center(
+                                                child:
+                                                    CircularProgressIndicator()),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Icon(Icons.error),
                                           ),
                                         );
                                       }
@@ -4295,28 +4362,28 @@ class _LocationProfileState extends State<LocationProfile>
                 child: _buildHazardControls(),
               ),
 
-              if ((int.tryParse(widget.page) ?? 1) > 1)
-                Positioned(
-                  left: 16,
-                  child: _buildNavigationButton(
-                    alignment: Alignment.centerLeft,
-                    icon: Icons.chevron_left,
-                    onPressed: _navigateLeft,
-                  ),
-                ),
-
-              if ((int.tryParse(widget.page) ?? 1) <
-                  (widget.locationId.isNotEmpty
-                      ? locationProfileProvider.resetTotalPage! - 1
-                      : (int.tryParse(widget.totalPages!) ?? 1)))
-                Positioned(
-                  right: 16,
-                  child: _buildNavigationButton(
-                    alignment: Alignment.centerRight,
-                    icon: Icons.chevron_right,
-                    onPressed: _navigateRight,
-                  ),
-                ),
+              // if ((int.tryParse(widget.page) ?? 1) > 1)
+              //   Positioned(
+              //     left: 16,
+              //     child: _buildNavigationButton(
+              //       alignment: Alignment.centerLeft,
+              //       icon: Icons.chevron_left,
+              //       onPressed: _navigateLeft,
+              //     ),
+              //   ),
+              //
+              // if ((int.tryParse(widget.page) ?? 1) <
+              //     (widget.locationId.isNotEmpty
+              //         ? locationProfileProvider.resetTotalPage! - 1
+              //         : (int.tryParse(widget.totalPages!) ?? 1)))
+              //   Positioned(
+              //     right: 16,
+              //     child: _buildNavigationButton(
+              //       alignment: Alignment.centerRight,
+              //       icon: Icons.chevron_right,
+              //       onPressed: _navigateRight,
+              //     ),
+              //   ),
             ],
           ),
         );

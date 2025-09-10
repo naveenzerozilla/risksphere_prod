@@ -180,59 +180,59 @@ class SessionData {
   String? id;
   String? object;
   AdaptivePricing? adaptivePricing;
-  Null? afterExpiration;
-  Null? allowPromotionCodes;
+  dynamic afterExpiration;
+  dynamic allowPromotionCodes;
   int? amountSubtotal;
   int? amountTotal;
   AutomaticTax? automaticTax;
-  Null? billingAddressCollection;
+  dynamic billingAddressCollection;
   String? cancelUrl;
-  Null? clientReferenceId;
-  Null? clientSecret;
+  dynamic clientReferenceId;
+  dynamic clientSecret;
   CollectedInformation? collectedInformation;
-  Null? consent;
-  Null? consentCollection;
+  dynamic consent;
+  dynamic consentCollection;
   int? created;
   String? currency;
-  Null? currencyConversion;
+  dynamic currencyConversion;
   List<Null>? customFields;
   CustomText? customText;
   String? customer;
-  Null? customerCreation;
+  dynamic customerCreation;
   CustomerDetails? customerDetails;
-  Null? customerEmail;
+  dynamic customerEmail;
   List<Null>? discounts;
   int? expiresAt;
-  Null? invoice;
+  dynamic invoice;
   InvoiceCreation? invoiceCreation;
   bool? livemode;
-  Null? locale;
+  dynamic locale;
   Metadata? metadata;
   String? mode;
   String? paymentIntent;
-  Null? paymentLink;
+  dynamic paymentLink;
   String? paymentMethodCollection;
-  Null? paymentMethodConfigurationDetails;
+  dynamic paymentMethodConfigurationDetails;
   PaymentMethodOptions? paymentMethodOptions;
   List<String>? paymentMethodTypes;
   String? paymentStatus;
-  Null? permissions;
+  dynamic permissions;
   AdaptivePricing? phoneNumberCollection;
   PresentmentDetails? presentmentDetails;
-  Null? recoveredFrom;
+  dynamic recoveredFrom;
   SavedPaymentMethodOptions? savedPaymentMethodOptions;
-  Null? setupIntent;
-  Null? shippingAddressCollection;
-  Null? shippingCost;
+  dynamic setupIntent;
+  dynamic shippingAddressCollection;
+  dynamic shippingCost;
   List<Null>? shippingOptions;
   String? status;
-  Null? submitType;
-  Null? subscription;
+  dynamic submitType;
+  dynamic subscription;
   String? successUrl;
   TotalDetails? totalDetails;
   String? uiMode;
-  Null? url;
-  Null? walletOptions;
+  dynamic url;
+  dynamic walletOptions;
 
   SessionData(
       {this.id,
@@ -484,7 +484,7 @@ class CustomerDetails {
   Address? address;
   String? email;
   String? name;
-  Null? phone;
+  dynamic phone;
   String? taxExempt;
   List<Null>? taxIds;
 
@@ -526,12 +526,12 @@ class CustomerDetails {
 }
 
 class Address {
-  Null? city;
+  dynamic city;
   String? country;
-  Null? line1;
-  Null? line2;
-  Null? postalCode;
-  Null? state;
+  dynamic line1;
+  dynamic line2;
+  dynamic postalCode;
+  dynamic state;
 
   Address(
       {this.city,
@@ -563,13 +563,13 @@ class Address {
 }
 
 class InvoiceData {
-  Null? accountTaxIds;
-  Null? customFields;
-  Null? description;
-  Null? footer;
-  Null? issuer;
+  dynamic accountTaxIds;
+  dynamic customFields;
+  dynamic description;
+  dynamic footer;
+  dynamic issuer;
   Metadata? metadata;
-  Null? renderingOptions;
+  dynamic renderingOptions;
 
   InvoiceData(
       {this.accountTaxIds,
@@ -655,7 +655,7 @@ class TotalDetails {
 class SavedPaymentMethodOptions {
   List<String>? allowRedisplayFilters;
   String? paymentMethodRemove;
-  Null? paymentMethodSave;
+  dynamic paymentMethodSave;
 
   SavedPaymentMethodOptions(
       {this.allowRedisplayFilters,
@@ -694,10 +694,10 @@ class AdaptivePricing {
 }
 
 class CustomText {
-  Null? afterSubmit;
-  Null? shippingAddress;
-  Null? submit;
-  Null? termsOfServiceAcceptance;
+  dynamic afterSubmit;
+  dynamic shippingAddress;
+  dynamic submit;
+  dynamic termsOfServiceAcceptance;
 
   CustomText(
       {this.afterSubmit,
@@ -741,8 +741,8 @@ class Plans {
       this.selectedPlan,
       this.planName,
       this.price,
-        this.vendor,
-        this.eventType,
+      this.vendor,
+      this.eventType,
       this.productId,
       this.priceId});
 
@@ -772,8 +772,8 @@ class Plans {
     }
     data['plan_id'] = this.planId;
     data['plan_type'] = this.planType;
-    data['vendor']= this.vendor;
-    data['event_type']= this.eventType;
+    data['vendor'] = this.vendor;
+    data['event_type'] = this.eventType;
     data['selected_plan'] = this.selectedPlan;
     data['plan_name'] = this.planName;
     data['price'] = this.price;
@@ -963,69 +963,69 @@ class StripeInvoice {
   String? object;
   String? accountCountry;
   String? accountName;
-  Null? accountTaxIds;
+  dynamic accountTaxIds;
   int? amountDue;
   int? amountOverpaid;
   int? amountPaid;
   int? amountRemaining;
   int? amountShipping;
-  Null? application;
+  dynamic application;
   int? attemptCount;
   bool? attempted;
   bool? autoAdvance;
   AutomaticTax? automaticTax;
-  Null? automaticallyFinalizesAt;
+  dynamic automaticallyFinalizesAt;
   String? billingReason;
   String? collectionMethod;
   int? created;
   String? currency;
-  Null? customFields;
+  dynamic customFields;
   String? customer;
-  Null? customerAddress;
+  dynamic customerAddress;
   String? customerEmail;
-  Null? customerName;
-  Null? customerPhone;
-  Null? customerShipping;
+  dynamic customerName;
+  dynamic customerPhone;
+  dynamic customerShipping;
   String? customerTaxExempt;
   List<Null>? customerTaxIds;
-  Null? defaultPaymentMethod;
-  Null? defaultSource;
+  dynamic defaultPaymentMethod;
+  dynamic defaultSource;
   List<Null>? defaultTaxRates;
   String? description;
   List<Null>? discounts;
-  Null? dueDate;
+  dynamic dueDate;
   int? effectiveAt;
   int? endingBalance;
-  Null? footer;
-  Null? fromInvoice;
+  dynamic footer;
+  dynamic fromInvoice;
   String? hostedInvoiceUrl;
   String? invoicePdf;
   Issuer? issuer;
-  Null? lastFinalizationError;
-  Null? latestRevision;
+  dynamic lastFinalizationError;
+  dynamic latestRevision;
   Lines? lines;
   bool? livemode;
   Metadata? metadata;
-  Null? nextPaymentAttempt;
+  dynamic nextPaymentAttempt;
   String? number;
-  Null? onBehalfOf;
-  Null? parent;
+  dynamic onBehalfOf;
+  dynamic parent;
   PaymentSettings? paymentSettings;
   int? periodEnd;
   int? periodStart;
   int? postPaymentCreditNotesAmount;
   int? prePaymentCreditNotesAmount;
-  Null? receiptNumber;
+  dynamic receiptNumber;
   Rendering? rendering;
-  Null? shippingCost;
-  Null? shippingDetails;
+  dynamic shippingCost;
+  dynamic shippingDetails;
   int? startingBalance;
-  Null? statementDescriptor;
+  dynamic statementDescriptor;
   String? status;
   StatusTransitions? statusTransitions;
   int? subtotal;
   int? subtotalExcludingTax;
-  Null? testClock;
+  dynamic testClock;
   int? total;
   List<Null>? totalDiscountAmounts;
   int? totalExcludingTax;
@@ -1320,7 +1320,7 @@ class StripeInvoice {
 }
 
 class CollectedInformation {
-  Null? shippingDetails;
+  dynamic shippingDetails;
 
   CollectedInformation({this.shippingDetails});
 
@@ -1336,11 +1336,11 @@ class CollectedInformation {
 }
 
 class AutomaticTax {
-  Null? disabledReason;
+  dynamic disabledReason;
   bool? enabled;
-  Null? liability;
-  Null? provider;
-  Null? status;
+  dynamic liability;
+  dynamic provider;
+  dynamic status;
 
   AutomaticTax(
       {this.disabledReason,
@@ -1535,7 +1535,7 @@ class Data {
 
 class Parent {
   InvoiceItemDetails? invoiceItemDetails;
-  Null? subscriptionItemDetails;
+  dynamic subscriptionItemDetails;
   String? type;
 
   Parent({this.invoiceItemDetails, this.subscriptionItemDetails, this.type});
@@ -1563,7 +1563,7 @@ class InvoiceItemDetails {
   String? invoiceItem;
   bool? proration;
   ProrationDetails? prorationDetails;
-  Null? subscription;
+  dynamic subscription;
 
   InvoiceItemDetails(
       {this.invoiceItem,
@@ -1593,7 +1593,7 @@ class InvoiceItemDetails {
 }
 
 class ProrationDetails {
-  Null? creditedItems;
+  dynamic creditedItems;
 
   ProrationDetails({this.creditedItems});
 
@@ -1745,9 +1745,9 @@ class Metadata {
 }
 
 class PaymentSettings {
-  Null? defaultMandate;
-  Null? paymentMethodOptions;
-  Null? paymentMethodTypes;
+  dynamic defaultMandate;
+  dynamic paymentMethodOptions;
+  dynamic paymentMethodTypes;
 
   PaymentSettings(
       {this.defaultMandate,
@@ -1770,10 +1770,10 @@ class PaymentSettings {
 }
 
 class Rendering {
-  Null? amountTaxDisplay;
+  dynamic amountTaxDisplay;
   Pdf? pdf;
-  Null? template;
-  Null? templateVersion;
+  dynamic template;
+  dynamic templateVersion;
 
   Rendering(
       {this.amountTaxDisplay, this.pdf, this.template, this.templateVersion});
@@ -1815,9 +1815,9 @@ class Pdf {
 
 class StatusTransitions {
   int? finalizedAt;
-  Null? markedUncollectibleAt;
-  Null? paidAt;
-  Null? voidedAt;
+  dynamic markedUncollectibleAt;
+  dynamic paidAt;
+  dynamic voidedAt;
 
   StatusTransitions(
       {this.finalizedAt,

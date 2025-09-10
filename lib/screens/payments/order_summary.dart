@@ -1,16 +1,16 @@
 import '../../utils/global_imports.dart';
 import '../../providers/payment_provider.dart';
 
-class PricingInvoice extends StatefulWidget {
+class OrderSummary extends StatefulWidget {
   final String sessionId;
 
-  PricingInvoice({super.key, required this.sessionId});
+  OrderSummary({super.key, required this.sessionId});
 
   @override
-  State<PricingInvoice> createState() => _PricingInvoiceState();
+  State<OrderSummary> createState() => _OrderSummaryState();
 }
 
-class _PricingInvoiceState extends State<PricingInvoice> {
+class _OrderSummaryState extends State<OrderSummary> {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
 

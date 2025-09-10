@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.risksphere.green"
+    package="com.zerozilla.risksphere"
     android:versionCode="10"
     android:versionName="0.2.8" >
 
@@ -59,10 +59,10 @@
         android:label="RiskSphere" >
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAZBi9_KGppiBlTZVfHH1YO5MFe4704r6w" />
+            android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
 
         <activity
-            android:name="com.risksphere.green.MainActivity"
+            android:name="com.zerozilla.risksphere.MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:exported="true"
             android:hardwareAccelerated="true"

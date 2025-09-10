@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../providers/job_monitoring_provier.dart';
+import '../../service/shared_preference_service.dart';
 import 'maintainance_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,6 +38,10 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
 
   bool _isExpanded = false;
   bool _showNotificationDot = true;
+  bool isPgAdmin = false;
+  bool isAdmin = false;
+  bool isSuperAdmin = false;
+  bool isIndivudual = false;
 
   GlobalKey expansionTileKey = GlobalKey();
 
@@ -68,7 +73,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
   @override
   void initState() {
     super.initState();
-
+    _setClaims();
     // Initialize the JobMonitoringProvider and fetch the company IDs
     Provider.of<JobMonitoringProvider>(context, listen: false)
         .fetchCompanyIds()
@@ -80,7 +85,6 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
               Provider.of<JobMonitoringProvider>(context, listen: false);
           Map<String, dynamic>? summaryData =
               await provider.fetchSummary(widget.initialProcessId!);
-
           if (mounted) {
             // Always check if the widget is still mounted
             setState(() {
@@ -96,6 +100,46 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         }
       });
     });
+  }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
+        showVerificationRequests =
+            showCorporateVerificationRequests || showUserVerificationRequests;
+    setState(() {});
   }
 
   void _scrollToProcess(String processId) {
@@ -167,20 +211,22 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         style: typography.Body1.copyWith(
                             fontWeight: FontWeight.w600),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.miscellaneous_services,
-                            color: AppColors.warning),
-                        onPressed: () {
-                          // Open bottom sheet for scheduling a new maintenance.
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            builder: (context) {
-                              return const MaintainanceBottomSheet();
-                            },
-                          );
-                        },
-                      ),
+                      if (isSuperAdmin || isPgAdmin || isAdmin) ...[
+                        IconButton(
+                          icon: const Icon(Icons.miscellaneous_services,
+                              color: AppColors.warning),
+                          onPressed: () {
+                            // Open bottom sheet for scheduling a new maintenance.
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) {
+                                return const MaintainanceBottomSheet();
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),

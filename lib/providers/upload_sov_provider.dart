@@ -352,17 +352,17 @@ class UploadSovProvider extends ChangeNotifier {
       bool hasUnmappedFields =
           fields.any((field) => field['status'] == 'Unmapped');
 
-      if (hasUnmappedFields) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "There are unmapped fields",
-              style: CustomTypography(context).Body1,
-            ),
-          ),
-        );
-        return;
-      }
+      // if (hasUnmappedFields) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(
+      //         "There are unmapped fields",
+      //         style: CustomTypography(context).Body1,
+      //       ),
+      //     ),
+      //   );
+      //   return;
+      // }
 
       List<Map<String, String>> targetHeaders = [];
       List<String> headersList = [];

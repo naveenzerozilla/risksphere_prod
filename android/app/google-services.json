@@ -108,6 +108,42 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857135835532:android:6b9c06c80a185c4fc84ea9",
+        "android_client_info": {
+          "package_name": "com.zerozilla.risksphere"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zerozilla.green"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

@@ -1096,8 +1096,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                 .getTranslated(
                                                                     context,
                                                                     "account_list_app_duplicate_duplicate"),
-                                                            style: typography
-                                                                .ButtonLarge,
                                                           ),
                                                           type: ButtonType
                                                               .elevated,
@@ -1220,8 +1218,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                 },
                                                                 child: Text(
                                                                   "Delete",
-                                                                  style: typography
-                                                                      .ButtonLarge,
                                                                 ),
                                                                 type: ButtonType
                                                                     .elevated,
@@ -1660,7 +1656,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               : LanguageService.getTranslated(
                                                   context,
                                                   "account_list_app_submit_text"),
-                                          style: typography.ButtonLarge,
+                                          // style: typography.ButtonLarge,
                                         ),
                                         type: ButtonType.elevated,
                                       );

@@ -749,7 +749,8 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           onChanged: _toggleSelectAll,
                         ),
                         Text(
-                          "Select All",
+                          _selectAll == false ?
+                          "Select All":  "DeSelect All",
                           style: typography.Body1,
                         ),
                       ],

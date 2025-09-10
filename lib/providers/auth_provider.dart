@@ -1,38 +1,48 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
-import 'package:RiskSphere/models/companymodel.dart';
+import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:aad_oauth/aad_oauth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:RiskSphere/constants/enums.dart';
 import 'package:RiskSphere/design_system/components/custom_button.dart';
-import 'package:RiskSphere/main.dart';
-import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/service/language_service.dart';
-
+import 'package:aad_oauth/model/config.dart';
 import '../design_system/primitives/custom_typography.dart';
 import '../design_system/primitives/utilities/custom_spacing.dart';
-import '../models/initial_data_model.dart';
+import '../main.dart';
+import '../models/initial_data_model.dart' hide Config;
 import '../screens/onboarding/create_account_screen.dart';
 import '../screens/onboarding/splash_screen.dart';
 import '../service/shared_preference_service.dart';
 import 'package:http/http.dart' as http;
-
 import '../utils/api_constants.dart';
+import '../utils/global_imports.dart' hide CompanyType;
 
 class AuthNotifier extends ChangeNotifier {
   ValueNotifier<List<Companies>> companyOptionsNotifier = ValueNotifier([]);
   List<Companies> companyOptions = [];
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  // ✅ AadOAuth configuration
+  final AadOAuth oauth = AadOAuth(
+    Config(
+      tenant: "common",
+      clientId: "eb81a783-765c-482d-8fcb-6440ab1d1201",
+      scope: "openid profile offline_access email User.Read",
+      redirectUri: "msauth.com.sonofthunder.risksphere://auth",
+      navigatorKey: navigatorKey,
+    ),
+  );
 
   bool isNewUser = false;
 
@@ -136,67 +146,6 @@ class AuthNotifier extends ChangeNotifier {
     });
   }
 
-  /// Splash Screen
-  ///
-
-  /// fetch company
-  ///
-  // Future<List<Companies>> fetchCompanies(String name) async {
-  //   final url =
-  //       "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$name";
-  //
-  //   try {
-  //     final response = await http.get(Uri.parse(url));
-  //     if (response.statusCode == 200) {
-  //       final List<dynamic> jsonResponse = json.decode(response.body);
-  //       return jsonResponse.map((data) => Companies.fromJson(data)).toList();
-  //     } else {
-  //       return [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     return [];
-  //   }
-  // }
-
-  // Future<List<Companies>> fetchCompanies(String name) async {
-  //   print(name);
-  //   String encodedName = Uri.encodeComponent(name);
-  //   final url =
-  //       "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$encodedName";
-  //   print(url);
-  //
-  //   try {
-  //     final response = await http.get(Uri.parse(url), headers: {
-  //       'Content-Type': 'application/json',
-  //       'Accept': 'application/json',
-  //     });
-  //
-  //     print(response.statusCode);
-  //     print("Raw API Response: ${response.body}");
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //
-  //       if (data is Map &&
-  //           data.containsKey("result") &&
-  //           data["result"] is List) {
-  //         final List<dynamic> companyList = data["result"];
-  //         return companyList.map((json) => Companies.fromJson(json)).toList();
-  //       } else {
-  //         print("⚠ Unexpected API response format: $data");
-  //         return [];
-  //       }
-  //     } else {
-  //       print(" Error: ${response.statusCode}");
-  //       return [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     return [];
-  //   }
-  // }
-
   Future<void> fetchCompanies(String name) async {
     print("Fetching: $name");
 
@@ -240,53 +189,6 @@ class AuthNotifier extends ChangeNotifier {
     companyOptionsNotifier.notifyListeners();
   }
 
-//   Future<List<Companies>> fetchCompanies(String name) async {
-//     print(name);
-//     String encodedName = Uri.encodeComponent(name);
-//     final url =
-//         "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=$encodedName";
-// print(url);
-//     try {
-//       final response = await http.get(Uri.parse(url),  headers: {
-//         'Content-Type': 'application/json',
-//         'Accept': 'application/json',
-//       },);
-// print(response.statusCode);
-//       // Debugging: Print raw response
-//       print("Raw API Response: ${response.body}");
-//
-//       if (response.statusCode == 200) {
-//         final data = json.decode(response.body);
-//
-//         if (data is List) {
-//           // ✅ Case 1: API returns a direct list of companies
-//           return data.map((json) => Companies.fromJson(json)).toList();
-//         } else if (data is Map) {
-//           // ✅ Case 2: API returns an object, check where the list exists
-//           if (data.containsKey("companies") && data["companies"] is List) {
-//             final List<dynamic> companyList = data["companies"];
-//             return companyList.map((json) => Companies.fromJson(json)).toList();
-//           } else if (data.containsKey("data") && data["data"] is List) {
-//             final List<dynamic> companyList = data["data"];
-//             return companyList.map((json) => Companies.fromJson(json)).toList();
-//           } else {
-//             print("⚠ Unexpected API response format: $data");
-//             return [];
-//           }
-//         } else {
-//           print("⚠ Unexpected data type from API");
-//           return [];
-//         }
-//       } else {
-//         print("❌ Error: ${response.statusCode}");
-//         return [];
-//       }
-//     } catch (e) {
-//       print("❌ Error fetching companies: $e");
-//       return [];
-//     }
-//   }
-
   /// Login
 
   Future<void> signInWithEmailAndPassword(
@@ -306,7 +208,6 @@ class AuthNotifier extends ChangeNotifier {
 
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims ?? {};
-      log("Claims231: $claims");
 
       String isAdminVerified = await getAllClaims();
       print("is admin verified" + isAdminVerified.length.toString());
@@ -320,7 +221,6 @@ class AuthNotifier extends ChangeNotifier {
             content: Text(
               LanguageService.getTranslated(
                   context1, "login_email_not_verified_error"),
-
             ),
           ),
         );
@@ -415,7 +315,6 @@ class AuthNotifier extends ChangeNotifier {
                                     : Text(
                                         LanguageService.getTranslated(context,
                                             "login_admin_not_verified_remind_button"),
-                                        style: typography.Body1,
                                       ),
                               ),
                             ),
@@ -462,189 +361,6 @@ class AuthNotifier extends ChangeNotifier {
             );
           },
         );
-
-        // await showDialog(
-        //   context: context1,
-        //   barrierDismissible: false,
-        //   builder: (BuildContext context) {
-        //     var typography = CustomTypography(context);
-        //     return AlertDialog(
-        //       title: Text(
-        //         LanguageService.getTranslated(
-        //             context, "login_admin_not_verified_dialog_title"),
-        //         style: typography.H6.copyWith(color: Colors.white),
-        //       ),
-        //       content: Text(
-        //         LanguageService.getTranslated(
-        //             context, "login_admin_not_verified_dialog_description"),
-        //         style: typography.Body1.copyWith(color: Colors.white),
-        //       ),
-        //       actions: [
-        //         // Remind and cancel in column
-        //         Column(
-        //           children: [
-        //             Row(
-        //               children: [
-        //                 Expanded(
-        //                   child: CustomButton(
-        //                     type: ButtonType.elevated,
-        //                     onPressed: () async {
-        //                       // Start loading
-        //                       isRemindLoading = true;
-        //                       notifyListeners(); // Notify UI to update
-        //
-        //                       bool result = await remindUser();
-        //
-        //                       // Stop loading
-        //                       isRemindLoading = false;
-        //                       notifyListeners(); // Notify UI to update
-        //
-        //                       if (result) {
-        //
-        //                         ScaffoldMessenger.of(context).showSnackBar(
-        //                           SnackBar(
-        //                             content: Text(
-        //                               LanguageService.getTranslated(
-        //                                   context, "login_admin_not_verified_remind_success"),
-        //                               style: typography.H6.copyWith(color: Colors.black),
-        //                             ),
-        //                           ),
-        //                         );
-        //
-        //                       }
-        //
-        //                       final _googleSignIn = GoogleSignIn();
-        //                       var isSignedIn = await _googleSignIn.isSignedIn();
-        //
-        //                       if (isSignedIn) await _googleSignIn.disconnect();
-        //                       await _auth.signOut();
-        //                       Navigator.pop(context);
-        //                     },
-        //                     child: isRemindLoading
-        //                         ? Center(child: CircularProgressIndicator())
-        //                         : Text(
-        //                       LanguageService.getTranslated(
-        //                           context, "login_admin_not_verified_remind_button"),
-        //                       style: typography.Body1,
-        //                     ),
-        //                   ),
-        //                 ),
-        //
-        //                 //           Expanded(
-        //                 //             child: CustomButton(
-        //                 //                 type: ButtonType.elevated,
-        //                 // // Add this to the state of your widget
-        //                 //
-        //                 //   onPressed: () async {
-        //                 //     showDialog(
-        //                 //       context: context,
-        //                 //       barrierDismissible: false, // Prevent dismissing the dialog
-        //                 //       builder: (BuildContext context) {
-        //                 //         return Center(
-        //                 //           child: CircularProgressIndicator(), // Show loading spinner
-        //                 //         );
-        //                 //       },
-        //                 //     );
-        //                 //
-        //                 //                   // Wait for 2 seconds before proceeding
-        //                 //                   await Future.delayed(Duration(seconds: 1));
-        //                 //
-        //                 //                   // Close the dialog after 2 seconds
-        //                 //                   // Navigator.pushAndRemoveUntil(
-        //                 //                   //     context,
-        //                 //                   //     MaterialPageRoute(
-        //                 //                   //         builder: (context) => LoginScreen()),
-        //                 //                   //     (route) => false);
-        //                 //                       WidgetsBinding.instance.addPostFrameCallback((_) {
-        //                 //                         notifyListeners();
-        //                 //                         isRemindLoading =true;
-        //                 //                       });
-        //                 //
-        //                 //                   print("Remind user: ${_user?.email}");
-        //                 //
-        //                 //                   bool result = await remindUser();
-        //                 //
-        //                 //                       WidgetsBinding.instance.addPostFrameCallback((_) {
-        //                 //                         notifyListeners();
-        //                 //                         isRemindLoading =false;
-        //                 //                       });
-        //                 //
-        //                 //
-        //                 //                       if (result) {
-        //                 //                   ScaffoldMessenger.of(context).showSnackBar(
-        //                 //                     SnackBar(
-        //                 //                       content: Text(
-        //                 //                         LanguageService.getTranslated(context,
-        //                 //                             "login_admin_not_verified_remind_success"),
-        //                 //                         // style: typography.Body1,
-        //                 //                         style: typography.H6
-        //                 //                             .copyWith(color: Colors.black),
-        //                 //                       ),
-        //                 //                     ),
-        //                 //                   );
-        //                 //                   }
-        //                 //
-        //                 //                   final _googleSignIn = GoogleSignIn();
-        //                 //                   var isSignedIn = await _googleSignIn.isSignedIn();
-        //                 //
-        //                 //                   if (isSignedIn) await _googleSignIn.disconnect();
-        //                 //                   await _auth.signOut();
-        //                 //
-        //                 //                   WidgetsBinding.instance.addPostFrameCallback((_) {
-        //                 //                     notifyListeners();
-        //                 //                   });
-        //                 //                 },
-        //                 //                 child:
-        //                 //                     !isRemindLoading
-        //                 //                                           ? Center(child: CircularProgressIndicator())
-        //                 //                                           :
-        //                 //                     Text(
-        //                 //                   LanguageService.getTranslated(context1,
-        //                 //                       "login_admin_not_verified_remind_button"),
-        //                 //                   style: typography.Body1,
-        //                 //                 )),
-        //                 //           ),
-        //               ],
-        //             ),
-        //             SizedBox(height: CustomSpacing.four),
-        //             Row(
-        //               children: [
-        //                 Expanded(
-        //                   child: CustomButton(
-        //                       type: ButtonType.text,
-        //                       onPressed: () async {
-        //
-        //                         final _googleSignIn = GoogleSignIn();
-        //                         var isSignedIn =
-        //                         await _googleSignIn.isSignedIn();
-        //                         if (isSignedIn)
-        //                           await _googleSignIn.disconnect();
-        //                         await _auth.signOut();
-        //                         WidgetsBinding.instance
-        //                             .addPostFrameCallback((_) {
-        //                           notifyListeners();
-        //                         });
-        //                         Navigator.pushAndRemoveUntil(
-        //                             context,
-        //                             MaterialPageRoute(
-        //                                 builder: (context) => SplashScreen()),
-        //                                 (route) => false);
-        //                       },
-        //                       child: Text(
-        //                         LanguageService.getTranslated(context,
-        //                             "login_admin_not_verified_cancel_button"),
-        //                         style:
-        //                         typography.H6.copyWith(color: Colors.white),
-        //                       )),
-        //                 ),
-        //               ],
-        //             ),
-        //           ],
-        //         ),
-        //       ],
-        //     );
-        //   },
-        // );
 
         return;
       }
@@ -749,151 +465,144 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Future<void> signInWithGoogle({BuildContext? context}) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //
-  //     final GoogleSignInAccount? googleSignInAccount =
-  //     await _googleSignIn.signIn();
-  //     if (googleSignInAccount != null) {
-  //       final GoogleSignInAuthentication googleSignInAuthentication =
-  //       await googleSignInAccount.authentication;
-  //       final AuthCredential credential = GoogleAuthProvider.credential(
-  //         accessToken: googleSignInAuthentication.accessToken,
-  //         idToken: googleSignInAuthentication.idToken,
-  //       );
-  //       final UserCredential userCredential =
-  //       await _auth.signInWithCredential(credential);
-  //       _user = userCredential.user;
-  //       log('user: $userCredential');
-  //       print('Is new user? ${userCredential.additionalUserInfo?.isNewUser}');
-  //       IdTokenResult token = await userCredential.user!.getIdTokenResult();
-  //       Map<String, dynamic>? claims = token.claims ?? {};
-  //       log("Claims: $claims");
-  //
-  //       await SharedPreferenceService.setClaims(claims);
-  //       await SharedPreferenceService.getAllClaims();
-  //
-  //       print('Is Individual? ${claims['isIndividual']}');
-  //       if (claims['isIndividual'] == null) {
-  //         isNewUser = true;
-  //         // Navigate to create account screen and pass the user data
-  //         Navigator.push(
-  //           context!,
-  //           MaterialPageRoute(
-  //             builder: (context) =>
-  //                 CreateAccountScreen(
-  //                   userCredential: userCredential,
-  //                 ),
-  //           ),
-  //         );
-  //       } else {
-  //         isNewUser = false;
-  //         Navigator.pushAndRemoveUntil(
-  //             context!,
-  //             MaterialPageRoute(builder: (context) => MyApp()),
-  //                 (route) => false);
-  //       }
-  //     }
-  //     _isSigningIn = false;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //   } on FirebaseAuthException catch (e) {
-  //     _isSigningIn = false;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //     // Handle error
-  //     print("Error signing in with Google: $e");
-  //     ScaffoldMessenger.of(context!).showSnackBar(
-  //       SnackBar(
-  //         content: Text(e.message!),
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     print("Error signing in with Google: $e");
-  //     _isSigningIn = false;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //     // Handle error
-  //     print("Error signing in with Google: $e");
-  //   }
-  // }
-
-  Future<void> signInWithMicrosoft({BuildContext? context}) async {
+  Future<void> signInWithMicrosoft(BuildContext context) async {
     try {
       _isSigningIn = true;
       notifyListeners();
 
-      final microsoftProvider = MicrosoftAuthProvider();
+      // ✅ Microsoft OAuth provider
+      final microsoftProvider = OAuthProvider("microsoft.com");
+      final userCredential =
+          await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
 
-      microsoftProvider.addScope('email');
-      microsoftProvider.addScope('openid');
-      microsoftProvider.addScope('profile');
-      microsoftProvider.addScope('User.Read');
-
-      UserCredential userCredential;
-      if (kIsWeb) {
-        userCredential =
-            await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
-      } else {
-        userCredential =
-            await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
-      }
-
-      // Handle user data or token claims if necessary
-      // Example:
-      IdTokenResult token = await userCredential.user!.getIdTokenResult();
-      Map<String, dynamic>? claims = token.claims ?? {};
-      log("Claims: $claims");
-
-      await SharedPreferenceService.setClaims(claims);
-      await SharedPreferenceService.getAllClaims();
-
-      print('Is Individual? ${claims['isIndividual']}');
-
-      print('Current User: ${userCredential.user!.email}');
-      print('Current firebase user: ${_auth.currentUser!.email}');
       _user = userCredential.user;
-      if (claims['isIndividual'] == null) {
-        isNewUser = true;
-        Navigator.push(
-          context!,
-          MaterialPageRoute(
-            builder: (context) => CreateAccountScreen(
-              userCredential: userCredential,
-            ),
-          ),
-        );
-      } else {
-        isNewUser = false;
-        Navigator.pushAndRemoveUntil(
-          context!,
-          MaterialPageRoute(builder: (context) => MyApp()),
-          (route) => false,
-        );
-      }
+      isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
-      _isSigningIn = false;
-      notifyListeners();
-    } on FirebaseAuthException catch (e) {
-      _isSigningIn = false;
-      notifyListeners();
-      print("Error signing in with Microsoft: $e");
-      if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message ?? 'An error occurred'),
-          ),
-        );
+      print("✅ Signed in as: ${_user?.email}");
+
+      if (_user != null) {
+        if (isNewUser) {
+          // 👇 Navigate new users to CreateAccountScreen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CreateAccountScreen(
+                userCredential: userCredential,
+              ),
+            ),
+          );
+        } else {
+          // 👇 Existing user → load profile then go to Home
+          Provider.of<UserProfileProvider>(context, listen: false)
+              .getAllUserData(context, '', '');
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  CreateAccountScreen(), // Change to your real HomePage
+            ),
+          );
+        }
       }
+    } on FirebaseAuthException catch (e) {
+      print("❌ Firebase Auth error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Sign-in failed')),
+      );
+    } catch (e) {
+      print("❌ Unexpected error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unexpected error: $e')),
+      );
+    } finally {
+      _isSigningIn = false;
+      notifyListeners();
     }
   }
+
+//old2
+  // Future<void> signInWithMicrosoft(BuildContext context) async {
+  //   try {
+  //     _isSigningIn = true;
+  //     notifyListeners();
+  //
+  //     // ✅ Use Firebase's Microsoft provider directly
+  //     final microsoftProvider = OAuthProvider("microsoft.com");
+  //     final userCredential =
+  //     await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
+  //
+  //     _user = userCredential.user;
+  //     isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+  //
+  //     print("✅ Signed in as: ${_user?.email}");
+  //   } on FirebaseAuthException catch (e) {
+  //     print("❌ Firebase Auth error: $e");
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(e.message ?? 'Sign-in failed')),
+  //     );
+  //   } catch (e) {
+  //     print("❌ Unexpected error: $e");
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Unexpected error: $e')),
+  //     );
+  //   } finally {
+  //     _isSigningIn = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+//old
+  // Future<void> signInWithMicrosoft({BuildContext? context}) async {
+  //   try {
+  //     _isSigningIn = true;
+  //     notifyListeners();
+  //
+  //     // ✅ Login with Microsoft
+  //     await oauth.login();
+  //     print("✅ Signed in as1: ${_user?.email}");
+  //     final String? accessToken = await oauth.getAccessToken();
+  //     final String? idToken = await oauth.getIdToken();
+  //     print("✅ Signed in as2: ${_user?.email}");
+  //     if (idToken == null || accessToken == null) {
+  //       throw FirebaseAuthException(
+  //         code: "MISSING_TOKENS",
+  //         message: "Microsoft sign-in did not return valid tokens.",
+  //       );
+  //     }
+  //     print("✅ Signed in as3: ${_user?.email}");
+  //     final microsoftCredential = OAuthProvider("microsoft.com").credential(
+  //       idToken: idToken,
+  //       accessToken: accessToken,
+  //     );
+  //     print("✅ Signed in as4: ${_user?.email}");
+  //     final userCredential =
+  //         await _auth.signInWithCredential(microsoftCredential);
+  //     print("✅ Signed in as5: ${_user?.email}");
+  //     _user = userCredential.user;
+  //     isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+  //
+  //     log("✅ Signed in as: ${_user?.email}");
+  //     print("✅ Signed in as: ${_user?.email}");
+  //   } on FirebaseAuthException catch (e) {
+  //     print("❌ Error signing in with Microsoft: $e");
+  //     if (context != null) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text(e.message ?? 'An error occurred')),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     log("❌ Unexpected error: $e");
+  //     if (context != null) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Unexpected error: $e')),
+  //       );
+  //     }
+  //   } finally {
+  //     _isSigningIn = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   Future<void> signOut() async {
     try {
@@ -1156,7 +865,11 @@ class AuthNotifier extends ChangeNotifier {
       print('Cloud Function result: ${result.data}');
       if (result.data == 'role_assigned') {
         //Send email to verify
-        await userCredential.user?.sendEmailVerification();
+        // await userCredential.user?.sendEmailVerification();
+        final url =
+            '${AppConstant.baseURL}/sendEmail_to_client?type=email_verification&email=$mail';
+        final response = await http.get(Uri.parse(url));
+        print("Email verification response: ${response.body}");
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -1164,15 +877,19 @@ class AuthNotifier extends ChangeNotifier {
             var typography = CustomTypography(context);
             return AlertDialog(
               title: Text(
-                isApplicableForTrial
-                    ? 'Enjoy your ${trialPeriodDays}-day free trial!'
-                    : 'Check your inbox.',
+                Platform.isIOS
+                    ? "Account Created"
+                    : isApplicableForTrial
+                        ? 'Enjoy your ${trialPeriodDays}-day free trial!'
+                        : 'Check your inbox.',
                 style: typography.H6.copyWith(color: Colors.white),
               ),
               content: Text(
-                isApplicableForTrial
-                    ? 'Trial account created with full features. Upgrade for continued access or remain free after ${trialPeriodDays} days. Activate email by clicking link sent.'
-                    : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.',
+                Platform.isIOS
+                    ? "Activate email by clicking link sent."
+                    : isApplicableForTrial
+                        ? 'Trial account created with full features. Upgrade for continued access or remain free after ${trialPeriodDays} days. Activate email by clicking link sent.'
+                        : 'We just sent you an email to confirm your account. Check your registered email address "${obscureEmail(mail)}" to complete the process.',
                 style: typography.Body1.copyWith(color: Colors.white),
               ),
               actions: [
@@ -1334,7 +1051,13 @@ class AuthNotifier extends ChangeNotifier {
       print('Cloud Function result: ${result.data}');
       if (result.data == 'role_assigned') {
         //Send email to verify
-        await userCredential.user?.sendEmailVerification();
+        // await userCredential.user?.sendEmailVerification();
+
+        final url =
+            '${AppConstant.baseURL}/sendEmail_to_client?type=email_verification&email=$adminEmail';
+        final response = await http.get(Uri.parse(url));
+        print("Email verification response: ${response.body}");
+
         print(
             "company verified by admin and selected company is null: ${initialData!.config[0].companyVerificationByAdmin} ${selectedCompany == null}");
         print(

@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   firebase_storage
   flutter_screen_capture
+  flutter_secure_storage_windows
   permission_handler_windows
   screen_retriever_windows
   url_launcher_windows
